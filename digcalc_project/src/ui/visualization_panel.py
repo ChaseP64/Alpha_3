@@ -7,29 +7,32 @@ This module defines the 3D visualization panel for displaying surfaces and calcu
 """
 
 import logging
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Any, Tuple
 import numpy as np
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout
-from PySide6.QtCore import Qt, Slot
+# PySide6 imports
+from PySide6.QtCore import Qt, Slot, Signal
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel
 
 # Import visualization libraries
 try:
-    from pyqtgraph.opengl import GLViewWidget, GLMeshItem, GLGridItem, GLLinePlotItem
+    from pyqtgraph.opengl import GLViewWidget, GLMeshItem, GLGridItem, GLLinePlotItem, GLAxisItem
     import pyqtgraph.opengl as gl
     HAS_3D = True
 except ImportError:
     HAS_3D = False
     
-from models.surface import Surface
-from models.point import Point
-from models.triangle import Triangle
+# Local imports
+from src.models.surface import Surface, Point3D, Triangle
 
 
 class VisualizationPanel(QWidget):
     """
     Panel for 3D visualization of surfaces and calculation results.
     """
+    
+    # Signals
+    surface_visualization_failed = Signal(str, str)  # (surface name, error message)
     
     def __init__(self, parent=None):
         """
@@ -41,10 +44,13 @@ class VisualizationPanel(QWidget):
         super().__init__(parent)
         
         self.logger = logging.getLogger(__name__)
-        self.surfaces: Dict[str, Dict] = {}  # Dictionary to store surface visualization objects
+        self.surfaces: Dict[str, Dict[str, Any]] = {}  # Dictionary to store surface visualization objects
         
         # Initialize UI components
         self._init_ui()
+        
+        # Connect signals
+        self.surface_visualization_failed.connect(self._on_visualization_failed)
         
         self.logger.debug("VisualizationPanel initialized")
     
@@ -65,86 +71,104 @@ class VisualizationPanel(QWidget):
             grid.setSpacing(x=10, y=10, z=10)
             self.view_3d.addItem(grid)
             
+            # Add axis items for orientation
+            axis = GLAxisItem()
+            axis.setSize(x=20, y=20, z=20)
+            self.view_3d.addItem(axis)
+            
             layout.addWidget(self.view_3d)
             
             self.logger.debug("3D view initialized")
         else:
             # Display a message if 3D visualization is not available
-            self.placeholder = QWidget()
-            self.placeholder.setStyleSheet("background-color: #f0f0f0;")
+            self.placeholder = QLabel("3D visualization not available.\nPlease install pyqtgraph and PyOpenGL.")
+            self.placeholder.setAlignment(Qt.AlignCenter)
+            self.placeholder.setStyleSheet("background-color: #f0f0f0; padding: 20px;")
             layout.addWidget(self.placeholder)
             
             self.logger.warning("3D visualization libraries not available")
     
-    def display_surface(self, surface: Surface):
+    def display_surface(self, surface: Surface) -> bool:
         """
         Display a surface in the 3D view.
         
         Args:
             surface: Surface to display
+            
+        Returns:
+            bool: True if display was successful, False otherwise
         """
         if not HAS_3D:
-            self.logger.warning("Cannot display surface: 3D visualization not available")
-            return
+            error_msg = "3D visualization libraries not available"
+            self.logger.warning(f"Cannot display surface: {error_msg}")
+            self.surface_visualization_failed.emit(surface.name, error_msg)
+            return False
         
-        if not surface or not surface.triangles:
-            self.logger.warning(f"Cannot display surface {surface.name}: No triangles available")
-            return
-        
-        self.logger.info(f"Displaying surface: {surface.name}")
-        
-        # Remove existing surface if it exists
-        if surface.name in self.surfaces:
-            self._remove_surface_visualization(surface.name)
-        
-        # Create new visualization objects
-        surface_vis = {}
-        
-        # Create mesh from triangles
-        mesh_data = self._create_mesh_data(surface)
-        if mesh_data:
-            mesh = GLMeshItem(
-                vertexes=mesh_data["vertices"],
-                faces=mesh_data["faces"],
-                faceColors=mesh_data["colors"],
-                smooth=True,
-                drawEdges=True,
-                edgeColor=(0, 0, 0, 0.5)
-            )
-            self.view_3d.addItem(mesh)
-            surface_vis["mesh"] = mesh
-        
-        # Create contour lines
-        if surface.contours:
-            contour_items = []
-            for contour in surface.contours:
-                if len(contour.points) < 2:
-                    continue
-                    
-                # Create points for the contour line
-                pts = np.array([[p.x, p.y, p.z] for p in contour.points])
-                
-                # Create line plot item
-                line = GLLinePlotItem(
-                    pos=pts,
-                    color=(0, 0, 1, 1),
-                    width=2,
-                    antialias=True
-                )
-                self.view_3d.addItem(line)
-                contour_items.append(line)
+        # Validate surface
+        if not surface:
+            error_msg = "Invalid surface object"
+            self.logger.warning(f"Cannot display surface: {error_msg}")
+            self.surface_visualization_failed.emit("Unknown", error_msg)
+            return False
             
-            if contour_items:
-                surface_vis["contours"] = contour_items
+        if not surface.points:
+            error_msg = "Surface has no points"
+            self.logger.warning(f"Cannot display surface '{surface.name}': {error_msg}")
+            self.surface_visualization_failed.emit(surface.name, error_msg)
+            return False
+            
+        if not surface.triangles:
+            error_msg = "Surface has no triangles for rendering"
+            self.logger.warning(f"Cannot display surface '{surface.name}': {error_msg}")
+            self.surface_visualization_failed.emit(surface.name, error_msg)
+            return False
         
-        # Store visualization objects
-        self.surfaces[surface.name] = surface_vis
-        
-        # Adjust view if this is the first surface
-        if len(self.surfaces) == 1:
-            self._adjust_view_to_surface(surface)
+        try:
+            self.logger.info(f"Displaying surface: {surface.name} with {len(surface.points)} points and {len(surface.triangles)} triangles")
+            
+            # Remove existing surface if it exists
+            if surface.name in self.surfaces:
+                self._remove_surface_visualization(surface.name)
+            
+            # Create new visualization objects
+            surface_vis = {}
+            
+            # Create mesh from triangles
+            mesh_data = self._create_mesh_data(surface)
+            if mesh_data:
+                mesh = GLMeshItem(
+                    vertexes=mesh_data["vertices"],
+                    faces=mesh_data["faces"],
+                    faceColors=mesh_data["colors"],
+                    smooth=True,
+                    drawEdges=True,
+                    edgeColor=(0, 0, 0, 0.5)
+                )
+                self.view_3d.addItem(mesh)
+                surface_vis["mesh"] = mesh
+                
+                # Store visualization objects
+                self.surfaces[surface.name] = surface_vis
+                
+                # Adjust view if this is the first surface
+                if len(self.surfaces) == 1:
+                    self._adjust_view_to_surface(surface)
+                
+                self.logger.info(f"Successfully rendered surface: {surface.name}")
+                return True
+            else:
+                error_msg = "Failed to create mesh data for visualization"
+                self.logger.warning(f"Cannot display surface '{surface.name}': {error_msg}")
+                self.surface_visualization_failed.emit(surface.name, error_msg)
+                return False
+                
+        except Exception as e:
+            error_msg = f"Visualization error: {str(e)}"
+            self.logger.exception(f"Error displaying surface '{surface.name}': {e}")
+            self.surface_visualization_failed.emit(surface.name, error_msg)
+            return False
     
-    def _create_mesh_data(self, surface: Surface) -> Optional[Dict]:
+    def _create_mesh_data(self, surface: Surface) -> Optional[Dict[str, Any]]:
         """
         Create mesh data from surface triangles.
         
@@ -154,66 +178,77 @@ class VisualizationPanel(QWidget):
         Returns:
             Dictionary with mesh data or None if not possible
         """
-        if not surface.triangles:
+        if not surface.triangles or not surface.points:
             return None
         
-        # Create vertices array
-        points_dict = {id(p): i for i, p in enumerate(surface.points)}
-        vertices = np.array([[p.x, p.y, p.z] for p in surface.points])
-        
-        # Create faces array
-        faces = []
-        for tri in surface.triangles:
-            if not (tri.p1 and tri.p2 and tri.p3):
-                continue
+        try:
+            # Extract points from dictionary to list for easier indexing
+            points_list = list(surface.points.values())
+            
+            # Create mapping from point ID to index in vertices array
+            points_id_map = {p.id: i for i, p in enumerate(points_list)}
+            
+            # Create vertices array
+            vertices = np.array([[p.x, p.y, p.z] for p in points_list])
+            
+            # Create faces array
+            faces = []
+            for triangle in surface.triangles.values():
+                # Skip invalid triangles (those with missing points)
+                if not (triangle.p1 and triangle.p2 and triangle.p3):
+                    continue
+                    
+                # Get indices of points
+                try:
+                    i1 = points_id_map[triangle.p1.id]
+                    i2 = points_id_map[triangle.p2.id]
+                    i3 = points_id_map[triangle.p3.id]
+                    faces.append([i1, i2, i3])
+                except (KeyError, AttributeError) as e:
+                    self.logger.warning(f"Invalid triangle in surface {surface.name}: {e}")
+                    continue
+            
+            if not faces:
+                self.logger.warning(f"No valid triangles found in surface {surface.name}")
+                return None
                 
-            # Get indices of points
-            try:
-                i1 = points_dict[id(tri.p1)]
-                i2 = points_dict[id(tri.p2)]
-                i3 = points_dict[id(tri.p3)]
-                faces.append([i1, i2, i3])
-            except KeyError:
-                continue
-        
-        if not faces:
+            faces = np.array(faces)
+            
+            # Create colors array - color based on elevation
+            if len(vertices) > 0:
+                z_min = np.min(vertices[:, 2])
+                z_max = np.max(vertices[:, 2])
+                z_range = max(z_max - z_min, 0.1)  # Avoid division by zero
+                
+                # Create colors for each face
+                colors = np.zeros((len(faces), 4))
+                
+                # Compute average z for each face
+                for i, face in enumerate(faces):
+                    z_avg = np.mean([vertices[idx, 2] for idx in face])
+                    t = (z_avg - z_min) / z_range  # Normalized height between 0-1
+                    
+                    # Color gradient from blue (low) to red (high) through green (middle)
+                    if t < 0.5:
+                        # Blue to green
+                        colors[i] = [0, t * 2, 1 - t * 2, 0.7]
+                    else:
+                        # Green to red
+                        t2 = (t - 0.5) * 2
+                        colors[i] = [t2, 1 - t2, 0, 0.7]
+            else:
+                # Default color if no vertices
+                colors = np.array([[0, 0, 1, 0.7]])
+            
+            return {
+                "vertices": vertices,
+                "faces": faces,
+                "colors": colors
+            }
+            
+        except Exception as e:
+            self.logger.exception(f"Error creating mesh data: {e}")
             return None
-            
-        faces = np.array(faces)
-        
-        # Create colors array - color based on elevation
-        if vertices.shape[0] > 0:
-            z_min = np.min(vertices[:, 2])
-            z_max = np.max(vertices[:, 2])
-            z_range = max(z_max - z_min, 0.1)  # Avoid division by zero
-            
-            colors = np.zeros((faces.shape[0], 4))
-            
-            # Compute average z for each face
-            for i, face in enumerate(faces):
-                z_avg = np.mean([vertices[idx, 2] for idx in face])
-                t = (z_avg - z_min) / z_range  # Normalized height
-                
-                # Color gradient from blue (low) to red (high)
-                # Lower elevations: blue (0,0,1)
-                # Middle elevations: green (0,1,0)
-                # Higher elevations: red (1,0,0)
-                if t < 0.5:
-                    # Blue to green
-                    colors[i] = [0, t * 2, 1 - t * 2, 0.7]
-                else:
-                    # Green to red
-                    t2 = (t - 0.5) * 2
-                    colors[i] = [t2, 1 - t2, 0, 0.7]
-        else:
-            # Default color if no vertices
-            colors = np.array([[0, 0, 1, 0.7]])
-        
-        return {
-            "vertices": vertices,
-            "faces": faces,
-            "colors": colors
-        }
     
     def _adjust_view_to_surface(self, surface: Surface):
         """
@@ -222,37 +257,60 @@ class VisualizationPanel(QWidget):
         Args:
             surface: Surface to center view on
         """
-        if not surface.points:
+        if not surface or not surface.points:
             return
             
-        # Calculate bounds
-        x_vals = [p.x for p in surface.points]
-        y_vals = [p.y for p in surface.points]
-        z_vals = [p.z for p in surface.points]
-        
-        x_min, x_max = min(x_vals), max(x_vals)
-        y_min, y_max = min(y_vals), max(y_vals)
-        z_min, z_max = min(z_vals), max(z_vals)
-        
-        # Calculate center
-        center_x = (x_min + x_max) / 2
-        center_y = (y_min + y_max) / 2
-        center_z = (z_min + z_max) / 2
-        
-        # Calculate distance based on size
-        size_x = x_max - x_min
-        size_y = y_max - y_min
-        size_z = z_max - z_min
-        
-        distance = max(size_x, size_y, size_z) * 1.5
-        
-        # Set camera position
-        self.view_3d.setCameraPosition(
-            pos=gl.Vector(center_x, center_y, center_z),
-            distance=distance,
-            elevation=30,
-            azimuth=45
-        )
+        try:
+            # Get all points
+            points_list = list(surface.points.values())
+            
+            # Calculate bounds
+            x_vals = [p.x for p in points_list]
+            y_vals = [p.y for p in points_list]
+            z_vals = [p.z for p in points_list]
+            
+            x_min, x_max = min(x_vals), max(x_vals)
+            y_min, y_max = min(y_vals), max(y_vals)
+            z_min, z_max = min(z_vals), max(z_vals)
+            
+            # Calculate center
+            center_x = (x_min + x_max) / 2
+            center_y = (y_min + y_max) / 2
+            center_z = (z_min + z_max) / 2
+            
+            # Calculate distance based on size
+            size_x = max(x_max - x_min, 1)
+            size_y = max(y_max - y_min, 1)
+            size_z = max(z_max - z_min, 1)
+            
+            distance = max(size_x, size_y, size_z) * 2
+            
+            # Set camera position
+            self.view_3d.setCameraPosition(
+                pos=gl.Vector(center_x, center_y, center_z),
+                distance=distance,
+                elevation=30,
+                azimuth=45
+            )
+            
+            # Update the grid to match the size of the surface
+            if hasattr(self, 'view_3d'):
+                for item in self.view_3d.items:
+                    if isinstance(item, GLGridItem):
+                        # Update grid size
+                        grid_size = max(size_x, size_y) * 1.5
+                        grid_spacing = grid_size / 10
+                        item.setSize(x=grid_size, y=grid_size, z=0)
+                        item.setSpacing(x=grid_spacing, y=grid_spacing, z=grid_spacing)
+                        
+                        # Position grid at the lowest point
+                        item.translate(center_x, center_y, z_min)
+                        break
+                        
+            self.logger.debug(f"Adjusted view to surface: {surface.name}")
+            
+        except Exception as e:
+            self.logger.warning(f"Error adjusting view to surface: {e}")
     
     def _remove_surface_visualization(self, surface_name: str):
         """
@@ -270,13 +328,14 @@ class VisualizationPanel(QWidget):
         if "mesh" in surface_vis:
             self.view_3d.removeItem(surface_vis["mesh"])
         
-        # Remove contours
+        # Remove contours (if any)
         if "contours" in surface_vis:
             for contour in surface_vis["contours"]:
                 self.view_3d.removeItem(contour)
         
         # Remove from dictionary
         del self.surfaces[surface_name]
+        self.logger.debug(f"Removed visualization for surface: {surface_name}")
     
     @Slot(Surface, bool)
     def set_surface_visibility(self, surface: Surface, visible: bool):
@@ -312,4 +371,21 @@ class VisualizationPanel(QWidget):
         for surface_name in list(self.surfaces.keys()):
             self._remove_surface_visualization(surface_name)
             
-        self.logger.debug("All surfaces cleared from visualization") 
+        self.logger.debug("All surfaces cleared from visualization")
+        
+        # Reset the view
+        if hasattr(self, 'view_3d'):
+            self.view_3d.setCameraPosition(distance=100, elevation=30, azimuth=45)
+    
+    @Slot(str, str)
+    def _on_visualization_failed(self, surface_name: str, error_msg: str):
+        """
+        Handle visualization failure.
+        
+        Args:
+            surface_name: Name of the surface that failed to visualize
+            error_msg: Error message
+        """
+        # This method could be connected to the UI to show error messages
+        # For now, we just log it
+        self.logger.error(f"Visualization failed for surface '{surface_name}': {error_msg}") 

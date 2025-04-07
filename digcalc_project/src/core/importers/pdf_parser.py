@@ -11,8 +11,8 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 
-from core.importers.file_parser import FileParser, FileParserError
-from models.surface import Surface, Point3D
+from src.core.importers.file_parser import FileParser, FileParserError
+from src.models.surface import Surface, Point3D
 
 
 class PDFParser(FileParser):

@@ -9,7 +9,7 @@ surface data from LandXML files.
 
 import os
 import tempfile
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Generator
 import pytest
 from unittest.mock import patch, MagicMock
 import xml.etree.ElementTree as ET
@@ -19,7 +19,7 @@ from models.surface import Point3D, Triangle, Surface
 
 
 @pytest.fixture
-def sample_landxml_path() -> str:
+def sample_landxml_path() -> Generator[str, None, None]:
     """Create a sample LandXML file for testing."""
     xml_content = """<?xml version="1.0" encoding="utf-8"?>
     <LandXML xmlns="http://www.landxml.org/schema/LandXML-1.2" date="2023-01-01" time="12:00:00" version="1.2">
@@ -66,7 +66,7 @@ def sample_landxml_path() -> str:
 
 
 @pytest.fixture
-def invalid_landxml_path() -> str:
+def invalid_landxml_path() -> Generator[str, None, None]:
     """Create an invalid LandXML file for testing."""
     xml_content = """<?xml version="1.0" encoding="utf-8"?>
     <NotLandXML>
@@ -84,7 +84,7 @@ def invalid_landxml_path() -> str:
 
 
 @pytest.fixture
-def landxml_with_points_only_path() -> str:
+def landxml_with_points_only_path() -> Generator[str, None, None]:
     """Create a LandXML file with points but no faces for testing."""
     xml_content = """<?xml version="1.0" encoding="utf-8"?>
     <LandXML xmlns="http://www.landxml.org/schema/LandXML-1.2" date="2023-01-01" time="12:00:00" version="1.2">
@@ -112,7 +112,7 @@ def landxml_with_points_only_path() -> str:
 
 
 @pytest.fixture
-def landxml_with_cgpoints_path() -> str:
+def landxml_with_cgpoints_path() -> Generator[str, None, None]:
     """Create a LandXML file with CgPoints for testing."""
     xml_content = """<?xml version="1.0" encoding="utf-8"?>
     <LandXML xmlns="http://www.landxml.org/schema/LandXML-1.2" date="2023-01-01" time="12:00:00" version="1.2">
@@ -239,6 +239,9 @@ class TestLandXMLParser:
         """Test creating a surface from parsed LandXML data with triangles."""
         parser = LandXMLParser()
         
+        # Override the TINGenerator class in the parser instance
+        parser._TINGenerator = mock_tin_generator
+        
         # Parse the LandXML file
         parser.parse(sample_landxml_path)
         
@@ -258,6 +261,9 @@ class TestLandXMLParser:
     def test_create_surface_without_triangles(self, mock_tin_generator, landxml_with_points_only_path: str):
         """Test creating a surface from parsed LandXML data without triangles."""
         parser = LandXMLParser()
+        
+        # Override the TINGenerator class in the parser instance
+        parser._TINGenerator = mock_tin_generator
         
         # Parse the LandXML file
         parser.parse(landxml_with_points_only_path)

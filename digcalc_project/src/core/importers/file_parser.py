@@ -33,6 +33,7 @@ class FileParser(ABC):
         self.logger = logging.getLogger(__name__)
         self._file_path = None
         self._data = None
+        self._last_error = None  # Track the last error message
     
     @abstractmethod
     def parse(self, file_path: str) -> bool:
@@ -116,10 +117,24 @@ class FileParser(ABC):
             message: Error message
             exception: Optional exception
         """
+        error_msg = message
         if exception:
-            self.logger.error(f"{message}: {str(exception)}")
+            error_msg = f"{message}: {str(exception)}"
+            self.logger.error(error_msg)
         else:
             self.logger.error(message)
+            
+        # Store the error message
+        self._last_error = error_msg
+    
+    def get_last_error(self) -> Optional[str]:
+        """
+        Get the last error message.
+        
+        Returns:
+            Last error message or None if no error occurred
+        """
+        return self._last_error
     
     @classmethod
     def get_supported_extensions(cls) -> List[str]:

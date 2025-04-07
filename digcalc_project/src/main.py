@@ -13,12 +13,15 @@ import sys
 import logging
 from pathlib import Path
 
+# Add the parent directory to the path so we can use our modules
+sys.path.append(str(Path(__file__).parent.parent))
+
 # Setup logging
-from utils.logging_utils import setup_logging
+from src.utils.logging_utils import setup_logging
 
 # Application imports
-from ui.main_window import MainWindow
-from models.project import Project
+from src.ui.main_window import MainWindow
+from src.models.project import Project
 
 
 def main():

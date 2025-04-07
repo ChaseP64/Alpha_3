@@ -12,6 +12,7 @@ import sys
 import tempfile
 import pytest
 from pathlib import Path
+from typing import Generator, Any
 
 # Add the project root to the Python path
 root_dir = Path(__file__).parent.parent
@@ -26,7 +27,7 @@ print(f"Python path: {sys.path}")
 
 
 @pytest.fixture
-def temp_dir():
+def temp_dir() -> Generator[str, None, None]:
     """
     Create a temporary directory for test files.
     

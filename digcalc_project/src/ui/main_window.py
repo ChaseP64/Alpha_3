@@ -11,24 +11,26 @@ import os
 from pathlib import Path
 from typing import Optional, Dict, List
 
+# PySide6 imports
+from PySide6.QtCore import Qt, QSize
+from PySide6.QtGui import QIcon, QAction
 from PySide6.QtWidgets import (
-    QMainWindow, QDockWidget, QAction, QMenu, QToolBar,
+    QMainWindow, QDockWidget, QMenu, QToolBar,
     QFileDialog, QMessageBox, QVBoxLayout, QWidget, QDialog,
     QComboBox, QLabel, QGridLayout, QPushButton, QLineEdit, QSpinBox,
     QDoubleSpinBox, QCheckBox, QFormLayout
 )
-from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QIcon
 
-from ui.project_panel import ProjectPanel
-from ui.visualization_panel import VisualizationPanel
-from models.project import Project
-from models.surface import Surface
-from core.importers.file_parser import FileParser
-from core.importers.csv_parser import CSVParser
-from core.importers.landxml_parser import LandXMLParser
-from core.importers.dxf_parser import DXFParser
-from core.importers.pdf_parser import PDFParser
+# Local imports
+from src.core.importers.csv_parser import CSVParser
+from src.core.importers.dxf_parser import DXFParser
+from src.core.importers.file_parser import FileParser
+from src.core.importers.landxml_parser import LandXMLParser
+from src.core.importers.pdf_parser import PDFParser
+from src.models.project import Project
+from src.models.surface import Surface
+from src.ui.project_panel import ProjectPanel
+from src.ui.visualization_panel import VisualizationPanel
 
 
 class MainWindow(QMainWindow):
@@ -55,6 +57,9 @@ class MainWindow(QMainWindow):
         self._create_menus()
         self._create_toolbars()
         self._create_statusbar()
+        
+        # Connect visualization panel signals
+        self.visualization_panel.surface_visualization_failed.connect(self._on_visualization_failed)
         
         # Create default project
         self._create_default_project()
@@ -305,6 +310,9 @@ class MainWindow(QMainWindow):
                 )
                 return
             
+            # Show progress in status bar
+            self.statusBar().showMessage(f"Parsing file: {filename}...", 2000)
+            
             # Parse file
             if parser.parse(filename):
                 # Show import options dialog
@@ -313,26 +321,38 @@ class MainWindow(QMainWindow):
                     # Get surface name from dialog
                     surface_name = dialog.get_surface_name()
                     
+                    # Show progress
+                    self.statusBar().showMessage(f"Creating surface: {surface_name}...", 2000)
+                    
                     # Create surface
                     surface = parser.create_surface(surface_name)
                     if surface:
                         # Add surface to project
                         self.current_project.add_surface(surface)
                         
-                        # Update UI
+                        # Update project panel
                         self.project_panel.set_project(self.current_project)
                         
-                        # Display surface
-                        self.visualization_panel.display_surface(surface)
+                        # Show progress
+                        self.statusBar().showMessage(f"Rendering surface: {surface_name}...", 2000)
                         
-                        self.statusBar().showMessage(f"Imported surface: {surface_name}", 3000)
+                        # Display surface in the visualization panel
+                        success = self.visualization_panel.display_surface(surface)
+                        if success:
+                            self.statusBar().showMessage(f"Imported and visualized surface: {surface_name}", 3000)
+                        else:
+                            # Surface was added to project, but visualization failed
+                            self.statusBar().showMessage(f"Imported surface, but visualization failed: {surface_name}", 3000)
+                            
                     else:
                         QMessageBox.critical(
                             self, "Error", f"Failed to create surface from file: {filename}"
                         )
+                else:
+                    self.statusBar().showMessage("Import cancelled", 2000)
             else:
                 QMessageBox.critical(
-                    self, "Error", f"Failed to parse file: {filename}"
+                    self, "Error", f"Failed to parse file: {filename}\n\nError: {parser.get_last_error()}"
                 )
                 
         except Exception as e:
@@ -360,6 +380,19 @@ class MainWindow(QMainWindow):
             return True
         else:
             return False
+
+    def _on_visualization_failed(self, surface_name: str, error_msg: str):
+        """
+        Handle visualization failure.
+        
+        Args:
+            surface_name: Name of the surface that failed to visualize
+            error_msg: Error message
+        """
+        # Don't show a modal dialog as this can disrupt workflow, 
+        # just update the status bar and log the error
+        self.statusBar().showMessage(f"Failed to visualize surface '{surface_name}': {error_msg}", 5000)
+        self.logger.error(f"Visualization failed for surface '{surface_name}': {error_msg}")
 
 
 class ImportOptionsDialog(QDialog):

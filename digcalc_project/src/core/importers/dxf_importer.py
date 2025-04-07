@@ -15,7 +15,7 @@ from typing import Dict, List, Optional, Tuple, Any, Set
 # import ezdxf
 # from ezdxf.math import Vec3
 
-from models.surface import Surface, Point3D, Triangle
+from src.models.surface import Surface, Point3D, Triangle
 
 
 class DXFImporter:

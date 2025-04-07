@@ -10,7 +10,7 @@ point data from CSV files.
 import os
 import csv
 import tempfile
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Generator
 import pytest
 from unittest.mock import patch, MagicMock
 
@@ -19,7 +19,7 @@ from models.surface import Point3D
 
 
 @pytest.fixture
-def sample_csv_path() -> str:
+def sample_csv_path() -> Generator[str, None, None]:
     """Create a sample CSV file for testing."""
     with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv') as f:
         writer = csv.writer(f)
@@ -39,7 +39,7 @@ def sample_csv_path() -> str:
 
 
 @pytest.fixture
-def custom_headers_csv_path() -> str:
+def custom_headers_csv_path() -> Generator[str, None, None]:
     """Create a CSV file with custom headers for testing."""
     with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv') as f:
         writer = csv.writer(f)
@@ -57,7 +57,7 @@ def custom_headers_csv_path() -> str:
 
 
 @pytest.fixture
-def no_header_csv_path() -> str:
+def no_header_csv_path() -> Generator[str, None, None]:
     """Create a CSV file without headers for testing."""
     with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv') as f:
         writer = csv.writer(f)
@@ -73,7 +73,7 @@ def no_header_csv_path() -> str:
 
 
 @pytest.fixture
-def invalid_csv_path() -> str:
+def invalid_csv_path() -> Generator[str, None, None]:
     """Create an invalid CSV file for testing."""
     with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv') as f:
         f.write("This is not a valid CSV file")
@@ -229,6 +229,9 @@ class TestCSVParser:
     def test_create_surface(self, mock_tin_generator, sample_csv_path: str):
         """Test creating a surface from parsed CSV data."""
         parser = CSVParser()
+        
+        # Override the TINGenerator class in the parser instance
+        parser._TINGenerator = mock_tin_generator
         
         # Parse the CSV file
         parser.parse(sample_csv_path)

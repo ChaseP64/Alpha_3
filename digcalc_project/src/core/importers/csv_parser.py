@@ -15,9 +15,8 @@ from typing import Dict, List, Optional, Any, Tuple
 
 import numpy as np
 
-from core.importers.file_parser import FileParser, FileParserError
-from models.surface import Surface, Point3D
-from core.geometry.tin_generator import TINGenerator
+from src.core.importers.file_parser import FileParser, FileParserError
+from src.models.surface import Surface, Point3D
 
 
 class CSVParser(FileParser):
@@ -35,6 +34,11 @@ class CSVParser(FileParser):
         self._points = []
         self._headers = []
         self._column_map = {}  # Maps 'x', 'y', 'z' to column indices
+        
+        # Save reference to TINGenerator class
+        # This allows mocking in tests
+        from src.core.geometry.tin_generator import TINGenerator
+        self._TINGenerator = TINGenerator
     
     @classmethod
     def get_supported_extensions(cls) -> List[str]:
@@ -160,15 +164,21 @@ class CSVParser(FileParser):
             return None
         
         try:
-            # Use TIN generator to create a surface from points
-            tin_generator = TINGenerator()
+            # Use the stored TINGenerator class
+            tin_generator = self._TINGenerator()
+            
+            # Generate surface with triangulation from points
             surface = tin_generator.generate_from_points(self._points, name)
             
-            self.logger.info(f"Created surface '{name}' from CSV data")
+            # Validate the generated surface
+            if not surface.triangles:
+                self.logger.warning(f"TIN generation produced no triangles for surface '{name}'")
+            
+            self.logger.info(f"Created surface '{name}' from CSV data with {len(surface.points)} points and {len(surface.triangles)} triangles")
             return surface
             
         except Exception as e:
-            self.log_error("Error creating surface from CSV data", e)
+            self.log_error(f"Error creating surface from CSV data: {e}", e)
             return None
     
     def _detect_columns(self) -> Dict[str, int]:
