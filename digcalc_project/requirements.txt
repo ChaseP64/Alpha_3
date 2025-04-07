@@ -1,0 +1,25 @@
+# DigCalc - Excavation Takeoff Tool
+# Requirements file
+
+# Core dependencies
+PySide6>=6.4.0  # Qt bindings for Python
+pydantic>=1.10.0  # Data validation and settings management
+numpy>=1.22.0  # Numerical processing
+scipy>=1.8.0  # Scientific computing
+pyqtgraph>=0.13.0  # Fast plotting for Qt applications
+
+# Importers
+ezdxf>=0.17.0  # DXF file parsing
+xmltodict>=0.13.0  # XML parsing utilities
+PyPDF2>=2.0.0  # PDF parsing
+fitz>=2022.2.0  # PyMuPDF for advanced PDF processing
+
+# Optional 3D Visualization 
+# PyOpenGL>=3.1.6  # OpenGL support (optional, needed by pyqtgraph 3D)
+
+# Exporters
+reportlab>=3.6.0  # PDF report generation
+
+# Testing
+pytest>=7.0.0  # Testing framework
+pytest-qt>=4.0.0  # Qt testing support 

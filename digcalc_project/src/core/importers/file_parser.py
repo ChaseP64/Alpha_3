@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+File parser interface for the DigCalc application.
+
+This module defines the abstract base class for all file parsers
+that import data into the DigCalc application.
+"""
+
+import logging
+from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import Dict, List, Optional, Any, Tuple, Union
+
+from src.models.surface import Surface, Point3D
+
+
+class FileParserError(Exception):
+    """Exception raised for errors during file parsing."""
+    pass
+
+
+class FileParser(ABC):
+    """
+    Abstract base class for file parsers.
+    
+    All file parsers should inherit from this class and implement
+    the required methods for parsing and validating data files.
+    """
+    
+    def __init__(self):
+        """Initialize the file parser."""
+        self.logger = logging.getLogger(__name__)
+        self._file_path = None
+        self._data = None
+    
+    @abstractmethod
+    def parse(self, file_path: str) -> bool:
+        """
+        Parse the given file and extract data.
+        
+        Args:
+            file_path: Path to the file to parse
+            
+        Returns:
+            bool: True if parsing succeeded, False otherwise
+        """
+        pass
+    
+    @abstractmethod
+    def validate(self) -> bool:
+        """
+        Validate the parsed data.
+        
+        Returns:
+            bool: True if data is valid, False otherwise
+        """
+        pass
+    
+    @abstractmethod
+    def get_points(self) -> List[Point3D]:
+        """
+        Get points from the parsed data.
+        
+        Returns:
+            List of Point3D objects
+        """
+        pass
+    
+    @abstractmethod
+    def get_contours(self) -> Dict[float, List[List[Point3D]]]:
+        """
+        Get contour lines from the parsed data.
+        
+        Returns:
+            Dictionary mapping elevations to lists of polylines
+        """
+        pass
+    
+    @abstractmethod
+    def create_surface(self, name: str) -> Optional[Surface]:
+        """
+        Create a surface from the parsed data.
+        
+        Args:
+            name: Name for the created surface
+            
+        Returns:
+            Surface object or None if creation failed
+        """
+        pass
+    
+    def get_bounds(self) -> Optional[Tuple[float, float, float, float]]:
+        """
+        Get the bounds of the parsed data.
+        
+        Returns:
+            Tuple (xmin, ymin, xmax, ymax) or None if not available
+        """
+        points = self.get_points()
+        if not points:
+            return None
+            
+        xmin = min(p.x for p in points)
+        ymin = min(p.y for p in points)
+        xmax = max(p.x for p in points)
+        ymax = max(p.y for p in points)
+        
+        return (xmin, ymin, xmax, ymax)
+    
+    def log_error(self, message: str, exception: Optional[Exception] = None) -> None:
+        """
+        Log an error message.
+        
+        Args:
+            message: Error message
+            exception: Optional exception
+        """
+        if exception:
+            self.logger.error(f"{message}: {str(exception)}")
+        else:
+            self.logger.error(message)
+    
+    @classmethod
+    def get_supported_extensions(cls) -> List[str]:
+        """
+        Get the list of file extensions supported by this parser.
+        
+        Returns:
+            List of file extensions (e.g., ['.csv', '.txt'])
+        """
+        return []
+    
+    @staticmethod
+    def get_parser_for_file(file_path: str) -> Optional['FileParser']:
+        """
+        Get the appropriate parser for the given file based on its extension.
+        
+        Args:
+            file_path: Path to the file
+            
+        Returns:
+            FileParser instance or None if no suitable parser is found
+        """
+        from src.core.importers.csv_parser import CSVParser
+        from src.core.importers.landxml_parser import LandXMLParser
+        from src.core.importers.dxf_parser import DXFParser
+        from src.core.importers.pdf_parser import PDFParser
+        
+        # Get file extension
+        file_extension = Path(file_path).suffix.lower()
+        
+        # Map file extensions to parser classes
+        parsers = [CSVParser, LandXMLParser, DXFParser, PDFParser]
+        
+        for parser_class in parsers:
+            if file_extension in parser_class.get_supported_extensions():
+                return parser_class()
+        
+        return None 
