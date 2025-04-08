@@ -9,7 +9,7 @@ This module defines the main application window and its components.
 import logging
 import os
 from pathlib import Path
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Tuple
 
 # PySide6 imports
 from PySide6.QtCore import Qt, QSize
@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
     QMainWindow, QDockWidget, QMenu, QToolBar,
     QFileDialog, QMessageBox, QVBoxLayout, QWidget, QDialog,
     QComboBox, QLabel, QGridLayout, QPushButton, QLineEdit, QSpinBox,
-    QDoubleSpinBox, QCheckBox, QFormLayout
+    QDoubleSpinBox, QCheckBox, QFormLayout, QHBoxLayout
 )
 
 # Local imports
@@ -31,6 +31,7 @@ from src.models.project import Project
 from src.models.surface import Surface
 from src.ui.project_panel import ProjectPanel
 from src.ui.visualization_panel import VisualizationPanel
+from src.core.calculations.volume_calculator import VolumeCalculator
 
 
 class MainWindow(QMainWindow):
@@ -46,6 +47,7 @@ class MainWindow(QMainWindow):
         
         self.logger = logging.getLogger(__name__)
         self.current_project: Optional[Project] = None
+        self.volume_calculator = VolumeCalculator()
         
         # Set up the main window properties
         self.setWindowTitle("DigCalc - Excavation Takeoff Tool")
@@ -59,7 +61,8 @@ class MainWindow(QMainWindow):
         self._create_statusbar()
         
         # Connect visualization panel signals
-        self.visualization_panel.surface_visualization_failed.connect(self._on_visualization_failed)
+        if hasattr(self, 'visualization_panel') and hasattr(self.visualization_panel, 'surface_visualization_failed'):
+             self.visualization_panel.surface_visualization_failed.connect(self._on_visualization_failed)
         
         # Create default project
         self._create_default_project()
@@ -115,6 +118,12 @@ class MainWindow(QMainWindow):
         
         self.import_csv_action = QAction("Import CSV", self)
         self.import_csv_action.triggered.connect(self.on_import_csv)
+        
+        # Analysis actions
+        self.calculate_volume_action = QAction("Calculate Volumes...", self)
+        self.calculate_volume_action.setStatusTip("Calculate cut/fill volumes between two surfaces")
+        self.calculate_volume_action.triggered.connect(self.on_calculate_volume)
+        self.calculate_volume_action.setEnabled(False)
     
     def _create_menus(self):
         """Create the application menus."""
@@ -139,6 +148,10 @@ class MainWindow(QMainWindow):
         # View menu
         self.view_menu = self.menu_bar.addMenu("View")
         # Add view toggles here
+        
+        # Analysis menu
+        self.analysis_menu = self.menu_bar.addMenu("Analysis")
+        self.analysis_menu.addAction(self.calculate_volume_action)
         
         # Help menu
         self.help_menu = self.menu_bar.addMenu("Help")
@@ -166,6 +179,9 @@ class MainWindow(QMainWindow):
         self.import_toolbar.addAction(self.import_pdf_action)
         self.import_toolbar.addAction(self.import_landxml_action)
         self.import_toolbar.addAction(self.import_csv_action)
+        
+        self.main_toolbar.addSeparator()
+        self.main_toolbar.addAction(self.calculate_volume_action)
     
     def _create_statusbar(self):
         """Create the status bar."""
@@ -175,6 +191,25 @@ class MainWindow(QMainWindow):
         """Create a default project on startup."""
         self.current_project = Project("Untitled Project")
         self.project_panel.set_project(self.current_project)
+        self._update_analysis_actions_state()
+    
+    def _update_project(self, project: Optional[Project]):
+        """Sets the current project and updates relevant UI elements."""
+        self.current_project = project
+        self.project_panel.set_project(self.current_project)
+        self._update_analysis_actions_state()
+        if self.current_project:
+             self.setWindowTitle(f"DigCalc - {self.current_project.name}")
+             self.statusBar().showMessage(f"Project '{self.current_project.name}' loaded.", 3000)
+        else:
+             self.setWindowTitle("DigCalc - Excavation Takeoff Tool")
+             self.statusBar().showMessage("No project loaded.", 3000)
+
+    def _update_analysis_actions_state(self):
+        """Enable/disable analysis actions based on project state."""
+        can_calculate = bool(self.current_project and len(self.current_project.surfaces) >= 2)
+        self.calculate_volume_action.setEnabled(can_calculate)
+        self.logger.debug(f"Calculate Volume action enabled: {can_calculate}")
     
     # Event handlers
     def on_new_project(self):
@@ -183,11 +218,12 @@ class MainWindow(QMainWindow):
         
         # Check if we need to save the current project
         if self.current_project and self._should_save_project():
-            self.on_save_project()
+            if not self.on_save_project(): 
+                return
         
         # Create new project
-        self.current_project = Project("Untitled Project")
-        self.project_panel.set_project(self.current_project)
+        new_proj = Project("Untitled Project")
+        self._update_project(new_proj)
         
         self.statusBar().showMessage("New project created", 3000)
     
@@ -195,47 +231,61 @@ class MainWindow(QMainWindow):
         """Handle open project action."""
         # Check if we need to save the current project
         if self.current_project and self._should_save_project():
-            self.on_save_project()
+            if not self.on_save_project():
+                return
         
         filename, _ = QFileDialog.getOpenFileName(
             self, "Open Project", "", "DigCalc Project Files (*.digcalc);;All Files (*)"
         )
         if filename:
             self.logger.info(f"Opening project: {filename}")
-            
-            # Load project
-            project = Project.load(filename)
-            if project:
-                self.current_project = project
-                self.project_panel.set_project(self.current_project)
-                self.statusBar().showMessage(f"Opened project: {filename}", 3000)
-            else:
-                QMessageBox.critical(
-                    self, "Error", f"Failed to open project: {filename}"
-                )
+            try:
+                # Load project
+                project = Project.load(filename)
+                if project:
+                    self._update_project(project)
+                else:
+                    raise RuntimeError("Project loading returned None.")
+            except Exception as e:
+                 self.logger.exception(f"Failed to open project: {filename}")
+                 QMessageBox.critical(
+                    self, "Error", f"Failed to open project file '{Path(filename).name}'.\nError: {e}"
+                 )
+                 self._update_project(None)
     
-    def on_save_project(self):
-        """Handle save project action."""
+    def on_save_project(self) -> bool:
+        """Handle save project action. Returns True if saved, False otherwise."""
         if not self.current_project:
-            return
+            return False
             
-        # If project doesn't have a file, prompt for filename
         filename = self.current_project.project_file
         if not filename:
             filename, _ = QFileDialog.getSaveFileName(
-                self, "Save Project", "", "DigCalc Project Files (*.digcalc);;All Files (*)"
+                self, "Save Project As", "", "DigCalc Project Files (*.digcalc);;All Files (*)"
             )
             if not filename:
-                return
+                 self.logger.warning("Save project cancelled by user.")
+                 return False
         
+        # Ensure filename has the correct extension
+        if not filename.lower().endswith(".digcalc"):
+             filename += ".digcalc"
+             
         # Save project
         self.logger.info(f"Saving project to: {filename}")
-        if self.current_project.save(filename):
-            self.statusBar().showMessage(f"Project saved to: {filename}", 3000)
-        else:
+        try:
+            if self.current_project.save(filename):
+                self.statusBar().showMessage(f"Project saved to: {filename}", 3000)
+                self.setWindowTitle(f"DigCalc - {self.current_project.name}")
+                return True
+            else:
+                 raise RuntimeError("Project save method returned False.")
+        except Exception as e:
+            self.logger.exception(f"Failed to save project to: {filename}")
             QMessageBox.critical(
-                self, "Error", f"Failed to save project to: {filename}"
+                self, "Error", f"Failed to save project to '{Path(filename).name}'.\nError: {e}"
             )
+            return False
     
     def on_import_cad(self):
         """Handle CAD import action."""
@@ -287,79 +337,81 @@ class MainWindow(QMainWindow):
     
     def _import_file(self, filename: str, parser_class=None):
         """
-        Import a file using the appropriate parser.
-        
-        Args:
-            filename: Path to the file to import
-            parser_class: Optional parser class to use
+        Internal helper to handle file import logic, including options dialog
+        and adding the surface to the project.
         """
+        if not self.current_project:
+            self.logger.error("Cannot import file: No active project.")
+            QMessageBox.warning(self, "No Project", "Please create or open a project before importing files.")
+            return
+
+        if not parser_class:
+             # Basic file type detection (can be expanded)
+             ext = Path(filename).suffix.lower()
+             if ext == '.dxf':
+                 parser_class = DXFParser
+             elif ext == '.pdf':
+                 parser_class = PDFParser
+             elif ext == '.xml':
+                 parser_class = LandXMLParser
+             elif ext == '.csv':
+                 parser_class = CSVParser
+             else:
+                 QMessageBox.warning(self, "Unsupported File", f"File type '{ext}' is not supported.")
+                 return
+
         try:
-            # Get file basename for default surface name
-            basename = os.path.splitext(os.path.basename(filename))[0]
-            surface_name = basename
-            
-            # Get parser
-            if parser_class:
-                parser = parser_class()
-            else:
-                parser = FileParser.get_parser_for_file(filename)
-                
-            if not parser:
-                QMessageBox.critical(
-                    self, "Error", f"Unsupported file format: {filename}"
-                )
-                return
-            
-            # Show progress in status bar
-            self.statusBar().showMessage(f"Parsing file: {filename}...", 2000)
-            
-            # Parse file
-            if parser.parse(filename):
-                # Show import options dialog
-                dialog = ImportOptionsDialog(self, parser, surface_name)
-                if dialog.exec() == QDialog.Accepted:
-                    # Get surface name from dialog
-                    surface_name = dialog.get_surface_name()
+            parser = parser_class()
+            # Use filename base as default surface name
+            default_surface_name = Path(filename).stem 
+
+            # Show options dialog
+            options_dialog = ImportOptionsDialog(self, parser, default_surface_name)
+            if options_dialog.exec():
+                surface_name = options_dialog.get_surface_name()
+                options = options_dialog.get_options()
+
+                self.logger.info(f"Parsing '{filename}' with options: {options}. Surface name: '{surface_name}'")
+                self.statusBar().showMessage(f"Importing '{Path(filename).name}'...")
+
+                surface = parser.parse(filename, options)
+
+                if surface:
+                    if not surface.has_data:
+                        self.logger.warning(f"Imported surface '{surface_name}' from '{filename}' contains no data points.")
+                        QMessageBox.warning(self, "Import Warning", f"The imported surface '{surface_name}' contains no data points.")
                     
-                    # Show progress
-                    self.statusBar().showMessage(f"Creating surface: {surface_name}...", 2000)
+                    # Ensure unique surface name within the project
+                    unique_name = self.current_project.get_unique_surface_name(surface_name)
+                    if unique_name != surface_name:
+                        self.logger.info(f"Surface name adjusted to '{unique_name}' for uniqueness.")
+                        QMessageBox.information(self, "Name Adjusted", f"The surface name was changed to '{unique_name}' to avoid duplicates.")
                     
-                    # Create surface
-                    surface = parser.create_surface(surface_name)
-                    if surface:
-                        # Add surface to project
-                        self.current_project.add_surface(surface)
-                        
-                        # Update project panel
-                        self.project_panel.set_project(self.current_project)
-                        
-                        # Show progress
-                        self.statusBar().showMessage(f"Rendering surface: {surface_name}...", 2000)
-                        
-                        # Display surface in the visualization panel
-                        success = self.visualization_panel.display_surface(surface)
-                        if success:
-                            self.statusBar().showMessage(f"Imported and visualized surface: {surface_name}", 3000)
-                        else:
-                            # Surface was added to project, but visualization failed
-                            self.statusBar().showMessage(f"Imported surface, but visualization failed: {surface_name}", 3000)
-                            
-                    else:
-                        QMessageBox.critical(
-                            self, "Error", f"Failed to create surface from file: {filename}"
-                        )
+                    surface.name = unique_name # Assign the final name
+                    
+                    # Add surface to project
+                    self.current_project.add_surface(surface)
+                    self.project_panel.update_surface_list()
+                    self._update_analysis_actions_state()
+                    
+                    self.statusBar().showMessage(f"Successfully imported '{surface.name}'", 3000)
+                    self.logger.info(f"Surface '{surface.name}' added to project '{self.current_project.name}'.")
+
+                    # Optionally visualize the newly imported surface
+                    self.visualization_panel.display_surface(surface)
+
                 else:
-                    self.statusBar().showMessage("Import cancelled", 2000)
+                    # Parser might return None if parsing fundamentally failed
+                    raise RuntimeError("Parser returned None, indicating import failure.")
+
             else:
-                QMessageBox.critical(
-                    self, "Error", f"Failed to parse file: {filename}\n\nError: {parser.get_last_error()}"
-                )
-                
+                self.logger.info("Import cancelled by user.")
+                self.statusBar().showMessage("Import cancelled.", 3000)
+
         except Exception as e:
-            self.logger.exception(f"Error importing file: {e}")
-            QMessageBox.critical(
-                self, "Error", f"Error importing file: {str(e)}"
-            )
+            self.logger.exception(f"Error importing file '{filename}': {e}")
+            QMessageBox.critical(self, "Import Error", f"Failed to import file:\n{e}")
+            self.statusBar().showMessage("Import failed.", 3000)
     
     def _should_save_project(self) -> bool:
         """
@@ -394,9 +446,167 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Failed to visualize surface '{surface_name}': {error_msg}", 5000)
         self.logger.error(f"Visualization failed for surface '{surface_name}': {error_msg}")
 
+    def on_calculate_volume(self):
+        """Handle the 'Calculate Volumes' action."""
+        if not self.current_project or len(self.current_project.surfaces) < 2:
+            QMessageBox.warning(self, "Not Enough Surfaces",
+                                "Volume calculation requires at least two surfaces in the project.")
+            return
+
+        surface_names = list(self.current_project.surfaces.keys())
+        
+        # Create and show the dialog
+        dialog = VolumeCalculationDialog(surface_names, parent=self)
+        if dialog.exec():
+            selected_names = dialog.get_selected_surfaces()
+            resolution = dialog.get_grid_resolution()
+
+            if not selected_names:
+                 self.logger.error("Volume calculation dialog returned success but no surfaces selected.")
+                 return
+
+            existing_name = selected_names['existing']
+            proposed_name = selected_names['proposed']
+
+            self.logger.info(f"Requesting volume calculation: Existing='{existing_name}', Proposed='{proposed_name}', Resolution={resolution}")
+            self.statusBar().showMessage(f"Calculating volumes between '{existing_name}' and '{proposed_name}'...")
+
+            try:
+                existing_surface = self.current_project.get_surface(existing_name)
+                proposed_surface = self.current_project.get_surface(proposed_name)
+
+                if not existing_surface or not proposed_surface:
+                     raise ValueError("Selected surface(s) not found in the current project.")
+
+                # Perform calculation
+                results = self.volume_calculator.calculate_volumes(
+                    existing=existing_surface,
+                    proposed=proposed_surface,
+                    grid_resolution=resolution
+                )
+
+                # Display results
+                cut = results.get('cut_volume', 0.0)
+                fill = results.get('fill_volume', 0.0)
+                net = results.get('net_volume', 0.0)
+
+                result_message = (
+                    f"Volume Calculation Results:\n\n"
+                    f"Existing Surface: {existing_name}\n"
+                    f"Proposed Surface: {proposed_name}\n"
+                    f"Grid Resolution: {resolution}\n\n"
+                    f"Cut Volume: {cut:.3f}\n"
+                    f"Fill Volume: {fill:.3f}\n"
+                    f"Net Volume: {net:.3f}"
+                )
+                QMessageBox.information(self, "Volume Calculation Complete", result_message)
+                self.statusBar().showMessage("Volume calculation complete.", 3000)
+                self.logger.info(f"Calculation successful: Cut={cut:.3f}, Fill={fill:.3f}, Net={net:.3f}")
+
+            except (ValueError, TypeError, RuntimeError) as e:
+                 # Catch specific errors from the calculator or data retrieval
+                 error_title = "Calculation Error"
+                 error_msg = f"Could not calculate volumes.\n\nError: {e}"
+                 self.logger.error(f"Volume calculation failed: {e}", exc_info=True)
+                 QMessageBox.critical(self, error_title, error_msg)
+                 self.statusBar().showMessage("Volume calculation failed.", 3000)
+            except Exception as e:
+                 # Catch any unexpected errors
+                 error_title = "Unexpected Error"
+                 error_msg = f"An unexpected error occurred during volume calculation.\n\nError: {e}"
+                 self.logger.exception("Unexpected error during volume calculation.")
+                 QMessageBox.critical(self, error_title, error_msg)
+                 self.statusBar().showMessage("Volume calculation failed (unexpected error).", 3000)
+
+
+class VolumeCalculationDialog(QDialog):
+    """Dialog for selecting surfaces and options for volume calculation."""
+    def __init__(self, surface_names: List[str], parent: Optional[QWidget] = None):
+        super().__init__(parent)
+        self.setWindowTitle("Calculate Volumes")
+        self.setMinimumWidth(350)
+        self.logger = logging.getLogger(__name__)
+        
+        self.surface_names = sorted(surface_names)
+
+        # --- Widgets ---
+        self.existing_label = QLabel("Existing Surface:")
+        self.existing_combo = QComboBox()
+        self.existing_combo.addItems(self.surface_names)
+
+        self.proposed_label = QLabel("Proposed Surface:")
+        self.proposed_combo = QComboBox()
+        self.proposed_combo.addItems(self.surface_names)
+        
+        # Pre-select different surfaces if possible
+        if len(self.surface_names) > 1:
+            self.proposed_combo.setCurrentIndex(1)
+
+        self.resolution_label = QLabel("Grid Resolution:")
+        self.resolution_spinbox = QDoubleSpinBox()
+        self.resolution_spinbox.setDecimals(3)
+        self.resolution_spinbox.setMinimum(0.001)
+        self.resolution_spinbox.setMaximum(1000.0)
+        self.resolution_spinbox.setValue(1.0)
+        self.resolution_spinbox.setSingleStep(0.1)
+
+        self.calculate_button = QPushButton("Calculate")
+        self.cancel_button = QPushButton("Cancel")
+
+        # --- Layout ---
+        layout = QVBoxLayout(self)
+        form_layout = QFormLayout()
+
+        form_layout.addRow(self.existing_label, self.existing_combo)
+        form_layout.addRow(self.proposed_label, self.proposed_combo)
+        form_layout.addRow(self.resolution_label, self.resolution_spinbox)
+        
+        layout.addLayout(form_layout)
+        
+        # Button Box
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+        button_layout.addWidget(self.cancel_button)
+        button_layout.addWidget(self.calculate_button)
+        layout.addLayout(button_layout)
+
+        # --- Connections ---
+        self.calculate_button.clicked.connect(self.accept)
+        self.cancel_button.clicked.connect(self.reject)
+        
+        # Validation on accept
+        self.accepted.connect(self._validate_selection)
+
+    def _validate_selection(self):
+        """Validate selections before closing the dialog."""
+        existing = self.existing_combo.currentText()
+        proposed = self.proposed_combo.currentText()
+        if existing == proposed:
+             QMessageBox.warning(self, "Invalid Selection", "Existing and Proposed surfaces cannot be the same.")
+             self.logger.warning("Validation failed: Same surface selected for existing and proposed.")
+
+    def get_selected_surfaces(self) -> Optional[Dict[str, str]]:
+        """Returns the selected surface names."""
+        existing = self.existing_combo.currentText()
+        proposed = self.proposed_combo.currentText()
+        
+        if not existing or not proposed:
+            self.logger.error("Could not retrieve selected surface names from combo boxes.")
+            return None
+            
+        if existing == proposed:
+            self.logger.warning("Attempting to calculate volume with identical surfaces selected.")
+            QMessageBox.warning(self, "Invalid Selection", "Existing and Proposed surfaces cannot be the same. Please select different surfaces.")
+            return None
+
+        return {"existing": existing, "proposed": proposed}
+
+    def get_grid_resolution(self) -> float:
+        """Returns the selected grid resolution."""
+        return self.resolution_spinbox.value()
 
 class ImportOptionsDialog(QDialog):
-    """Dialog for configuring import options."""
+    """Dialog for setting import options and surface name."""
     
     def __init__(self, parent, parser, default_name):
         """
