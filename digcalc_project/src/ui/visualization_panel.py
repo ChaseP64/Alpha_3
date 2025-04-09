@@ -18,6 +18,7 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel
 try:
     from pyqtgraph.opengl import GLViewWidget, GLMeshItem, GLGridItem, GLLinePlotItem, GLAxisItem
     import pyqtgraph.opengl as gl
+    import pyqtgraph
     HAS_3D = True
 except ImportError:
     HAS_3D = False
@@ -285,9 +286,9 @@ class VisualizationPanel(QWidget):
             
             distance = max(size_x, size_y, size_z) * 2
             
-            # Set camera position
+            # Set camera position using pyqtgraph.Vector
             self.view_3d.setCameraPosition(
-                pos=gl.Vector(center_x, center_y, center_z),
+                pos=pyqtgraph.Vector(center_x, center_y, center_z),
                 distance=distance,
                 elevation=30,
                 azimuth=45

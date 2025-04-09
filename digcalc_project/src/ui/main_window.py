@@ -37,6 +37,8 @@ from src.core.calculations.volume_calculator import VolumeCalculator
 class MainWindow(QMainWindow):
     """
     Main application window for DigCalc.
+    Handles menus, toolbars, docking widgets (Project Panel, Visualization),
+    and overall application workflow for project management and analysis.
     """
     
     def __init__(self):
@@ -70,7 +72,7 @@ class MainWindow(QMainWindow):
         self.logger.debug("MainWindow initialized")
     
     def _init_ui(self):
-        """Initialize the UI components."""
+        """Initialize the UI components, including docked panels."""
         # Create central widget
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -82,12 +84,12 @@ class MainWindow(QMainWindow):
         self.visualization_panel = VisualizationPanel(self)
         self.main_layout.addWidget(self.visualization_panel)
         
-        # Create project panel as a dock widget
+        # Create project panel as a dock widget, passing self (MainWindow)
         self.project_dock = QDockWidget("Project", self)
         self.project_dock.setFeatures(
             QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable
         )
-        self.project_panel = ProjectPanel(self)
+        self.project_panel = ProjectPanel(main_window=self, parent=self) # Pass self here
         self.project_dock.setWidget(self.project_panel)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.project_dock)
     
@@ -194,97 +196,148 @@ class MainWindow(QMainWindow):
         self._update_analysis_actions_state()
     
     def _update_project(self, project: Optional[Project]):
-        """Sets the current project and updates relevant UI elements."""
+        """
+        Sets the current project and updates relevant UI elements consistently.
+        This is the central method for changing the active project.
+        """
         self.current_project = project
-        self.project_panel.set_project(self.current_project)
-        self._update_analysis_actions_state()
+        self.project_panel.set_project(self.current_project) # Update project panel view
+        
+        # Clear visualization before displaying loaded surfaces
+        if hasattr(self, 'visualization_panel') and self.visualization_panel:
+             self.visualization_panel.clear_all()
+        
+        # Update window title and status bar & Redisplay loaded surfaces
         if self.current_project:
-             self.setWindowTitle(f"DigCalc - {self.current_project.name}")
-             self.statusBar().showMessage(f"Project '{self.current_project.name}' loaded.", 3000)
+             # Display loaded surfaces in visualization panel
+             if hasattr(self, 'visualization_panel') and self.visualization_panel:
+                 self.logger.info(f"Displaying {len(self.current_project.surfaces)} loaded surfaces...")
+                 for surface in self.current_project.surfaces.values():
+                     # TODO: Check surface visibility state saved in project if implemented
+                     self.visualization_panel.display_surface(surface)
+                     # Note: _adjust_view_to_surface is called internally by display_surface on first surface
+             
+             # Update Title
+             title = f"DigCalc - {self.current_project.name}"
+             if self.current_project.project_file:
+                 title += f" [{Path(self.current_project.project_file).name}]"
+             self.setWindowTitle(title)
+             self.statusBar().showMessage(f"Project '{self.current_project.name}' loaded.", 5000)
+             self.logger.info(f"Switched to project: {self.current_project.name}")
         else:
              self.setWindowTitle("DigCalc - Excavation Takeoff Tool")
-             self.statusBar().showMessage("No project loaded.", 3000)
+             self.statusBar().showMessage("No project loaded.", 5000)
+             self.logger.info("Project cleared.")
+
+        self._update_analysis_actions_state() # Update actions based on new project state
 
     def _update_analysis_actions_state(self):
-        """Enable/disable analysis actions based on project state."""
+        """
+        Enable/disable analysis actions based on the current project state.
+        Specifically, enables volume calculation if >= 2 surfaces exist.
+        """
         can_calculate = bool(self.current_project and len(self.current_project.surfaces) >= 2)
         self.calculate_volume_action.setEnabled(can_calculate)
-        self.logger.debug(f"Calculate Volume action enabled: {can_calculate}")
+        # Add other analysis actions here later if needed
+        self.logger.debug(f"Calculate Volume action enabled state: {can_calculate}")
     
     # Event handlers
     def on_new_project(self):
-        """Handle new project action."""
+        """Handle the 'New Project' action."""
         self.logger.info("Creating new project")
         
-        # Check if we need to save the current project
-        if self.current_project and self._should_save_project():
-            if not self.on_save_project(): 
-                return
+        # Check if current project needs saving before proceeding
+        if self.current_project and not self._confirm_close_project():
+            return # User cancelled the operation
         
-        # Create new project
-        new_proj = Project("Untitled Project")
-        self._update_project(new_proj)
+        # Create and set the new project
+        new_project = Project("Untitled Project")
+        self._update_project(new_project) # Use central update method
         
         self.statusBar().showMessage("New project created", 3000)
     
     def on_open_project(self):
-        """Handle open project action."""
-        # Check if we need to save the current project
-        if self.current_project and self._should_save_project():
-            if not self.on_save_project():
-                return
+        """Handle the 'Open Project' action."""
+        self.logger.debug("Open Project action triggered.")
+        # Check if current project needs saving
+        if self.current_project and not self._confirm_close_project():
+            return
         
         filename, _ = QFileDialog.getOpenFileName(
             self, "Open Project", "", "DigCalc Project Files (*.digcalc);;All Files (*)"
         )
         if filename:
-            self.logger.info(f"Opening project: {filename}")
+            self.logger.info(f"Attempting to open project file: {filename}")
+            self.statusBar().showMessage(f"Opening project '{Path(filename).name}'...")
             try:
-                # Load project
+                # Load project using the Project class method
                 project = Project.load(filename)
                 if project:
-                    self._update_project(project)
+                    self._update_project(project) # Update UI via central method
+                    # Status bar message is handled within _update_project
                 else:
-                    raise RuntimeError("Project loading returned None.")
+                    # Project.load might return None on non-exception failure
+                    raise RuntimeError("Project loading failed without specific exception.")
             except Exception as e:
-                 self.logger.exception(f"Failed to open project: {filename}")
-                 QMessageBox.critical(
-                    self, "Error", f"Failed to open project file '{Path(filename).name}'.\nError: {e}"
-                 )
-                 self._update_project(None)
+                 # Catch any error during loading (file not found, JSON error, internal error)
+                 error_msg = f"Failed to open project file '{Path(filename).name}'.\n\nError: {str(e)}"
+                 self.logger.exception(f"Error opening project: {filename}")
+                 QMessageBox.critical(self, "Open Project Error", error_msg)
+                 self._update_project(None) # Ensure UI resets if load fails
+                 self.statusBar().showMessage("Error opening project.", 5000)
+        else:
+             self.logger.debug("Open Project dialog cancelled by user.")
     
-    def on_save_project(self) -> bool:
-        """Handle save project action. Returns True if saved, False otherwise."""
+    def on_save_project(self, save_as=False) -> bool:
+        """Handle the 'Save Project' or 'Save Project As' action.
+        
+        Args:
+            save_as (bool): If True, always force the 'Save As' dialog.
+        
+        Returns:
+            bool: True if the project was saved successfully or not needed, False if save failed or was cancelled.
+        """
+        self.logger.debug(f"Save Project action triggered (save_as={save_as})")
         if not self.current_project:
-            return False
+            self.logger.warning("Save attempt failed: No active project.")
+            return True # No project, so technically save wasn't needed/failed
             
         filename = self.current_project.project_file
-        if not filename:
+        
+        # Determine if we need to show the 'Save As' dialog
+        if save_as or not filename:
+            prompt_title = "Save Project As" if save_as else "Save Project"
             filename, _ = QFileDialog.getSaveFileName(
-                self, "Save Project As", "", "DigCalc Project Files (*.digcalc);;All Files (*)"
+                self, prompt_title, "", "DigCalc Project Files (*.digcalc);;All Files (*)"
             )
             if not filename:
-                 self.logger.warning("Save project cancelled by user.")
-                 return False
+                 self.logger.info("Save project dialog cancelled by user.")
+                 self.statusBar().showMessage("Save cancelled.", 3000)
+                 return False # User cancelled
+            
+            # Ensure filename has the correct extension
+            if not filename.lower().endswith(".digcalc"):
+                 filename += ".digcalc"
         
-        # Ensure filename has the correct extension
-        if not filename.lower().endswith(".digcalc"):
-             filename += ".digcalc"
-             
-        # Save project
+        # Proceed with saving
         self.logger.info(f"Saving project to: {filename}")
+        self.statusBar().showMessage(f"Saving project to '{Path(filename).name}'...")
         try:
-            if self.current_project.save(filename):
-                self.statusBar().showMessage(f"Project saved to: {filename}", 3000)
-                self.setWindowTitle(f"DigCalc - {self.current_project.name}")
+            # Call the project's save method
+            success = self.current_project.save(filename)
+            if success:
+                self.statusBar().showMessage(f"Project saved successfully to '{Path(filename).name}'", 5000)
+                # Update window title if file path changed
+                self._update_project(self.current_project) 
                 return True
             else:
-                 raise RuntimeError("Project save method returned False.")
+                 # Should ideally not happen if save returns bool, but handle defensively
+                 raise RuntimeError("Project save method returned False without raising an exception.")
         except Exception as e:
-            self.logger.exception(f"Failed to save project to: {filename}")
-            QMessageBox.critical(
-                self, "Error", f"Failed to save project to '{Path(filename).name}'.\nError: {e}"
-            )
+            error_msg = f"Failed to save project to '{Path(filename).name}'.\n\nError: {str(e)}"
+            self.logger.exception(f"Error saving project: {filename}")
+            QMessageBox.critical(self, "Save Project Error", error_msg)
+            self.statusBar().showMessage("Error saving project.", 5000)
             return False
     
     def on_import_cad(self):
@@ -366,18 +419,20 @@ class MainWindow(QMainWindow):
             default_surface_name = Path(filename).stem 
 
             # Show options dialog
-            options_dialog = ImportOptionsDialog(self, parser, default_surface_name)
+            # Pass filename to dialog to allow peeking headers
+            options_dialog = ImportOptionsDialog(self, parser, default_surface_name, filename=filename)
             if options_dialog.exec():
                 surface_name = options_dialog.get_surface_name()
                 options = options_dialog.get_options()
 
                 self.logger.info(f"Parsing '{filename}' with options: {options}. Surface name: '{surface_name}'")
-                self.statusBar().showMessage(f"Importing '{Path(filename).name}'...")
+                self.statusBar().showMessage(f"Importing '{Path(filename).name}' as '{surface_name}'...")
 
                 surface = parser.parse(filename, options)
 
                 if surface:
-                    if not surface.has_data:
+                    # Check if the points dictionary is empty
+                    if not surface.points:
                         self.logger.warning(f"Imported surface '{surface_name}' from '{filename}' contains no data points.")
                         QMessageBox.warning(self, "Import Warning", f"The imported surface '{surface_name}' contains no data points.")
                     
@@ -391,10 +446,10 @@ class MainWindow(QMainWindow):
                     
                     # Add surface to project
                     self.current_project.add_surface(surface)
-                    self.project_panel.update_surface_list()
+                    self.project_panel._update_tree()
                     self._update_analysis_actions_state()
                     
-                    self.statusBar().showMessage(f"Successfully imported '{surface.name}'", 3000)
+                    self.statusBar().showMessage(f"Successfully imported '{surface.name}'", 5000)
                     self.logger.info(f"Surface '{surface.name}' added to project '{self.current_project.name}'.")
 
                     # Optionally visualize the newly imported surface
@@ -478,10 +533,10 @@ class MainWindow(QMainWindow):
                 if not existing_surface or not proposed_surface:
                      raise ValueError("Selected surface(s) not found in the current project.")
 
-                # Perform calculation
-                results = self.volume_calculator.calculate_volumes(
-                    existing=existing_surface,
-                    proposed=proposed_surface,
+                # Perform calculation using the correct method name
+                results = self.volume_calculator.calculate_surface_to_surface(
+                    surface1=existing_surface,
+                    surface2=proposed_surface,
                     grid_resolution=resolution
                 )
 
@@ -517,6 +572,46 @@ class MainWindow(QMainWindow):
                  self.logger.exception("Unexpected error during volume calculation.")
                  QMessageBox.critical(self, error_title, error_msg)
                  self.statusBar().showMessage("Volume calculation failed (unexpected error).", 3000)
+
+    def _confirm_close_project(self) -> bool:
+        """
+        Checks if the current project has unsaved changes and asks the user
+        if they want to save before proceeding (e.g., closing, opening new).
+        
+        Returns:
+            bool: True if the operation should proceed (saved, not saved, or no changes), 
+                  False if the user cancels the operation.
+        """
+        # TODO: Implement actual change tracking in the Project model
+        # For now, assume changes exist if a project is loaded.
+        if not self.current_project: #or not self.current_project.has_unsaved_changes: 
+            return True
+            
+        reply = QMessageBox.question(self, 'Unsaved Changes',
+                                     "The current project has unsaved changes. Do you want to save them before proceeding?",
+                                     QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
+                                     QMessageBox.Cancel) # Default to Cancel
+
+        if reply == QMessageBox.Cancel:
+            self.logger.debug("Project close/switch cancelled by user due to unsaved changes.")
+            return False
+        elif reply == QMessageBox.Save:
+            # Attempt to save, if save fails or is cancelled by user, don't proceed
+            return self.on_save_project()
+        elif reply == QMessageBox.Discard:
+            self.logger.info("Discarding unsaved changes in current project.")
+            return True
+            
+        return False # Should not be reached
+
+    def closeEvent(self, event):
+        """Handle the main window close event."""
+        self.logger.info("Close event triggered.")
+        if self._confirm_close_project():
+            self.logger.info("Closing application.")
+            event.accept() # Proceed with closing
+        else:
+            event.ignore() # User cancelled closing
 
 
 class VolumeCalculationDialog(QDialog):
@@ -608,19 +703,23 @@ class VolumeCalculationDialog(QDialog):
 class ImportOptionsDialog(QDialog):
     """Dialog for setting import options and surface name."""
     
-    def __init__(self, parent, parser, default_name):
+    def __init__(self, parent, parser, default_name, filename: Optional[str] = None):
         """
         Initialize the dialog.
         
         Args:
             parent: Parent widget
-            parser: File parser
+            parser: File parser instance
             default_name: Default surface name
+            filename (Optional[str]): The full path to the file being imported.
         """
         super().__init__(parent)
         
         self.parser = parser
         self.default_name = default_name
+        self.file_path = filename
+        self.logger = logging.getLogger(__name__)
+        self.headers = []
         
         self.setWindowTitle("Import Options")
         self.setMinimumWidth(400)
@@ -651,6 +750,11 @@ class ImportOptionsDialog(QDialog):
         
         layout.addLayout(button_layout)
     
+    def get_surface_name(self) -> str:
+        """Returns the entered surface name, falling back to the default if empty."""
+        entered_name = self.name_edit.text().strip()
+        return entered_name or self.default_name
+        
     def _add_parser_options(self, layout):
         """
         Add parser-specific options to the dialog.
@@ -658,48 +762,132 @@ class ImportOptionsDialog(QDialog):
         Args:
             layout: Form layout
         """
-        # Add options based on parser type
-        if isinstance(self.parser, CSVParser):
-            # CSV-specific options
-            self.has_header_checkbox = QCheckBox("Has Header Row")
-            self.has_header_checkbox.setChecked(True)
-            layout.addRow("", self.has_header_checkbox)
+        self.option_widgets = {} # Reset/initialize
+        parser_type = type(self.parser)
+
+        if parser_type is CSVParser:
+            # --- CSV --- #
+            self.option_widgets['has_header'] = QCheckBox("Has Header Row")
+            self.option_widgets['has_header'].setChecked(True)
+            self.option_widgets['has_header'].stateChanged.connect(self._update_csv_column_options)
+            layout.addRow("", self.option_widgets['has_header'])
+
+            self.option_widgets['x_column'] = QComboBox()
+            self.option_widgets['y_column'] = QComboBox()
+            self.option_widgets['z_column'] = QComboBox()
+            layout.addRow("X Column:", self.option_widgets['x_column'])
+            layout.addRow("Y Column:", self.option_widgets['y_column'])
+            layout.addRow("Z Column:", self.option_widgets['z_column'])
+            self._update_csv_column_options() # Initial population
+
+        elif parser_type is LandXMLParser:
+            # --- LandXML --- #
+            # Placeholder logic for getting available surfaces. 
+            # In a real implementation, the parser might need to peek the file.
+            available_surfaces = [] 
+            # Example: if hasattr(self.parser, 'peek_surfaces'): available_surfaces = self.parser.peek_surfaces(self.file_path)
+            if available_surfaces:
+                self.option_widgets['surface_name_combo'] = QComboBox()
+                self.option_widgets['surface_name_combo'].addItems(available_surfaces)
+                layout.addRow("Select Surface:", self.option_widgets['surface_name_combo'])
+            # REMOVED incorrect duplicated logic from here.
+            # This method only creates UI widgets.
+
+        elif parser_type is DXFParser:
+            # --- DXF --- #
+            # Placeholder logic for getting layers.
+            layers = []
+            # Example: if hasattr(self.parser, 'peek_layers'): layers = self.parser.peek_layers(self.file_path)
+            self.option_widgets['layer_combo'] = QComboBox()
+            self.option_widgets['layer_combo'].addItems(["All Layers"] + sorted(layers))
+            layout.addRow("Layer:", self.option_widgets['layer_combo'])
+
+        elif parser_type is PDFParser:
+            # --- PDF --- #
+            # Placeholder logic for getting page count.
+            page_count = 1 
+            # Example: if hasattr(self.parser, 'peek_page_count'): page_count = self.parser.peek_page_count(self.file_path)
+            self.option_widgets['page_spin'] = QSpinBox()
+            self.option_widgets['page_spin'].setMinimum(1)
+            self.option_widgets['page_spin'].setMaximum(max(1, page_count))
+            layout.addRow("Page:", self.option_widgets['page_spin'])
             
-        elif isinstance(self.parser, LandXMLParser):
-            # LandXML-specific options
-            if self.parser._surfaces:
-                self.surface_combo = QComboBox()
-                self.surface_combo.addItems(self.parser._surfaces)
-                layout.addRow("Surface:", self.surface_combo)
-                
-        elif isinstance(self.parser, DXFParser):
-            # DXF-specific options
-            if self.parser._layers:
-                self.layer_combo = QComboBox()
-                self.layer_combo.addItems(["All Layers"] + self.parser._layers)
-                layout.addRow("Layer:", self.layer_combo)
-                
-        elif isinstance(self.parser, PDFParser):
-            # PDF-specific options
-            self.page_spin = QSpinBox()
-            self.page_spin.setMinimum(1)
-            self.page_spin.setMaximum(max(1, self.parser._pages))
-            layout.addRow("Page:", self.page_spin)
-            
-            self.scale_spin = QDoubleSpinBox()
-            self.scale_spin.setMinimum(0.01)
-            self.scale_spin.setMaximum(1000.0)
-            self.scale_spin.setValue(1.0)
-            layout.addRow("Scale:", self.scale_spin)
-    
-    def get_surface_name(self) -> str:
-        """
-        Get the surface name from the dialog.
+            self.option_widgets['scale_spin'] = QDoubleSpinBox()
+            self.option_widgets['scale_spin'].setDecimals(4)
+            self.option_widgets['scale_spin'].setMinimum(0.0001)
+            self.option_widgets['scale_spin'].setMaximum(10000.0)
+            self.option_widgets['scale_spin'].setValue(1.0)
+            self.option_widgets['scale_spin'].setSingleStep(0.1)
+            layout.addRow("Scale:", self.option_widgets['scale_spin'])
         
-        Returns:
-            Surface name
-        """
-        name = self.name_edit.text().strip()
-        if not name:
-            name = self.default_name
-        return name 
+    def _update_csv_column_options(self):
+        """Update CSV column options based on the selected header checkbox."""
+        has_header = self.option_widgets['has_header'].isChecked()
+        self.headers = None if has_header else ['x', 'y', 'z']
+        self.option_widgets['x_column'].clear()
+        self.option_widgets['y_column'].clear()
+        self.option_widgets['z_column'].clear()
+        self.option_widgets['x_column'].addItems(self.headers or [])
+        self.option_widgets['y_column'].addItems(self.headers or [])
+        self.option_widgets['z_column'].addItems(self.headers or [])
+
+    def _try_preselect_columns(self):
+        """Try to preselect columns based on existing data."""
+        if self.headers:
+            self.option_widgets['x_column'].setCurrentIndex(self.headers.index('x') if 'x' in self.headers else 0)
+            self.option_widgets['y_column'].setCurrentIndex(self.headers.index('y') if 'y' in self.headers else 0)
+            self.option_widgets['z_column'].setCurrentIndex(self.headers.index('z') if 'z' in self.headers else 0)
+
+    def get_options(self) -> Dict:
+        """Gather import options based on the parser type and UI widgets."""
+        options = {}
+        parser_type = type(self.parser)
+
+        if parser_type is CSVParser:
+            # Retrieve 'has_header' state
+            has_header_checkbox = self.option_widgets.get('has_header')
+            if has_header_checkbox:
+                options['has_header'] = has_header_checkbox.isChecked()
+            
+            # Retrieve selected column indices for CSV
+            x_combo = self.option_widgets.get('x_column')
+            y_combo = self.option_widgets.get('y_column')
+            z_combo = self.option_widgets.get('z_column')
+            # Check if headers were loaded (self.headers is populated) and selections are valid
+            if self.headers and all([x_combo, y_combo, z_combo]) and all(c.currentIndex() >= 0 for c in [x_combo, y_combo, z_combo]):
+                x_idx = x_combo.currentIndex()
+                y_idx = y_combo.currentIndex()
+                z_idx = z_combo.currentIndex()
+                # Ensure indices are unique
+                if len(set([x_idx, y_idx, z_idx])) == 3:
+                    options['column_map'] = {'x': x_idx, 'y': y_idx, 'z': z_idx}
+                    self.logger.info(f"Using selected CSV column indices: {options['column_map']}")
+                else:
+                    self.logger.warning("Duplicate columns selected for CSV. Parser will attempt auto-detection.")
+            else:
+                 self.logger.warning("Headers not available or invalid column selection for CSV. Parser will attempt auto-detection.")
+
+        elif parser_type is LandXMLParser:
+            # Retrieve selected surface name for LandXML
+            combo = self.option_widgets.get('surface_name_combo')
+            if combo: # Check if the widget exists
+                 options['surface_name'] = combo.currentText()
+
+        elif parser_type is DXFParser:
+            # Retrieve selected layer name for DXF
+            combo = self.option_widgets.get('layer_combo')
+            if combo:
+                 selected_layer = combo.currentText()
+                 options['layer_name'] = None if selected_layer == "All Layers" else selected_layer
+
+        elif parser_type is PDFParser:
+            # Retrieve page number and scale for PDF
+            page_spin = self.option_widgets.get('page_spin')
+            if page_spin:
+                 options['page_number'] = page_spin.value()
+            scale_spin = self.option_widgets.get('scale_spin')
+            if scale_spin:
+                 options['scale'] = scale_spin.value()
+
+        self.logger.debug(f"Collected import options: {options}")
+        return options 

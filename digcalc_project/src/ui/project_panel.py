@@ -31,15 +31,17 @@ class ProjectPanel(QWidget):
     surface_selected = Signal(Surface)
     surface_visibility_changed = Signal(Surface, bool)
     
-    def __init__(self, parent=None):
+    def __init__(self, main_window: QWidget, parent=None):
         """
         Initialize the project panel.
         
         Args:
-            parent: Parent widget
+            main_window: Reference to the main application window.
+            parent: Parent widget.
         """
         super().__init__(parent)
         
+        self.main_window = main_window # Store reference
         self.logger = logging.getLogger(__name__)
         self.project: Optional[Project] = None
         self.selected_surface: Optional[Surface] = None
@@ -113,7 +115,7 @@ class ProjectPanel(QWidget):
         
         # Add surfaces
         if self.project.surfaces:
-            for i, surface in enumerate(self.project.surfaces):
+            for surface in self.project.surfaces.values():
                 self._add_surface_item(surfaces_item, surface)
         
         # Create volumes group
@@ -232,19 +234,30 @@ class ProjectPanel(QWidget):
         )
         
         if result == QMessageBox.Yes:
-            # Remove from project
-            self.project.remove_surface(self.selected_surface)
+            surface_to_remove = self.selected_surface # Store reference before potentially clearing
+            surface_name = surface_to_remove.name
             
-            # Update tree
-            self._update_tree()
+            # Remove from project model
+            removed = self.project.remove_surface(surface_name)
             
-            self.logger.info(f"Removed surface: {self.selected_surface.name}")
-            
-            # Emit signal to remove from visualization
-            self.surface_visibility_changed.emit(self.selected_surface, False)
-            
-            # Clear selection
-            self.selected_surface = None
+            if removed:
+                self.logger.info(f"Removed surface: {surface_name}")
+                
+                # Update tree view
+                self._update_tree()
+                
+                # Update main window state (e.g., disable analysis actions if needed)
+                if self.main_window and hasattr(self.main_window, '_update_analysis_actions_state'):
+                     self.main_window._update_analysis_actions_state()
+                
+                # Emit signal to remove from visualization
+                self.surface_visibility_changed.emit(surface_to_remove, False)
+                
+                # Clear selection
+                self.selected_surface = None
+            else:
+                 # Should not happen if selection is valid, but handle defensively
+                 self.logger.error(f"Failed to remove surface '{surface_name}' via project model.")
     
     def _on_properties_clicked(self):
         """Handle properties button click."""

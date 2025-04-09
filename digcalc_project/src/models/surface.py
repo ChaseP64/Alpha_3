@@ -9,6 +9,7 @@ including points, triangles, and surfaces.
 
 import uuid
 from typing import Dict, List, Optional, Tuple, Set, Union, Any
+import logging
 
 
 class Point3D:
@@ -87,6 +88,7 @@ class Triangle:
         p1, p2, p3: The three points defining the triangle
         id: Unique identifier for the triangle
     """
+    logger = logging.getLogger(__name__) # Add logger instance
     
     def __init__(self, p1: Point3D, p2: Point3D, p3: Point3D, triangle_id: Optional[str] = None):
         """
@@ -160,11 +162,25 @@ class Triangle:
         """
         if points_map:
             # Use points from the provided map if available
-            p1 = points_map.get(data['p1'], Point3D.from_dict(data['p1']))
-            p2 = points_map.get(data['p2'], Point3D.from_dict(data['p2']))
-            p3 = points_map.get(data['p3'], Point3D.from_dict(data['p3']))
+            # Extract the point ID from the dictionary to use as the key
+            p1_id = data['p1'].get('id') if isinstance(data.get('p1'), dict) else None
+            p2_id = data['p2'].get('id') if isinstance(data.get('p2'), dict) else None
+            p3_id = data['p3'].get('id') if isinstance(data.get('p3'), dict) else None
+
+            if p1_id and p2_id and p3_id: # Ensure we got IDs
+                 # Use the ID as the key, fallback to creating from dict if ID not in map (shouldn't happen)
+                 p1 = points_map.get(p1_id, Point3D.from_dict(data['p1']))
+                 p2 = points_map.get(p2_id, Point3D.from_dict(data['p2']))
+                 p3 = points_map.get(p3_id, Point3D.from_dict(data['p3']))
+            else:
+                 # Fallback if point data doesn't look like expected dicts with IDs
+                 cls.logger.warning("Could not extract point IDs from triangle data during deserialization. Creating new points.")
+                 p1 = Point3D.from_dict(data['p1'])
+                 p2 = Point3D.from_dict(data['p2'])
+                 p3 = Point3D.from_dict(data['p3'])
+
         else:
-            # Create new points
+            # Create new points if no map provided
             p1 = Point3D.from_dict(data['p1'])
             p2 = Point3D.from_dict(data['p2'])
             p3 = Point3D.from_dict(data['p3'])

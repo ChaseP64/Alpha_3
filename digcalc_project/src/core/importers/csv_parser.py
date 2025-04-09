@@ -50,63 +50,171 @@ class CSVParser(FileParser):
         """
         return ['.csv', '.txt']
     
-    def parse(self, file_path: str, column_map: Optional[Dict[str, int]] = None,
-             has_header: bool = True, delimiter: str = ',') -> bool:
+    def parse(self, file_path: str, options: Optional[Dict[str, Any]] = None) -> Optional[Surface]:
         """
-        Parse the given CSV file and extract point data.
+        Parse the given CSV file and return a Surface object.
         
         Args:
-            file_path: Path to the CSV file
-            column_map: Optional mapping of 'x', 'y', 'z' to column indices (0-based)
-            has_header: Whether the CSV file has a header row
-            delimiter: CSV delimiter character
-            
+            file_path (str): Path to the CSV file.
+            options (Optional[Dict[str, Any]]): A dictionary of parsing options.
+                Expected keys:
+                - 'has_header' (bool): Whether the CSV file has a header row (default: True).
+                - 'delimiter' (str): CSV delimiter character (default: ',').
+                - 'column_map' (Dict[str, int]): Optional mapping of 'x', 'y', 'z' 
+                                                   to 0-based column indices.
+                - 'surface_name' (str): Name to assign to the created surface.
+
         Returns:
-            bool: True if parsing succeeded, False otherwise
+            Optional[Surface]: A Surface object if parsing and triangulation succeed, else None.
         """
-        self.logger.info(f"Parsing CSV file: {file_path}")
+        self.logger.info(f"Parsing CSV file: {file_path} with options: {options}")
         self._file_path = file_path
         self._points = []
-        
+        self._headers = []
+        self._column_map = {} 
+
+        # Process options
+        if options is None:
+            options = {}
+        has_header = options.get('has_header', True)
+        delimiter = options.get('delimiter', ',')
+        user_column_map = options.get('column_map') # User-provided map
+        surface_name = options.get('surface_name', Path(file_path).stem) # Get name from options or filename
+
         try:
+            # --- Read File and Headers ---
             with open(file_path, 'r', newline='') as csvfile:
-                # Read the entire file as a list of rows
                 reader = csv.reader(csvfile, delimiter=delimiter)
                 rows = list(reader)
                 
                 if not rows:
                     self.log_error("CSV file is empty")
-                    return False
+                    return None # Return None on failure
                 
-                # Extract headers if present
                 if has_header:
-                    self._headers = rows[0]
+                    if not rows: # Should be caught above, but double-check
+                         self.log_error("CSV file has header enabled but is empty")
+                         return None
+                    self._headers = [h.strip() for h in rows[0]] # Store cleaned headers
                     data_rows = rows[1:]
+                    if not data_rows:
+                         self.logger.warning("CSV file contains only a header row.")
+                         # Allow creating an empty surface if needed, but log it
                 else:
-                    self._headers = [f"Column{i+1}" for i in range(len(rows[0]))]
+                    # Synthesize headers if none exist
+                    num_cols = len(rows[0]) if rows else 0
+                    self._headers = [f"Column{i+1}" for i in range(num_cols)]
                     data_rows = rows
-                
-                # Determine column mapping
-                if column_map:
-                    self._column_map = column_map
-                else:
-                    # Try to auto-detect columns
-                    self._column_map = self._detect_columns()
-                
-                # Check if we have a valid column mapping
-                if not self._is_valid_column_map():
-                    self.log_error("Invalid column mapping, could not identify X, Y, Z columns")
-                    return False
-                
-                # Parse points from data rows
-                self._parse_points(data_rows)
-                
-                self.logger.info(f"Parsed {len(self._points)} points from CSV")
-                return self.validate()
-                
+            
+            # --- Determine Column Mapping --- 
+            if isinstance(user_column_map, dict) and all(k in user_column_map for k in ['x', 'y', 'z']):
+                 # Use user-provided map if valid
+                 self.logger.info(f"Using user-provided column map: {user_column_map}")
+                 self._column_map = user_column_map
+            else:
+                 # Attempt auto-detection if no valid user map provided
+                 self.logger.info("Attempting to auto-detect columns from headers.")
+                 self._column_map = self._detect_columns()
+
+            # --- Validate Mapping and Parse Points ---
+            if not self._is_valid_column_map():
+                # Log the headers to help diagnose detection issues
+                self.log_error(f"Invalid column mapping. Could not identify X, Y, Z columns. Headers: {self._headers}. Detected map: {self._column_map}")
+                # Raise error instead of returning None to give more info upstream
+                raise FileParserError("Could not determine X, Y, Z column mapping.") 
+            
+            self.logger.info(f"Using column map: X={self._column_map['x']}, Y={self._column_map['y']}, Z={self._column_map['z']}")
+            self._parse_points(data_rows)
+            
+            self.logger.info(f"Parsed {len(self._points)} points from CSV data rows.")
+
+            # --- Validate Parsed Points --- 
+            if not self.validate(): # Validate checks for points and NaN/Inf
+                # Error already logged by validate()
+                # Raise error if validation fails (e.g., no points or bad data)
+                raise FileParserError(self.get_last_error() or "Parsed data validation failed.")
+
+            # --- Create Surface --- 
+            # Note: create_surface now happens outside the main parse try-except
+            # to separate parsing errors from triangulation errors.
+            
+        except FileNotFoundError:
+            self.log_error(f"File not found: {file_path}")
+            raise # Re-raise standard exceptions
+        except ValueError as ve:
+             # Catch float conversion errors during _parse_points
+             self.log_error(f"Data conversion error: {ve}", ve)
+             raise FileParserError(f"Could not convert data to numbers. Check CSV format and column selection. Error: {ve}") from ve
+        except IndexError as ie:
+            # Catch errors if column indices are out of bounds
+            self.log_error(f"Column index error during parsing: {ie}", ie)
+            raise FileParserError(f"Selected column index is out of bounds for some rows. Check column mapping and CSV structure. Error: {ie}") from ie
+        except FileParserError: # Re-raise our specific errors
+            raise
         except Exception as e:
-            self.log_error("Error parsing CSV file", e)
-            return False
+            # Catch other potential file reading/parsing errors
+            self.log_error(f"Error parsing CSV file: {e}", e)
+            raise FileParserError(f"An unexpected error occurred during CSV parsing: {e}") from e
+            
+        # --- Create Surface (after successful parsing and validation) ---
+        try:
+             # Create surface using the parsed points
+             surface = self.create_surface(surface_name)
+             return surface # Return the Surface object on success
+        except Exception as e:
+             # Catch errors during surface creation/triangulation
+             self.log_error(f"Error creating surface '{surface_name}' from parsed data: {e}", e)
+             # Raise error to indicate failure after successful parsing
+             raise FileParserError(f"Failed to create surface after parsing: {e}") from e
+
+    def get_headers(self) -> List[str]:
+        """Returns the detected or synthesized headers."""
+        # Ensure headers are populated, e.g., by calling parse first or a dedicated peek method.
+        # This might need adjustment if headers are needed before full parsing.
+        return self._headers
+
+    def peek_headers(self, file_path: str, has_header: bool = True, delimiter: str = ',') -> List[str]:
+        """
+        Reads only the first line to get headers or determine column count.
+
+        Args:
+            file_path (str): Path to the CSV file.
+            has_header (bool): Whether to treat the first line as headers.
+            delimiter (str): CSV delimiter character.
+
+        Returns:
+            List[str]: List of header strings or synthesized column names.
+        
+        Raises:
+            FileNotFoundError: If the file doesn't exist.
+            Exception: For other file reading errors.
+        """
+        self.logger.debug(f"Peeking headers from: {file_path}")
+        try:
+            with open(file_path, 'r', newline='') as csvfile:
+                reader = csv.reader(csvfile, delimiter=delimiter)
+                first_row = next(reader, None) # Read only the first row
+                
+                if first_row is None:
+                    self.logger.warning(f"Peek headers: File '{file_path}' is empty.")
+                    return []
+                
+                if has_header:
+                    headers = [h.strip() for h in first_row]
+                    self.logger.debug(f"Peek headers found: {headers}")
+                    return headers
+                else:
+                    # Synthesize headers based on the number of columns in the first row
+                    num_cols = len(first_row)
+                    headers = [f"Column {i+1}" for i in range(num_cols)]
+                    self.logger.debug(f"Peek headers synthesized: {headers}")
+                    return headers
+        except FileNotFoundError:
+            self.log_error(f"Peek headers: File not found: {file_path}")
+            raise
+        except Exception as e:
+            self.log_error(f"Peek headers: Error reading file {file_path}: {e}", e)
+            raise FileParserError(f"Could not read headers from file: {e}") from e
     
     def validate(self) -> bool:
         """
@@ -201,9 +309,15 @@ class CSVParser(FileParser):
             elif header_lower in ['z', 'elevation', 'elev', 'alt', 'altitude', 'height']:
                 column_map['z'] = i
         
-        # If we couldn't detect all columns, try positional
+        # If we couldn't detect all columns based on common patterns,
+        # try positional as a fallback if at least 3 columns exist.
         if len(column_map) < 3 and len(self._headers) >= 3:
-            # Assume first three columns are X, Y, Z in that order
+            self.logger.warning(
+                "Could not reliably detect X, Y, Z columns from headers. "
+                "Falling back to positional columns (0=X, 1=Y, 2=Z). "
+                "Verify results or provide manual mapping if available."
+            )
+            # Assume first three columns are X, Y, Z in that order if not already mapped
             if 'x' not in column_map:
                 column_map['x'] = 0
             if 'y' not in column_map:
@@ -211,6 +325,12 @@ class CSVParser(FileParser):
             if 'z' not in column_map:
                 column_map['z'] = 2
         
+        # Log the final detected map for debugging
+        if not column_map or len(column_map) < 3:
+             self.logger.warning(f"Column detection resulted in incomplete map: {column_map}")
+        else:
+             self.logger.debug(f"Final detected column map: {column_map}")
+             
         return column_map
     
     def _is_valid_column_map(self) -> bool:
