@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Optional, Dict, List, Tuple
 
 # PySide6 imports
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import Qt, QSize, Signal
 from PySide6.QtGui import QIcon, QAction, QKeySequence
 from PySide6.QtWidgets import (
     QMainWindow, QDockWidget, QMenu, QToolBar,
@@ -36,6 +36,7 @@ from src.core.calculations.volume_calculator import VolumeCalculator
 from src.ui.dialogs.import_options_dialog import ImportOptionsDialog
 from src.ui.dialogs.report_dialog import ReportDialog
 from src.ui.dialogs.volume_calculation_dialog import VolumeCalculationDialog
+from src.visualization.pdf_renderer import PDFRenderer, PDFRendererError
 
 
 class MainWindow(QMainWindow):
@@ -53,6 +54,7 @@ class MainWindow(QMainWindow):
         
         self.logger = logging.getLogger(__name__)
         self.current_project: Optional[Project] = None
+        self.pdf_dpi_setting = 150 # Default DPI for rendering
         
         # Set up the main window properties
         self.setWindowTitle("DigCalc - Excavation Takeoff Tool")
@@ -129,6 +131,26 @@ class MainWindow(QMainWindow):
         self.calculate_volume_action.setStatusTip("Calculate cut/fill volumes between two surfaces")
         self.calculate_volume_action.triggered.connect(self.on_calculate_volume)
         self.calculate_volume_action.setEnabled(False)
+        
+        # --- PDF Background Actions ---
+        self.load_pdf_background_action = QAction("Load PDF Background...", self)
+        self.load_pdf_background_action.setStatusTip("Load a PDF page as a background image for tracing")
+        self.load_pdf_background_action.triggered.connect(self.on_load_pdf_background)
+        
+        self.clear_pdf_background_action = QAction("Clear PDF Background", self)
+        self.clear_pdf_background_action.setStatusTip("Remove the current PDF background image")
+        self.clear_pdf_background_action.triggered.connect(self.on_clear_pdf_background)
+        self.clear_pdf_background_action.setEnabled(False) # Initially disabled
+
+        self.next_pdf_page_action = QAction("Next Page", self)
+        self.next_pdf_page_action.triggered.connect(self.on_next_pdf_page)
+        self.next_pdf_page_action.setEnabled(False)
+        
+        self.prev_pdf_page_action = QAction("Previous Page", self)
+        self.prev_pdf_page_action.triggered.connect(self.on_prev_pdf_page)
+        self.prev_pdf_page_action.setEnabled(False)
+        
+        # Maybe add actions for DPI, calibrate later
     
     def _create_menus(self):
         """Create the application menus."""
@@ -150,9 +172,16 @@ class MainWindow(QMainWindow):
         self.import_menu.addAction(self.import_landxml_action)
         self.import_menu.addAction(self.import_csv_action)
         
-        # View menu
+        # View menu - Add PDF actions here
         self.view_menu = self.menu_bar.addMenu("View")
-        # Add view toggles here
+        self.view_menu.addAction(self.load_pdf_background_action)
+        self.view_menu.addAction(self.clear_pdf_background_action)
+        self.view_menu.addSeparator()
+        self.view_menu.addAction(self.prev_pdf_page_action)
+        self.view_menu.addAction(self.next_pdf_page_action)
+        # Add view toggles here (e.g., toggle Project Panel)
+        self.view_menu.addSeparator()
+        self.view_menu.addAction(self.project_dock.toggleViewAction())
         
         # Analysis menu
         self.analysis_menu = self.menu_bar.addMenu("Analysis")
@@ -187,10 +216,31 @@ class MainWindow(QMainWindow):
         
         self.main_toolbar.addSeparator()
         self.main_toolbar.addAction(self.calculate_volume_action)
+        
+        # --- PDF Toolbar --- (Optional, could also be in status bar)
+        self.pdf_toolbar = QToolBar("PDF Toolbar")
+        self.pdf_toolbar.setIconSize(QSize(24, 24))
+        self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self.pdf_toolbar)
+        
+        self.pdf_toolbar.addAction(self.load_pdf_background_action)
+        self.pdf_toolbar.addAction(self.clear_pdf_background_action)
+        self.pdf_toolbar.addSeparator()
+        self.pdf_toolbar.addAction(self.prev_pdf_page_action)
+        # Add page number display/control
+        self.pdf_page_label = QLabel(" Page: ")
+        self.pdf_page_spinbox = QSpinBox()
+        self.pdf_page_spinbox.setRange(0, 0) # Disabled initially
+        self.pdf_page_spinbox.setEnabled(False)
+        self.pdf_page_spinbox.valueChanged.connect(self.on_set_pdf_page_from_spinbox)
+        self.pdf_toolbar.addWidget(self.pdf_page_label)
+        self.pdf_toolbar.addWidget(self.pdf_page_spinbox)
+        self.pdf_toolbar.addAction(self.next_pdf_page_action)
+        self.pdf_toolbar.setVisible(False) # Initially hidden
     
     def _create_statusbar(self):
         """Create the status bar."""
         self.statusBar().showMessage("Ready")
+        # Maybe add PDF page info to status bar later?
     
     def _create_default_project(self):
         """Create a default project on startup."""
@@ -201,14 +251,16 @@ class MainWindow(QMainWindow):
     def _update_project(self, project: Optional[Project]):
         """
         Sets the current project and updates relevant UI elements consistently.
-        This is the central method for changing the active project.
+        Also clears PDF background when project changes.
         """
+        # Clear PDF before changing project context
+        if hasattr(self, 'visualization_panel') and self.visualization_panel:
+             self.visualization_panel.clear_pdf_background()
+             self._update_pdf_controls() # Disable PDF controls
+             self.visualization_panel.clear_all()
+        
         self.current_project = project
         self.project_panel.set_project(self.current_project) # Update project panel view
-        
-        # Clear visualization before displaying loaded surfaces
-        if hasattr(self, 'visualization_panel') and self.visualization_panel:
-             self.visualization_panel.clear_all()
         
         # Update window title and status bar & Redisplay loaded surfaces
         if self.current_project:
@@ -233,6 +285,7 @@ class MainWindow(QMainWindow):
              self.logger.info("Project cleared.")
 
         self._update_analysis_actions_state() # Update actions based on new project state
+        self._update_pdf_controls() # Update PDF controls based on new project state
 
     def _update_analysis_actions_state(self):
         """
@@ -244,6 +297,34 @@ class MainWindow(QMainWindow):
         # Add other analysis actions here later if needed
         self.logger.debug(f"Calculate Volume action enabled state: {can_calculate}")
     
+    def _update_pdf_controls(self):
+        """Enable/disable PDF control actions based on renderer state."""
+        renderer = self.visualization_panel.pdf_renderer
+        has_pdf = renderer is not None and renderer.get_page_count() > 0
+        page_count = renderer.get_page_count() if has_pdf else 0
+        current_page = self.visualization_panel.current_pdf_page if has_pdf else 0
+        
+        self.clear_pdf_background_action.setEnabled(has_pdf)
+        self.next_pdf_page_action.setEnabled(has_pdf and current_page < page_count)
+        self.prev_pdf_page_action.setEnabled(has_pdf and current_page > 1)
+        
+        # Update spinbox
+        self.pdf_page_spinbox.setEnabled(has_pdf)
+        # Block signals while setting range/value to avoid triggering valueChanged
+        self.pdf_page_spinbox.blockSignals(True)
+        if has_pdf:
+            self.pdf_page_spinbox.setRange(1, page_count)
+            self.pdf_page_spinbox.setValue(current_page)
+            self.pdf_page_label.setText(f" Page ({page_count}): ")
+        else:
+            self.pdf_page_spinbox.setRange(0, 0)
+            self.pdf_page_spinbox.setValue(0)
+            self.pdf_page_label.setText(" Page: ")
+        self.pdf_page_spinbox.blockSignals(False)
+        
+        self.pdf_toolbar.setVisible(has_pdf)
+        self.logger.debug(f"PDF controls updated. Has PDF: {has_pdf}, Page: {current_page}/{page_count}")
+
     # Event handlers
     def on_new_project(self):
         """Handle the 'New Project' action."""
@@ -633,10 +714,77 @@ class MainWindow(QMainWindow):
         """Handle the main window close event."""
         self.logger.info("Close event triggered.")
         if self._confirm_close_project():
+            # Clean up PDF renderer before closing
+            if hasattr(self, 'visualization_panel') and self.visualization_panel:
+                 self.visualization_panel.clear_pdf_background() 
             self.logger.info("Closing application.")
             event.accept() # Proceed with closing
         else:
             event.ignore() # User cancelled closing
+
+    # --- PDF Action Handlers --- 
+    def on_load_pdf_background(self):
+        """Handles the 'Load PDF Background' action."""
+        filename, _ = QFileDialog.getOpenFileName(
+            self,
+            "Load PDF Background",
+            "", # Start directory
+            "PDF Files (*.pdf);;All Files (*)"
+        )
+        
+        if filename:
+            self.logger.info(f"User selected PDF for background: {filename}")
+            self.statusBar().showMessage(f"Loading PDF background '{Path(filename).name}'...", 0)
+            try:
+                # Use the DPI setting
+                self.visualization_panel.load_pdf_background(filename, dpi=self.pdf_dpi_setting)
+                self.statusBar().showMessage(f"Loaded PDF background '{Path(filename).name}' ({self.visualization_panel.pdf_renderer.get_page_count()} pages).", 5000)
+            except (FileNotFoundError, PDFRendererError, Exception) as e:
+                 self.logger.exception(f"Failed to load PDF background: {e}")
+                 QMessageBox.critical(self, "PDF Load Error", f"Failed to load PDF background:\n{e}")
+                 self.statusBar().showMessage("Failed to load PDF background.", 5000)
+            finally:
+                 self._update_pdf_controls() # Update UI state regardless of success/failure
+        else:
+            self.logger.info("Load PDF background cancelled by user.")
+            self.statusBar().showMessage("Load cancelled.", 3000)
+
+    def on_clear_pdf_background(self):
+        """Handles the 'Clear PDF Background' action."""
+        self.logger.info("Clearing PDF background.")
+        self.visualization_panel.clear_pdf_background()
+        self._update_pdf_controls()
+        self.statusBar().showMessage("PDF background cleared.", 3000)
+        
+    def on_next_pdf_page(self):
+        """Handles the 'Next Page' action."""
+        if self.visualization_panel.pdf_renderer:
+             current = self.visualization_panel.current_pdf_page
+             total = self.visualization_panel.pdf_renderer.get_page_count()
+             if current < total:
+                  self.visualization_panel.set_pdf_page(current + 1)
+                  self._update_pdf_controls()
+                  self.statusBar().showMessage(f"Showing PDF page {current + 1}/{total}", 3000)
+
+    def on_prev_pdf_page(self):
+        """Handles the 'Previous Page' action."""
+        if self.visualization_panel.pdf_renderer:
+             current = self.visualization_panel.current_pdf_page
+             total = self.visualization_panel.pdf_renderer.get_page_count()
+             if current > 1:
+                  self.visualization_panel.set_pdf_page(current - 1)
+                  self._update_pdf_controls()
+                  self.statusBar().showMessage(f"Showing PDF page {current - 1}/{total}", 3000)
+                  
+    def on_set_pdf_page_from_spinbox(self, page_number: int):
+        """Slot connected to the page number spinbox valueChanged signal."""
+        # This check prevents acting if the value is set programmatically while signals blocked
+        if self.pdf_page_spinbox.isEnabled() and page_number > 0:
+             self.logger.debug(f"Setting PDF page from spinbox to: {page_number}")
+             self.visualization_panel.set_pdf_page(page_number)
+             self._update_pdf_controls() # Ensure button states are correct
+             total = self.visualization_panel.pdf_renderer.get_page_count() if self.visualization_panel.pdf_renderer else 0
+             self.statusBar().showMessage(f"Showing PDF page {page_number}/{total}", 3000)
 
 
 class VolumeCalculationDialog(QDialog):

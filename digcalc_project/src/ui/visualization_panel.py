@@ -11,8 +11,9 @@ from typing import Optional, Dict, List, Any, Tuple
 import numpy as np
 
 # PySide6 imports
-from PySide6.QtCore import Qt, Slot, Signal
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel
+from PySide6.QtCore import Qt, Slot, Signal, QRectF
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem
+from PySide6.QtGui import QImage, QPixmap
 
 # Import visualization libraries
 try:
@@ -25,6 +26,7 @@ except ImportError:
     
 # Local imports
 from src.models.surface import Surface, Point3D, Triangle
+from src.visualization.pdf_renderer import PDFRenderer, PDFRendererError
 
 
 class VisualizationPanel(QWidget):
@@ -46,6 +48,9 @@ class VisualizationPanel(QWidget):
         
         self.logger = logging.getLogger(__name__)
         self.surfaces: Dict[str, Dict[str, Any]] = {}  # Dictionary to store surface visualization objects
+        self.pdf_renderer: Optional[PDFRenderer] = None
+        self.pdf_background_item: Optional[QGraphicsPixmapItem] = None
+        self.current_pdf_page: int = 1
         
         # Initialize UI components
         self._init_ui()
@@ -56,11 +61,21 @@ class VisualizationPanel(QWidget):
         self.logger.debug("VisualizationPanel initialized")
     
     def _init_ui(self):
-        """Initialize the UI components."""
-        # Main layout
+        """Initialize the UI components, including QGraphicsView for 2D/PDF."""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         
+        # --- Create 2D View for PDF Background --- 
+        self.scene_2d = QGraphicsScene(self)
+        self.view_2d = QGraphicsView(self.scene_2d)
+        self.view_2d.setDragMode(QGraphicsView.DragMode.ScrollHandDrag) # Allow panning
+        self.view_2d.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
+        self.view_2d.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
+        # Hide the 2D view initially, show it when a PDF is loaded
+        self.view_2d.setVisible(False) 
+        layout.addWidget(self.view_2d)
+        
+        # --- 3D View --- 
         if HAS_3D:
             # Create 3D view
             self.view_3d = GLViewWidget()
@@ -88,6 +103,8 @@ class VisualizationPanel(QWidget):
             layout.addWidget(self.placeholder)
             
             self.logger.warning("3D visualization libraries not available")
+        
+        self.logger.debug("VisualizationPanel UI initialized")
     
     def display_surface(self, surface: Surface) -> bool:
         """
@@ -99,6 +116,13 @@ class VisualizationPanel(QWidget):
         Returns:
             bool: True if display was successful, False otherwise
         """
+        # Hide PDF view if displaying surfaces for now?
+        if self.pdf_renderer:
+             self.logger.info("Hiding PDF background to display 3D surface.")
+             self.view_2d.setVisible(False)
+             if HAS_3D: self.view_3d.setVisible(True)
+             # Or should we overlay points/lines on the 2D view?
+             
         if not HAS_3D:
             error_msg = "3D visualization libraries not available"
             self.logger.warning(f"Cannot display surface: {error_msg}")
@@ -364,15 +388,14 @@ class VisualizationPanel(QWidget):
         self.logger.debug(f"Surface {surface.name} visibility set to {visible}")
     
     def clear_all(self):
-        """Clear all surfaces from the visualization."""
-        if not HAS_3D:
-            return
-            
-        # Remove all surfaces
-        for surface_name in list(self.surfaces.keys()):
-            self._remove_surface_visualization(surface_name)
-            
-        self.logger.debug("All surfaces cleared from visualization")
+        """Clears all visualizations, including PDF background."""
+        self.clear_pdf_background()
+        
+        if HAS_3D:
+            for surface_name in list(self.surfaces.keys()):
+                self._remove_surface_visualization(surface_name)
+        self.surfaces.clear()
+        self.logger.info("Cleared all visualizations.")
         
         # Reset the view
         if hasattr(self, 'view_3d'):
@@ -390,3 +413,103 @@ class VisualizationPanel(QWidget):
         # This method could be connected to the UI to show error messages
         # For now, we just log it
         self.logger.error(f"Visualization failed for surface '{surface_name}': {error_msg}") 
+
+    # --- PDF Handling Methods --- 
+    def load_pdf_background(self, pdf_path: str, dpi: int = 150):
+        """Loads a PDF and displays the first page as background."""
+        self.logger.info(f"Attempting to load PDF background: {pdf_path}")
+        # Clean up previous PDF if any
+        self.clear_pdf_background()
+
+        try:
+            self.pdf_renderer = PDFRenderer(pdf_path, dpi)
+            self.current_pdf_page = 1
+            self._display_current_pdf_page()
+            
+            # Switch visibility
+            self.view_2d.setVisible(True)
+            if HAS_3D:
+                 self.view_3d.setVisible(False) # Hide 3D view when PDF is shown
+                 
+        except (FileNotFoundError, PDFRendererError) as e:
+             self.logger.error(f"Failed to load PDF: {e}")
+             # Propagate error via signal or show message?
+             # For now, just log it.
+             # self.pdf_load_failed.emit(str(e)) # Example signal
+             self.pdf_renderer = None # Ensure renderer is None on failure
+             self.view_2d.setVisible(False) # Keep 2D view hidden
+             if HAS_3D:
+                  self.view_3d.setVisible(True) # Ensure 3D view is visible
+             # Re-raise or handle? For now, just log and return.
+             raise e # Re-raise to be caught by MainWindow
+
+    def _display_current_pdf_page(self):
+        """Displays the image for the self.current_pdf_page in the 2D view."""
+        if not self.pdf_renderer:
+            return
+
+        page_image = self.pdf_renderer.get_page_image(self.current_pdf_page)
+        if not page_image:
+            self.logger.error(f"Could not get image for PDF page {self.current_pdf_page}")
+            # Clear existing background if page fails to load? 
+            if self.pdf_background_item and self.pdf_background_item in self.scene_2d.items():
+                 self.scene_2d.removeItem(self.pdf_background_item)
+            self.pdf_background_item = None
+            return
+            
+        # Convert QImage to QPixmap for QGraphicsPixmapItem
+        pixmap = QPixmap.fromImage(page_image)
+
+        # Remove old item if it exists
+        if self.pdf_background_item and self.pdf_background_item in self.scene_2d.items():
+            self.scene_2d.removeItem(self.pdf_background_item)
+
+        # Create and add new pixmap item
+        self.pdf_background_item = QGraphicsPixmapItem(pixmap)
+        # Set Z-value to ensure it's behind other items (e.g., surfaces, points)
+        self.pdf_background_item.setZValue(-100) 
+        self.scene_2d.addItem(self.pdf_background_item)
+        
+        # Update scene rect and fit view (optional, might want manual zoom/pan)
+        self.scene_2d.setSceneRect(self.pdf_background_item.boundingRect())
+        self.view_2d.fitInView(self.pdf_background_item, Qt.AspectRatioMode.KeepAspectRatio)
+        self.logger.info(f"Displayed PDF page {self.current_pdf_page}")
+        
+    def set_pdf_page(self, page_number: int):
+        """Sets the currently displayed PDF page."""
+        if not self.pdf_renderer or not (1 <= page_number <= self.pdf_renderer.get_page_count()):
+            self.logger.warning(f"Cannot set PDF page to invalid number: {page_number}")
+            return
+            
+        if page_number != self.current_pdf_page:
+            self.current_pdf_page = page_number
+            self._display_current_pdf_page()
+            
+    def clear_pdf_background(self):
+        """Removes the PDF background image and closes the renderer."""
+        if self.pdf_background_item and self.pdf_background_item in self.scene_2d.items():
+             self.scene_2d.removeItem(self.pdf_background_item)
+        self.pdf_background_item = None
+        
+        if self.pdf_renderer:
+            self.pdf_renderer.close()
+            self.pdf_renderer = None
+            
+        self.current_pdf_page = 1
+        # Optionally switch back to 3D view?
+        self.view_2d.setVisible(False)
+        if HAS_3D:
+             self.view_3d.setVisible(True)
+        self.logger.info("Cleared PDF background.")
+
+    # Add wheel event for zooming 2D view
+    def wheelEvent(self, event):
+        if self.view_2d.isVisible():
+            factor = 1.15 if event.angleDelta().y() > 0 else 1 / 1.15
+            self.view_2d.scale(factor, factor)
+            event.accept()
+        elif HAS_3D and self.view_3d.isVisible():
+            # Pass event to 3D view if it's visible
+            super().wheelEvent(event) # Or self.view_3d.wheelEvent(event) if direct works
+        else:
+            super().wheelEvent(event) 
