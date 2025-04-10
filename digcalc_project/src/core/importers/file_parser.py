@@ -36,15 +36,16 @@ class FileParser(ABC):
         self._last_error = None  # Track the last error message
     
     @abstractmethod
-    def parse(self, file_path: str) -> bool:
+    def parse(self, file_path: str, options: Optional[Dict] = None) -> Optional[Surface]:
         """
-        Parse the given file and extract data.
+        Parse the given file and extract data, returning a Surface object.
         
         Args:
             file_path: Path to the file to parse
+            options: Optional dictionary of parser-specific options
             
         Returns:
-            bool: True if parsing succeeded, False otherwise
+            Surface object containing parsed data, or None if parsing failed.
         """
         pass
     
@@ -75,19 +76,6 @@ class FileParser(ABC):
         
         Returns:
             Dictionary mapping elevations to lists of polylines
-        """
-        pass
-    
-    @abstractmethod
-    def create_surface(self, name: str) -> Optional[Surface]:
-        """
-        Create a surface from the parsed data.
-        
-        Args:
-            name: Name for the created surface
-            
-        Returns:
-            Surface object or None if creation failed
         """
         pass
     

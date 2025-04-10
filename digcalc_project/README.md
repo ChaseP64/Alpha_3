@@ -11,10 +11,11 @@ DigCalc is a desktop application for calculating earthwork volumes from digital 
   - PDF drawings (with optical recognition)
 - **Surface Creation and Editing**: Create, modify, and analyze terrain surfaces
 - **TIN Generation**: Generate Triangulated Irregular Networks from point data
-- **Volume Calculation**: Calculate cut and fill volumes between surfaces
-- **Grid Generation**: Generate regular grids for volume calculations
-- **3D Visualization**: Visualize surfaces and volume calculations in 3D
-- **Report Generation**: Generate PDF reports with volume calculations
+- **Volume Calculation**: Calculate cut and fill volumes between surfaces using a grid-based method.
+- **Basic Reporting**: View a summary report of volume calculations (surfaces used, grid size, cut/fill/net volumes).
+- **Grid Generation**: Generate regular grids for volume calculations (internal to volume calc)
+- **3D Visualization**: Visualize surfaces and volume calculations in 3D using VTK.
+- **Report Generation**: Generate PDF reports with volume calculations (Future Feature)
 
 ## Installation
 
@@ -81,13 +82,22 @@ DigCalc supports importing data from several file formats:
    - Set the scale and other conversion parameters
    - Click "Import"
 
-### Creating Volume Calculations
+### Calculating Volumes and Viewing Reports
 
-1. Import or create at least two surfaces (e.g., existing ground and design surface)
-2. Select both surfaces in the project panel
-3. Click "Calculate Volume"
-4. Configure calculation settings
-5. View results in the visualization panel and generate reports
+1. Ensure you have at least two surfaces loaded in your project (e.g., an 'Existing Ground' surface and a 'Proposed Design' surface).
+2. Go to the `Analysis` menu and select `Calculate Volumes...` (or use the corresponding toolbar button).
+3. In the dialog that appears:
+    - Select the appropriate surface for `Existing Surface`.
+    - Select the appropriate surface for `Proposed Surface`.
+    - Enter the desired `Grid Resolution` (the size of the grid squares used for calculation).
+    - Click `OK`.
+4. The calculation will run. If successful, a **Volume Calculation Report** dialog will automatically appear, showing:
+    - Calculation timestamp.
+    - Names of the surfaces used.
+    - Grid resolution.
+    - Calculated Cut, Fill, and Net volumes.
+5. Click `OK` to close the report dialog.
+6. Status bar messages will indicate the progress and outcome of the calculation.
 
 ## Development
 

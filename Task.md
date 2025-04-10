@@ -7,39 +7,43 @@ This document tracks current tasks, backlog items, and sub-tasks for the DigCalc
 
 ## Active Tasks
 - [x] **Project Setup & Requirements Finalization**
-  - Define overall project scope and success criteria.
-  - Finalize high-level vision, architecture, constraints, and tech stack.
+  - [x] Define overall project scope and success criteria.
+  - [x] Finalize high-level vision, architecture, constraints, and tech stack.
 - [x] **UI Prototyping & Workflow Planning**
-  - Create detailed wireframes and mockups.
-  - Define user navigation and interactive elements.
+  - [x] Create detailed wireframes and mockups.
+  - [x] Define user navigation and interactive elements.
 - [x] **Data Import Module Development**
-  - Implement file selection UI.
-  - Develop parsers for CSV and LandXML; stub for DWG/DXF and PDF.
-  - Validate imported data for unit consistency.
+  - [x] Implement file selection UI.
+  - [x] Develop parsers for CSV and LandXML; stub for DWG/DXF and PDF.
+  - [x] Validate imported data for unit consistency. (Basic CSV header/column selection)
 - [x] **Surface Modeling & TIN Generation Module**
-  - Generate TIN using Delaunay triangulation.
-  - Create models for "Existing" and "Proposed" surfaces.
-  - Enable node editing and boundary clipping.
+  - [x] Generate TIN using Delaunay triangulation.
+  - [x] Create models for "Existing" and "Proposed" surfaces.
+  - [ ] Enable node editing and boundary clipping.
 - [x] **Volume Calculation Engine Development**
-  - Implement grid method with user-configurable grid sizes.
-  - Develop TIN differencing for volume calculations.
-  - Integrate adjustable parameters (swell/shrink, topsoil stripping, subgrade adjustments).
+  - [x] Implement grid method with user-configurable grid sizes.
+  - [ ] Develop TIN differencing for volume calculations.
+  - [ ] Integrate adjustable parameters (swell/shrink, topsoil stripping, subgrade adjustments).
 - [ ] **Visualization Module Development**
-  - Build 2D plan view with overlays (grids, contours, cut/fill maps).
-  - Integrate VTK for interactive 3D visualization.
-  - Add interactive features like node inspection and dynamic cross-section generation.
-- [ ] **Reporting Module Development**
-  - Design report templates with project metadata and visual snapshots.
-  - Implement export functionality for PDF, CSV, and Excel.
-- [ ] **Integration & Workflow Assembly**
-  - Integrate all modules into the main application. (Partially done: Project management, Import, Viz, Calc integrated)
-  - Develop the main UI shell with navigation, settings, and status indicators. (Partially done)
-- [ ] **Testing, Quality Assurance, and Debugging**
-  - Write and run unit and integration tests using pytest.
-  - Conduct performance and error handling tests.
-- [ ] **Documentation & Finalization**
-  - Write user and developer documentation.
-  - Prepare demo guides, finalize UI polish, and package the build.
+  - [ ] Build 2D plan view with overlays (grids, contours, cut/fill maps).
+  - [x] Integrate VTK for interactive 3D visualization.
+  - [ ] Add interactive features like node inspection and dynamic cross-section generation.
+- [x] **Reporting Module Development**
+  - [x] Basic volume report dialog implemented.
+  - [ ] Design report templates with project metadata and visual snapshots.
+  - [ ] Implement export functionality for PDF, CSV, and Excel.
+- [x] **Integration & Workflow Assembly**
+  - [x] Integrate all modules into the main application. (Project management, Import, Viz, Calc, basic Report integrated)
+  - [x] Develop the main UI shell with navigation, settings, and status indicators.
+- [x] **Testing, Quality Assurance, and Debugging**
+  - [x] Manual test procedures added (as code comments).
+  - [ ] Write and run unit and integration tests using pytest.
+  - [ ] Conduct performance and error handling tests.
+- [x] **Documentation & Finalization**
+  - [x] README updated for core features (import, calc, reporting).
+  - [x] UI polished for consistency (dialogs, layout).
+  - [ ] Write user and developer documentation.
+  - [ ] Prepare demo guides, finalize UI polish, and package the build.
 
 ---
 
@@ -49,14 +53,15 @@ This document tracks current tasks, backlog items, and sub-tasks for the DigCalc
 - [ ] Improve UI accessibility (keyboard shortcuts, clear icons).
 - [ ] Integrate continuous integration (CI) for automated testing.
 - [ ] Add advanced AI-assisted features for error correction.
-- [ ] Explore additional reporting customization options.
+- [ ] Explore additional reporting customization options (e.g., export formats, visual snapshots).
+- [ ] Implement TIN differencing volume calculation method.
 
 ---
 
 ## Milestones
 - **Milestone 1:** Project Setup, Requirements, and UI Prototyping Complete (Day 5)
 - **Milestone 2:** Core Modules (Data Import, Surface Modeling, Volume Calculation) Developed (Day 13)
-- **Milestone 3:** Full Integration and Basic Testing Completed (Day 20)
+- **Milestone 3:** Full Integration and Basic Testing Completed (Day 20) <- Approaching
 - **Milestone 4:** Final Testing, Documentation, and Packaging Complete (Day 24)
 
 ---
@@ -67,6 +72,10 @@ This document tracks current tasks, backlog items, and sub-tasks for the DigCalc
 - Leverage AI tools (GitHub Copilot, ChatGPT) to accelerate repetitive coding tasks.
 - Use clear error logging and exception handling for improved stability.
 - Regularly update and review this document to reflect new tasks and adjustments.
+- Basic report dialog added; needs enhancement for export and visuals.
+- UI polishing improved consistency, but continuous review needed.
+- Manual test steps added; formal automated tests still pending.
+- Refactored dialogs (VolumeCalc, ImportOptions, Report) into separate files for modularity.
 
 ---
 

@@ -39,45 +39,37 @@ class PDFParser(FileParser):
         """
         return ['.pdf']
     
-    def parse(self, file_path: str, page_number: int = 1, 
-             scale: float = 1.0, origin: Tuple[float, float] = (0, 0)) -> bool:
+    def parse(self, file_path: str, options: Optional[Dict] = None) -> Optional[Surface]:
         """
         Parse the given PDF file and extract data.
+        (Stub implementation - returns None)
         
         Args:
             file_path: Path to the PDF file
-            page_number: Page number to parse (1-based)
-            scale: Scale factor to apply to coordinates
-            origin: (x, y) coordinates of the origin
-            
+            options: Optional dictionary of parser-specific options (e.g., page, scale)
+        
         Returns:
-            bool: True if parsing succeeded, False otherwise
+            Surface object (currently None as not implemented)
         """
-        self.logger.info(f"Parsing PDF file: {file_path}")
+        self.logger.info(f"Parsing PDF file: {file_path} with options: {options}")
         self._file_path = file_path
+        # Reset internal state if needed
         self._points = []
         self._contours = {}
         
         try:
-            # In a real implementation, this would:
-            # 1. Extract vector data, raster images, or text from the PDF
-            # 2. Process extracted data to identify contours or point clouds
-            # 3. Convert to Point3D objects with appropriate coordinates
+            # Placeholder for actual parsing logic
+            self.logger.warning("PDF parsing not implemented, returning None.")
+            # In a real implementation, if successful, it would build and return a Surface
+            # surface = Surface(name=Path(file_path).stem)
+            # ... populate surface ...
+            # return surface
             
-            # For now, just log a message
-            self.logger.warning("PDF parsing not implemented")
-            
-            # Create a dummy point for validation
-            self._points = [Point3D(0, 0, 0)]
-            
-            # Get basic PDF info
-            self._pages = self._get_pdf_page_count(file_path)
-            
-            return True
+            return None # Return None as it's not implemented
             
         except Exception as e:
-            self.log_error("Error parsing PDF file", e)
-            return False
+            self.log_error("Error during stub PDF parsing", e)
+            return None # Return None on error
     
     def validate(self) -> bool:
         """
@@ -106,19 +98,6 @@ class PDFParser(FileParser):
             Dictionary mapping elevations to lists of polylines
         """
         return self._contours
-    
-    def create_surface(self, name: str) -> Optional[Surface]:
-        """
-        Create a surface from the parsed data.
-        
-        Args:
-            name: Name for the created surface
-            
-        Returns:
-            Surface object or None if creation failed
-        """
-        self.log_error("Creating surfaces from PDF data is not implemented")
-        return None
     
     def get_page_count(self) -> int:
         """

@@ -11,6 +11,7 @@ import logging
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
+import uuid
 
 from src.core.importers.file_parser import FileParser, FileParserError
 from src.models.surface import Surface, Point3D, Triangle
@@ -51,53 +52,112 @@ class LandXMLParser(FileParser):
         """
         return ['.xml', '.landxml']
     
-    def parse(self, file_path: str) -> bool:
+    def parse(self, file_path: str, options: Optional[Dict] = None) -> Optional[Surface]:
         """
         Parse the given LandXML file and extract surface data.
         
         Args:
             file_path: Path to the LandXML file
+            options: Optional dictionary of parser-specific options (e.g., surface_name_to_load)
             
         Returns:
-            bool: True if parsing succeeded, False otherwise
+            Surface object or None if parsing failed.
         """
-        self.logger.info(f"Parsing LandXML file: {file_path}")
+        self.logger.info(f"Parsing LandXML file: '{file_path}' with options: {options}")
         self._file_path = file_path
-        self._points = []
+        self._points = {} # Use dict for point lookup by ID
         self._triangles = []
-        self._contours = {}
-        self._surfaces = []
-        
+        self._surfaces = [] # List of available surface names
+        self.selected_surface_name = options.get('surface_name') if options else None # Specific surface to load
+
         try:
             # Parse XML
             tree = ET.parse(file_path)
             self._root = tree.getroot()
             
             # Extract namespace if present
-            if '}' in self._root.tag:
-                ns = self._root.tag.split('}')[0].strip('{')
-                self._ns = {'ns': ns}
-                self.logger.debug(f"Found XML namespace: {ns}")
+            self._ns = self._get_namespace(self._root)
             
             # Check if this is a valid LandXML file
             if not self._is_landxml():
-                self.log_error("Not a valid LandXML file")
-                return False
+                raise FileParserError("Not a valid LandXML file.")
             
-            # Parse surface data
-            self._parse_surfaces()
+            # Find all available surface definitions
+            available_surfaces = self._find_available_surfaces()
+            self._surfaces = list(available_surfaces.keys())
             
-            # If no surfaces were found, try to parse point data
-            if not self._points and not self._triangles:
-                self._parse_point_groups()
+            if not available_surfaces:
+                self.logger.warning("No <Surface> elements found. Looking for <CgPoints>.")
+                # If no surfaces, try parsing point groups
+                cg_points = self._parse_point_groups()
+                if not cg_points:
+                    raise FileParserError("No surfaces or CgPoints found in LandXML file.")
+                # Create a surface from CgPoints
+                self.logger.info(f"Creating surface from {len(cg_points)} CgPoints.")
+                surface_name = Path(file_path).stem + "_Points"
+                surface = Surface(name=surface_name)
+                for point in cg_points.values():
+                    surface.add_point(point)
+                # Optionally generate TIN if enough points? Requires TINGenerator
+                # if len(surface.points) > 2:
+                #     try: surface.generate_tin() # Assuming method exists
+                #     except Exception as tin_e: self.logger.warning(f"Failed to auto-generate TIN for CgPoints: {tin_e}")
+                return surface
             
-            self.logger.info(f"Parsed {len(self._points)} points and {len(self._triangles)} triangles from LandXML")
-            return self.validate()
+            # Determine which surface to load
+            target_surface_name = None
+            if self.selected_surface_name and self.selected_surface_name in available_surfaces:
+                target_surface_name = self.selected_surface_name
+            elif available_surfaces:
+                target_surface_name = next(iter(available_surfaces)) # Default to first found
+                self.logger.info(f"No specific surface selected, loading the first one found: '{target_surface_name}'")
+            else:
+                 raise FileParserError("No surfaces available to load.")
+                 
+            target_surface_elem = available_surfaces[target_surface_name]
             
+            # Parse the selected surface definition
+            surface_definition = self._parse_surface_definition(target_surface_elem)
+            if not surface_definition or not surface_definition.get('points'):
+                 raise FileParserError(f"Failed to parse definition for surface '{target_surface_name}'.")
+                 
+            # Create the Surface object
+            surface = Surface(name=target_surface_name)
+            point_map = surface_definition.get('points', {})
+            triangle_data = surface_definition.get('faces', [])
+            
+            for point in point_map.values():
+                surface.add_point(point)
+            
+            # Add triangles, linking points
+            for face_indices in triangle_data:
+                 try:
+                      p1 = point_map.get(face_indices[0])
+                      p2 = point_map.get(face_indices[1])
+                      p3 = point_map.get(face_indices[2])
+                      if p1 and p2 and p3:
+                           # Only add triangle if all points were found
+                           surface.add_triangle(Triangle(p1, p2, p3))
+                      else:
+                           missing_ids = [idx for idx, p in zip(face_indices, [p1, p2, p3]) if p is None]
+                           self.logger.warning(f"Skipping face referencing missing point IDs: {missing_ids}")
+                 except IndexError:
+                     self.logger.warning(f"Skipping invalid face data: {face_indices}")
+                     
+            self.logger.info(f"Successfully created surface '{surface.name}' with {len(surface.points)} points and {len(surface.triangles)} triangles.")
+            return surface
+
+        except ET.ParseError as pe:
+            raise FileParserError(f"Invalid XML structure: {pe}")
+        except FileNotFoundError:
+            raise FileParserError(f"LandXML file not found: '{file_path}'")
+        except FileParserError as fpe:
+            self.log_error(str(fpe))
+            raise # Re-raise our specific errors
         except Exception as e:
-            self.log_error("Error parsing LandXML file", e)
-            return False
-    
+            self.log_error(f"An unexpected error occurred parsing LandXML '{file_path}': {e}", e)
+            raise FileParserError(f"Unexpected LandXML parsing error: {e}")
+            
     def validate(self) -> bool:
         """
         Validate the parsed data.
@@ -129,58 +189,6 @@ class LandXMLParser(FileParser):
         """
         return self._contours
     
-    def create_surface(self, name: str) -> Optional[Surface]:
-        """
-        Create a surface from the parsed data.
-        
-        Args:
-            name: Name for the created surface
-            
-        Returns:
-            Surface object or None if creation failed
-        """
-        if not self._points:
-            self.log_error("No points available to create surface")
-            return None
-        
-        try:
-            # If we already have triangles from the LandXML file, use them
-            if self._triangles:
-                self.logger.info(f"Creating surface '{name}' with {len(self._points)} points and {len(self._triangles)} triangles from LandXML")
-                
-                # Create a new surface with the correct type
-                surface = Surface(name, Surface.SURFACE_TYPE_TIN)
-                
-                # Add all points and triangles
-                for point in self._points:
-                    surface.add_point(point)
-                
-                for triangle in self._triangles:
-                    surface.add_triangle(triangle)
-                    
-                return surface
-            
-            # If no triangles were parsed, generate them using the TIN generator
-            else:
-                self.logger.info(f"No triangles found in LandXML data. Generating TIN from {len(self._points)} points")
-                
-                # Use the stored TINGenerator class
-                tin_generator = self._TINGenerator()
-                
-                # Generate surface with triangulation from points
-                surface = tin_generator.generate_from_points(self._points, name)
-                
-                # Validate the generated surface
-                if not surface.triangles:
-                    self.logger.warning(f"TIN generation produced no triangles for surface '{name}'")
-                
-                self.logger.info(f"Created surface '{name}' from LandXML data with {len(surface.points)} points and {len(surface.triangles)} triangles")
-                return surface
-            
-        except Exception as e:
-            self.log_error(f"Error creating surface from LandXML data: {e}", e)
-            return None
-    
     def get_available_surfaces(self) -> List[str]:
         """
         Get the names of surfaces defined in the LandXML file.
@@ -206,133 +214,109 @@ class LandXMLParser(FileParser):
         
         return True
     
-    def _parse_surfaces(self) -> None:
-        """Parse surface elements from LandXML."""
-        # Find all Surface elements
-        xpath = './/ns:Surface' if self._ns else './/Surface'
-        surface_elements = self._root.findall(xpath, self._ns)
+    def _get_namespace(self, element: ET.Element) -> Dict:
+        ns = {}
+        if '}' in element.tag:
+            ns_uri = element.tag.split('}')[0].strip('{')
+            ns = {'ns': ns_uri}
+            self.logger.debug(f"Found XML namespace: {ns_uri}")
+        return ns
+
+    def _find_available_surfaces(self) -> Dict[str, ET.Element]:
+        """Finds all <Surface> elements and returns a dict mapping name to element."""
+        surfaces = {}
+        xpath = './/ns:Surfaces/ns:Surface' if self._ns else './/Surfaces/Surface'
+        try:
+            surface_elements = self._root.findall(xpath, self._ns)
+            for i, surface_elem in enumerate(surface_elements):
+                name = surface_elem.get('name', f"Surface_{i+1}")
+                surfaces[name] = surface_elem
+            self.logger.debug(f"Found available surfaces: {list(surfaces.keys())}")
+        except Exception as e:
+             self.logger.error(f"Error finding surface elements: {e}")
+        return surfaces
+
+    def _parse_surface_definition(self, surface_elem: ET.Element) -> Optional[Dict]:
+        """Parses the <Definition> of a <Surface> element for points and faces."""
+        xpath_def = 'ns:Definition' if self._ns else 'Definition'
+        definition = surface_elem.find(xpath_def, self._ns)
+        if definition is None:
+             self.logger.warning(f"Surface '{surface_elem.get('name')}' has no <Definition> element.")
+             return None
+             
+        points = self._parse_pnts(definition)
+        faces = self._parse_faces(definition)
         
-        # If we have multiple surfaces, only parse the first one for now
-        # Store all surface names for reference
-        for i, surface_elem in enumerate(surface_elements):
-            # Get surface name
-            name = surface_elem.get('name', f"Surface_{i+1}")
-            self._surfaces.append(name)
-            
-            # If this is the first surface, parse its points and faces
-            if i == 0:
-                self.logger.info(f"Parsing surface: {name}")
-                # Parse points
-                self._parse_surface_points(surface_elem)
-                
-                # Parse faces (triangles)
-                self._parse_surface_faces(surface_elem)
-    
-    def _parse_surface_points(self, surface_elem: ET.Element) -> None:
-        """
-        Parse points from a Surface element.
+        if not points:
+             self.logger.warning(f"Surface '{surface_elem.get('name')}' definition has no points.")
+             return None # A surface needs points
+
+        return {'points': points, 'faces': faces}
         
-        Args:
-            surface_elem: Surface XML element
-        """
-        # Find the Points element
-        xpath = './/ns:Pnts/ns:P' if self._ns else './/Pnts/P'
-        point_elements = surface_elem.findall(xpath, self._ns)
-        
-        # Map point IDs to Point3D objects
-        point_map = {}
-        
-        for i, point_elem in enumerate(point_elements):
+    def _parse_pnts(self, definition_elem: ET.Element) -> Dict[str, Point3D]:
+        """Parses <Pnts> within a <Definition> element."""
+        points = {}
+        xpath_pnts = 'ns:Pnts/ns:P' if self._ns else 'Pnts/P'
+        point_elements = definition_elem.findall(xpath_pnts, self._ns)
+        for point_elem in point_elements:
             try:
-                # Point coordinates are space-separated in the element text
+                point_id = point_elem.get('id')
+                if point_id is None:
+                    self.logger.warning(f"Skipping point without ID: {ET.tostring(point_elem, encoding='unicode')}")
+                    continue
+                
                 coords = point_elem.text.strip().split()
-                if len(coords) < 3:
-                    continue
-                
-                x = float(coords[0])
-                y = float(coords[1])
-                z = float(coords[2])
-                
-                # Get point ID
-                point_id = point_elem.get('id') or str(i + 1)
-                
-                # Create point
-                point = Point3D(x, y, z, point_id)
-                self._points.append(point)
-                point_map[point_id] = point
-                
-            except (ValueError, IndexError) as e:
-                self.logger.warning(f"Error parsing point: {e}")
-                continue
-        
-        # Store point map for triangle creation
-        self._point_map = point_map
-    
-    def _parse_surface_faces(self, surface_elem: ET.Element) -> None:
-        """
-        Parse faces (triangles) from a Surface element.
-        
-        Args:
-            surface_elem: Surface XML element
-        """
-        # Find the Faces element
-        xpath = './/ns:Faces/ns:F' if self._ns else './/Faces/F'
-        face_elements = surface_elem.findall(xpath, self._ns)
-        
-        for i, face_elem in enumerate(face_elements):
+                if len(coords) >= 3:
+                    # LandXML order is typically Y X Z (Northing Easting Elevation)
+                    y, x, z = map(float, coords[:3])
+                    points[point_id] = Point3D(x, y, z, point_id=point_id)
+                else:
+                    self.logger.warning(f"Skipping point '{point_id}' with invalid coordinate data: {coords}")
+            except (ValueError, TypeError) as e:
+                self.logger.warning(f"Error parsing point '{point_elem.get('id', 'N/A')}: {e}. Data: '{point_elem.text}'")
+        self.logger.debug(f"Parsed {len(points)} points from <Pnts>.")
+        return points
+
+    def _parse_faces(self, definition_elem: ET.Element) -> List[Tuple[str, str, str]]:
+        """Parses <Faces> within a <Definition> element."""
+        faces = []
+        xpath_faces = 'ns:Faces/ns:F' if self._ns else 'Faces/F'
+        face_elements = definition_elem.findall(xpath_faces, self._ns)
+        for face_elem in face_elements:
             try:
-                # Face vertices are space-separated point IDs in the element text
-                vertex_ids = face_elem.text.strip().split()
-                if len(vertex_ids) < 3:
-                    self.logger.warning(f"Face element has less than 3 vertex IDs: {face_elem.text}")
-                    continue
-                
-                # Get points by ID from the map created in _parse_surface_points
-                if not hasattr(self, '_point_map') or not self._point_map:
-                    self.logger.warning("Point map not available for triangle creation")
-                    continue
-                    
-                points = []
-                for vid in vertex_ids[:3]:
-                    if vid in self._point_map:
-                        points.append(self._point_map[vid])
-                    else:
-                        self.logger.warning(f"Point ID {vid} not found in point map")
-                        break
-                
-                # Only create triangle if we have all three points
-                if len(points) == 3:
-                    triangle = Triangle(points[0], points[1], points[2])
-                    self._triangles.append(triangle)
-                
-            except Exception as e:
-                self.logger.warning(f"Error parsing face element {i}: {e}")
-                continue
-    
-    def _parse_point_groups(self) -> None:
-        """Parse point groups from LandXML."""
-        # Find all CgPoints elements
-        xpath = './/ns:CgPoints/ns:CgPoint' if self._ns else './/CgPoints/CgPoint'
-        point_elements = self._root.findall(xpath, self._ns)
-        
-        for i, point_elem in enumerate(point_elements):
+                # Indices are 1-based IDs referring to points in <Pnts>
+                indices = face_elem.text.strip().split()
+                if len(indices) >= 3:
+                    # Assuming the IDs match the point IDs from <Pnts>
+                    # Store as string IDs
+                    p1_id, p2_id, p3_id = indices[0], indices[1], indices[2]
+                    faces.append((p1_id, p2_id, p3_id))
+                else:
+                    self.logger.warning(f"Skipping face with invalid index data: {indices}")
+            except (ValueError, TypeError) as e:
+                self.logger.warning(f"Error parsing face: {e}. Data: '{face_elem.text}'")
+        self.logger.debug(f"Parsed {len(faces)} faces from <Faces>.")
+        return faces
+
+    def _parse_point_groups(self) -> Dict[str, Point3D]:
+        """Parses <CgPoints> elements."""
+        points = {}
+        xpath_cg = './/ns:CgPoints/ns:CgPoint' if self._ns else './/CgPoints/CgPoint'
+        point_elements = self._root.findall(xpath_cg, self._ns)
+        for point_elem in point_elements:
             try:
-                # Point coordinates are space-separated in the element text
+                point_id = point_elem.get('name') or point_elem.get('oID') # Use name or oID as ID
+                if point_id is None:
+                     point_id = str(uuid.uuid4()) # Generate if missing
+                     
                 coords = point_elem.text.strip().split()
-                if len(coords) < 3:
-                    continue
-                
-                y = float(coords[0])  # Note: LandXML CgPoint uses North, East, Elev order
-                x = float(coords[1])
-                z = float(coords[2])
-                
-                # Get point ID
-                point_id = point_elem.get('id') or str(i + 1)
-                
-                # Create point
-                point = Point3D(x, y, z, point_id)
-                self._points.append(point)
-                
-            except (ValueError, IndexError) as e:
-                self.logger.warning(f"Error parsing point: {e}")
-                continue 
+                if len(coords) >= 3:
+                    # Order Y X Z (Northing Easting Elevation)
+                    y, x, z = map(float, coords[:3])
+                    points[point_id] = Point3D(x, y, z, point_id=point_id)
+                else:
+                    self.logger.warning(f"Skipping CgPoint '{point_id}' with invalid coordinate data: {coords}")
+            except (ValueError, TypeError) as e:
+                self.logger.warning(f"Error parsing CgPoint '{point_elem.get('name', 'N/A')}: {e}. Data: '{point_elem.text}'")
+        self.logger.debug(f"Parsed {len(points)} points from <CgPoints>.")
+        return points 

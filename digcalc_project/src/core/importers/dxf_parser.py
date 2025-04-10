@@ -43,41 +43,66 @@ class DXFParser(FileParser):
         """
         return ['.dxf']
     
-    def parse(self, file_path: str, layer_filter: Optional[str] = None) -> bool:
+    def parse(self, file_path: str, options: Optional[Dict] = None) -> Optional[Surface]:
         """
         Parse the given DXF file and extract data.
-        
+        (Stub implementation - returns None)
+
         Args:
             file_path: Path to the DXF file
-            layer_filter: Optional layer name to filter by
+            options: Optional dictionary of parser-specific options (e.g., layer_name)
             
         Returns:
-            bool: True if parsing succeeded, False otherwise
+            Surface object (currently None as not implemented)
         """
-        self.logger.info(f"Parsing DXF file: {file_path}")
+        self.logger.info(f"Parsing DXF file: {file_path} with options: {options}")
         self._file_path = file_path
+        options = options or {}
+        layer_filter = options.get('layer_name') # Get layer name from options
+        
+        # Reset internal state
         self._points = []
         self._triangles = []
         self._contours = {}
         
         try:
-            # Get available layers
-            self._layers = self._importer.get_available_layers(file_path)
+            # --- Placeholder for actual parsing logic --- 
+            # In a real implementation, this would use ezdxf or similar 
+            # to read entities (POINTS, 3DFACEs, LWPOLYLINEs) from the specified layer(s)
+            # and populate self._points, self._triangles, or self._contours.
             
-            # In a real implementation, this would parse the DXF file
-            # and extract points, triangles, and contours based on the layer filter
+            # Example using hypothetical ezdxf functions:
+            # doc = ezdxf.readfile(file_path)
+            # msp = doc.modelspace()
+            # query = f'*[layer==\"{layer_filter}\"]' if layer_filter else '*'
+            # for entity in msp.query(query):
+            #     if entity.dxftype() == 'POINT':
+            #         x, y, z = entity.dxf.location
+            #         self._points.append(Point3D(x, y, z))
+            #     elif entity.dxftype() == '3DFACE':
+            #         # ... get vertices and create Triangle ... 
+            #     elif entity.dxftype() == 'LWPOLYLINE':
+            #         # ... get vertices, check if closed, get elevation, add to contours ...
+            # ... etc. ...
             
-            # For now, just log a message
-            self.logger.warning("DXF parsing not fully implemented")
+            # For the stub, just log and return None
+            self.logger.warning("DXF parsing not implemented, returning None.")
             
-            # Create a dummy point for validation
-            self._points = [Point3D(0, 0, 0)]
+            # If parsing were successful, it would create and return a surface:
+            # surface_name = Path(file_path).stem
+            # if layer_filter: surface_name += f"_{layer_filter}"
+            # surface = Surface(name=surface_name)
+            # for p in self._points: surface.add_point(p)
+            # for t in self._triangles: surface.add_triangle(t)
+            # # ... handle contours if needed ... 
+            # return surface
             
-            return True
+            return None
             
         except Exception as e:
-            self.log_error("Error parsing DXF file", e)
-            return False
+            # Example ezdxf exception: ezdxf.DXFStructureError
+            self.log_error(f"Error during stub DXF parsing for layer '{layer_filter}'", e)
+            raise FileParserError(f"Failed to parse DXF: {e}")
     
     def validate(self) -> bool:
         """
@@ -107,36 +132,27 @@ class DXFParser(FileParser):
         """
         return self._contours
     
-    def create_surface(self, name: str) -> Optional[Surface]:
-        """
-        Create a surface from the parsed data.
-        
-        Args:
-            name: Name for the created surface
-            
-        Returns:
-            Surface object or None if creation failed
-        """
-        try:
-            # Use the existing DXFImporter to create a surface
-            surface = self._importer.import_surface(self._file_path, name)
-            
-            if surface:
-                self.logger.info(f"Created surface '{name}' from DXF data")
-                return surface
-            else:
-                self.log_error("Failed to create surface from DXF data")
-                return None
-            
-        except Exception as e:
-            self.log_error("Error creating surface from DXF data", e)
-            return None
-    
     def get_layers(self) -> List[str]:
         """
         Get the list of layers in the DXF file.
+        (Currently returns layers found during last parse attempt)
         
         Returns:
             List of layer names
         """
+        # Ideally, this would be a class method or helper that peeks 
+        # into the file without full parsing, like peek_headers in CSVParser
+        if not self._file_path:
+             self.logger.warning("Cannot get layers: No file path set. Call parse first?")
+             return []
+        try:
+             # Attempt to read layers quickly if not already cached
+             # Placeholder: Use a simplified importer or ezdxf directly here
+             # layers = quick_peek_dxf_layers(self._file_path)
+             # self._layers = layers
+             pass # For stub, rely on layers potentially found in parse
+        except Exception as e:
+             self.logger.error(f"Could not peek layers from {self._file_path}: {e}")
+             return []
+             
         return self._layers 

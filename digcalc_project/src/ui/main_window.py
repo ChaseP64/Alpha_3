@@ -13,12 +13,13 @@ from typing import Optional, Dict, List, Tuple
 
 # PySide6 imports
 from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QIcon, QAction
+from PySide6.QtGui import QIcon, QAction, QKeySequence
 from PySide6.QtWidgets import (
     QMainWindow, QDockWidget, QMenu, QToolBar,
     QFileDialog, QMessageBox, QVBoxLayout, QWidget, QDialog,
     QComboBox, QLabel, QGridLayout, QPushButton, QLineEdit, QSpinBox,
-    QDoubleSpinBox, QCheckBox, QFormLayout, QHBoxLayout
+    QDoubleSpinBox, QCheckBox, QFormLayout, QHBoxLayout, QDialogButtonBox,
+    QSplitter, QMenuBar, QStatusBar, QSizePolicy
 )
 
 # Local imports
@@ -32,6 +33,9 @@ from src.models.surface import Surface
 from src.ui.project_panel import ProjectPanel
 from src.ui.visualization_panel import VisualizationPanel
 from src.core.calculations.volume_calculator import VolumeCalculator
+from src.ui.dialogs.import_options_dialog import ImportOptionsDialog
+from src.ui.dialogs.report_dialog import ReportDialog
+from src.ui.dialogs.volume_calculation_dialog import VolumeCalculationDialog
 
 
 class MainWindow(QMainWindow):
@@ -49,7 +53,6 @@ class MainWindow(QMainWindow):
         
         self.logger = logging.getLogger(__name__)
         self.current_project: Optional[Project] = None
-        self.volume_calculator = VolumeCalculator()
         
         # Set up the main window properties
         self.setWindowTitle("DigCalc - Excavation Takeoff Tool")
@@ -244,59 +247,60 @@ class MainWindow(QMainWindow):
     # Event handlers
     def on_new_project(self):
         """Handle the 'New Project' action."""
-        self.logger.info("Creating new project")
-        
-        # Check if current project needs saving before proceeding
-        if self.current_project and not self._confirm_close_project():
-            return # User cancelled the operation
-        
-        # Create and set the new project
-        new_project = Project("Untitled Project")
-        self._update_project(new_project) # Use central update method
-        
-        self.statusBar().showMessage("New project created", 3000)
+        # Manual Test Suggestion:
+        # 1. Click 'File -> New Project'.
+        # 2. If a project is open and unsaved, expect a 'Save Project?' prompt.
+        # 3. If confirmed (or no project open), expect a new, empty project state (e.g., 'Untitled Project' title).
+        if not self._confirm_close_project():
+            return
+        self._create_default_project()
     
     def on_open_project(self):
         """Handle the 'Open Project' action."""
-        self.logger.debug("Open Project action triggered.")
-        # Check if current project needs saving
-        if self.current_project and not self._confirm_close_project():
+        # Manual Test Suggestion:
+        # 1. Click 'File -> Open Project'.
+        # 2. If a project is open and unsaved, expect a 'Save Project?' prompt.
+        # 3. Select a valid '.digcalc' file.
+        # 4. Expect the project to load, window title to update, and surfaces to appear in panels.
+        # 5. Try opening an invalid/corrupt file; expect an error message.
+        if not self._confirm_close_project():
             return
-        
+
         filename, _ = QFileDialog.getOpenFileName(
             self, "Open Project", "", "DigCalc Project Files (*.digcalc);;All Files (*)"
         )
         if filename:
-            self.logger.info(f"Attempting to open project file: {filename}")
-            self.statusBar().showMessage(f"Opening project '{Path(filename).name}'...")
+            self.logger.info(f"Opening project from: {filename}")
+            self.statusBar().showMessage(f"Opening project '{Path(filename).name}'...", 0)
             try:
-                # Load project using the Project class method
                 project = Project.load(filename)
                 if project:
-                    self._update_project(project) # Update UI via central method
-                    # Status bar message is handled within _update_project
+                    self._update_project(project)
+                    self.statusBar().showMessage(f"Project '{project.name}' opened successfully.", 5000)
                 else:
-                    # Project.load might return None on non-exception failure
-                    raise RuntimeError("Project loading failed without specific exception.")
+                    # This case might indicate an issue with the load method itself
+                    raise RuntimeError("Project.load returned None without raising an exception.")
             except Exception as e:
-                 # Catch any error during loading (file not found, JSON error, internal error)
-                 error_msg = f"Failed to open project file '{Path(filename).name}'.\n\nError: {str(e)}"
-                 self.logger.exception(f"Error opening project: {filename}")
-                 QMessageBox.critical(self, "Open Project Error", error_msg)
-                 self._update_project(None) # Ensure UI resets if load fails
-                 self.statusBar().showMessage("Error opening project.", 5000)
+                self.logger.exception(f"Error opening project file: {filename}")
+                QMessageBox.critical(self, "Open Project Error", f"Failed to open project file.\n\nError: {e}")
+                self.statusBar().showMessage("Error opening project.", 5000)
+                self._create_default_project() # Reset to a clean state
         else:
-             self.logger.debug("Open Project dialog cancelled by user.")
+            self.logger.info("Open project dialog cancelled by user.")
+            self.statusBar().showMessage("Open cancelled.", 3000)
     
     def on_save_project(self, save_as=False) -> bool:
-        """Handle the 'Save Project' or 'Save Project As' action.
-        
-        Args:
-            save_as (bool): If True, always force the 'Save As' dialog.
-        
-        Returns:
-            bool: True if the project was saved successfully or not needed, False if save failed or was cancelled.
-        """
+        """Handle the 'Save Project' and 'Save Project As' actions."""
+        # Manual Test Suggestion (Save):
+        # 1. Create or open a project, make a change (e.g., import a surface).
+        # 2. Click 'File -> Save Project'.
+        # 3. If it's a new project, expect 'Save As' dialog.
+        # 4. If it's an existing project, expect it to save without a dialog.
+        # Manual Test Suggestion (Save As):
+        # 1. Open an existing project.
+        # 2. Click 'File -> Save Project As...'.
+        # 3. Expect 'Save As' dialog.
+        # 4. Save with a new name. Expect window title to update.
         self.logger.debug(f"Save Project action triggered (save_as={save_as})")
         if not self.current_project:
             self.logger.warning("Save attempt failed: No active project.")
@@ -393,6 +397,14 @@ class MainWindow(QMainWindow):
         Internal helper to handle file import logic, including options dialog
         and adding the surface to the project.
         """
+        # Manual Test Suggestion (Import):
+        # 1. Ensure a project is open (or create new).
+        # 2. Click 'File -> Import -> [File Type]'.
+        # 3. Select a valid data file (e.g., sample.csv).
+        # 4. Configure options in the Import Options dialog (e.g., select columns for CSV).
+        # 5. Click 'OK' / 'Import'.
+        # 6. Expect the surface to appear in the Project Panel and Visualization Panel.
+        # 7. Try importing an invalid file or cancelling; expect appropriate feedback.
         if not self.current_project:
             self.logger.error("Cannot import file: No active project.")
             QMessageBox.warning(self, "No Project", "Please create or open a project before importing files.")
@@ -504,74 +516,87 @@ class MainWindow(QMainWindow):
     def on_calculate_volume(self):
         """Handle the 'Calculate Volumes' action."""
         if not self.current_project or len(self.current_project.surfaces) < 2:
-            QMessageBox.warning(self, "Not Enough Surfaces",
-                                "Volume calculation requires at least two surfaces in the project.")
+            QMessageBox.warning(self, "Cannot Calculate Volumes", 
+                                "Please ensure at least two surfaces exist in the project.")
+            self.logger.warning("Volume calculation attempted with insufficient surfaces.")
             return
 
         surface_names = list(self.current_project.surfaces.keys())
+        dialog = VolumeCalculationDialog(surface_names, self)
         
-        # Create and show the dialog
-        dialog = VolumeCalculationDialog(surface_names, parent=self)
+        # Manual Test Suggestion: 
+        # 1. Create/Open a project with at least two surfaces (e.g., 'existing', 'proposed').
+        # 2. Click 'Analysis -> Calculate Volumes...'.
+        # 3. In the dialog, select 'existing' and 'proposed'. Set a resolution (e.g., 5.0).
+        # 4. Click 'OK'. Expect results or error message.
+
         if dialog.exec():
-            selected_names = dialog.get_selected_surfaces()
+            selection = dialog.get_selected_surfaces()
             resolution = dialog.get_grid_resolution()
 
-            if not selected_names:
-                 self.logger.error("Volume calculation dialog returned success but no surfaces selected.")
-                 return
+            if selection and resolution > 0:
+                existing_name = selection['existing']
+                proposed_name = selection['proposed']
+                self.logger.info(f"Starting volume calculation: Existing='{existing_name}', Proposed='{proposed_name}', Resolution={resolution}")
+                self.statusBar().showMessage(f"Calculating volumes (Grid: {resolution})...", 0) # Persistent message
 
-            existing_name = selected_names['existing']
-            proposed_name = selected_names['proposed']
+                try:
+                    existing_surface = self.current_project.get_surface(existing_name)
+                    proposed_surface = self.current_project.get_surface(proposed_name)
 
-            self.logger.info(f"Requesting volume calculation: Existing='{existing_name}', Proposed='{proposed_name}', Resolution={resolution}")
-            self.statusBar().showMessage(f"Calculating volumes between '{existing_name}' and '{proposed_name}'...")
+                    if not existing_surface or not proposed_surface:
+                         raise ValueError("Selected surface(s) not found in project.")
+                         
+                    # Corrected check: verify if the points dictionary is empty
+                    if not existing_surface.points or not proposed_surface.points:
+                         raise ValueError("Selected surface(s) have no data points for calculation.")
 
-            try:
-                existing_surface = self.current_project.get_surface(existing_name)
-                proposed_surface = self.current_project.get_surface(proposed_name)
+                    # Initialize calculator without arguments
+                    calculator = VolumeCalculator()
+                    # Call the appropriate method and unpack results from the dictionary
+                    results = calculator.calculate_surface_to_surface(
+                        surface1=existing_surface, 
+                        surface2=proposed_surface, 
+                        grid_resolution=resolution
+                    )
+                    cut_volume = results['cut_volume']
+                    fill_volume = results['fill_volume']
+                    net_volume = results['net_volume']
 
-                if not existing_surface or not proposed_surface:
-                     raise ValueError("Selected surface(s) not found in the current project.")
+                    # Calculation successful
+                    self.statusBar().showMessage(f"Calculation complete: Cut={cut_volume:.2f}, Fill={fill_volume:.2f}, Net={net_volume:.2f}", 5000)
+                    self.logger.info(f"Volume calculation successful: Cut={cut_volume:.2f}, Fill={fill_volume:.2f}, Net={net_volume:.2f}")
+                    
+                    # --- Show Report Dialog ---
+                    report_dialog = ReportDialog(
+                        existing_surface_name=existing_name,
+                        proposed_surface_name=proposed_name,
+                        grid_resolution=resolution,
+                        cut_volume=cut_volume,
+                        fill_volume=fill_volume,
+                        net_volume=net_volume,
+                        parent=self
+                    )
+                    self.logger.debug("Displaying volume calculation report.")
+                    report_dialog.exec()
+                    # --------------------------
 
-                # Perform calculation using the correct method name
-                results = self.volume_calculator.calculate_surface_to_surface(
-                    surface1=existing_surface,
-                    surface2=proposed_surface,
-                    grid_resolution=resolution
-                )
-
-                # Display results
-                cut = results.get('cut_volume', 0.0)
-                fill = results.get('fill_volume', 0.0)
-                net = results.get('net_volume', 0.0)
-
-                result_message = (
-                    f"Volume Calculation Results:\n\n"
-                    f"Existing Surface: {existing_name}\n"
-                    f"Proposed Surface: {proposed_name}\n"
-                    f"Grid Resolution: {resolution}\n\n"
-                    f"Cut Volume: {cut:.3f}\n"
-                    f"Fill Volume: {fill:.3f}\n"
-                    f"Net Volume: {net:.3f}"
-                )
-                QMessageBox.information(self, "Volume Calculation Complete", result_message)
-                self.statusBar().showMessage("Volume calculation complete.", 3000)
-                self.logger.info(f"Calculation successful: Cut={cut:.3f}, Fill={fill:.3f}, Net={net:.3f}")
-
-            except (ValueError, TypeError, RuntimeError) as e:
-                 # Catch specific errors from the calculator or data retrieval
-                 error_title = "Calculation Error"
-                 error_msg = f"Could not calculate volumes.\n\nError: {e}"
-                 self.logger.error(f"Volume calculation failed: {e}", exc_info=True)
-                 QMessageBox.critical(self, error_title, error_msg)
-                 self.statusBar().showMessage("Volume calculation failed.", 3000)
-            except Exception as e:
-                 # Catch any unexpected errors
-                 error_title = "Unexpected Error"
-                 error_msg = f"An unexpected error occurred during volume calculation.\n\nError: {e}"
-                 self.logger.exception("Unexpected error during volume calculation.")
-                 QMessageBox.critical(self, error_title, error_msg)
-                 self.statusBar().showMessage("Volume calculation failed (unexpected error).", 3000)
+                except Exception as e:
+                    self.logger.exception(f"Error during volume calculation: {e}")
+                    QMessageBox.critical(self, "Calculation Error", 
+                                         f"Failed to calculate volumes:\n{e}")
+                    self.statusBar().showMessage("Volume calculation failed.", 5000)
+            else:
+                 if resolution <= 0:
+                    self.logger.warning("Volume calculation cancelled: Invalid grid resolution.")
+                    QMessageBox.warning(self, "Invalid Input", "Grid resolution must be greater than zero.")
+                 else:
+                    # Selection was likely invalid (same surface twice), handled in dialog validation
+                    self.logger.warning("Volume calculation cancelled: Invalid surface selection.")
+                 self.statusBar().showMessage("Calculation cancelled.", 3000)
+        else:
+            self.logger.info("Volume calculation dialog cancelled by user.")
+            self.statusBar().showMessage("Calculation cancelled.", 3000)
 
     def _confirm_close_project(self) -> bool:
         """
@@ -615,279 +640,243 @@ class MainWindow(QMainWindow):
 
 
 class VolumeCalculationDialog(QDialog):
-    """Dialog for selecting surfaces and options for volume calculation."""
+    """Dialog for selecting surfaces and parameters for volume calculation."""
     def __init__(self, surface_names: List[str], parent: Optional[QWidget] = None):
         super().__init__(parent)
         self.setWindowTitle("Calculate Volumes")
-        self.setMinimumWidth(350)
-        self.logger = logging.getLogger(__name__)
-        
-        self.surface_names = sorted(surface_names)
+        self.surface_names = surface_names
+        self.setMinimumWidth(350) # Set a minimum width
 
-        # --- Widgets ---
-        self.existing_label = QLabel("Existing Surface:")
-        self.existing_combo = QComboBox()
-        self.existing_combo.addItems(self.surface_names)
-
-        self.proposed_label = QLabel("Proposed Surface:")
-        self.proposed_combo = QComboBox()
-        self.proposed_combo.addItems(self.surface_names)
-        
-        # Pre-select different surfaces if possible
-        if len(self.surface_names) > 1:
-            self.proposed_combo.setCurrentIndex(1)
-
-        self.resolution_label = QLabel("Grid Resolution:")
-        self.resolution_spinbox = QDoubleSpinBox()
-        self.resolution_spinbox.setDecimals(3)
-        self.resolution_spinbox.setMinimum(0.001)
-        self.resolution_spinbox.setMaximum(1000.0)
-        self.resolution_spinbox.setValue(1.0)
-        self.resolution_spinbox.setSingleStep(0.1)
-
-        self.calculate_button = QPushButton("Calculate")
-        self.cancel_button = QPushButton("Cancel")
-
-        # --- Layout ---
         layout = QVBoxLayout(self)
         form_layout = QFormLayout()
+        form_layout.setContentsMargins(10, 10, 10, 10)
+        form_layout.setSpacing(10)
 
-        form_layout.addRow(self.existing_label, self.existing_combo)
-        form_layout.addRow(self.proposed_label, self.proposed_combo)
-        form_layout.addRow(self.resolution_label, self.resolution_spinbox)
+        # --- Surface Selection ---
+        self.combo_existing = QComboBox(self)
+        self.combo_existing.addItems(self.surface_names)
+        self.combo_existing.setToolTip("Select the surface representing the original ground or starting condition.")
+        form_layout.addRow("Existing Surface:", self.combo_existing)
+
+        self.combo_proposed = QComboBox(self)
+        self.combo_proposed.addItems(self.surface_names)
+        self.combo_proposed.setToolTip("Select the surface representing the final grade or proposed design.")
+        form_layout.addRow("Proposed Surface:", self.combo_proposed)
+
+        # --- Grid Resolution ---
+        self.spin_resolution = QDoubleSpinBox(self)
+        self.spin_resolution.setRange(0.1, 1000.0) # Sensible range
+        self.spin_resolution.setValue(5.0) # Default value
+        self.spin_resolution.setDecimals(2)
+        self.spin_resolution.setSingleStep(0.5)
+        self.spin_resolution.setToolTip("Specify the size of the grid cells for volume calculation (e.g., 5.0 means 5x5 units). Smaller values increase accuracy but take longer.")
+        form_layout.addRow("Grid Resolution (units):", self.spin_resolution)
         
+        # Align labels to the right
+        for i in range(form_layout.rowCount()):
+            label_item = form_layout.itemAt(i, QFormLayout.LabelRole)
+            if label_item and label_item.widget():
+                label_item.widget().setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+
         layout.addLayout(form_layout)
-        
-        # Button Box
-        button_layout = QHBoxLayout()
-        button_layout.addStretch()
-        button_layout.addWidget(self.cancel_button)
-        button_layout.addWidget(self.calculate_button)
-        layout.addLayout(button_layout)
 
-        # --- Connections ---
-        self.calculate_button.clicked.connect(self.accept)
-        self.cancel_button.clicked.connect(self.reject)
+        # --- Dialog Buttons ---
+        self.button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
+        layout.addWidget(self.button_box)
+
+        # Connect signals for validation
+        self.combo_existing.currentIndexChanged.connect(self._validate_selection)
+        self.combo_proposed.currentIndexChanged.connect(self._validate_selection)
+        self._validate_selection() # Initial validation
         
-        # Validation on accept
-        self.accepted.connect(self._validate_selection)
+        self.setLayout(layout)
+        self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
+        self.adjustSize() # Adjust size to fit contents
 
     def _validate_selection(self):
-        """Validate selections before closing the dialog."""
-        existing = self.existing_combo.currentText()
-        proposed = self.proposed_combo.currentText()
-        if existing == proposed:
-             QMessageBox.warning(self, "Invalid Selection", "Existing and Proposed surfaces cannot be the same.")
-             self.logger.warning("Validation failed: Same surface selected for existing and proposed.")
+        """Enable OK button only if different surfaces are selected."""
+        valid = (self.combo_existing.currentText() != self.combo_proposed.currentText())
+        self.button_box.button(QDialogButtonBox.Ok).setEnabled(valid)
+        # Provide visual feedback or a status tip if desired
+        if not valid and len(self.surface_names) > 1:
+            # Optional: Add a small label or status tip indicating the issue
+            # self.statusBar().showMessage("Existing and Proposed surfaces must be different.", 2000)
+            pass # Simple button disabling is usually sufficient
 
     def get_selected_surfaces(self) -> Optional[Dict[str, str]]:
-        """Returns the selected surface names."""
-        existing = self.existing_combo.currentText()
-        proposed = self.proposed_combo.currentText()
-        
-        if not existing or not proposed:
-            self.logger.error("Could not retrieve selected surface names from combo boxes.")
-            return None
-            
-        if existing == proposed:
-            self.logger.warning("Attempting to calculate volume with identical surfaces selected.")
-            QMessageBox.warning(self, "Invalid Selection", "Existing and Proposed surfaces cannot be the same. Please select different surfaces.")
-            return None
-
-        return {"existing": existing, "proposed": proposed}
+        """Get the names of the selected existing and proposed surfaces."""
+        if self._validate_selection and self.combo_existing.currentText() and self.combo_proposed.currentText():
+             return {
+                 'existing': self.combo_existing.currentText(),
+                 'proposed': self.combo_proposed.currentText()
+             }
+        return None
 
     def get_grid_resolution(self) -> float:
-        """Returns the selected grid resolution."""
-        return self.resolution_spinbox.value()
+        """Get the selected grid resolution."""
+        return self.spin_resolution.value()
 
 class ImportOptionsDialog(QDialog):
-    """Dialog for setting import options and surface name."""
-    
+    """Dialog for configuring import options for various file types."""
     def __init__(self, parent, parser, default_name, filename: Optional[str] = None):
-        """
-        Initialize the dialog.
-        
-        Args:
-            parent: Parent widget
-            parser: File parser instance
-            default_name: Default surface name
-            filename (Optional[str]): The full path to the file being imported.
-        """
         super().__init__(parent)
-        
-        self.parser = parser
-        self.default_name = default_name
-        self.file_path = filename
-        self.logger = logging.getLogger(__name__)
-        self.headers = []
-        
         self.setWindowTitle("Import Options")
-        self.setMinimumWidth(400)
-        
-        # Create layout
+        self.parser = parser
+        self.filename = filename # Store filename for potential use (e.g., CSV header peek)
+        self.setMinimumWidth(400) # Increase minimum width for better layout
+
         layout = QVBoxLayout(self)
-        
-        # Surface name
         form_layout = QFormLayout()
+        form_layout.setContentsMargins(10, 10, 10, 10)
+        form_layout.setSpacing(10)
+
+        # --- Surface Name ---
         self.name_edit = QLineEdit(default_name)
+        self.name_edit.setToolTip("Enter a name for the surface to be created from this file.")
         form_layout.addRow("Surface Name:", self.name_edit)
-        
-        # Add parser-specific options
+
+        # --- Parser-Specific Options ---
         self._add_parser_options(form_layout)
         
+        # Align labels to the right
+        for i in range(form_layout.rowCount()):
+            label_item = form_layout.itemAt(i, QFormLayout.LabelRole)
+            if label_item and label_item.widget():
+                label_item.widget().setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+
         layout.addLayout(form_layout)
+
+        # --- Dialog Buttons ---
+        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+        layout.addWidget(button_box)
         
-        # Buttons
-        button_layout = QGridLayout()
-        
-        self.import_button = QPushButton("Import")
-        self.import_button.clicked.connect(self.accept)
-        button_layout.addWidget(self.import_button, 0, 0)
-        
-        self.cancel_button = QPushButton("Cancel")
-        self.cancel_button.clicked.connect(self.reject)
-        button_layout.addWidget(self.cancel_button, 0, 1)
-        
-        layout.addLayout(button_layout)
-    
+        self.setLayout(layout)
+        self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
+        self.adjustSize() # Adjust size to fit contents
+
     def get_surface_name(self) -> str:
-        """Returns the entered surface name, falling back to the default if empty."""
-        entered_name = self.name_edit.text().strip()
-        return entered_name or self.default_name
-        
-    def _add_parser_options(self, layout):
-        """
-        Add parser-specific options to the dialog.
-        
-        Args:
-            layout: Form layout
-        """
-        self.option_widgets = {} # Reset/initialize
-        parser_type = type(self.parser)
+        """Get the desired surface name entered by the user."""
+        return self.name_edit.text().strip() or "Imported Surface" # Provide a fallback
 
-        if parser_type is CSVParser:
-            # --- CSV --- #
-            self.option_widgets['has_header'] = QCheckBox("Has Header Row")
-            self.option_widgets['has_header'].setChecked(True)
-            self.option_widgets['has_header'].stateChanged.connect(self._update_csv_column_options)
-            layout.addRow("", self.option_widgets['has_header'])
+    def _add_parser_options(self, layout: QFormLayout):
+        """Dynamically add options based on the parser type."""
+        if isinstance(self.parser, CSVParser):
+            # --- CSV Specific Options ---
+            self.combo_x = QComboBox()
+            self.combo_y = QComboBox()
+            self.combo_z = QComboBox()
+            self.spin_skip_rows = QSpinBox()
+            self.spin_skip_rows.setRange(0, 100)
+            self.spin_skip_rows.setValue(0)
+            self.spin_skip_rows.setToolTip("Number of header rows to skip before data starts.")
+            self.combo_delimiter = QComboBox()
+            self.combo_delimiter.addItems([",", "\t", " ", ";"])
+            self.combo_delimiter.setEditable(True)
+            self.combo_delimiter.setToolTip("Select or enter the character separating columns.")
 
-            self.option_widgets['x_column'] = QComboBox()
-            self.option_widgets['y_column'] = QComboBox()
-            self.option_widgets['z_column'] = QComboBox()
-            layout.addRow("X Column:", self.option_widgets['x_column'])
-            layout.addRow("Y Column:", self.option_widgets['y_column'])
-            layout.addRow("Z Column:", self.option_widgets['z_column'])
-            self._update_csv_column_options() # Initial population
-
-        elif parser_type is LandXMLParser:
-            # --- LandXML --- #
-            # Placeholder logic for getting available surfaces. 
-            # In a real implementation, the parser might need to peek the file.
-            available_surfaces = [] 
-            # Example: if hasattr(self.parser, 'peek_surfaces'): available_surfaces = self.parser.peek_surfaces(self.file_path)
-            if available_surfaces:
-                self.option_widgets['surface_name_combo'] = QComboBox()
-                self.option_widgets['surface_name_combo'].addItems(available_surfaces)
-                layout.addRow("Select Surface:", self.option_widgets['surface_name_combo'])
-            # REMOVED incorrect duplicated logic from here.
-            # This method only creates UI widgets.
-
-        elif parser_type is DXFParser:
-            # --- DXF --- #
-            # Placeholder logic for getting layers.
-            layers = []
-            # Example: if hasattr(self.parser, 'peek_layers'): layers = self.parser.peek_layers(self.file_path)
-            self.option_widgets['layer_combo'] = QComboBox()
-            self.option_widgets['layer_combo'].addItems(["All Layers"] + sorted(layers))
-            layout.addRow("Layer:", self.option_widgets['layer_combo'])
-
-        elif parser_type is PDFParser:
-            # --- PDF --- #
-            # Placeholder logic for getting page count.
-            page_count = 1 
-            # Example: if hasattr(self.parser, 'peek_page_count'): page_count = self.parser.peek_page_count(self.file_path)
-            self.option_widgets['page_spin'] = QSpinBox()
-            self.option_widgets['page_spin'].setMinimum(1)
-            self.option_widgets['page_spin'].setMaximum(max(1, page_count))
-            layout.addRow("Page:", self.option_widgets['page_spin'])
+            layout.addRow("Delimiter:", self.combo_delimiter)
+            layout.addRow("Skip Header Rows:", self.spin_skip_rows)
+            layout.addRow("X Column:", self.combo_x)
+            layout.addRow("Y Column:", self.combo_y)
+            layout.addRow("Z/Elevation Column:", self.combo_z)
             
-            self.option_widgets['scale_spin'] = QDoubleSpinBox()
-            self.option_widgets['scale_spin'].setDecimals(4)
-            self.option_widgets['scale_spin'].setMinimum(0.0001)
-            self.option_widgets['scale_spin'].setMaximum(10000.0)
-            self.option_widgets['scale_spin'].setValue(1.0)
-            self.option_widgets['scale_spin'].setSingleStep(0.1)
-            layout.addRow("Scale:", self.option_widgets['scale_spin'])
-        
-    def _update_csv_column_options(self):
-        """Update CSV column options based on the selected header checkbox."""
-        has_header = self.option_widgets['has_header'].isChecked()
-        self.headers = None if has_header else ['x', 'y', 'z']
-        self.option_widgets['x_column'].clear()
-        self.option_widgets['y_column'].clear()
-        self.option_widgets['z_column'].clear()
-        self.option_widgets['x_column'].addItems(self.headers or [])
-        self.option_widgets['y_column'].addItems(self.headers or [])
-        self.option_widgets['z_column'].addItems(self.headers or [])
+            self.combo_x.setToolTip("Select the column containing X coordinates.")
+            self.combo_y.setToolTip("Select the column containing Y coordinates.")
+            self.combo_z.setToolTip("Select the column containing Z (elevation) values.")
 
-    def _try_preselect_columns(self):
-        """Try to preselect columns based on existing data."""
-        if self.headers:
-            self.option_widgets['x_column'].setCurrentIndex(self.headers.index('x') if 'x' in self.headers else 0)
-            self.option_widgets['y_column'].setCurrentIndex(self.headers.index('y') if 'y' in self.headers else 0)
-            self.option_widgets['z_column'].setCurrentIndex(self.headers.index('z') if 'z' in self.headers else 0)
+            # Populate column dropdowns if filename is available
+            if self.filename:
+                self._update_csv_column_options()
+                self.spin_skip_rows.valueChanged.connect(self._update_csv_column_options)
+                self.combo_delimiter.currentTextChanged.connect(self._update_csv_column_options)
+                
+        # Add elif blocks here for other parsers (DXFParser, PDFParser, etc.)
+        # elif isinstance(self.parser, DXFParser):
+        #     # Add DXF specific options (e.g., layer selection)
+        #     pass 
+        else:
+            # Default/Fallback message if no specific options needed
+            no_options_label = QLabel("No specific import options available for this file type.")
+            no_options_label.setStyleSheet("font-style: italic; color: gray;")
+            layout.addRow(no_options_label)
+
+    def _update_csv_column_options(self):
+        """Read CSV headers and update column selection comboboxes."""
+        if not self.filename or not isinstance(self.parser, CSVParser):
+            return
+
+        skip_rows = self.spin_skip_rows.value()
+        delimiter_text = self.combo_delimiter.currentText()
+        # Explicitly checking against correct string literals
+        if delimiter_text == "\t":
+            delimiter = '\t'
+        elif delimiter_text == " ":
+            delimiter = ' '
+        else:
+            delimiter = delimiter_text # Use the text directly (covers comma, semicolon, custom)
+            
+        if not delimiter: # Handle empty case
+            delimiter = ',' # Default to comma if empty
+
+        try:
+            headers = self.parser.peek_headers(self.filename, num_lines=skip_rows + 1, delimiter=delimiter)
+            if headers:
+                # Clear existing items before adding new ones
+                self.combo_x.clear()
+                self.combo_y.clear()
+                self.combo_z.clear()
+                # Populate with actual headers
+                self.combo_x.addItems(headers)
+                self.combo_y.addItems(headers)
+                self.combo_z.addItems(headers)
+                self._try_preselect_columns(headers) # Attempt to guess columns
+            else:
+                # Handle case where no headers could be read (e.g., file error, wrong delimiter/skip)
+                 self.combo_x.clear()
+                 self.combo_y.clear()
+                 self.combo_z.clear()
+                 self.combo_x.addItem("- Error reading headers -")
+                 self.combo_y.addItem("- Error reading headers -")
+                 self.combo_z.addItem("- Error reading headers -")
+        except Exception as e:
+            # Log the error, maybe show a non-modal status? 
+            print(f"Error peeking headers: {e}") # Replace with proper logging
+            self.combo_x.clear()
+            self.combo_y.clear()
+            self.combo_z.clear()
+            self.combo_x.addItem("- Error reading headers -")
+            self.combo_y.addItem("- Error reading headers -")
+            self.combo_z.addItem("- Error reading headers -")
+
+    def _try_preselect_columns(self, headers: List[str]):
+        """Attempt to automatically select common column names."""
+        common_x = ['x', 'easting', 'lon']
+        common_y = ['y', 'northing', 'lat']
+        common_z = ['z', 'elevation', 'elev', 'height']
+
+        for i, header in enumerate(headers):
+            h_lower = header.lower()
+            if any(term in h_lower for term in common_x) and self.combo_x.currentIndex() == -1:
+                self.combo_x.setCurrentIndex(i)
+            if any(term in h_lower for term in common_y) and self.combo_y.currentIndex() == -1:
+                self.combo_y.setCurrentIndex(i)
+            if any(term in h_lower for term in common_z) and self.combo_z.currentIndex() == -1:
+                self.combo_z.setCurrentIndex(i)
 
     def get_options(self) -> Dict:
-        """Gather import options based on the parser type and UI widgets."""
+        """Get the parser-specific options selected by the user."""
         options = {}
-        parser_type = type(self.parser)
-
-        if parser_type is CSVParser:
-            # Retrieve 'has_header' state
-            has_header_checkbox = self.option_widgets.get('has_header')
-            if has_header_checkbox:
-                options['has_header'] = has_header_checkbox.isChecked()
-            
-            # Retrieve selected column indices for CSV
-            x_combo = self.option_widgets.get('x_column')
-            y_combo = self.option_widgets.get('y_column')
-            z_combo = self.option_widgets.get('z_column')
-            # Check if headers were loaded (self.headers is populated) and selections are valid
-            if self.headers and all([x_combo, y_combo, z_combo]) and all(c.currentIndex() >= 0 for c in [x_combo, y_combo, z_combo]):
-                x_idx = x_combo.currentIndex()
-                y_idx = y_combo.currentIndex()
-                z_idx = z_combo.currentIndex()
-                # Ensure indices are unique
-                if len(set([x_idx, y_idx, z_idx])) == 3:
-                    options['column_map'] = {'x': x_idx, 'y': y_idx, 'z': z_idx}
-                    self.logger.info(f"Using selected CSV column indices: {options['column_map']}")
-                else:
-                    self.logger.warning("Duplicate columns selected for CSV. Parser will attempt auto-detection.")
-            else:
-                 self.logger.warning("Headers not available or invalid column selection for CSV. Parser will attempt auto-detection.")
-
-        elif parser_type is LandXMLParser:
-            # Retrieve selected surface name for LandXML
-            combo = self.option_widgets.get('surface_name_combo')
-            if combo: # Check if the widget exists
-                 options['surface_name'] = combo.currentText()
-
-        elif parser_type is DXFParser:
-            # Retrieve selected layer name for DXF
-            combo = self.option_widgets.get('layer_combo')
-            if combo:
-                 selected_layer = combo.currentText()
-                 options['layer_name'] = None if selected_layer == "All Layers" else selected_layer
-
-        elif parser_type is PDFParser:
-            # Retrieve page number and scale for PDF
-            page_spin = self.option_widgets.get('page_spin')
-            if page_spin:
-                 options['page_number'] = page_spin.value()
-            scale_spin = self.option_widgets.get('scale_spin')
-            if scale_spin:
-                 options['scale'] = scale_spin.value()
-
-        self.logger.debug(f"Collected import options: {options}")
+        if isinstance(self.parser, CSVParser):
+            options['delimiter'] = self.combo_delimiter.currentText() # Pass raw text back
+            options['skip_rows'] = self.spin_skip_rows.value()
+            options['x_col'] = self.combo_x.currentText()
+            options['y_col'] = self.combo_y.currentText()
+            options['z_col'] = self.combo_z.currentText()
+        # Add elif blocks for other parsers
+        # elif isinstance(self.parser, DXFParser):
+        #     options['layer'] = self.layer_combo.currentText()
         return options 
