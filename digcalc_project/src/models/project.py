@@ -12,7 +12,7 @@ import logging
 import json
 import datetime
 from pathlib import Path
-from typing import List, Dict, Optional, Any, Union
+from typing import List, Dict, Optional, Any, Union, Tuple
 
 from src.models.surface import Surface
 from src.models.calculation import VolumeCalculation
@@ -47,6 +47,13 @@ class Project:
         self.surfaces: Dict[str, Surface] = {} # Changed from List to Dict
         self.calculations: List[VolumeCalculation] = [] # Keep as list for now
         self.metadata: Dict[str, Any] = {}
+        
+        # --- Tracing / PDF Background Data ---
+        self.pdf_background_path: Optional[str] = None
+        self.pdf_background_page: int = 1
+        self.pdf_background_dpi: int = 150
+        # Store polylines as lists of (x, y) tuples for JSON compatibility
+        self.traced_polylines: List[List[Tuple[float, float]]] = [] 
         
         self.logger.debug(f"Project '{name}' initialized")
     
@@ -128,10 +135,33 @@ class Project:
         self.modified_at = datetime.datetime.now()
         self.logger.info(f"Calculation '{calculation.name}' added to project")
     
+    def add_traced_polyline(self, polyline_points: List[Tuple[float, float]]):
+        """
+        Adds a finalized traced polyline to the project.
+
+        Args:
+            polyline_points: List of (x, y) coordinate tuples for the polyline.
+        """
+        if len(polyline_points) >= 2:
+            self.traced_polylines.append(polyline_points)
+            self.modified_at = datetime.datetime.now()
+            self.logger.debug(f"Added traced polyline with {len(polyline_points)} points.")
+        else:
+            self.logger.warning("Attempted to add invalid polyline (less than 2 points).")
+            
+    def clear_traced_polylines(self):
+        """
+        Removes all traced polylines from the project.
+        """
+        if self.traced_polylines:
+            self.logger.debug(f"Clearing {len(self.traced_polylines)} traced polylines.")
+            self.traced_polylines = []
+            self.modified_at = datetime.datetime.now()
+
     def save(self, filename: Optional[str] = None) -> bool:
         """
         Save the project to a file.
-        (Note: Current implementation only saves metadata and surface names)
+        Includes surfaces, calculations, metadata, PDF background state, and traced polylines.
         
         Args:
             filename: Optional filename to save to
@@ -157,7 +187,15 @@ class Project:
                 "surfaces": {name: s.to_dict() for name, s in self.surfaces.items()},
                 # Store calculation data (replace with full serialization later)
                 "calculations": [c.to_dict() for c in self.calculations],
-                "metadata": self.metadata
+                "metadata": self.metadata,
+                
+                # --- Save Tracing / PDF State ---
+                "pdf_background": {
+                    "path": self.pdf_background_path,
+                    "page": self.pdf_background_page,
+                    "dpi": self.pdf_background_dpi
+                },
+                "traced_polylines": self.traced_polylines
             }
             
             # Ensure directory exists
@@ -191,6 +229,11 @@ class Project:
         try:
             with open(filename, 'r') as f:
                 data = json.load(f)
+            
+            # --- Load schema version for potential migrations later ---
+            schema_version = data.get("project_schema_version", 0)
+            if schema_version > 1:
+                logger.warning(f"Loading project with schema version {schema_version}, which is newer than supported (1). Some data may be ignored.")
             
             # Basic validation
             if "name" not in data:
@@ -239,6 +282,42 @@ class Project:
                           logger.error(f"Failed to load calculation from project data: {calc_e}")
             else:
                  logger.warning("Calculation data in project file is not a list. Skipping calculations.")
+
+            # --- Load Tracing / PDF State ---
+            pdf_data = data.get("pdf_background")
+            if isinstance(pdf_data, dict):
+                project.pdf_background_path = pdf_data.get("path") # Path can be None
+                project.pdf_background_page = pdf_data.get("page", 1)
+                project.pdf_background_dpi = pdf_data.get("dpi", 150)
+            else:
+                logger.warning("PDF background data missing or invalid format. Defaults will be used.")
+                project.pdf_background_path = None
+                project.pdf_background_page = 1
+                project.pdf_background_dpi = 150
+                
+            traced_data = data.get("traced_polylines")
+            if isinstance(traced_data, list):
+                # Basic validation: check if items are lists of lists/tuples with numbers
+                valid_polylines = []
+                for i, poly in enumerate(traced_data):
+                    if isinstance(poly, list) and len(poly) >= 2: 
+                        is_valid = True
+                        converted_poly = []
+                        for pt in poly:
+                             if isinstance(pt, (list, tuple)) and len(pt) == 2 and all(isinstance(coord, (int, float)) for coord in pt):
+                                 converted_poly.append(tuple(pt)) # Ensure tuple format
+                             else:
+                                 is_valid = False
+                                 logger.warning(f"Invalid point data found in traced polyline {i} at index {poly.index(pt)}. Skipping polyline.")
+                                 break
+                        if is_valid:
+                            valid_polylines.append(converted_poly)
+                    else:
+                        logger.warning(f"Invalid polyline data format at index {i}. Skipping.")
+                project.traced_polylines = valid_polylines
+            else:
+                 logger.warning("Traced polyline data missing or invalid format. No polylines loaded.")
+                 project.traced_polylines = []
 
             logger.info(f"Project loaded from {filename}")
             return project

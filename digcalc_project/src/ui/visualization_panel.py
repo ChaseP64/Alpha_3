@@ -11,7 +11,7 @@ from typing import Optional, Dict, List, Any, Tuple
 import numpy as np
 
 # PySide6 imports
-from PySide6.QtCore import Qt, Slot, Signal, QRectF
+from PySide6.QtCore import Qt, Slot, Signal, QRectF, QPointF
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem
 from PySide6.QtGui import QImage, QPixmap
 
@@ -27,6 +27,9 @@ except ImportError:
 # Local imports
 from src.models.surface import Surface, Point3D, Triangle
 from src.visualization.pdf_renderer import PDFRenderer, PDFRendererError
+from src.ui.tracing_scene import TracingScene
+from src.models.project import Project
+from src.ui.layer_control_panel import LayerControlPanel
 
 
 class VisualizationPanel(QWidget):
@@ -51,6 +54,11 @@ class VisualizationPanel(QWidget):
         self.pdf_renderer: Optional[PDFRenderer] = None
         self.pdf_background_item: Optional[QGraphicsPixmapItem] = None
         self.current_pdf_page: int = 1
+        self.current_project: Optional[Project] = None
+        
+        # --- Tracing Scene and Layer Panel ---
+        self.scene_2d: TracingScene = None # Will be initialized in _init_ui
+        self.layer_control_panel: LayerControlPanel = None # Will be initialized in _init_ui
         
         # Initialize UI components
         self._init_ui()
@@ -65,15 +73,21 @@ class VisualizationPanel(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         
-        # --- Create 2D View for PDF Background --- 
-        self.scene_2d = QGraphicsScene(self)
+        # --- Create 2D Scene, View, and Layer Panel ---
+        self.scene_2d = TracingScene(self) # Create the scene
         self.view_2d = QGraphicsView(self.scene_2d)
-        self.view_2d.setDragMode(QGraphicsView.DragMode.ScrollHandDrag) # Allow panning
+        self.view_2d.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
         self.view_2d.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
         self.view_2d.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
-        # Hide the 2D view initially, show it when a PDF is loaded
-        self.view_2d.setVisible(False) 
+        self.view_2d.setVisible(False)
         layout.addWidget(self.view_2d)
+        
+        # Create and connect the LayerControlPanel
+        self.layer_control_panel = LayerControlPanel(self)
+        self.layer_control_panel.set_tracing_scene(self.scene_2d)
+        
+        # Connect scene signal here now that scene_2d exists
+        self.scene_2d.polyline_finalized.connect(self._on_polyline_finalized)
         
         # --- 3D View --- 
         if HAS_3D:
@@ -106,6 +120,14 @@ class VisualizationPanel(QWidget):
         
         self.logger.debug("VisualizationPanel UI initialized")
     
+    def set_project(self, project: Optional[Project]):
+        """
+        Sets the current project for the panel, allowing access to project data.
+        """
+        self.current_project = project
+        # Potentially update visualizations based on the new project here?
+        # For now, just store the reference.
+
     def display_surface(self, surface: Surface) -> bool:
         """
         Display a surface in the 3D view.
@@ -149,6 +171,10 @@ class VisualizationPanel(QWidget):
             return False
         
         try:
+            # If displaying 3D, ensure 2D/tracing view is hidden and 3D is visible
+            self.view_2d.setVisible(False)
+            if HAS_3D: self.view_3d.setVisible(True)
+            
             self.logger.info(f"Displaying surface: {surface.name} with {len(surface.points)} points and {len(surface.triangles)} triangles")
             
             # Remove existing surface if it exists
@@ -414,7 +440,8 @@ class VisualizationPanel(QWidget):
         # For now, we just log it
         self.logger.error(f"Visualization failed for surface '{surface_name}': {error_msg}") 
 
-    # --- PDF Handling Methods --- 
+    # --- PDF Background and Tracing Methods ---
+    
     def load_pdf_background(self, pdf_path: str, dpi: int = 150):
         """Loads a PDF and displays the first page as background."""
         self.logger.info(f"Attempting to load PDF background: {pdf_path}")
@@ -426,11 +453,11 @@ class VisualizationPanel(QWidget):
             self.current_pdf_page = 1
             self._display_current_pdf_page()
             
-            # Switch visibility
+            # Make 2D view visible and hide 3D view
             self.view_2d.setVisible(True)
-            if HAS_3D:
-                 self.view_3d.setVisible(False) # Hide 3D view when PDF is shown
-                 
+            if HAS_3D: self.view_3d.setVisible(False)
+            self.logger.info(f"PDF background loaded: {pdf_path}")
+            
         except (FileNotFoundError, PDFRendererError) as e:
              self.logger.error(f"Failed to load PDF: {e}")
              # Propagate error via signal or show message?
@@ -444,39 +471,33 @@ class VisualizationPanel(QWidget):
              raise e # Re-raise to be caught by MainWindow
 
     def _display_current_pdf_page(self):
-        """Displays the image for the self.current_pdf_page in the 2D view."""
+        """Renders and displays the current PDF page in the TracingScene."""
         if not self.pdf_renderer:
+            self.logger.warning("Cannot display PDF page: PDF renderer not initialized.")
             return
 
-        page_image = self.pdf_renderer.get_page_image(self.current_pdf_page)
-        if not page_image:
-            self.logger.error(f"Could not get image for PDF page {self.current_pdf_page}")
-            # Clear existing background if page fails to load? 
-            if self.pdf_background_item and self.pdf_background_item in self.scene_2d.items():
-                 self.scene_2d.removeItem(self.pdf_background_item)
-            self.pdf_background_item = None
-            return
-            
-        # Convert QImage to QPixmap for QGraphicsPixmapItem
-        pixmap = QPixmap.fromImage(page_image)
+        try:
+            page_image = self.pdf_renderer.get_page_image(self.current_pdf_page)
+            if page_image:
+                # Set the image in the TracingScene
+                self.scene_2d.set_background_image(page_image)
+                # Fit view to the scene content (the background image)
+                self.view_2d.fitInView(self.scene_2d.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
+                self.logger.info(f"Displayed PDF page {self.current_pdf_page}")
+            else:
+                # Clear background if image is invalid
+                self.scene_2d.set_background_image(None)
+                self.logger.warning(f"Failed to get image for PDF page {self.current_pdf_page}.")
 
-        # Remove old item if it exists
-        if self.pdf_background_item and self.pdf_background_item in self.scene_2d.items():
-            self.scene_2d.removeItem(self.pdf_background_item)
+        except PDFRendererError as e:
+            self.logger.error(f"Error displaying PDF page {self.current_pdf_page}: {e}")
+            self.scene_2d.set_background_image(None) # Clear on error
+        except Exception as e:
+            self.logger.exception(f"Unexpected error displaying PDF page: {e}")
+            self.scene_2d.set_background_image(None) # Clear on error
 
-        # Create and add new pixmap item
-        self.pdf_background_item = QGraphicsPixmapItem(pixmap)
-        # Set Z-value to ensure it's behind other items (e.g., surfaces, points)
-        self.pdf_background_item.setZValue(-100) 
-        self.scene_2d.addItem(self.pdf_background_item)
-        
-        # Update scene rect and fit view (optional, might want manual zoom/pan)
-        self.scene_2d.setSceneRect(self.pdf_background_item.boundingRect())
-        self.view_2d.fitInView(self.pdf_background_item, Qt.AspectRatioMode.KeepAspectRatio)
-        self.logger.info(f"Displayed PDF page {self.current_pdf_page}")
-        
     def set_pdf_page(self, page_number: int):
-        """Sets the currently displayed PDF page."""
+        """Sets the current PDF page to display."""
         if not self.pdf_renderer or not (1 <= page_number <= self.pdf_renderer.get_page_count()):
             self.logger.warning(f"Cannot set PDF page to invalid number: {page_number}")
             return
@@ -486,21 +507,103 @@ class VisualizationPanel(QWidget):
             self._display_current_pdf_page()
             
     def clear_pdf_background(self):
-        """Removes the PDF background image and closes the renderer."""
-        if self.pdf_background_item and self.pdf_background_item in self.scene_2d.items():
-             self.scene_2d.removeItem(self.pdf_background_item)
-        self.pdf_background_item = None
-        
+        """Clears the PDF background image and hides the 2D view."""
+        self.logger.info("Clearing PDF background.")
         if self.pdf_renderer:
             self.pdf_renderer.close()
             self.pdf_renderer = None
-            
-        self.current_pdf_page = 1
-        # Optionally switch back to 3D view?
+        
+        # Clear the background in TracingScene
+        self.scene_2d.set_background_image(None)
+        
+        # Optionally hide the 2D view and show 3D view if available
         self.view_2d.setVisible(False)
         if HAS_3D:
              self.view_3d.setVisible(True)
-        self.logger.info("Cleared PDF background.")
+        else:
+            # If no 3D view, maybe show a placeholder or leave blank?
+             pass 
+
+    # --- Optional Tracing Control and Signal Handling ---
+
+    @Slot(list, str)
+    def _on_polyline_finalized(self, points: List[QPointF], layer_name: str):
+        """
+        Slot to handle the polyline_finalized signal from TracingScene.
+        Converts points to tuples and adds them to the current project.
+        NOTE: Currently layer_name is received but NOT saved to project yet.
+        """
+        self.logger.info(f"Received finalized polyline with {len(points)} points on layer '{layer_name}'.")
+        # Example: Log first and last point
+        if points:
+            first = points[0]
+            last = points[-1]
+            self.logger.debug(f"  Start: ({first.x():.2f}, {first.y():.2f}), End: ({last.x():.2f}, {last.y():.2f})")
+        # TODO: Store these points, associate with project data, etc.
+        
+        # Convert QPointF list to list of (x, y) tuples
+        point_tuples = [(p.x(), p.y()) for p in points]
+        
+        # Add to project if project reference exists
+        if self.current_project:
+            # TODO: Update Project model and this call to store layer_name with the polyline
+            self.current_project.add_traced_polyline(point_tuples)
+        else:
+            self.logger.warning("Cannot add traced polyline: No current project reference in VisualizationPanel.")
+
+    def set_tracing_mode(self, enabled: bool):
+         """
+         Enables or disables the interactive tracing mode on the scene.
+         Also changes the view's drag mode and cursor accordingly.
+         """
+         # Only allow enabling tracing if a PDF is loaded
+         if enabled and not self.pdf_renderer:
+             self.logger.warning("Cannot enable tracing: No PDF background is loaded.")
+             # Optionally force the action back to unchecked if called directly
+             # main_window = self.parent() # Need a way to access MainWindow if needed
+             # if main_window and hasattr(main_window, 'toggle_tracing_action'):
+             #     main_window.toggle_tracing_action.setChecked(False)
+             return
+             
+         if enabled:
+              self.scene_2d.start_drawing()
+              self.logger.info("Tracing mode enabled.")
+              # Disable view dragging and set cross cursor
+              self.view_2d.setDragMode(QGraphicsView.DragMode.NoDrag)
+              self.view_2d.viewport().setCursor(Qt.CrossCursor)
+              # Ensure 2D view is visible
+              if not self.view_2d.isVisible():
+                  self.view_2d.setVisible(True)
+                  if HAS_3D: self.view_3d.setVisible(False)
+         else:
+              self.scene_2d.stop_drawing()
+              self.logger.info("Tracing mode disabled.")
+              # Restore view dragging and reset cursor
+              self.view_2d.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+              # Use OpenHandCursor when ScrollHandDrag is active
+              self.view_2d.viewport().setCursor(Qt.OpenHandCursor)
+              # Reset cursor etc. <- covered by line above
+
+    def load_and_display_polylines(self, polylines: List[List[Tuple[float, float]]]):
+        """
+        Loads polylines from data and displays them on the TracingScene.
+        Clears any previously displayed finalized polylines first.
+        """
+        if hasattr(self.scene_2d, 'load_polylines'):
+            self.logger.info(f"Loading and displaying {len(polylines)} traced polylines.")
+            self.scene_2d.load_polylines(polylines)
+        else:
+            self.logger.error("Cannot load polylines: TracingScene does not have 'load_polylines' method.")
+
+    def clear_displayed_polylines(self):
+        """
+        Clears all finalized polylines currently displayed on the TracingScene.
+        """
+        if hasattr(self.scene_2d, 'clear_finalized_polylines'):
+            self.logger.info("Clearing displayed polylines from scene.")
+            self.scene_2d.clear_finalized_polylines()
+        else:
+            self.logger.error("Cannot clear polylines: TracingScene does not have 'clear_finalized_polylines' method.")
 
     # Add wheel event for zooming 2D view
     def wheelEvent(self, event):
@@ -513,3 +616,8 @@ class VisualizationPanel(QWidget):
             super().wheelEvent(event) # Or self.view_3d.wheelEvent(event) if direct works
         else:
             super().wheelEvent(event) 
+
+    # --- Add getter for Layer Panel ---
+    def get_layer_control_panel(self) -> Optional[LayerControlPanel]:
+         """Returns the instance of the layer control panel widget."""
+         return self.layer_control_panel 

@@ -31,7 +31,7 @@ from src.core.importers.pdf_parser import PDFParser
 from src.models.project import Project
 from src.models.surface import Surface
 from src.ui.project_panel import ProjectPanel
-from src.ui.visualization_panel import VisualizationPanel
+from src.ui.visualization_panel import VisualizationPanel, LayerControlPanel
 from src.core.calculations.volume_calculator import VolumeCalculator
 from src.ui.dialogs.import_options_dialog import ImportOptionsDialog
 from src.ui.dialogs.report_dialog import ReportDialog
@@ -97,6 +97,24 @@ class MainWindow(QMainWindow):
         self.project_panel = ProjectPanel(main_window=self, parent=self) # Pass self here
         self.project_dock.setWidget(self.project_panel)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.project_dock)
+        
+        # Give visualization panel a reference to the main window (for project access etc)
+        # self.visualization_panel.set_main_window(self) # Or pass project directly later
+        
+        # --- Layer Control Panel Dock ---
+        self.layer_control_panel_widget = self.visualization_panel.get_layer_control_panel()
+        if self.layer_control_panel_widget:
+            self.layer_dock = QDockWidget("Layers", self)
+            self.layer_dock.setFeatures(
+                QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable
+            )
+            self.layer_dock.setWidget(self.layer_control_panel_widget)
+            # Start hidden, only relevant when PDF is loaded? Or always visible? Let's start visible.
+            self.addDockWidget(Qt.RightDockWidgetArea, self.layer_dock) # Add to the right side
+            self.layer_dock.setVisible(True) # Make it visible by default
+        else:
+            self.layer_dock = None
+            self.logger.error("Could not create Layer Control dock widget: Panel not found.")
     
     def _create_actions(self):
         """Create actions for menus and toolbars."""
@@ -150,6 +168,13 @@ class MainWindow(QMainWindow):
         self.prev_pdf_page_action.triggered.connect(self.on_prev_pdf_page)
         self.prev_pdf_page_action.setEnabled(False)
         
+        # --- Tracing Action ---
+        self.toggle_tracing_action = QAction("Enable Tracing", self)
+        self.toggle_tracing_action.setStatusTip("Toggle interactive polyline tracing on the PDF background")
+        self.toggle_tracing_action.setCheckable(True)
+        self.toggle_tracing_action.toggled.connect(self.on_toggle_tracing_mode)
+        self.toggle_tracing_action.setEnabled(False) # Initially disabled
+        
         # Maybe add actions for DPI, calibrate later
     
     def _create_menus(self):
@@ -182,6 +207,11 @@ class MainWindow(QMainWindow):
         # Add view toggles here (e.g., toggle Project Panel)
         self.view_menu.addSeparator()
         self.view_menu.addAction(self.project_dock.toggleViewAction())
+        # Add toggle for Layer Panel if it was created
+        if self.layer_dock:
+            self.view_menu.addAction(self.layer_dock.toggleViewAction())
+        self.view_menu.addSeparator()
+        self.view_menu.addAction(self.toggle_tracing_action) # Add tracing action
         
         # Analysis menu
         self.analysis_menu = self.menu_bar.addMenu("Analysis")
@@ -236,6 +266,11 @@ class MainWindow(QMainWindow):
         self.pdf_toolbar.addWidget(self.pdf_page_spinbox)
         self.pdf_toolbar.addAction(self.next_pdf_page_action)
         self.pdf_toolbar.setVisible(False) # Initially hidden
+        
+        # --- Tracing Toolbar Action ---
+        # Add the tracing action to the PDF toolbar
+        self.pdf_toolbar.addSeparator()
+        self.pdf_toolbar.addAction(self.toggle_tracing_action)
     
     def _create_statusbar(self):
         """Create the status bar."""
@@ -245,8 +280,15 @@ class MainWindow(QMainWindow):
     def _create_default_project(self):
         """Create a default project on startup."""
         self.current_project = Project("Untitled Project")
+        # Ensure the viz panel has the project reference from the start
+        self.visualization_panel.set_project(self.current_project)
         self.project_panel.set_project(self.current_project)
         self._update_analysis_actions_state()
+        self._update_pdf_controls() # Ensure PDF controls are initially disabled correctly
+        
+        # Update Layer Panel UI state after potentially loading project/PDF
+        if self.layer_control_panel_widget:
+             self.layer_control_panel_widget.update_ui_from_scene()
     
     def _update_project(self, project: Optional[Project]):
         """
@@ -261,6 +303,7 @@ class MainWindow(QMainWindow):
         
         self.current_project = project
         self.project_panel.set_project(self.current_project) # Update project panel view
+        self.visualization_panel.set_project(self.current_project) # Update viz panel project ref
         
         # Update window title and status bar & Redisplay loaded surfaces
         if self.current_project:
@@ -284,8 +327,30 @@ class MainWindow(QMainWindow):
              self.statusBar().showMessage("No project loaded.", 5000)
              self.logger.info("Project cleared.")
 
-        self._update_analysis_actions_state() # Update actions based on new project state
-        self._update_pdf_controls() # Update PDF controls based on new project state
+        # --- Load PDF/Tracing state from Project --- 
+        if project and project.pdf_background_path:
+            try:
+                self.visualization_panel.load_pdf_background(project.pdf_background_path, project.pdf_background_dpi)
+                self.visualization_panel.set_pdf_page(project.pdf_background_page)
+                # Load polylines after PDF is loaded and page is set
+                self.visualization_panel.load_and_display_polylines(project.traced_polylines)
+            except Exception as e:
+                 self.logger.error(f"Error restoring PDF/Tracing state from project: {e}")
+                 QMessageBox.warning(self, "Project Load Warning", f"Could not restore PDF background or traced lines:\n{e}")
+                 # Clear potentially partial state
+                 if self.visualization_panel.pdf_renderer:
+                      self.visualization_panel.clear_pdf_background()
+                 project.pdf_background_path = None # Clear from project if load failed
+                 project.traced_polylines = []
+        else:
+            # If no PDF path in project, ensure view is clear
+            if self.visualization_panel.pdf_renderer:
+                 self.visualization_panel.clear_pdf_background()
+                 self.visualization_panel.clear_displayed_polylines()
+        
+        # Update controls based on final state
+        self._update_analysis_actions_state()
+        self._update_pdf_controls()
 
     def _update_analysis_actions_state(self):
         """
@@ -298,43 +363,63 @@ class MainWindow(QMainWindow):
         self.logger.debug(f"Calculate Volume action enabled state: {can_calculate}")
     
     def _update_pdf_controls(self):
-        """Enable/disable PDF control actions based on renderer state."""
-        renderer = self.visualization_panel.pdf_renderer
-        has_pdf = renderer is not None and renderer.get_page_count() > 0
-        page_count = renderer.get_page_count() if has_pdf else 0
-        current_page = self.visualization_panel.current_pdf_page if has_pdf else 0
-        
-        self.clear_pdf_background_action.setEnabled(has_pdf)
-        self.next_pdf_page_action.setEnabled(has_pdf and current_page < page_count)
-        self.prev_pdf_page_action.setEnabled(has_pdf and current_page > 1)
-        
-        # Update spinbox
-        self.pdf_page_spinbox.setEnabled(has_pdf)
-        # Block signals while setting range/value to avoid triggering valueChanged
-        self.pdf_page_spinbox.blockSignals(True)
-        if has_pdf:
+        """Updates the state of PDF navigation and tracing controls."""
+        # Check if the visualization panel exists and has a PDF renderer
+        pdf_loaded = False
+        page_count = 0
+        current_page = 0
+        if hasattr(self, 'visualization_panel') and self.visualization_panel.pdf_renderer:
+            pdf_loaded = True
+            page_count = self.visualization_panel.pdf_renderer.get_page_count()
+            current_page = self.visualization_panel.current_pdf_page
+
+        self.logger.debug(f"Updating PDF controls: pdf_loaded={pdf_loaded}, page_count={page_count}, current_page={current_page}")
+
+        # Update toolbar visibility
+        self.pdf_toolbar.setVisible(pdf_loaded)
+
+        # Update navigation actions
+        self.clear_pdf_background_action.setEnabled(pdf_loaded)
+        self.prev_pdf_page_action.setEnabled(pdf_loaded and current_page > 1)
+        self.next_pdf_page_action.setEnabled(pdf_loaded and current_page < page_count)
+
+        # Update page spinbox
+        self.pdf_page_spinbox.setEnabled(pdf_loaded)
+        if pdf_loaded:
+            # Block signals temporarily to prevent feedback loop
+            self.pdf_page_spinbox.blockSignals(True)
             self.pdf_page_spinbox.setRange(1, page_count)
             self.pdf_page_spinbox.setValue(current_page)
-            self.pdf_page_label.setText(f" Page ({page_count}): ")
+            self.pdf_page_spinbox.blockSignals(False)
         else:
             self.pdf_page_spinbox.setRange(0, 0)
             self.pdf_page_spinbox.setValue(0)
-            self.pdf_page_label.setText(" Page: ")
-        self.pdf_page_spinbox.blockSignals(False)
-        
-        self.pdf_toolbar.setVisible(has_pdf)
-        self.logger.debug(f"PDF controls updated. Has PDF: {has_pdf}, Page: {current_page}/{page_count}")
+            
+        # Update tracing action state
+        self.toggle_tracing_action.setEnabled(pdf_loaded)
+        # Uncheck tracing if PDF is unloaded
+        if not pdf_loaded and self.toggle_tracing_action.isChecked():
+             self.toggle_tracing_action.setChecked(False) # This will trigger the toggled signal
 
     # Event handlers
     def on_new_project(self):
         """Handle the 'New Project' action."""
-        # Manual Test Suggestion:
-        # 1. Click 'File -> New Project'.
-        # 2. If a project is open and unsaved, expect a 'Save Project?' prompt.
-        # 3. If confirmed (or no project open), expect a new, empty project state (e.g., 'Untitled Project' title).
         if not self._confirm_close_project():
             return
-        self._create_default_project()
+            
+        # Create the new project object first
+        new_project = Project("Untitled Project")
+        
+        # Clear visualization (including PDF and traces)
+        if hasattr(self, 'visualization_panel'):
+             self.visualization_panel.clear_all() # Assumes clear_all also handles PDF/traces
+             # Explicitly ensure polylines are cleared if clear_all doesn't handle it
+             self.visualization_panel.clear_displayed_polylines() 
+            
+        # Update the UI with the new project
+        self._update_project(new_project)
+        
+        self.statusBar().showMessage("New project created", 3000)
     
     def on_open_project(self):
         """Handle the 'Open Project' action."""
@@ -722,9 +807,10 @@ class MainWindow(QMainWindow):
         else:
             event.ignore() # User cancelled closing
 
-    # --- PDF Action Handlers --- 
+    # --- PDF Background and Tracing Handlers ---
+
     def on_load_pdf_background(self):
-        """Handles the 'Load PDF Background' action."""
+        """Handles loading a PDF file as a background."""
         filename, _ = QFileDialog.getOpenFileName(
             self,
             "Load PDF Background",
@@ -738,6 +824,14 @@ class MainWindow(QMainWindow):
             try:
                 # Use the DPI setting
                 self.visualization_panel.load_pdf_background(filename, dpi=self.pdf_dpi_setting)
+                # Store PDF info in the project
+                if self.current_project:
+                    self.current_project.pdf_background_path = filename
+                    self.current_project.pdf_background_page = 1 # Reset to page 1 on new load
+                    self.current_project.pdf_background_dpi = self.pdf_dpi_setting
+                    # Clear any previous polylines when loading a new PDF
+                    self.current_project.clear_traced_polylines()
+                    self.visualization_panel.clear_displayed_polylines() 
                 self.statusBar().showMessage(f"Loaded PDF background '{Path(filename).name}' ({self.visualization_panel.pdf_renderer.get_page_count()} pages).", 5000)
             except (FileNotFoundError, PDFRendererError, Exception) as e:
                  self.logger.exception(f"Failed to load PDF background: {e}")
@@ -750,41 +844,67 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Load cancelled.", 3000)
 
     def on_clear_pdf_background(self):
-        """Handles the 'Clear PDF Background' action."""
+        """Handles clearing the PDF background."""
         self.logger.info("Clearing PDF background.")
         self.visualization_panel.clear_pdf_background()
+        # Clear PDF info from the project
+        if self.current_project:
+            self.current_project.pdf_background_path = None
+            self.current_project.pdf_background_page = 1
+            self.current_project.pdf_background_dpi = 150
+            # Also clear traced polylines when PDF is cleared
+            self.current_project.clear_traced_polylines()
+            self.visualization_panel.clear_displayed_polylines() 
         self._update_pdf_controls()
-        self.statusBar().showMessage("PDF background cleared.", 3000)
         
     def on_next_pdf_page(self):
-        """Handles the 'Next Page' action."""
+        """Handles moving to the next PDF page."""
         if self.visualization_panel.pdf_renderer:
              current = self.visualization_panel.current_pdf_page
              total = self.visualization_panel.pdf_renderer.get_page_count()
              if current < total:
                   self.visualization_panel.set_pdf_page(current + 1)
+                  if self.current_project:
+                       self.current_project.pdf_background_page = current + 1
                   self._update_pdf_controls()
                   self.statusBar().showMessage(f"Showing PDF page {current + 1}/{total}", 3000)
 
     def on_prev_pdf_page(self):
-        """Handles the 'Previous Page' action."""
+        """Handles moving to the previous PDF page."""
         if self.visualization_panel.pdf_renderer:
              current = self.visualization_panel.current_pdf_page
              total = self.visualization_panel.pdf_renderer.get_page_count()
              if current > 1:
                   self.visualization_panel.set_pdf_page(current - 1)
+                  if self.current_project:
+                       self.current_project.pdf_background_page = current - 1
                   self._update_pdf_controls()
                   self.statusBar().showMessage(f"Showing PDF page {current - 1}/{total}", 3000)
                   
     def on_set_pdf_page_from_spinbox(self, page_number: int):
-        """Slot connected to the page number spinbox valueChanged signal."""
+        """Handles setting the PDF page from the spinbox."""
         # This check prevents acting if the value is set programmatically while signals blocked
         if self.pdf_page_spinbox.isEnabled() and page_number > 0:
              self.logger.debug(f"Setting PDF page from spinbox to: {page_number}")
              self.visualization_panel.set_pdf_page(page_number)
-             self._update_pdf_controls() # Ensure button states are correct
+             if self.current_project:
+                  self.current_project.pdf_background_page = page_number
+             self._update_pdf_controls() # Update button states after spinbox change
              total = self.visualization_panel.pdf_renderer.get_page_count() if self.visualization_panel.pdf_renderer else 0
              self.statusBar().showMessage(f"Showing PDF page {page_number}/{total}", 3000)
+
+    def on_toggle_tracing_mode(self, checked: bool):
+        """
+        Slot connected to the toggle_tracing_action.
+        Enables/disables tracing mode in the VisualizationPanel.
+        """
+        if hasattr(self, 'visualization_panel'):
+            self.visualization_panel.set_tracing_mode(checked)
+            self.logger.info(f"Tracing mode {'enabled' if checked else 'disabled'} via MainWindow action.")
+            # Update action text for clarity
+            self.toggle_tracing_action.setText("Disable Tracing" if checked else "Enable Tracing")
+        else:
+            self.logger.warning("Cannot toggle tracing mode: VisualizationPanel not found.")
 
 
 class VolumeCalculationDialog(QDialog):

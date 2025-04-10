@@ -13,8 +13,8 @@ from typing import List, Dict, Optional
 import pytest
 from unittest.mock import patch, MagicMock
 
-from core.importers.pdf_parser import PDFParser
-from models.surface import Point3D, Surface
+from src.core.importers.pdf_parser import PDFParser
+from src.models.surface import Point3D, Surface
 
 
 class TestPDFParser:
