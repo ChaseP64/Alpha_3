@@ -29,7 +29,6 @@ from src.models.surface import Surface, Point3D, Triangle
 from src.visualization.pdf_renderer import PDFRenderer, PDFRendererError
 from src.ui.tracing_scene import TracingScene
 from src.models.project import Project
-from src.ui.layer_control_panel import LayerControlPanel
 
 
 class VisualizationPanel(QWidget):
@@ -58,7 +57,6 @@ class VisualizationPanel(QWidget):
         
         # --- Tracing Scene and Layer Panel ---
         self.scene_2d: TracingScene = None # Will be initialized in _init_ui
-        self.layer_control_panel: LayerControlPanel = None # Will be initialized in _init_ui
         
         # Initialize UI components
         self._init_ui()
@@ -81,10 +79,6 @@ class VisualizationPanel(QWidget):
         self.view_2d.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
         self.view_2d.setVisible(False)
         layout.addWidget(self.view_2d)
-        
-        # Create and connect the LayerControlPanel
-        self.layer_control_panel = LayerControlPanel(self)
-        self.layer_control_panel.set_tracing_scene(self.scene_2d)
         
         # Connect scene signal here now that scene_2d exists
         self.scene_2d.polyline_finalized.connect(self._on_polyline_finalized)
@@ -526,30 +520,37 @@ class VisualizationPanel(QWidget):
 
     # --- Optional Tracing Control and Signal Handling ---
 
-    @Slot(list, str)
-    def _on_polyline_finalized(self, points: List[QPointF], layer_name: str):
+    @Slot(list)
+    def _on_polyline_finalized(self, points: List[QPointF]):
         """
-        Slot to handle the polyline_finalized signal from TracingScene.
-        Converts points to tuples and adds them to the current project.
-        NOTE: Currently layer_name is received but NOT saved to project yet.
+        Slot called when the tracing scene emits a finalized polyline.
+        Stores the polyline data in the current project.
+        
+        Args:
+            points (List[QPointF]): List of vertices in the finalized polyline.
         """
-        self.logger.info(f"Received finalized polyline with {len(points)} points on layer '{layer_name}'.")
-        # Example: Log first and last point
-        if points:
-            first = points[0]
-            last = points[-1]
-            self.logger.debug(f"  Start: ({first.x():.2f}, {first.y():.2f}), End: ({last.x():.2f}, {last.y():.2f})")
-        # TODO: Store these points, associate with project data, etc.
+        # NOTE: Currently layer_name is received but NOT saved to project yet.
+        if not self.current_project:
+            self.logger.warning("Cannot save finalized polyline: No active project.")
+            return
         
-        # Convert QPointF list to list of (x, y) tuples
-        point_tuples = [(p.x(), p.y()) for p in points]
+        # Convert QPointF list to list of tuples (float, float)
+        point_tuples: List[Tuple[float, float]] = [(p.x(), p.y()) for p in points]
         
-        # Add to project if project reference exists
-        if self.current_project:
+        self.logger.info(f"Received finalized polyline with {len(point_tuples)} points.")
+        
+        # Store the polyline in the project
+        try:
             # TODO: Update Project model and this call to store layer_name with the polyline
-            self.current_project.add_traced_polyline(point_tuples)
-        else:
-            self.logger.warning("Cannot add traced polyline: No current project reference in VisualizationPanel.")
+            self.current_project.add_polyline(point_tuples)
+            self.logger.info(f"Polyline with {len(point_tuples)} vertices added to the project.")
+        except Exception as e:
+            self.logger.error(f"Failed to add polyline to project: {e}", exc_info=True)
+            # Optionally, inform the user via status bar or message box
+            # self.parent().statusBar().showMessage(f"Error saving polyline: {e}", 5000)
+            # QMessageBox.warning(self, "Error", f"Could not save the traced polyline: {e}")
+            # Should we remove the visually finalized line from the scene if saving fails?
+            # For now, we leave it, but the project data is out of sync.
 
     def set_tracing_mode(self, enabled: bool):
          """
@@ -607,17 +608,17 @@ class VisualizationPanel(QWidget):
 
     # Add wheel event for zooming 2D view
     def wheelEvent(self, event):
-        if self.view_2d.isVisible():
-            factor = 1.15 if event.angleDelta().y() > 0 else 1 / 1.15
-            self.view_2d.scale(factor, factor)
+        # Zooming functionality
+        if event.modifiers() & Qt.ControlModifier:
+            if not self.view_2d.isVisible():
+                super().wheelEvent(event)
+                return
+            
+            zoom_factor = 1.15 # Adjust as needed
+            if event.angleDelta().y() > 0:
+                self.view_2d.scale(zoom_factor, zoom_factor)
+            else:
+                self.view_2d.scale(1.0 / zoom_factor, 1.0 / zoom_factor)
             event.accept()
-        elif HAS_3D and self.view_3d.isVisible():
-            # Pass event to 3D view if it's visible
-            super().wheelEvent(event) # Or self.view_3d.wheelEvent(event) if direct works
         else:
             super().wheelEvent(event) 
-
-    # --- Add getter for Layer Panel ---
-    def get_layer_control_panel(self) -> Optional[LayerControlPanel]:
-         """Returns the instance of the layer control panel widget."""
-         return self.layer_control_panel 

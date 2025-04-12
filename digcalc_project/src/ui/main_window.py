@@ -31,7 +31,7 @@ from src.core.importers.pdf_parser import PDFParser
 from src.models.project import Project
 from src.models.surface import Surface
 from src.ui.project_panel import ProjectPanel
-from src.ui.visualization_panel import VisualizationPanel, LayerControlPanel
+from src.ui.visualization_panel import VisualizationPanel
 from src.core.calculations.volume_calculator import VolumeCalculator
 from src.ui.dialogs.import_options_dialog import ImportOptionsDialog
 from src.ui.dialogs.report_dialog import ReportDialog
@@ -102,19 +102,19 @@ class MainWindow(QMainWindow):
         # self.visualization_panel.set_main_window(self) # Or pass project directly later
         
         # --- Layer Control Panel Dock ---
-        self.layer_control_panel_widget = self.visualization_panel.get_layer_control_panel()
-        if self.layer_control_panel_widget:
-            self.layer_dock = QDockWidget("Layers", self)
-            self.layer_dock.setFeatures(
-                QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable
-            )
-            self.layer_dock.setWidget(self.layer_control_panel_widget)
-            # Start hidden, only relevant when PDF is loaded? Or always visible? Let's start visible.
-            self.addDockWidget(Qt.RightDockWidgetArea, self.layer_dock) # Add to the right side
-            self.layer_dock.setVisible(True) # Make it visible by default
-        else:
-            self.layer_dock = None
-            self.logger.error("Could not create Layer Control dock widget: Panel not found.")
+        # self.layer_control_panel_widget = self.visualization_panel.get_layer_control_panel()
+        # if self.layer_control_panel_widget:
+        #     self.layer_dock = QDockWidget("Layers", self)
+        #     self.layer_dock.setFeatures(
+        #         QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable
+        #     )
+        #     self.layer_dock.setWidget(self.layer_control_panel_widget)
+        #     # Start hidden, only relevant when PDF is loaded? Or always visible? Let's start visible.
+        #     self.addDockWidget(Qt.RightDockWidgetArea, self.layer_dock) # Add to the right side
+        #     self.layer_dock.setVisible(True) # Make it visible by default
+        # else:
+        #     self.layer_dock = None
+        #     self.logger.error("Could not create Layer Control dock widget: Panel not found.")
     
     def _create_actions(self):
         """Create actions for menus and toolbars."""
@@ -208,8 +208,8 @@ class MainWindow(QMainWindow):
         self.view_menu.addSeparator()
         self.view_menu.addAction(self.project_dock.toggleViewAction())
         # Add toggle for Layer Panel if it was created
-        if self.layer_dock:
-            self.view_menu.addAction(self.layer_dock.toggleViewAction())
+        # if self.layer_dock:
+        #     self.view_menu.addAction(self.layer_dock.toggleViewAction())
         self.view_menu.addSeparator()
         self.view_menu.addAction(self.toggle_tracing_action) # Add tracing action
         
@@ -278,23 +278,14 @@ class MainWindow(QMainWindow):
         # Maybe add PDF page info to status bar later?
     
     def _create_default_project(self):
-        """Create a default project on startup."""
-        self.current_project = Project("Untitled Project")
-        # Ensure the viz panel has the project reference from the start
-        self.visualization_panel.set_project(self.current_project)
-        self.project_panel.set_project(self.current_project)
-        self._update_analysis_actions_state()
-        self._update_pdf_controls() # Ensure PDF controls are initially disabled correctly
-        
+        """Creates a new, empty default project on startup."""
+        self._update_project(Project(name="Untitled Project"))
         # Update Layer Panel UI state after potentially loading project/PDF
-        if self.layer_control_panel_widget:
-             self.layer_control_panel_widget.update_ui_from_scene()
+        # if self.layer_control_panel_widget:
+        #     self.layer_control_panel_widget.update_ui_from_scene()
     
     def _update_project(self, project: Optional[Project]):
-        """
-        Sets the current project and updates relevant UI elements consistently.
-        Also clears PDF background when project changes.
-        """
+        """Updates the current project and refreshes relevant UI elements."""
         # Clear PDF before changing project context
         if hasattr(self, 'visualization_panel') and self.visualization_panel:
              self.visualization_panel.clear_pdf_background()

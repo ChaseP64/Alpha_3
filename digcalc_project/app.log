@@ -1,0 +1,114 @@
+2025-04-11 20:49:27,194 - __main__ - INFO - Starting DigCalc application
+2025-04-11 20:49:27,224 - __main__ - ERROR - Fatal error in main application: Project.__init__() missing 1 required positional argument: 'name'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\main.py", line 51, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 75, in __init__
+    self._create_default_project()
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 282, in _create_default_project
+    self._update_project(Project())
+                         ^^^^^^^^^
+TypeError: Project.__init__() missing 1 required positional argument: 'name'
+2025-04-11 20:49:42,243 - __main__ - INFO - Starting DigCalc application
+2025-04-11 20:49:42,270 - src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-11 20:49:42,271 - src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-11 20:49:42,271 - src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-11 20:49:42,271 - src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-11 20:49:42,271 - src.ui.visualization_panel - INFO - Cleared all visualizations.
+2025-04-11 20:49:42,272 - src.ui.main_window - INFO - Displaying 0 loaded surfaces...
+2025-04-11 20:49:42,272 - src.ui.main_window - INFO - Switched to project: Untitled Project
+2025-04-11 20:49:55,377 - src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-11 20:49:55,377 - src.ui.visualization_panel - INFO - Attempting to load PDF background: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-11 20:49:55,377 - src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-11 20:49:55,377 - src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-11 20:49:55,377 - src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-11 20:49:55,378 - src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-04-11 20:49:55,378 - src.visualization.pdf_renderer - INFO - Rendering 1 pages at 150 DPI...
+2025-04-11 20:49:55,438 - src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-04-11 20:49:55,440 - src.ui.tracing_scene - INFO - Background image set with size: 1275x1650
+2025-04-11 20:49:55,440 - src.ui.visualization_panel - INFO - Displayed PDF page 1
+2025-04-11 20:49:55,440 - src.ui.visualization_panel - INFO - PDF background loaded: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-11 20:49:55,440 - src.ui.visualization_panel - INFO - Clearing displayed polylines from scene.
+2025-04-11 20:49:55,440 - src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s).
+2025-04-11 20:49:59,450 - src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-04-11 20:49:59,450 - src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-04-11 20:50:00,792 - src.ui.tracing_scene - INFO - Finalized polyline with 4 vertices.
+2025-04-11 20:50:00,794 - src.ui.visualization_panel - INFO - Received finalized polyline with 0 points.
+2025-04-11 20:50:00,794 - src.ui.visualization_panel - ERROR - Failed to add polyline to project: 'Project' object has no attribute 'add_polyline'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\visualization_panel.py", line 545, in _on_polyline_finalized
+    self.current_project.add_polyline(point_tuples)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'Project' object has no attribute 'add_polyline'
+2025-04-11 20:50:02,310 - src.ui.tracing_scene - INFO - Finalized polyline with 6 vertices.
+2025-04-11 20:50:02,310 - src.ui.visualization_panel - INFO - Received finalized polyline with 0 points.
+2025-04-11 20:50:02,310 - src.ui.visualization_panel - ERROR - Failed to add polyline to project: 'Project' object has no attribute 'add_polyline'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\visualization_panel.py", line 545, in _on_polyline_finalized
+    self.current_project.add_polyline(point_tuples)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'Project' object has no attribute 'add_polyline'
+2025-04-11 20:50:04,203 - src.ui.main_window - INFO - Close event triggered.
+2025-04-11 20:50:05,244 - src.ui.main_window - INFO - Discarding unsaved changes in current project.
+2025-04-11 20:50:05,244 - src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-11 20:50:05,246 - src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-11 20:50:05,246 - src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-11 20:50:05,249 - src.ui.main_window - INFO - Closing application.
+2025-04-11 20:50:05,265 - __main__ - INFO - Application exited with code 0
+2025-04-11 20:50:19,890 - __main__ - INFO - Starting DigCalc application
+2025-04-11 20:50:19,920 - src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-11 20:50:19,921 - src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-11 20:50:19,921 - src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-11 20:50:19,921 - src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-11 20:50:19,921 - src.ui.visualization_panel - INFO - Cleared all visualizations.
+2025-04-11 20:50:19,921 - src.ui.main_window - INFO - Displaying 0 loaded surfaces...
+2025-04-11 20:50:19,921 - src.ui.main_window - INFO - Switched to project: Untitled Project
+2025-04-11 20:50:24,800 - src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-11 20:50:24,800 - src.ui.visualization_panel - INFO - Attempting to load PDF background: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-11 20:50:24,800 - src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-11 20:50:24,800 - src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-11 20:50:24,800 - src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-11 20:50:24,801 - src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-04-11 20:50:24,801 - src.visualization.pdf_renderer - INFO - Rendering 1 pages at 150 DPI...
+2025-04-11 20:50:24,858 - src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-04-11 20:50:24,861 - src.ui.tracing_scene - INFO - Background image set with size: 1275x1650
+2025-04-11 20:50:24,861 - src.ui.visualization_panel - INFO - Displayed PDF page 1
+2025-04-11 20:50:24,861 - src.ui.visualization_panel - INFO - PDF background loaded: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-11 20:50:24,862 - src.ui.visualization_panel - INFO - Clearing displayed polylines from scene.
+2025-04-11 20:50:24,862 - src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s).
+2025-04-11 20:50:32,777 - src.ui.main_window - INFO - Close event triggered.
+2025-04-11 20:50:33,947 - src.ui.main_window - INFO - Discarding unsaved changes in current project.
+2025-04-11 20:50:33,948 - src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-11 20:50:33,948 - src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-11 20:50:33,949 - src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-11 20:50:33,953 - src.ui.main_window - INFO - Closing application.
+2025-04-11 20:50:33,971 - __main__ - INFO - Application exited with code 0
+2025-04-11 20:51:32,247 - __main__ - INFO - Starting DigCalc application
+2025-04-11 20:51:32,275 - src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-11 20:51:32,275 - src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-11 20:51:32,275 - src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-11 20:51:32,275 - src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-11 20:51:32,275 - src.ui.visualization_panel - INFO - Cleared all visualizations.
+2025-04-11 20:51:32,276 - src.ui.main_window - INFO - Displaying 0 loaded surfaces...
+2025-04-11 20:51:32,276 - src.ui.main_window - INFO - Switched to project: Untitled Project
+2025-04-11 20:51:38,565 - src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-11 20:51:38,566 - src.ui.visualization_panel - INFO - Attempting to load PDF background: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-11 20:51:38,566 - src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-11 20:51:38,566 - src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-11 20:51:38,566 - src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-11 20:51:38,567 - src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-04-11 20:51:38,567 - src.visualization.pdf_renderer - INFO - Rendering 1 pages at 150 DPI...
+2025-04-11 20:51:38,624 - src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-04-11 20:51:38,626 - src.ui.tracing_scene - INFO - Background image set with size: 1275x1650
+2025-04-11 20:51:38,626 - src.ui.visualization_panel - INFO - Displayed PDF page 1
+2025-04-11 20:51:38,626 - src.ui.visualization_panel - INFO - PDF background loaded: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-11 20:51:38,626 - src.ui.visualization_panel - INFO - Clearing displayed polylines from scene.
+2025-04-11 20:51:38,626 - src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s).
+2025-04-11 20:51:49,709 - src.ui.main_window - INFO - Close event triggered.
+2025-04-11 20:51:52,343 - src.ui.main_window - INFO - Discarding unsaved changes in current project.
+2025-04-11 20:51:52,343 - src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-11 20:51:52,343 - src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-11 20:51:52,344 - src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-11 20:51:52,349 - src.ui.main_window - INFO - Closing application.
+2025-04-11 20:51:52,368 - __main__ - INFO - Application exited with code 0

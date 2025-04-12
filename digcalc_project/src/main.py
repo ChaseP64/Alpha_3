@@ -32,8 +32,9 @@ def main():
     Returns:
         int: Exit code (0 for success)
     """
-    # Initialize logging
-    setup_logging()
+    # Initialize logging, explicitly setting a log file
+    log_file_path = Path(__file__).parent.parent / "app.log"
+    setup_logging(log_file=str(log_file_path))
     logger = logging.getLogger(__name__)
     logger.info("Starting DigCalc application")
     
