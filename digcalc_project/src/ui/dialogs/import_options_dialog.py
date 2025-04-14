@@ -8,10 +8,10 @@ from PySide6.QtWidgets import (
     QFormLayout, QDialogButtonBox, QWidget, QSizePolicy
 )
 
-# Local imports
+# Local imports - Use relative paths
 # Assuming parser types might be needed for isinstance checks or methods
-from src.core.importers.csv_parser import CSVParser
-from src.core.importers.file_parser import FileParser # Import base or specific parsers as needed
+from ...core.importers.csv_parser import CSVParser
+from ...core.importers.file_parser import FileParser # Import base or specific parsers as needed
 
 class ImportOptionsDialog(QDialog):
     """Dialog for configuring import options for various file types."""

@@ -17,14 +17,9 @@ try:
 except ImportError:
     HAS_SCIPY = False
 
-# Correct the import path based on project structure
-# Assuming models are directly under src, not within geometry
-# This is a common pattern, adjust if your structure differs
-import sys
-from pathlib import Path
-# Add the 'src' directory to the Python path
-sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
-from models.surface import Surface, Point3D, Triangle
+# REMOVED sys.path manipulation
+# Use relative import for models
+from ...models.surface import Surface, Point3D, Triangle
 
 
 class TINGenerator:

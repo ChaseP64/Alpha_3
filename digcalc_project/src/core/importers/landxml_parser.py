@@ -13,8 +13,9 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 import uuid
 
-from src.core.importers.file_parser import FileParser, FileParserError
-from src.models.surface import Surface, Point3D, Triangle
+# Use relative imports
+from .file_parser import FileParser, FileParserError
+from ...models.surface import Surface, Point3D, Triangle
 
 
 class LandXMLParser(FileParser):
@@ -39,7 +40,8 @@ class LandXMLParser(FileParser):
         
         # Save reference to TINGenerator class
         # This allows mocking in tests
-        from src.core.geometry.tin_generator import TINGenerator
+        # Use relative import
+        from ..geometry.tin_generator import TINGenerator
         self._TINGenerator = TINGenerator
     
     @classmethod

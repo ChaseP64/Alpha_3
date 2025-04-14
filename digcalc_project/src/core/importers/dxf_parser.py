@@ -11,9 +11,10 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 
-from src.core.importers.file_parser import FileParser, FileParserError
-from src.models.surface import Surface, Point3D, Triangle
-from src.core.importers.dxf_importer import DXFImporter
+# Use relative imports
+from .file_parser import FileParser, FileParserError
+from ...models.surface import Surface, Point3D, Triangle
+from .dxf_importer import DXFImporter
 
 
 class DXFParser(FileParser):

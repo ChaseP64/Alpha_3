@@ -4,6 +4,8 @@
 Visualization panel for the DigCalc application.
 
 This module defines the 3D visualization panel for displaying surfaces and calculations.
+It also manages the 2D view for PDF rendering and tracing (currently using QGraphicsView,
+planned migration to QML via QQuickWidget).
 """
 
 import logging
@@ -12,6 +14,10 @@ import numpy as np
 
 # PySide6 imports
 from PySide6.QtCore import Qt, Slot, Signal, QRectF, QPointF
+# Import QQuickWidget if we were fully integrating QML here
+# from PySide6.QtQuickWidgets import QQuickWidget 
+# Import QJSValue for type hinting if needed
+from PySide6.QtQml import QJSValue # Use for type hint if receiving from QML
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem
 from PySide6.QtGui import QImage, QPixmap
 
@@ -24,20 +30,23 @@ try:
 except ImportError:
     HAS_3D = False
     
-# Local imports
-from src.models.surface import Surface, Point3D, Triangle
-from src.visualization.pdf_renderer import PDFRenderer, PDFRendererError
-from src.ui.tracing_scene import TracingScene
-from src.models.project import Project
+# Local imports - Use relative paths
+from ..models.surface import Surface, Point3D, Triangle
+from ..visualization.pdf_renderer import PDFRenderer, PDFRendererError
+from .tracing_scene import TracingScene # Relative within ui package
+from ..models.project import Project
 
 
 class VisualizationPanel(QWidget):
     """
     Panel for 3D visualization of surfaces and calculation results.
+    Also includes components for 2D PDF viewing and tracing.
     """
     
     # Signals
     surface_visualization_failed = Signal(str, str)  # (surface name, error message)
+    # Signal to indicate polyline data needs to be sent TO QML
+    request_polylines_load_to_qml = Signal() 
     
     def __init__(self, parent=None):
         """
@@ -57,12 +66,16 @@ class VisualizationPanel(QWidget):
         
         # --- Tracing Scene and Layer Panel ---
         self.scene_2d: TracingScene = None # Will be initialized in _init_ui
+        # --- QML Widget Placeholder (to be added when integrating QML) ---
+        # self.qml_widget: Optional[QQuickWidget] = None 
         
         # Initialize UI components
         self._init_ui()
         
         # Connect signals
         self.surface_visualization_failed.connect(self._on_visualization_failed)
+        # Connect the request signal to the actual loading method
+        self.request_polylines_load_to_qml.connect(self.load_polylines_into_qml)
         
         self.logger.debug("VisualizationPanel initialized")
     
@@ -71,17 +84,34 @@ class VisualizationPanel(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         
-        # --- Create 2D Scene, View, and Layer Panel ---
-        self.scene_2d = TracingScene(self) # Create the scene
+        # --- QML View Placeholder ---
+        # When integrating QML, instantiate QQuickWidget here
+        # self.qml_widget = QQuickWidget(self)
+        # self.qml_widget.setSource(QUrl.fromLocalFile('path/to/your/TracingComponent.qml')) # Example
+        # self.qml_widget.setResizeMode(QQuickWidget.SizeRootObjectToView)
+        # layout.addWidget(self.qml_widget)
+        # self.qml_widget.setVisible(False) # Initially hidden?
+        
+        # --- Get the root QML object to interact with it ---
+        # self.qml_root_object = self.qml_widget.rootObject()
+        # if self.qml_root_object:
+        #    # Connect signals FROM QML (example)
+        #    self.qml_root_object.polylineFinalized.connect(self._on_qml_polyline_finalized)
+        #    self.logger.info("Connected to QML signals.")
+        # else:
+        #    self.logger.error("Failed to get QML root object!")
+
+        # --- Legacy 2D Scene/View (To be removed/replaced by QML) ---
+        self.scene_2d = TracingScene(self) # Create the legacy scene
         self.view_2d = QGraphicsView(self.scene_2d)
         self.view_2d.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
         self.view_2d.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
         self.view_2d.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
-        self.view_2d.setVisible(False)
+        self.view_2d.setVisible(False) # Keep legacy hidden by default if migrating
         layout.addWidget(self.view_2d)
         
-        # Connect scene signal here now that scene_2d exists
-        self.scene_2d.polyline_finalized.connect(self._on_polyline_finalized)
+        # Connect legacy scene signal (keep for now, remove when QML fully replaces it)
+        self.scene_2d.polyline_finalized.connect(self._on_legacy_polyline_finalized)
         
         # --- 3D View --- 
         if HAS_3D:
@@ -408,8 +438,9 @@ class VisualizationPanel(QWidget):
         self.logger.debug(f"Surface {surface.name} visibility set to {visible}")
     
     def clear_all(self):
-        """Clears all visualizations, including PDF background."""
+        """Clears all visualizations, including PDF background and legacy traced lines."""
         self.clear_pdf_background()
+        self.clear_displayed_legacy_polylines() # Explicitly clear legacy lines
         
         if HAS_3D:
             for surface_name in list(self.surfaces.keys()):
@@ -459,6 +490,8 @@ class VisualizationPanel(QWidget):
              # self.pdf_load_failed.emit(str(e)) # Example signal
              self.pdf_renderer = None # Ensure renderer is None on failure
              self.view_2d.setVisible(False) # Keep 2D view hidden
+             # Also hide QML view if it exists
+             # if self.qml_widget: self.qml_widget.setVisible(False) 
              if HAS_3D:
                   self.view_3d.setVisible(True) # Ensure 3D view is visible
              # Re-raise or handle? For now, just log and return.
@@ -477,6 +510,18 @@ class VisualizationPanel(QWidget):
                 self.scene_2d.set_background_image(page_image)
                 # Fit view to the scene content (the background image)
                 self.view_2d.fitInView(self.scene_2d.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
+                # --- Pass PDF info TO QML component ---
+                # if self.qml_root_object and hasattr(self.qml_root_object, 'loadPdfPage'):
+                #     # Assuming QML can handle the QImage directly or needs a path/data
+                #     # This might need conversion depending on QML component's needs
+                #     # For example, save QImage to temp file and pass path, or pass raw data
+                #     # For now, let's assume it can take basic info
+                #     page_width = page_image.width()
+                #     page_height = page_image.height()
+                #     # You might need to provide the image data itself if QML can't load from path easily
+                #     # image_path_for_qml = self.pdf_renderer.get_image_path_for_page(self.current_pdf_page) # Hypothetical method
+                #     self.qml_root_object.loadPdfPage(self.pdf_renderer.pdf_path, self.current_pdf_page, page_width, page_height, self.pdf_renderer.dpi)
+                #     self.logger.info(f"Sent PDF page {self.current_pdf_page} info to QML.")
                 self.logger.info(f"Displayed PDF page {self.current_pdf_page}")
             else:
                 # Clear background if image is invalid
@@ -507,11 +552,17 @@ class VisualizationPanel(QWidget):
             self.pdf_renderer.close()
             self.pdf_renderer = None
         
-        # Clear the background in TracingScene
+        # Clear the background in TracingScene (legacy)
         self.scene_2d.set_background_image(None)
         
-        # Optionally hide the 2D view and show 3D view if available
+        # --- Clear background in QML ---
+        # if self.qml_root_object and hasattr(self.qml_root_object, 'clearPdfBackground'):
+        #    self.qml_root_object.clearPdfBackground()
+        #    self.logger.info("Cleared PDF background in QML.")
+        
+        # Optionally hide the 2D/QML view and show 3D view if available
         self.view_2d.setVisible(False)
+        # if self.qml_widget: self.qml_widget.setVisible(False)
         if HAS_3D:
              self.view_3d.setVisible(True)
         else:
@@ -521,15 +572,14 @@ class VisualizationPanel(QWidget):
     # --- Optional Tracing Control and Signal Handling ---
 
     @Slot(list)
-    def _on_polyline_finalized(self, points: List[QPointF]):
+    def _on_legacy_polyline_finalized(self, points: List[QPointF]):
         """
-        Slot called when the tracing scene emits a finalized polyline.
-        Stores the polyline data in the current project.
+        Slot called when the *legacy* tracing scene emits a finalized polyline.
+        Stores the polyline data in the current project (uses a default layer).
         
         Args:
             points (List[QPointF]): List of vertices in the finalized polyline.
         """
-        # NOTE: Currently layer_name is received but NOT saved to project yet.
         if not self.current_project:
             self.logger.warning("Cannot save finalized polyline: No active project.")
             return
@@ -537,15 +587,16 @@ class VisualizationPanel(QWidget):
         # Convert QPointF list to list of tuples (float, float)
         point_tuples: List[Tuple[float, float]] = [(p.x(), p.y()) for p in points]
         
-        self.logger.info(f"Received finalized polyline with {len(point_tuples)} points.")
+        self.logger.info(f"Received finalized polyline from LEGACY scene with {len(point_tuples)} points.")
         
-        # Store the polyline in the project
+        # Store the polyline in the project using a default layer
         try:
-            # TODO: Update Project model and this call to store layer_name with the polyline
-            self.current_project.add_polyline(point_tuples)
-            self.logger.info(f"Polyline with {len(point_tuples)} vertices added to the project.")
+            # Use the updated project model method with a default layer
+            default_layer = "Legacy Traces"
+            self.current_project.add_traced_polyline(point_tuples, default_layer)
+            self.logger.info(f"Legacy polyline with {len(point_tuples)} vertices added to project layer '{default_layer}'.")
         except Exception as e:
-            self.logger.error(f"Failed to add polyline to project: {e}", exc_info=True)
+            self.logger.error(f"Failed to add legacy polyline to project: {e}", exc_info=True)
             # Optionally, inform the user via status bar or message box
             # self.parent().statusBar().showMessage(f"Error saving polyline: {e}", 5000)
             # QMessageBox.warning(self, "Error", f"Could not save the traced polyline: {e}")
@@ -585,26 +636,68 @@ class VisualizationPanel(QWidget):
               self.view_2d.viewport().setCursor(Qt.OpenHandCursor)
               # Reset cursor etc. <- covered by line above
 
-    def load_and_display_polylines(self, polylines: List[List[Tuple[float, float]]]):
+    def load_and_display_legacy_polylines(self, polylines: List[List[Tuple[float, float]]]):
         """
-        Loads polylines from data and displays them on the TracingScene.
+        Loads polylines from data and displays them on the LEGACY TracingScene.
         Clears any previously displayed finalized polylines first.
         """
         if hasattr(self.scene_2d, 'load_polylines'):
-            self.logger.info(f"Loading and displaying {len(polylines)} traced polylines.")
+            self.logger.info(f"Loading and displaying {len(polylines)} traced polylines on LEGACY scene.")
             self.scene_2d.load_polylines(polylines)
         else:
             self.logger.error("Cannot load polylines: TracingScene does not have 'load_polylines' method.")
 
-    def clear_displayed_polylines(self):
+    def clear_displayed_legacy_polylines(self):
         """
-        Clears all finalized polylines currently displayed on the TracingScene.
+        Clears all finalized polylines currently displayed on the LEGACY TracingScene.
         """
         if hasattr(self.scene_2d, 'clear_finalized_polylines'):
-            self.logger.info("Clearing displayed polylines from scene.")
+            self.logger.info("Clearing displayed polylines from LEGACY scene.")
             self.scene_2d.clear_finalized_polylines()
         else:
             self.logger.error("Cannot clear polylines: TracingScene does not have 'clear_finalized_polylines' method.")
+
+    @Slot()
+    def load_polylines_into_qml(self):
+        """
+        Retrieves layered polyline data from the current project
+        and sends it to the QML tracing component.
+        Assumes a QML function like `loadPolylines(polylinesDict)` exists.
+        """
+        if not self.current_project:
+            self.logger.warning("Cannot load polylines into QML: No active project.")
+            return
+        
+        # Get the dictionary {layer_name: [polyline1, polyline2, ...]} 
+        polylines_by_layer = self.current_project.traced_polylines
+        
+        # Ensure data format is suitable for QML (e.g., list of lists for points)
+        qml_formatted_data = {}
+        total_polylines = 0
+        for layer, polylines in polylines_by_layer.items():
+            formatted_polylines = []
+            for poly in polylines:
+                # Convert list of tuples [(x,y), ...] to list of lists [[x,y], ...]
+                formatted_poly = [[pt[0], pt[1]] for pt in poly]
+                formatted_polylines.append(formatted_poly)
+                total_polylines += 1
+            qml_formatted_data[layer] = formatted_polylines
+        
+        self.logger.info(f"Preparing to load {total_polylines} polylines across {len(qml_formatted_data)} layers into QML.")
+        
+        # --- Call the QML function --- 
+        # try:
+        #     if self.qml_root_object and hasattr(self.qml_root_object, 'loadPolylines'):
+        #          # Assuming QML function accepts a dictionary/JS object
+        #          self.qml_root_object.loadPolylines(qml_formatted_data)
+        #          self.logger.info("Successfully sent polyline data to QML component.")
+        #     elif self.qml_root_object:
+        #          self.logger.error("QML root object found, but 'loadPolylines' method is missing.")
+        #     else:
+        #          self.logger.error("Cannot load polylines into QML: QML component not accessible.")
+        # except Exception as e:
+        #     self.logger.error(f"Error calling QML function 'loadPolylines': {e}", exc_info=True)
+        # Add user feedback if needed
 
     # Add wheel event for zooming 2D view
     def wheelEvent(self, event):

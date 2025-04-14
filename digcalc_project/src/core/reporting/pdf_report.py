@@ -18,8 +18,9 @@ from typing import Dict, Any, Optional, List
 # from reportlab.lib import colors
 # from reportlab.platypus import Table, TableStyle
 
-from models.surface import Surface
-from models.calculation import VolumeCalculation
+# Use relative imports
+from ...models.surface import Surface
+from ...models.calculation import VolumeCalculation
 
 
 class PDFReportGenerator:

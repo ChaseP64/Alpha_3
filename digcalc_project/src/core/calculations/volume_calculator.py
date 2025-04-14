@@ -10,7 +10,8 @@ import logging
 import numpy as np
 from typing import Dict, Optional, Tuple
 
-from models.surface import Surface
+# Use relative import
+from ...models.surface import Surface
 
 
 class VolumeCalculator:

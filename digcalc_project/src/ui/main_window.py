@@ -22,21 +22,21 @@ from PySide6.QtWidgets import (
     QSplitter, QMenuBar, QStatusBar, QSizePolicy
 )
 
-# Local imports
-from src.core.importers.csv_parser import CSVParser
-from src.core.importers.dxf_parser import DXFParser
-from src.core.importers.file_parser import FileParser
-from src.core.importers.landxml_parser import LandXMLParser
-from src.core.importers.pdf_parser import PDFParser
-from src.models.project import Project
-from src.models.surface import Surface
-from src.ui.project_panel import ProjectPanel
-from src.ui.visualization_panel import VisualizationPanel
-from src.core.calculations.volume_calculator import VolumeCalculator
-from src.ui.dialogs.import_options_dialog import ImportOptionsDialog
-from src.ui.dialogs.report_dialog import ReportDialog
-from src.ui.dialogs.volume_calculation_dialog import VolumeCalculationDialog
-from src.visualization.pdf_renderer import PDFRenderer, PDFRendererError
+# Local imports - Use relative paths
+from ..core.importers.csv_parser import CSVParser
+from ..core.importers.dxf_parser import DXFParser
+from ..core.importers.file_parser import FileParser
+from ..core.importers.landxml_parser import LandXMLParser
+from ..core.importers.pdf_parser import PDFParser
+from ..models.project import Project
+from ..models.surface import Surface
+from .project_panel import ProjectPanel # Relative within ui package
+from .visualization_panel import VisualizationPanel # Relative within ui package
+from ..core.calculations.volume_calculator import VolumeCalculator
+from .dialogs.import_options_dialog import ImportOptionsDialog # Relative within ui package
+from .dialogs.report_dialog import ReportDialog # Relative within ui package
+from .dialogs.volume_calculation_dialog import VolumeCalculationDialog # Relative within ui package
+from ..visualization.pdf_renderer import PDFRenderer, PDFRendererError
 
 
 class MainWindow(QMainWindow):
@@ -324,20 +324,29 @@ class MainWindow(QMainWindow):
                 self.visualization_panel.load_pdf_background(project.pdf_background_path, project.pdf_background_dpi)
                 self.visualization_panel.set_pdf_page(project.pdf_background_page)
                 # Load polylines after PDF is loaded and page is set
-                self.visualization_panel.load_and_display_polylines(project.traced_polylines)
+                # Use the renamed legacy method and extract only the polylines for the legacy layer (if any)
+                legacy_polylines = project.traced_polylines.get("Legacy Traces", [])
+                if legacy_polylines:
+                    self.logger.info(f"Restoring {len(legacy_polylines)} polylines from 'Legacy Traces' layer to legacy display.")
+                    self.visualization_panel.load_and_display_legacy_polylines(legacy_polylines)
+                else:
+                    self.visualization_panel.clear_displayed_legacy_polylines() # Ensure legacy view is clear
+                
+                # TODO: When QML is integrated, call load_polylines_into_qml here
+                # self.visualization_panel.load_polylines_into_qml() 
             except Exception as e:
-                 self.logger.error(f"Error restoring PDF/Tracing state from project: {e}")
+                 self.logger.error(f"Error restoring PDF/Tracing state from project: {e}", exc_info=True)
                  QMessageBox.warning(self, "Project Load Warning", f"Could not restore PDF background or traced lines:\n{e}")
                  # Clear potentially partial state
                  if self.visualization_panel.pdf_renderer:
                       self.visualization_panel.clear_pdf_background()
                  project.pdf_background_path = None # Clear from project if load failed
-                 project.traced_polylines = []
+                 project.traced_polylines = {}
         else:
             # If no PDF path in project, ensure view is clear
             if self.visualization_panel.pdf_renderer:
                  self.visualization_panel.clear_pdf_background()
-                 self.visualization_panel.clear_displayed_polylines()
+                 self.visualization_panel.clear_displayed_legacy_polylines()
         
         # Update controls based on final state
         self._update_analysis_actions_state()
@@ -405,7 +414,7 @@ class MainWindow(QMainWindow):
         if hasattr(self, 'visualization_panel'):
              self.visualization_panel.clear_all() # Assumes clear_all also handles PDF/traces
              # Explicitly ensure polylines are cleared if clear_all doesn't handle it
-             self.visualization_panel.clear_displayed_polylines() 
+             self.visualization_panel.clear_displayed_legacy_polylines() 
             
         # Update the UI with the new project
         self._update_project(new_project)
@@ -822,7 +831,8 @@ class MainWindow(QMainWindow):
                     self.current_project.pdf_background_dpi = self.pdf_dpi_setting
                     # Clear any previous polylines when loading a new PDF
                     self.current_project.clear_traced_polylines()
-                    self.visualization_panel.clear_displayed_polylines() 
+                    # Call the renamed method for legacy scene
+                    self.visualization_panel.clear_displayed_legacy_polylines() 
                 self.statusBar().showMessage(f"Loaded PDF background '{Path(filename).name}' ({self.visualization_panel.pdf_renderer.get_page_count()} pages).", 5000)
             except (FileNotFoundError, PDFRendererError, Exception) as e:
                  self.logger.exception(f"Failed to load PDF background: {e}")
@@ -845,7 +855,8 @@ class MainWindow(QMainWindow):
             self.current_project.pdf_background_dpi = 150
             # Also clear traced polylines when PDF is cleared
             self.current_project.clear_traced_polylines()
-            self.visualization_panel.clear_displayed_polylines() 
+            # Call the renamed method for legacy scene
+            self.visualization_panel.clear_displayed_legacy_polylines() 
         self._update_pdf_controls()
         
     def on_next_pdf_page(self):

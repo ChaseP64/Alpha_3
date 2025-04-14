@@ -17,9 +17,9 @@ from PySide6.QtWidgets import (
     QPushButton, QMessageBox, QCheckBox
 )
 
-# Local imports
-from src.models.project import Project
-from src.models.surface import Surface
+# Local imports - Use relative paths
+from ..models.project import Project
+from ..models.surface import Surface
 
 
 class ProjectPanel(QWidget):

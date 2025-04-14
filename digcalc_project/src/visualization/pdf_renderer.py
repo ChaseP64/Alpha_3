@@ -48,7 +48,7 @@ class PDFRenderer:
         rotation_angle (float): Placeholder for rotation angle in degrees (for future calibration).
         offset_x (float): Placeholder for X offset (for future calibration).
         offset_y (float): Placeholder for Y offset (for future calibration).
-        doc (fitz.Document | None): The loaded PyMuPDF document object.
+        doc (Optional["fitz.Document"]): The loaded PyMuPDF document object.
     """
     logger = logging.getLogger(__name__)
 
@@ -71,8 +71,8 @@ class PDFRenderer:
 
         self.pdf_path: str = pdf_path
         self.dpi: int = dpi
-        self._rendered_pages: List['QImage'] = []
-        self.doc: Optional[fitz.Document] = None
+        self._rendered_pages: List[QImage] = []
+        self.doc: Optional["fitz.Document"] = None
 
         # Placeholders for future calibration/alignment
         self.scale: float = 1.0
@@ -135,7 +135,7 @@ class PDFRenderer:
         self.logger.info(f"Finished rendering. Stored {len(self._rendered_pages)} page images.")
 
 
-    def get_page_image(self, page_number: int) -> Optional['QImage']:
+    def get_page_image(self, page_number: int) -> Optional[QImage]:
         """
         Retrieves the rendered QImage for a specific page.
 
@@ -143,7 +143,7 @@ class PDFRenderer:
             page_number (int): The page number to retrieve (1-based index).
 
         Returns:
-            Optional['QImage']: The rendered QImage for the page, or None if the
+            Optional[QImage]: The rendered QImage for the page, or None if the
                               page number is invalid or rendering failed for that page.
         """
         if not 1 <= page_number <= len(self._rendered_pages):

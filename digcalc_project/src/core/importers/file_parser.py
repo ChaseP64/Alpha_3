@@ -12,7 +12,8 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple, Union
 
-from src.models.surface import Surface, Point3D
+# Use relative import
+from ...models.surface import Surface, Point3D
 
 
 class FileParserError(Exception):
@@ -145,10 +146,11 @@ class FileParser(ABC):
         Returns:
             FileParser instance or None if no suitable parser is found
         """
-        from src.core.importers.csv_parser import CSVParser
-        from src.core.importers.landxml_parser import LandXMLParser
-        from src.core.importers.dxf_parser import DXFParser
-        from src.core.importers.pdf_parser import PDFParser
+        # Use relative imports
+        from .csv_parser import CSVParser
+        from .landxml_parser import LandXMLParser
+        from .dxf_parser import DXFParser
+        from .pdf_parser import PDFParser
         
         # Get file extension
         file_extension = Path(file_path).suffix.lower()

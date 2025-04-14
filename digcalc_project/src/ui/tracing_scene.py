@@ -210,10 +210,14 @@ class TracingScene(QGraphicsScene):
 
         self.logger.info(f"Finalized polyline with {len(self._current_polyline_points)} vertices.")
 
-        self._reset_drawing_state()
-
+        # --- FIX: Emit signal *before* resetting state --- 
+        # Store points before reset, as reset clears the list
+        points_to_emit = list(self._current_polyline_points) 
         # Emit signal with finalized points
-        self.polyline_finalized.emit(self._current_polyline_points)
+        self.polyline_finalized.emit(points_to_emit)
+        # ----------------------------------------------
+
+        self._reset_drawing_state()
 
     def _cancel_current_polyline(self):
         """Removes temporary items and resets the drawing state without finalizing."""
@@ -281,16 +285,18 @@ class TracingScene(QGraphicsScene):
         Args:
             polylines_data: A list where each item is a list of (x, y) tuples representing a polyline.
         """
-        self.clear_finalized_polylines()
+        # self.clear_finalized_polylines() # REMOVED - Clearing should be handled before calling this
 
-        # TODO: Update this when project save/load includes layer info per polyline
-        # For now, load all into the first default layer
-        target_layer_name = "Default"
-        if target_layer_name not in self.items():
-             self.logger.error(f"Cannot load polylines: Default layer '{target_layer_name}' not found.")
-             return
+        # REMOVED Incorrect check for a layer item named "Default"
+        # The scene is assumed to be clear, and we just add the items back.
+        # target_layer_name = "Default"
+        # if target_layer_name not in self.items():
+        #     self.logger.error(f"Cannot load polylines: Default layer '{target_layer_name}' not found.")
+        #     return
 
-        self.logger.warning(f"Loading {len(polylines_data)} polylines into default layer '{target_layer_name}' (Layer association not loaded).")
+        self.logger.info(f"Loading {len(polylines_data)} polylines onto the scene.")
+
+        added_count = 0
 
         for poly_points in polylines_data:
             if len(poly_points) >= 2:
@@ -305,12 +311,13 @@ class TracingScene(QGraphicsScene):
                     path_item.setPen(self._finalized_polyline_pen)
                     path_item.setZValue(0)
                     self.addItem(path_item)
+                    added_count += 1
                 except Exception as e:
                     self.logger.error(f"Error creating QGraphicsPathItem for loaded polyline: {e}", exc_info=True)
             else:
                  self.logger.warning(f"Skipping loaded polyline with less than 2 points: {poly_points}")
 
-        self.logger.info(f"Loaded and displayed {len(polylines_data)} polylines.")
+        self.logger.info(f"Loaded and displayed {added_count} polylines.")
 
     # --- View Interaction (Future) ---
     # Zooming, panning etc. could be handled here or in the QGraphicsView

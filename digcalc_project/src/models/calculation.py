@@ -12,7 +12,8 @@ import uuid
 import datetime
 from typing import Dict, List, Optional, Any
 
-from src.models.surface import Surface
+# Use relative import
+from .surface import Surface
 
 
 class VolumeCalculation:

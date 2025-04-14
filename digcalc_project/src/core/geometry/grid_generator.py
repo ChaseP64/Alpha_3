@@ -11,7 +11,8 @@ import logging
 import numpy as np
 from typing import List
 
-from models.surface import Surface, Point3D
+# Use relative import
+from ...models.surface import Surface, Point3D
 
 
 class GridGenerator:
