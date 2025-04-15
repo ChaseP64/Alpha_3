@@ -16,9 +16,9 @@ from io import StringIO
 
 import numpy as np
 
-# Use relative imports
+# Use absolute import
 from .file_parser import FileParser, FileParserError
-from ...models.surface import Surface, Point3D
+from digcalc_project.src.models.surface import Surface, Point3D
 
 
 class CSVParser(FileParser):

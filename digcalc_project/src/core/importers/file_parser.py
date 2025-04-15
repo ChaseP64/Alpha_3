@@ -12,8 +12,8 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple, Union
 
-# Use relative import
-from ...models.surface import Surface, Point3D
+# Use absolute import assuming 'digcalc_project' is the top-level package
+from digcalc_project.src.models.surface import Surface, Point3D
 
 
 class FileParserError(Exception):

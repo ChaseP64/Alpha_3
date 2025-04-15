@@ -13,9 +13,9 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 import uuid
 
-# Use relative imports
+# Use absolute import
 from .file_parser import FileParser, FileParserError
-from ...models.surface import Surface, Point3D, Triangle
+from digcalc_project.src.models.surface import Surface, Point3D, Triangle
 
 
 class LandXMLParser(FileParser):

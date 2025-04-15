@@ -13,13 +13,13 @@ from typing import Optional, Dict, List, Any, Tuple
 import numpy as np
 
 # PySide6 imports
-from PySide6.QtCore import Qt, Slot, Signal, QRectF, QPointF
+from PySide6.QtCore import Qt, Slot, Signal, QRectF, QPointF, QPoint
 # Import QQuickWidget if we were fully integrating QML here
 # from PySide6.QtQuickWidgets import QQuickWidget 
 # Import QJSValue for type hinting if needed
 from PySide6.QtQml import QJSValue # Use for type hint if receiving from QML
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem
-from PySide6.QtGui import QImage, QPixmap
+from PySide6.QtGui import QImage, QPixmap, QMouseEvent, QWheelEvent
 
 # Import visualization libraries
 try:
@@ -35,6 +35,111 @@ from ..models.surface import Surface, Point3D, Triangle
 from ..visualization.pdf_renderer import PDFRenderer, PDFRendererError
 from .tracing_scene import TracingScene # Relative within ui package
 from ..models.project import Project
+
+
+class InteractiveGraphicsView(QGraphicsView):
+    """
+    A custom QGraphicsView that adds interactive zooming with Ctrl+Wheel
+    and panning with the middle mouse button drag.
+    """
+    def __init__(self, scene: QGraphicsScene, parent: Optional[QWidget] = None):
+        super().__init__(scene, parent)
+
+        # Set transformation anchor for zooming centered on mouse
+        self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
+        self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
+        # Start with no drag mode; middle mouse will activate ScrollHandDrag
+        self.setDragMode(QGraphicsView.DragMode.NoDrag)
+        self.logger = logging.getLogger(__name__ + ".InteractiveGraphicsView")
+
+    def wheelEvent(self, event: QWheelEvent):
+        """Handles mouse wheel events for zooming."""
+        if event.modifiers() == Qt.ControlModifier:
+            zoom_in_factor = 1.15
+            zoom_out_factor = 1.0 / zoom_in_factor
+
+            # Save the scene pos at the cursor
+            # Use position() which returns QPointF, convert to QPoint for mapToScene
+            old_pos = self.mapToScene(event.position().toPoint())
+
+            # Zoom
+            if event.angleDelta().y() > 0:
+                zoom_factor = zoom_in_factor
+                self.logger.debug("Zooming in")
+            else:
+                zoom_factor = zoom_out_factor
+                self.logger.debug("Zooming out")
+            self.scale(zoom_factor, zoom_factor)
+
+            # Get the new position
+            new_pos = self.mapToScene(event.position().toPoint())
+
+            # Move scene to keep cursor positioned over the same scene point
+            delta = new_pos - old_pos
+            self.translate(delta.x(), delta.y())
+
+            event.accept() # Indicate we handled this event
+        else:
+            # Allow default vertical/horizontal scrolling if Ctrl is not pressed
+            super().wheelEvent(event)
+
+    def mousePressEvent(self, event: QMouseEvent):
+        """Handles mouse press events to initiate panning with middle button."""
+        # Check for Middle Button OR Alt+LeftButton for panning
+        alt_pressed = event.modifiers() == Qt.AltModifier # Check for exact Alt modifier
+        is_middle_button = event.button() == Qt.MiddleButton
+        is_alt_left_button = alt_pressed and event.button() == Qt.LeftButton
+
+        if is_middle_button or is_alt_left_button:
+            self.logger.debug(f"Pan initiated ({'Middle Button' if is_middle_button else 'Alt+Left Button'}) - Activating ScrollHandDrag")
+            # Activate ScrollHandDrag mode for middle mouse button panning
+            self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+            # Create a synthesized left mouse press event to actually start the drag
+            # This is a common workaround for activating ScrollHandDrag with middle mouse
+            # Use event.position() (QPointF) directly
+            synthesized_event = QMouseEvent(
+                event.type(),
+                event.position(),
+                Qt.LeftButton,   # Pretend it's a left button press
+                Qt.LeftButton,   # Buttons state should include LeftButton
+                event.modifiers()
+            )
+            super().mousePressEvent(synthesized_event) # Send synthesized event to base class
+            event.accept() # Accept the original middle mouse event
+        else:
+            # Pass other mouse presses (normal left click, right click, etc.) to base class
+            super().mousePressEvent(event)
+
+    # mouseMoveEvent is implicitly handled by ScrollHandDrag when active
+
+    def mouseReleaseEvent(self, event: QMouseEvent):
+        """Handles mouse release events to stop panning."""
+        pan_was_active = self.dragMode() == QGraphicsView.DragMode.ScrollHandDrag
+
+        # If a pan was active AND (the left button is released OR the middle button is released)
+        if pan_was_active and (event.button() == Qt.LeftButton or event.button() == Qt.MiddleButton):
+            self.logger.debug(f"Pan-ending button released ({event.button()}) - Deactivating ScrollHandDrag")
+
+            # Deactivate ScrollHandDrag mode FIRST
+            self.setDragMode(QGraphicsView.DragMode.NoDrag)
+
+            # Synthesize the left mouse release event to ensure the base class stops dragging
+            # This is crucial because the drag was likely initiated with a synthesized left press.
+            synthesized_event = QMouseEvent(
+                 event.type(),
+                 event.position(),
+                 Qt.LeftButton,   # ALWAYS synthesize LeftButton release
+                 Qt.NoButton,     # Buttons state should be NoButton now
+                 event.modifiers() # Pass original modifiers
+             )
+            super().mouseReleaseEvent(synthesized_event) # Send synthesized event
+
+            # Accept the ORIGINAL event (Left or Middle) that triggered this handler
+            event.accept()
+        else:
+            # If not ending a pan, pass the event to the base class for normal handling
+            # (e.g., normal left click release for tracing, right click release)
+            super().mouseReleaseEvent(event)
 
 
 class VisualizationPanel(QWidget):
@@ -63,6 +168,9 @@ class VisualizationPanel(QWidget):
         self.pdf_background_item: Optional[QGraphicsPixmapItem] = None
         self.current_pdf_page: int = 1
         self.current_project: Optional[Project] = None
+        
+        # Temporary default until layer selector UI is implemented
+        self.active_layer_name: str = "Existing Surface"
         
         # --- Tracing Scene and Layer Panel ---
         self.scene_2d: TracingScene = None # Will be initialized in _init_ui
@@ -102,11 +210,9 @@ class VisualizationPanel(QWidget):
         #    self.logger.error("Failed to get QML root object!")
 
         # --- Legacy 2D Scene/View (To be removed/replaced by QML) ---
-        self.scene_2d = TracingScene(self) # Create the legacy scene
-        self.view_2d = QGraphicsView(self.scene_2d)
-        self.view_2d.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
-        self.view_2d.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
-        self.view_2d.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
+        self.scene_2d = TracingScene(self) # Create the scene first
+        self.view_2d = InteractiveGraphicsView(self.scene_2d, self) # Use the new custom view
+        # DragMode, TransformationAnchor, ResizeAnchor are now set within InteractiveGraphicsView.__init__
         self.view_2d.setVisible(False) # Keep legacy hidden by default if migrating
         layout.addWidget(self.view_2d)
         
@@ -572,36 +678,42 @@ class VisualizationPanel(QWidget):
     # --- Optional Tracing Control and Signal Handling ---
 
     @Slot(list)
-    def _on_legacy_polyline_finalized(self, points: List[QPointF]):
+    def _on_legacy_polyline_finalized(self, points_qpointf: List[QPointF]):
         """
-        Slot called when the *legacy* tracing scene emits a finalized polyline.
-        Stores the polyline data in the current project (uses a default layer).
+        Slot to receive finalized polyline data from the legacy TracingScene.
+        Converts QPointF list to list of (float, float) tuples and saves to project.
+        """
+        if self.current_project is None:
+            self.logger.warning("_on_legacy_polyline_finalized called but no project is active.")
+            return
+            
+        # Convert QPointF list to list of (float, float) tuples
+        points = [(p.x(), p.y()) for p in points_qpointf]
         
-        Args:
-            points (List[QPointF]): List of vertices in the finalized polyline.
-        """
-        if not self.current_project:
-            self.logger.warning("Cannot save finalized polyline: No active project.")
+        if not points:
+            self.logger.warning("Received empty polyline from legacy scene.")
+            return
+
+        if len(points) < 2:
+            self.logger.warning(f"Received legacy polyline with {len(points)} points, ignoring (needs >= 2).")
             return
         
-        # Convert QPointF list to list of tuples (float, float)
-        point_tuples: List[Tuple[float, float]] = [(p.x(), p.y()) for p in points]
+        # --- Save the polyline to the Project Model ---
+        # Use the panel's currently selected active layer for legacy traces
+        self.logger.debug(
+            "VisualizationPanel: saving legacy polyline with %d vertices to layer '%s'",
+            len(points),
+            self.active_layer_name, # Use panel's active layer
+        )
+        self.current_project.add_traced_polyline(
+            points,
+            layer_name=self.active_layer_name, # Use panel's active layer
+        )
         
-        self.logger.info(f"Received finalized polyline from LEGACY scene with {len(point_tuples)} points.")
+        # Consider emitting a signal if other UI parts need to know about the update
+        # self.project_updated.emit() 
         
-        # Store the polyline in the project using a default layer
-        try:
-            # Use the updated project model method with a default layer
-            default_layer = "Legacy Traces"
-            self.current_project.add_traced_polyline(point_tuples, default_layer)
-            self.logger.info(f"Legacy polyline with {len(point_tuples)} vertices added to project layer '{default_layer}'.")
-        except Exception as e:
-            self.logger.error(f"Failed to add legacy polyline to project: {e}", exc_info=True)
-            # Optionally, inform the user via status bar or message box
-            # self.parent().statusBar().showMessage(f"Error saving polyline: {e}", 5000)
-            # QMessageBox.warning(self, "Error", f"Could not save the traced polyline: {e}")
-            # Should we remove the visually finalized line from the scene if saving fails?
-            # For now, we leave it, but the project data is out of sync.
+        self.logger.info(f"Saved polyline with {len(points)} points to layer '{self.active_layer_name}' from legacy scene.")
 
     def set_tracing_mode(self, enabled: bool):
          """
@@ -723,94 +835,107 @@ class VisualizationPanel(QWidget):
     @Slot(QJSValue, str) # Or Slot(list, str) if QML sends plain lists
     def _on_qml_polyline_finalized(self, polyline_data: QJSValue, layer_name: str):
         """
-        Slot called when the QML tracing component emits a finalized polyline.
-        Converts data if necessary and stores it in the current project with its layer.
-
+        Slot to receive finalized polyline data from QML.
+        
         Args:
-            polyline_data (QJSValue or list): The polyline points from QML.
-                Expected format after conversion: [[x1, y1], [x2, y2], ...]
-            layer_name (str): The name of the layer the polyline belongs to.
+            polyline_data: The QJSValue representing the array of points from QML.
+                           Each point should be an object like { x: number, y: number }.
+            layer_name: The name of the layer the polyline belongs to (passed from QML).
         """
-        if not self.current_project:
-            self.logger.warning("Cannot save finalized QML polyline: No active project.")
+        if self.current_project is None:
+            self.logger.warning("_on_qml_polyline_finalized called but no project is active.")
+            return
+            
+        self.logger.debug(f"Received finalized polyline from QML for layer: {layer_name}")
+        
+        # --- Convert QJSValue to Python list of tuples ---
+        points: List[Tuple[float, float]] = []
+        if not polyline_data or not polyline_data.isArray():
+            self.logger.error("Invalid polyline data received from QML: not an array or is null.")
+            return
+            
+        length = polyline_data.property('length').toInt() # QJSValue arrays need length property
+        for i in range(length):
+            qml_point = polyline_data.property(i) # Get the QJSValue for the point object
+            if qml_point and qml_point.isObject():
+                x = qml_point.property('x').toNumber()
+                y = qml_point.property('y').toNumber()
+                if x is not None and y is not None: # Check conversion success
+                    points.append((float(x), float(y)))
+                else:
+                    self.logger.warning(f"Invalid point data in QML polyline at index {i}: {qml_point}")
+            else:
+                 self.logger.warning(f"Invalid item in QML polyline array at index {i}: {qml_point}")
+        # --- End Conversion ---
+        
+        if not points:
+            self.logger.warning("No valid points extracted from QML polyline data.")
             return
 
-        if not layer_name:
-            self.logger.warning("Received finalized QML polyline without a layer name. Skipping.")
+        if len(points) < 2:
+            self.logger.warning(f"Received polyline with {len(points)} points from QML, ignoring (needs >= 2).")
             return
-
-        try:
-            # Convert QJSValue to Python list of lists/tuples
-            # QJSValue.toVariant() usually works well for simple types like lists/arrays
-            if isinstance(polyline_data, QJSValue):
-                points_list_of_lists = polyline_data.toVariant()
-            else:
-                points_list_of_lists = polyline_data # Assume it's already a list
-
-            # Further convert to list of tuples (float, float) as expected by Project model
-            point_tuples: List[Tuple[float, float]] = []
-            if isinstance(points_list_of_lists, list):
-                for pt in points_list_of_lists:
-                    if isinstance(pt, (list, tuple)) and len(pt) == 2:
-                        try:
-                            point_tuples.append((float(pt[0]), float(pt[1])))
-                        except (ValueError, TypeError):
-                            self.logger.warning(f"Invalid coordinate format in QML polyline data: {pt}. Skipping point.")
-                            # Decide if the whole polyline should be skipped
-                            # For now, just skip the point
-                    else:
-                        self.logger.warning(f"Invalid point structure in QML polyline data: {pt}. Skipping point.")
-            else:
-                raise TypeError("QML polyline data did not convert to a Python list.")
-
-            if len(point_tuples) < 2:
-                 self.logger.warning("Received polyline from QML with less than 2 valid points. Skipping.")
-                 return
-
-            self.logger.info(f"Received finalized polyline from QML with {len(point_tuples)} points for layer '{layer_name}'.")
-
-            # Store the polyline in the project using the layer name
-            self.current_project.add_traced_polyline(point_tuples, layer_name)
-            self.logger.info(f"QML polyline added to project layer '{layer_name}'.")
-
-        except Exception as e:
-             self.logger.error(f"Failed to process or add polyline from QML to project: {e}", exc_info=True)
-             # Add user feedback if needed
+            
+        # --- Save the polyline to the Project Model ---
+        # Use the layer_name received *from QML*
+        # Note: The layer_name parameter in this function signature should come from QML,
+        # overriding the panel's self.active_layer_name for QML-initiated lines.
+        # If QML doesn't send a layer, we might fall back, but the signal implies it should.
+        
+        self.logger.debug(
+            "VisualizationPanel: saving QML polyline with %d vertices to layer '%s'",
+            len(points),
+            layer_name, # Use layer_name passed from QML
+        )
+        self.current_project.add_traced_polyline(
+            points,
+            layer_name=layer_name, # Use layer_name passed from QML
+        )
+        # Consider emitting a signal if other UI parts need to know about the update
+        # self.project_updated.emit() 
+        
+        self.logger.info(f"Saved polyline with {len(points)} points to layer '{layer_name}' from QML.")
 
     # --- End QML Slots ---
     
     # --- Legacy Tracing Slots --- 
     @Slot(list)
-    def _on_legacy_polyline_finalized(self, points: List[QPointF]):
+    def _on_legacy_polyline_finalized(self, points_qpointf: List[QPointF]):
         """
-        Slot called when the *legacy* tracing scene emits a finalized polyline.
-        Stores the polyline data in the current project (uses a default layer).
+        Slot to receive finalized polyline data from the legacy TracingScene.
+        Converts QPointF list to list of (float, float) tuples and saves to project.
+        """
+        if self.current_project is None:
+            self.logger.warning("_on_legacy_polyline_finalized called but no project is active.")
+            return
+            
+        # Convert QPointF list to list of (float, float) tuples
+        points = [(p.x(), p.y()) for p in points_qpointf]
         
-        Args:
-            points (List[QPointF]): List of vertices in the finalized polyline.
-        """
-        if not self.current_project:
-            self.logger.warning("Cannot save finalized polyline: No active project.")
+        if not points:
+            self.logger.warning("Received empty polyline from legacy scene.")
+            return
+
+        if len(points) < 2:
+            self.logger.warning(f"Received legacy polyline with {len(points)} points, ignoring (needs >= 2).")
             return
         
-        # Convert QPointF list to list of tuples (float, float)
-        point_tuples: List[Tuple[float, float]] = [(p.x(), p.y()) for p in points]
+        # --- Save the polyline to the Project Model ---
+        # Use the panel's currently selected active layer for legacy traces
+        self.logger.debug(
+            "VisualizationPanel: saving legacy polyline with %d vertices to layer '%s'",
+            len(points),
+            self.active_layer_name, # Use panel's active layer
+        )
+        self.current_project.add_traced_polyline(
+            points,
+            layer_name=self.active_layer_name, # Use panel's active layer
+        )
         
-        self.logger.info(f"Received finalized polyline from LEGACY scene with {len(point_tuples)} points.")
+        # Consider emitting a signal if other UI parts need to know about the update
+        # self.project_updated.emit() 
         
-        # Store the polyline in the project using a default layer
-        try:
-            # Use the updated project model method with a default layer
-            default_layer = "Legacy Traces"
-            self.current_project.add_traced_polyline(point_tuples, default_layer)
-            self.logger.info(f"Legacy polyline with {len(point_tuples)} vertices added to project layer '{default_layer}'.")
-        except Exception as e:
-            self.logger.error(f"Failed to add legacy polyline to project: {e}", exc_info=True)
-            # Optionally, inform the user via status bar or message box
-            # self.parent().statusBar().showMessage(f"Error saving polyline: {e}", 5000)
-            # QMessageBox.warning(self, "Error", f"Could not save the traced polyline: {e}")
-            # Should we remove the visually finalized line from the scene if saving fails?
-            # For now, we leave it, but the project data is out of sync.
+        self.logger.info(f"Saved polyline with {len(points)} points to layer '{self.active_layer_name}' from legacy scene.")
 
     def set_tracing_mode(self, enabled: bool):
          """

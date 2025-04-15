@@ -24,7 +24,8 @@ class Project:
     Project model representing an excavation takeoff project.
     
     A project contains surfaces, volume calculations, and metadata.
-    It now also supports storing traced polylines organized by layer.
+    `traced_polylines` is now a dict keyed by layer name; see
+    add_traced_polyline() for details.
     """
     
     def __init__(self, name: str, project_file: Optional[str] = None):
@@ -61,6 +62,19 @@ class Project:
         
         self.logger.debug(f"Project '{name}' initialized")
     
+    @property
+    def legacy_traced_polylines(self) -> List[List[Tuple[float, float]]]:
+        """ Flatten and return all polylines regardless of layer.
+
+        This lets older code that still iterates over
+        `project.legacy_traced_polylines` work without change.
+        """
+        return [
+            pl
+            for layer_polys in self.traced_polylines.values()
+            for pl in layer_polys
+        ]
+
     def add_surface(self, surface: Surface) -> None:
         """
         Add a surface to the project using its name as the key.
@@ -140,26 +154,26 @@ class Project:
         self.is_modified = True
         self.logger.info(f"Calculation '{calculation.name}' added to project")
     
-    def add_traced_polyline(self, polyline_points: List[Tuple[float, float]], layer_name: str):
+    def add_traced_polyline(
+        self, 
+        polyline_points: List[Tuple[float, float]], 
+        layer_name: str = "Existing Surface",
+    ) -> None:
+        """ Store polyline_points under layer_name.
+        polyline_points must contain at least 2 (x, y) tuples.
         """
-        Adds a finalized traced polyline to the project, associated with a specific layer.
+        # Use logger from instance if available, otherwise get a new one
+        logger = getattr(self, 'logger', logging.getLogger(__name__)) 
 
-        Args:
-            polyline_points: List of (x, y) coordinate tuples for the polyline.
-            layer_name: The name of the layer this polyline belongs to.
-        """
-        if not layer_name:
-            self.logger.warning("Attempted to add traced polyline with empty layer name. Skipping.")
+        if len(polyline_points) < 2:
+            logger.warning("Ignoring polyline with fewer than 2 points.")
             return
-            
-        if len(polyline_points) >= 2:
-            # Use setdefault to create the list if the layer doesn't exist
-            self.traced_polylines.setdefault(layer_name, []).append(polyline_points)
-            self.modified_at = datetime.datetime.now()
-            self.is_modified = True
-            self.logger.debug(f"Added traced polyline with {len(polyline_points)} points to layer '{layer_name}'.")
-        else:
-            self.logger.warning("Attempted to add invalid polyline (less than 2 points).")
+        
+        # Use setdefault to create the list if the layer doesn't exist
+        self.traced_polylines.setdefault(layer_name, []).append(polyline_points)
+        self.modified_at = datetime.datetime.now()
+        self.is_modified = True
+        logger.debug(f"Added traced polyline with {len(polyline_points)} points to layer '{layer_name}'.")
             
     def clear_traced_polylines(self):
         """
@@ -248,8 +262,30 @@ class Project:
             with open(filename, 'r') as f:
                 data = json.load(f)
             
-            # --- Load schema version for potential migrations ---
-            # Default to 0 if not present (very old format) or 1 if traced_polylines is a list
+            # --- Load and handle traced_polylines first (handles migration) ---
+            raw_polys = data.get("traced_polylines", {}) # Default to empty dict
+            temp_traced_polylines = {}
+            migrated = False
+            if isinstance(raw_polys, list):
+                # Legacy file: single list => migrate to default layer
+                temp_traced_polylines = {"Legacy Traces": raw_polys}
+                logger.warning(
+                    "Migrated legacy polyline list to 'Legacy Traces' layer " 
+                    "(%d polylines). Please save the project to keep these changes.",
+                    len(raw_polys)
+                )
+                migrated = True
+            elif isinstance(raw_polys, dict):
+                # Standard v2 format
+                temp_traced_polylines = raw_polys
+                logger.debug("Loaded traced polylines in dictionary format.")
+            elif raw_polys is not None:
+                 # Handle cases where data exists but is neither dict nor list
+                 logger.warning("Traced polyline data found but is in an unexpected format (%s). No polylines loaded.", type(raw_polys))
+            # If raw_polys is None or {}, temp_traced_polylines remains {}
+
+            # --- Load schema version for potential migrations --- 
+            # (Keep this for other potential future migrations, though not used for polylines now)
             schema_version = data.get("project_schema_version", 0)
             if schema_version == 0 and isinstance(data.get("traced_polylines"), list):
                  schema_version = 1 # Infer version 1 if key exists as list
@@ -317,56 +353,12 @@ class Project:
                 project.pdf_background_page = 1
                 project.pdf_background_dpi = 150
                 
-            # --- Load Traced Polylines (Handle v1 list -> v2 dict migration) ---
-            traced_data = data.get("traced_polylines")
-            project.traced_polylines = {} # Initialize as dict
-
-            if schema_version >= 2 and isinstance(traced_data, dict):
-                # Load v2 format (dictionary)
-                # Optional: Add validation for the dict structure here if needed
-                project.traced_polylines = traced_data 
-                logger.debug("Loaded traced polylines in v2 dictionary format.")
-
-            elif schema_version <= 1 and isinstance(traced_data, list):
-                # Load v1 format (list) and migrate to v2 dict
-                logger.warning("Loading traced polylines from older project format (v1 list). Migrating to default layer 'Existing Surface'.")
-                migrated_count = 0
-                default_layer = "Existing Surface"
-                valid_polylines_for_migration = []
-                
-                # --- Reuse existing validation logic for points ---
-                for i, poly in enumerate(traced_data):
-                    if isinstance(poly, list) and len(poly) >= 2: 
-                        is_valid = True
-                        converted_poly = []
-                        for pt in poly:
-                             if isinstance(pt, (list, tuple)) and len(pt) == 2 and all(isinstance(coord, (int, float)) for coord in pt):
-                                 converted_poly.append(tuple(pt)) # Ensure tuple format
-                             else:
-                                 is_valid = False
-                                 logger.warning(f"Invalid point data found in legacy traced polyline {i} at index {poly.index(pt)}. Skipping polyline during migration.")
-                                 break
-                        if is_valid:
-                             valid_polylines_for_migration.append(converted_poly)
-                    else:
-                        logger.warning(f"Invalid legacy polyline data format at index {i}. Skipping during migration.")
-                # --- End reused validation logic ---
-                
-                if valid_polylines_for_migration:
-                     project.traced_polylines.setdefault(default_layer, []).extend(valid_polylines_for_migration)
-                     migrated_count = len(valid_polylines_for_migration)
-                     project.is_modified = True # Mark as modified due to migration
-                     project.modified_at = datetime.datetime.now() # Update timestamp
-                     logger.info(f"Successfully migrated {migrated_count} polylines to layer '{default_layer}'. Please save the project to keep these changes.")
-                else:
-                     logger.warning("No valid polylines found in legacy format to migrate.")
-
-            elif traced_data is not None: 
-                 # Handle cases where data exists but is neither dict nor list
-                 logger.warning("Traced polyline data found but is in an unexpected format. No polylines loaded.")
-            # If traced_data is None, project.traced_polylines remains {}
-
-            project.is_modified = False # Project is clean after load (unless migrated)
+            # Assign the processed/migrated polylines
+            project.traced_polylines = temp_traced_polylines
+            
+            # Set modified status based ONLY on migration having occurred
+            project.is_modified = migrated 
+            
             logger.info(f"Project loaded from {filename}")
             return project
             

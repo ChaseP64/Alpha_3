@@ -18,8 +18,8 @@ except ImportError:
     HAS_SCIPY = False
 
 # REMOVED sys.path manipulation
-# Use relative import for models
-from ...models.surface import Surface, Point3D, Triangle
+# Use absolute import for models
+from digcalc_project.src.models.surface import Surface, Point3D, Triangle
 
 
 class TINGenerator:
