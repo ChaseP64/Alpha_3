@@ -685,6 +685,218 @@ class VisualizationPanel(QWidget):
         
         self.logger.info(f"Preparing to load {total_polylines} polylines across {len(qml_formatted_data)} layers into QML.")
         
+        # --- Log formatted data for verification ---
+        self.logger.debug(f"Formatted data for QML: {qml_formatted_data}") # <-- TEMPORARY LOG (Uncommented)
+        
+        # --- Call the QML function --- 
+        # try:
+        #     if self.qml_root_object and hasattr(self.qml_root_object, 'loadPolylines'):
+        #          # Assuming QML function accepts a dictionary/JS object
+        #          self.qml_root_object.loadPolylines(qml_formatted_data)
+        #          self.logger.info("Successfully sent polyline data to QML component.")
+        #     elif self.qml_root_object:
+        #          self.logger.error("QML root object found, but 'loadPolylines' method is missing.")
+        #     else:
+        #          self.logger.error("Cannot load polylines into QML: QML component not accessible.")
+        # except Exception as e:
+        #     self.logger.error(f"Error calling QML function 'loadPolylines': {e}", exc_info=True)
+        # Add user feedback if needed
+
+    # Add wheel event for zooming 2D view
+    def wheelEvent(self, event):
+        # Zooming functionality
+        if event.modifiers() & Qt.ControlModifier:
+            if not self.view_2d.isVisible():
+                super().wheelEvent(event)
+                return
+            
+            zoom_factor = 1.15 # Adjust as needed
+            if event.angleDelta().y() > 0:
+                self.view_2d.scale(zoom_factor, zoom_factor)
+            else:
+                self.view_2d.scale(1.0 / zoom_factor, 1.0 / zoom_factor)
+            event.accept()
+        else:
+            super().wheelEvent(event) 
+
+    # --- QML Integration Slots (Placeholder/Future) ---
+    @Slot(QJSValue, str) # Or Slot(list, str) if QML sends plain lists
+    def _on_qml_polyline_finalized(self, polyline_data: QJSValue, layer_name: str):
+        """
+        Slot called when the QML tracing component emits a finalized polyline.
+        Converts data if necessary and stores it in the current project with its layer.
+
+        Args:
+            polyline_data (QJSValue or list): The polyline points from QML.
+                Expected format after conversion: [[x1, y1], [x2, y2], ...]
+            layer_name (str): The name of the layer the polyline belongs to.
+        """
+        if not self.current_project:
+            self.logger.warning("Cannot save finalized QML polyline: No active project.")
+            return
+
+        if not layer_name:
+            self.logger.warning("Received finalized QML polyline without a layer name. Skipping.")
+            return
+
+        try:
+            # Convert QJSValue to Python list of lists/tuples
+            # QJSValue.toVariant() usually works well for simple types like lists/arrays
+            if isinstance(polyline_data, QJSValue):
+                points_list_of_lists = polyline_data.toVariant()
+            else:
+                points_list_of_lists = polyline_data # Assume it's already a list
+
+            # Further convert to list of tuples (float, float) as expected by Project model
+            point_tuples: List[Tuple[float, float]] = []
+            if isinstance(points_list_of_lists, list):
+                for pt in points_list_of_lists:
+                    if isinstance(pt, (list, tuple)) and len(pt) == 2:
+                        try:
+                            point_tuples.append((float(pt[0]), float(pt[1])))
+                        except (ValueError, TypeError):
+                            self.logger.warning(f"Invalid coordinate format in QML polyline data: {pt}. Skipping point.")
+                            # Decide if the whole polyline should be skipped
+                            # For now, just skip the point
+                    else:
+                        self.logger.warning(f"Invalid point structure in QML polyline data: {pt}. Skipping point.")
+            else:
+                raise TypeError("QML polyline data did not convert to a Python list.")
+
+            if len(point_tuples) < 2:
+                 self.logger.warning("Received polyline from QML with less than 2 valid points. Skipping.")
+                 return
+
+            self.logger.info(f"Received finalized polyline from QML with {len(point_tuples)} points for layer '{layer_name}'.")
+
+            # Store the polyline in the project using the layer name
+            self.current_project.add_traced_polyline(point_tuples, layer_name)
+            self.logger.info(f"QML polyline added to project layer '{layer_name}'.")
+
+        except Exception as e:
+             self.logger.error(f"Failed to process or add polyline from QML to project: {e}", exc_info=True)
+             # Add user feedback if needed
+
+    # --- End QML Slots ---
+    
+    # --- Legacy Tracing Slots --- 
+    @Slot(list)
+    def _on_legacy_polyline_finalized(self, points: List[QPointF]):
+        """
+        Slot called when the *legacy* tracing scene emits a finalized polyline.
+        Stores the polyline data in the current project (uses a default layer).
+        
+        Args:
+            points (List[QPointF]): List of vertices in the finalized polyline.
+        """
+        if not self.current_project:
+            self.logger.warning("Cannot save finalized polyline: No active project.")
+            return
+        
+        # Convert QPointF list to list of tuples (float, float)
+        point_tuples: List[Tuple[float, float]] = [(p.x(), p.y()) for p in points]
+        
+        self.logger.info(f"Received finalized polyline from LEGACY scene with {len(point_tuples)} points.")
+        
+        # Store the polyline in the project using a default layer
+        try:
+            # Use the updated project model method with a default layer
+            default_layer = "Legacy Traces"
+            self.current_project.add_traced_polyline(point_tuples, default_layer)
+            self.logger.info(f"Legacy polyline with {len(point_tuples)} vertices added to project layer '{default_layer}'.")
+        except Exception as e:
+            self.logger.error(f"Failed to add legacy polyline to project: {e}", exc_info=True)
+            # Optionally, inform the user via status bar or message box
+            # self.parent().statusBar().showMessage(f"Error saving polyline: {e}", 5000)
+            # QMessageBox.warning(self, "Error", f"Could not save the traced polyline: {e}")
+            # Should we remove the visually finalized line from the scene if saving fails?
+            # For now, we leave it, but the project data is out of sync.
+
+    def set_tracing_mode(self, enabled: bool):
+         """
+         Enables or disables the interactive tracing mode on the scene.
+         Also changes the view's drag mode and cursor accordingly.
+         """
+         # Only allow enabling tracing if a PDF is loaded
+         if enabled and not self.pdf_renderer:
+             self.logger.warning("Cannot enable tracing: No PDF background is loaded.")
+             # Optionally force the action back to unchecked if called directly
+             # main_window = self.parent() # Need a way to access MainWindow if needed
+             # if main_window and hasattr(main_window, 'toggle_tracing_action'):
+             #     main_window.toggle_tracing_action.setChecked(False)
+             return
+             
+         if enabled:
+              self.scene_2d.start_drawing()
+              self.logger.info("Tracing mode enabled.")
+              # Disable view dragging and set cross cursor
+              self.view_2d.setDragMode(QGraphicsView.DragMode.NoDrag)
+              self.view_2d.viewport().setCursor(Qt.CrossCursor)
+              # Ensure 2D view is visible
+              if not self.view_2d.isVisible():
+                  self.view_2d.setVisible(True)
+                  if HAS_3D: self.view_3d.setVisible(False)
+         else:
+              self.scene_2d.stop_drawing()
+              self.logger.info("Tracing mode disabled.")
+              # Restore view dragging and reset cursor
+              self.view_2d.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+              # Use OpenHandCursor when ScrollHandDrag is active
+              self.view_2d.viewport().setCursor(Qt.OpenHandCursor)
+              # Reset cursor etc. <- covered by line above
+
+    def load_and_display_legacy_polylines(self, polylines: List[List[Tuple[float, float]]]):
+        """
+        Loads polylines from data and displays them on the LEGACY TracingScene.
+        Clears any previously displayed finalized polylines first.
+        """
+        if hasattr(self.scene_2d, 'load_polylines'):
+            self.logger.info(f"Loading and displaying {len(polylines)} traced polylines on LEGACY scene.")
+            self.scene_2d.load_polylines(polylines)
+        else:
+            self.logger.error("Cannot load polylines: TracingScene does not have 'load_polylines' method.")
+
+    def clear_displayed_legacy_polylines(self):
+        """
+        Clears all finalized polylines currently displayed on the LEGACY TracingScene.
+        """
+        if hasattr(self.scene_2d, 'clear_finalized_polylines'):
+            self.logger.info("Clearing displayed polylines from LEGACY scene.")
+            self.scene_2d.clear_finalized_polylines()
+        else:
+            self.logger.error("Cannot clear polylines: TracingScene does not have 'clear_finalized_polylines' method.")
+
+    @Slot()
+    def load_polylines_into_qml(self):
+        """
+        Retrieves layered polyline data from the current project
+        and sends it to the QML tracing component.
+        Assumes a QML function like `loadPolylines(polylinesDict)` exists.
+        """
+        if not self.current_project:
+            self.logger.warning("Cannot load polylines into QML: No active project.")
+            return
+        
+        # Get the dictionary {layer_name: [polyline1, polyline2, ...]} 
+        polylines_by_layer = self.current_project.traced_polylines
+        
+        # Ensure data format is suitable for QML (e.g., list of lists for points)
+        qml_formatted_data = {}
+        total_polylines = 0
+        for layer, polylines in polylines_by_layer.items():
+            formatted_polylines = []
+            for poly in polylines:
+                # Convert list of tuples [(x,y), ...] to list of lists [[x,y], ...]
+                formatted_poly = [[pt[0], pt[1]] for pt in poly]
+                formatted_polylines.append(formatted_poly)
+                total_polylines += 1
+            qml_formatted_data[layer] = formatted_polylines
+        
+        self.logger.info(f"Preparing to load {total_polylines} polylines across {len(qml_formatted_data)} layers into QML.")
+        
+        # --- Log formatted data for verification ---
+        self.logger.debug(f"Formatted data for QML: {qml_formatted_data}") # <-- TEMPORARY LOG (Uncommented)
+        
         # --- Call the QML function --- 
         # try:
         #     if self.qml_root_object and hasattr(self.qml_root_object, 'loadPolylines'):
