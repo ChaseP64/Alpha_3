@@ -54,7 +54,7 @@ class MainWindow(QMainWindow):
         
         self.logger = logging.getLogger(__name__)
         self.current_project: Optional[Project] = None
-        self.pdf_dpi_setting = 150 # Default DPI for rendering
+        self.pdf_dpi_setting = 300 # Default DPI for rendering - Increased from 150
         
         # Set up the main window properties
         self.setWindowTitle("DigCalc - Excavation Takeoff Tool")
@@ -234,6 +234,14 @@ class MainWindow(QMainWindow):
         self.main_toolbar.addAction(self.save_project_action)
         self.main_toolbar.addSeparator()
         
+        # Add the layer selector from VisualizationPanel
+        if hasattr(self, 'visualization_panel') and hasattr(self.visualization_panel, 'layer_selector'):
+            self.main_toolbar.addSeparator() # Optional separator
+            self.main_toolbar.addWidget(QLabel(" Layer:")) # Optional label
+            self.main_toolbar.addWidget(self.visualization_panel.layer_selector)
+        else:
+            self.logger.warning("Could not add layer selector to toolbar: visualization_panel or layer_selector not found.")
+        
         # Import toolbar
         self.import_toolbar = QToolBar("Import Toolbar")
         self.import_toolbar.setIconSize(QSize(24, 24))
@@ -321,17 +329,28 @@ class MainWindow(QMainWindow):
         # --- Load PDF/Tracing state from Project --- 
         if project and project.pdf_background_path:
             try:
+                # --- REVERTED: Use the DPI stored in the project file --- 
                 self.visualization_panel.load_pdf_background(project.pdf_background_path, project.pdf_background_dpi)
+                # self.visualization_panel.load_pdf_background(project.pdf_background_path, self.pdf_dpi_setting) # Previous attempt
+                # --- END REVERT --- 
                 self.visualization_panel.set_pdf_page(project.pdf_background_page)
-                # Load polylines after PDF is loaded and page is set
-                # Use the renamed legacy method and extract only the polylines for the legacy layer (if any)
-                legacy_polylines = project.traced_polylines.get("Legacy Traces", [])
-                if legacy_polylines:
-                    self.logger.info(f"Restoring {len(legacy_polylines)} polylines from 'Legacy Traces' layer to legacy display.")
-                    self.visualization_panel.load_and_display_legacy_polylines(legacy_polylines)
-                else:
-                    self.visualization_panel.clear_displayed_legacy_polylines() # Ensure legacy view is clear
                 
+                # --- Load ALL Polylines --- 
+                # Combine polylines from all layers into a single list for display
+                all_polylines = [
+                    polyline
+                    for layer_polylines in project.traced_polylines.values()
+                    for polyline in layer_polylines
+                ]
+                
+                if all_polylines:
+                    self.logger.info(f"Restoring {len(all_polylines)} polylines from all layers to legacy display.")
+                    # Load the combined list into the legacy display method
+                    self.visualization_panel.load_and_display_legacy_polylines(all_polylines)
+                else:
+                    # Clear the display if no polylines exist in the project
+                    self.visualization_panel.clear_displayed_legacy_polylines()
+                    
                 # TODO: When QML is integrated, call load_polylines_into_qml here
                 # self.visualization_panel.load_polylines_into_qml() 
             except Exception as e:

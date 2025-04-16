@@ -18,7 +18,7 @@ from PySide6.QtCore import Qt, Slot, Signal, QRectF, QPointF, QPoint
 # from PySide6.QtQuickWidgets import QQuickWidget 
 # Import QJSValue for type hinting if needed
 from PySide6.QtQml import QJSValue # Use for type hint if receiving from QML
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QComboBox
 from PySide6.QtGui import QImage, QPixmap, QMouseEvent, QWheelEvent
 
 # Import visualization libraries
@@ -172,6 +172,19 @@ class VisualizationPanel(QWidget):
         # Temporary default until layer selector UI is implemented
         self.active_layer_name: str = "Existing Surface"
         
+        # Layer selector combobox (will be added to MainWindow toolbar)
+        self.layer_selector = QComboBox(self) # Parented to panel, but not added to its layout
+        self.layer_selector.addItems([
+            "Existing Surface",
+            "Proposed Surface",
+            "Subgrade",
+            "Annotations",
+            "Report Regions",
+        ])
+        self.layer_selector.setCurrentText(self.active_layer_name)
+        self.layer_selector.setToolTip("Choose the layer new traces belong to")
+        self.layer_selector.currentTextChanged.connect(self._on_layer_changed)
+        
         # --- Tracing Scene and Layer Panel ---
         self.scene_2d: TracingScene = None # Will be initialized in _init_ui
         # --- QML Widget Placeholder (to be added when integrating QML) ---
@@ -187,6 +200,14 @@ class VisualizationPanel(QWidget):
         
         self.logger.debug("VisualizationPanel initialized")
     
+    @Slot(str)
+    def _on_layer_changed(self, layer: str) -> None:
+        """
+        Update the active layer when the combo-box changes.
+        """
+        self.logger.debug("Active tracing layer switched to %s", layer)
+        self.active_layer_name = layer
+        
     def _init_ui(self):
         """Initialize the UI components, including QGraphicsView for 2D/PDF."""
         layout = QVBoxLayout(self)
@@ -268,12 +289,11 @@ class VisualizationPanel(QWidget):
         Returns:
             bool: True if display was successful, False otherwise
         """
-        # Hide PDF view if displaying surfaces for now?
-        if self.pdf_renderer:
-             self.logger.info("Hiding PDF background to display 3D surface.")
-             self.view_2d.setVisible(False)
-             if HAS_3D: self.view_3d.setVisible(True)
-             # Or should we overlay points/lines on the 2D view?
+        # # Old logic: always hide PDF view when displaying 3D
+        # if self.pdf_renderer:
+        #      self.logger.info("Hiding PDF background to display 3D surface.")
+        #      self.view_2d.setVisible(False)
+        #      if HAS_3D: self.view_3d.setVisible(True)
              
         if not HAS_3D:
             error_msg = "3D visualization libraries not available"
@@ -301,9 +321,12 @@ class VisualizationPanel(QWidget):
             return False
         
         try:
-            # If displaying 3D, ensure 2D/tracing view is hidden and 3D is visible
-            self.view_2d.setVisible(False)
-            if HAS_3D: self.view_3d.setVisible(True)
+            # If displaying 3D, ensure 3D view is visible
+            # Only hide 2D view if NO PDF is currently loaded
+            if not self.pdf_renderer:
+                 self.view_2d.setVisible(False)
+            # Always ensure 3D view is visible when displaying a surface
+            if HAS_3D: self.view_3d.setVisible(True) 
             
             self.logger.info(f"Displaying surface: {surface.name} with {len(surface.points)} points and {len(surface.triangles)} triangles")
             
@@ -676,6 +699,14 @@ class VisualizationPanel(QWidget):
              pass 
 
     # --- Optional Tracing Control and Signal Handling ---
+
+    @Slot(str)
+    def _on_layer_changed(self, layer: str) -> None:
+        """
+        Update the active layer when the combo-box changes.
+        """
+        self.logger.debug("Active tracing layer switched to %s", layer)
+        self.active_layer_name = layer
 
     @Slot(list)
     def _on_legacy_polyline_finalized(self, points_qpointf: List[QPointF]):
