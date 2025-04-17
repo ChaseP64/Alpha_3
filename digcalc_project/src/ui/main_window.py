@@ -369,20 +369,13 @@ class MainWindow(QMainWindow):
                 self.visualization_panel.set_pdf_page(project.pdf_background_page)
                 
                 # --- Load ALL Polylines --- 
-                # Combine polylines from all layers into a single list for display
-                all_polylines = [
-                    polyline
-                    for layer_polylines in project.traced_polylines.values()
-                    for polyline in layer_polylines
-                ]
-                
-                if all_polylines:
-                    self.logger.info(f"Restoring {len(all_polylines)} polylines from all layers to legacy display.")
-                    # Load the combined list into the legacy display method
-                    self.visualization_panel.load_and_display_legacy_polylines(all_polylines)
+                # Pass the layered dictionary directly to the correct method
+                if project.traced_polylines:
+                    self.logger.info(f"Restoring {sum(len(v) for v in project.traced_polylines.values())} polylines across {len(project.traced_polylines)} layers.")
+                    self.visualization_panel.load_and_display_polylines(project.traced_polylines)
                 else:
                     # Clear the display if no polylines exist in the project
-                    self.visualization_panel.clear_displayed_legacy_polylines()
+                    self.visualization_panel.clear_polylines_from_scene()
                     
                 # TODO: When QML is integrated, call load_polylines_into_qml here
                 # self.visualization_panel.load_polylines_into_qml() 
@@ -398,7 +391,8 @@ class MainWindow(QMainWindow):
             # If no PDF path in project, ensure view is clear
             if self.visualization_panel.pdf_renderer:
                  self.visualization_panel.clear_pdf_background()
-                 self.visualization_panel.clear_displayed_legacy_polylines()
+                 # Use the correct method to clear polylines from the scene
+                 self.visualization_panel.clear_polylines_from_scene()
         
         # Update controls based on final state
         self._update_analysis_actions_state()
@@ -466,7 +460,7 @@ class MainWindow(QMainWindow):
         if hasattr(self, 'visualization_panel'):
              self.visualization_panel.clear_all() # Assumes clear_all also handles PDF/traces
              # Explicitly ensure polylines are cleared if clear_all doesn't handle it
-             self.visualization_panel.clear_displayed_legacy_polylines() 
+             self.visualization_panel.clear_polylines_from_scene() 
             
         # Update the UI with the new project
         self._update_project(new_project)
@@ -884,8 +878,8 @@ class MainWindow(QMainWindow):
                     self.current_project.pdf_background_dpi = self.pdf_dpi_setting
                     # Clear any previous polylines when loading a new PDF
                     self.current_project.clear_traced_polylines()
-                    # Call the renamed method for legacy scene
-                    self.visualization_panel.clear_displayed_legacy_polylines() 
+                    # Call the correct method for scene clearing
+                    self.visualization_panel.clear_polylines_from_scene() 
                 self.statusBar().showMessage(f"Loaded PDF background '{Path(filename).name}' ({self.visualization_panel.pdf_renderer.get_page_count()} pages).", 5000)
             except (FileNotFoundError, PDFRendererError, Exception) as e:
                  self.logger.exception(f"Failed to load PDF background: {e}")
@@ -908,8 +902,8 @@ class MainWindow(QMainWindow):
             self.current_project.pdf_background_dpi = 150
             # Also clear traced polylines when PDF is cleared
             self.current_project.clear_traced_polylines()
-            # Call the renamed method for legacy scene
-            self.visualization_panel.clear_displayed_legacy_polylines() 
+            # Call the correct method for scene clearing
+            self.visualization_panel.clear_polylines_from_scene() 
         self._update_pdf_controls()
         
     def on_next_pdf_page(self):

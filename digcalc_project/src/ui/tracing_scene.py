@@ -289,55 +289,56 @@ class TracingScene(QGraphicsScene):
         items_to_remove = []
         # Iterate directly over scene items
         for item in self.items():
-            if isinstance(item, QGraphicsPathItem):
+            # Remove only items that have layer data (i.e., finalized polylines)
+            if isinstance(item, QGraphicsPathItem) and item.data(Qt.UserRole) is not None:
                 items_to_remove.append(item)
 
         for item in items_to_remove:
             self.removeItem(item)
-        self.logger.info(f"Cleared {len(items_to_remove)} finalized polyline(s).")
+        self.logger.info(f"Cleared {len(items_to_remove)} finalized polyline(s). Layer tags preserved on other items.")
 
-    def load_polylines(self, polylines_data: List[List[Tuple[float, float]]]):
+    def load_polylines_with_layers(self, polylines_by_layer: Dict[str, List[List[Tuple[float, float]]]]):
         """
-        Clears existing finalized polylines and loads new ones from data.
-        NOTE: This version loads all lines into the DEFAULT layer, as layer
-        information is not yet saved/loaded in the project file.
+        Clears existing finalized polylines and loads new ones from a dictionary,
+        tagging each created QGraphicsPathItem with its layer name.
 
         Args:
-            polylines_data: A list where each item is a list of (x, y) tuples representing a polyline.
+            polylines_by_layer: A dictionary where keys are layer names and values
+                                are lists of polylines for that layer.
+                                Each polyline is a list of (x, y) tuples.
         """
-        # self.clear_finalized_polylines() # REMOVED - Clearing should be handled before calling this
+        self.clear_finalized_polylines() # Clear previous lines first
 
-        # REMOVED Incorrect check for a layer item named "Default"
-        # The scene is assumed to be clear, and we just add the items back.
-        # target_layer_name = "Default"
-        # if target_layer_name not in self.items():
-        #     self.logger.error(f"Cannot load polylines: Default layer '{target_layer_name}' not found.")
-        #     return
+        self.logger.info(f"Loading polylines for {len(polylines_by_layer)} layers onto the scene.")
+        total_added = 0
 
-        self.logger.info(f"Loading {len(polylines_data)} polylines onto the scene.")
+        for layer_name, polylines_data in polylines_by_layer.items():
+            layer_added_count = 0
+            for poly_points in polylines_data:
+                if len(poly_points) >= 2:
+                    try:
+                        path = QPainterPath()
+                        # Convert points which might be lists [x,y] back to QPointF
+                        start_point = QPointF(float(poly_points[0][0]), float(poly_points[0][1]))
+                        path.moveTo(start_point)
+                        for point_tuple in poly_points[1:]:
+                            path.lineTo(QPointF(float(point_tuple[0]), float(point_tuple[1])))
 
-        added_count = 0
-
-        for poly_points in polylines_data:
-            if len(poly_points) >= 2:
-                try:
-                    path = QPainterPath()
-                    start_point = QPointF(poly_points[0][0], poly_points[0][1])
-                    path.moveTo(start_point)
-                    for point_tuple in poly_points[1:]:
-                        path.lineTo(QPointF(point_tuple[0], point_tuple[1]))
-
-                    path_item = QGraphicsPathItem(path)
-                    path_item.setPen(self._finalized_polyline_pen)
-                    path_item.setZValue(0)
-                    self.addItem(path_item)
-                    added_count += 1
-                except Exception as e:
-                    self.logger.error(f"Error creating QGraphicsPathItem for loaded polyline: {e}", exc_info=True)
-            else:
-                 self.logger.warning(f"Skipping loaded polyline with less than 2 points: {poly_points}")
-
-        self.logger.info(f"Loaded and displayed {added_count} polylines.")
+                        path_item = QGraphicsPathItem(path)
+                        path_item.setPen(self._finalized_polyline_pen)
+                        path_item.setZValue(0)
+                        path_item.setData(Qt.UserRole, layer_name) # Set the layer data!
+                        self.addItem(path_item)
+                        layer_added_count += 1
+                    except (ValueError, TypeError, IndexError) as e:
+                        self.logger.error(f"Error creating QGraphicsPathItem for loaded polyline in layer '{layer_name}': {e}", exc_info=True)
+                else:
+                     self.logger.warning(f"Skipping loaded polyline in layer '{layer_name}' with less than 2 points: {poly_points}")
+            if layer_added_count > 0:
+                 self.logger.debug(f"Added {layer_added_count} polylines to layer '{layer_name}'.")
+            total_added += layer_added_count
+            
+        self.logger.info(f"Finished loading and displayed {total_added} polylines across all layers.")
 
     # --- View Interaction (Future) ---
     # Zooming, panning etc. could be handled here or in the QGraphicsView

@@ -569,7 +569,7 @@ class VisualizationPanel(QWidget):
     def clear_all(self):
         """Clears all visualizations, including PDF background and legacy traced lines."""
         self.clear_pdf_background()
-        self.clear_displayed_legacy_polylines() # Explicitly clear legacy lines
+        self.clear_polylines_from_scene() # Explicitly clear traced lines
         
         if HAS_3D:
             for surface_name in list(self.surfaces.keys()):
@@ -779,26 +779,24 @@ class VisualizationPanel(QWidget):
               self.view_2d.viewport().setCursor(Qt.OpenHandCursor)
               # Reset cursor etc. <- covered by line above
 
-    def load_and_display_legacy_polylines(self, polylines: List[List[Tuple[float, float]]]):
+    def load_and_display_polylines(self, polylines_by_layer: Dict[str, List[List[Tuple[float, float]]]]):
         """
-        Loads polylines from data and displays them on the LEGACY TracingScene.
-        Clears any previously displayed finalized polylines first.
-        """
-        if hasattr(self.scene_2d, 'load_polylines'):
-            self.logger.info(f"Loading and displaying {len(polylines)} traced polylines on LEGACY scene.")
-            self.scene_2d.load_polylines(polylines)
-        else:
-            self.logger.error("Cannot load polylines: TracingScene does not have 'load_polylines' method.")
+        Loads polylines from a dictionary (grouped by layer) into the 2D scene.
 
-    def clear_displayed_legacy_polylines(self):
+        This replaces the previous `load_and_display_legacy_polylines`.
+
+        Args:
+            polylines_by_layer: Dict where keys are layer names and values are lists of polylines.
         """
-        Clears all finalized polylines currently displayed on the LEGACY TracingScene.
-        """
-        if hasattr(self.scene_2d, 'clear_finalized_polylines'):
-            self.logger.info("Clearing displayed polylines from LEGACY scene.")
-            self.scene_2d.clear_finalized_polylines()
-        else:
-            self.logger.error("Cannot clear polylines: TracingScene does not have 'clear_finalized_polylines' method.")
+        # Clear existing lines first. Important!
+        # self.scene_2d.clear_finalized_polylines() # Clearing is now handled within load_polylines_with_layers
+        self.scene_2d.load_polylines_with_layers(polylines_by_layer)
+        self.logger.info(f"Requested TracingScene to load polylines for {len(polylines_by_layer)} layers.")
+
+    def clear_polylines_from_scene(self):
+        """Clears all finalized polylines from the 2D scene."""
+        self.scene_2d.clear_finalized_polylines()
+        self.logger.info("Cleared all finalized polylines from the 2D scene.")
 
     @Slot()
     def load_polylines_into_qml(self):
@@ -1001,26 +999,24 @@ class VisualizationPanel(QWidget):
               self.view_2d.viewport().setCursor(Qt.OpenHandCursor)
               # Reset cursor etc. <- covered by line above
 
-    def load_and_display_legacy_polylines(self, polylines: List[List[Tuple[float, float]]]):
+    def load_and_display_polylines(self, polylines_by_layer: Dict[str, List[List[Tuple[float, float]]]]):
         """
-        Loads polylines from data and displays them on the LEGACY TracingScene.
-        Clears any previously displayed finalized polylines first.
-        """
-        if hasattr(self.scene_2d, 'load_polylines'):
-            self.logger.info(f"Loading and displaying {len(polylines)} traced polylines on LEGACY scene.")
-            self.scene_2d.load_polylines(polylines)
-        else:
-            self.logger.error("Cannot load polylines: TracingScene does not have 'load_polylines' method.")
+        Loads polylines from a dictionary (grouped by layer) into the 2D scene.
 
-    def clear_displayed_legacy_polylines(self):
+        This replaces the previous `load_and_display_legacy_polylines`.
+
+        Args:
+            polylines_by_layer: Dict where keys are layer names and values are lists of polylines.
         """
-        Clears all finalized polylines currently displayed on the LEGACY TracingScene.
-        """
-        if hasattr(self.scene_2d, 'clear_finalized_polylines'):
-            self.logger.info("Clearing displayed polylines from LEGACY scene.")
-            self.scene_2d.clear_finalized_polylines()
-        else:
-            self.logger.error("Cannot clear polylines: TracingScene does not have 'clear_finalized_polylines' method.")
+        # Clear existing lines first. Important!
+        # self.scene_2d.clear_finalized_polylines() # Clearing is now handled within load_polylines_with_layers
+        self.scene_2d.load_polylines_with_layers(polylines_by_layer)
+        self.logger.info(f"Requested TracingScene to load polylines for {len(polylines_by_layer)} layers.")
+
+    def clear_polylines_from_scene(self):
+        """Clears all finalized polylines from the 2D scene."""
+        self.scene_2d.clear_finalized_polylines()
+        self.logger.info("Cleared all finalized polylines from the 2D scene.")
 
     @Slot()
     def load_polylines_into_qml(self):
