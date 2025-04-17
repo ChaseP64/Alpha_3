@@ -132,9 +132,16 @@ class TracingScene(QGraphicsScene):
 
         if event.button() == Qt.LeftButton:
             if len(self._current_polyline_points) >= 2:
-                final_pos = event.scenePos()
+                # Get active layer name from parent (VisualizationPanel)
+                active_layer = "Default" # Fallback
+                try:
+                    # Assumes parent is VisualizationPanel and has active_layer_name
+                    active_layer = self.parent().active_layer_name 
+                except AttributeError:
+                     self.logger.warning("Could not get active_layer_name from parent.")
+                final_pos = event.scenePos() # Use last point added by double-click
                 self._current_polyline_points.append(final_pos)
-                self._finalize_current_polyline()
+                self._finalize_current_polyline(active_layer)
             else:
                 self._cancel_current_polyline()
         else:
@@ -148,7 +155,14 @@ class TracingScene(QGraphicsScene):
 
         if event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter:
             if len(self._current_polyline_points) >= 2:
-                self._finalize_current_polyline()
+                # Get active layer name from parent (VisualizationPanel)
+                active_layer = "Default" # Fallback
+                try:
+                    # Assumes parent is VisualizationPanel and has active_layer_name
+                    active_layer = self.parent().active_layer_name 
+                except AttributeError:
+                     self.logger.warning("Could not get active_layer_name from parent.")
+                self._finalize_current_polyline(active_layer)
             else:
                 self._cancel_current_polyline()
         elif event.key() == Qt.Key_Backspace:
@@ -191,12 +205,17 @@ class TracingScene(QGraphicsScene):
         self._temporary_line_item.setZValue(0) # Below markers but above background
         self.addItem(self._temporary_line_item)
 
-    def _finalize_current_polyline(self):
-        """Converts the current points into a permanent polyline item in the active layer."""
+    def _finalize_current_polyline(self, layer_name: str):
+        """
+        Converts the current points into a permanent polyline item,
+        tags it with the given layer name, and emits the finalized signal.
+        """
         if len(self._current_polyline_points) < 2:
             self.logger.warning("Cannot finalize polyline with less than 2 points.")
             self._cancel_current_polyline()
             return
+
+        self.logger.debug(f"Finalizing polyline for layer: {layer_name}")
 
         path = QPainterPath()
         path.moveTo(self._current_polyline_points[0])
@@ -206,8 +225,9 @@ class TracingScene(QGraphicsScene):
         polyline_item = QGraphicsPathItem(path)
         polyline_item.setPen(self._finalized_polyline_pen)
         polyline_item.setZValue(0) # Render below vertices but above background
+        polyline_item.setData(Qt.UserRole, layer_name) # Tag item with layer name
         self.addItem(polyline_item)
-
+        
         self.logger.info(f"Finalized polyline with {len(self._current_polyline_points)} vertices.")
 
         # --- FIX: Emit signal *before* resetting state --- 
@@ -324,7 +344,7 @@ class TracingScene(QGraphicsScene):
 
     # --- Debugging ---
     def dump_scene_state(self):
-        """Logs the current state of the scene for debugging."""
+        """Logs the current state of items in the scene for debugging."""
         self.logger.debug(f"Tracing Enabled: {self._tracing_enabled}")
         self.logger.debug(f"Is Drawing: {self._is_drawing}")
         self.logger.debug(f"Current Points: {len(self._current_polyline_points)}")
@@ -332,4 +352,18 @@ class TracingScene(QGraphicsScene):
             self.logger.debug(f"Background Item: {self._background_item.boundingRect()}")
         else:
             self.logger.debug("Background Item: None")
-        self.logger.debug(f"Item Count: {len(self.items())}") 
+        self.logger.debug(f"Item Count: {len(self.items())}")
+
+    # --- Layer Visibility ---
+    
+    def setLayerVisible(self, layer_name: str, visible: bool) -> None:
+        """ Show or hide every QGraphicsItem tagged with layer_name. """
+        self.logger.debug(f"Setting layer '{layer_name}' visibility to {visible}")
+        count = 0
+        for item in self.items():
+             # Check if item has data set for UserRole and if it matches
+             item_layer = item.data(Qt.UserRole)
+             if item_layer == layer_name:
+                 item.setVisible(visible)
+                 count += 1
+        self.logger.debug(f"Toggled visibility for {count} items in layer '{layer_name}'.") 

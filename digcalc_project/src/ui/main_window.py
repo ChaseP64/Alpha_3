@@ -12,14 +12,14 @@ from pathlib import Path
 from typing import Optional, Dict, List, Tuple
 
 # PySide6 imports
-from PySide6.QtCore import Qt, QSize, Signal
+from PySide6.QtCore import Qt, QSize, Signal, Slot
 from PySide6.QtGui import QIcon, QAction, QKeySequence
 from PySide6.QtWidgets import (
     QMainWindow, QDockWidget, QMenu, QToolBar,
     QFileDialog, QMessageBox, QVBoxLayout, QWidget, QDialog,
     QComboBox, QLabel, QGridLayout, QPushButton, QLineEdit, QSpinBox,
     QDoubleSpinBox, QCheckBox, QFormLayout, QHBoxLayout, QDialogButtonBox,
-    QSplitter, QMenuBar, QStatusBar, QSizePolicy
+    QSplitter, QMenuBar, QStatusBar, QSizePolicy, QTreeWidget, QTreeWidgetItem
 )
 
 # Local imports - Use relative paths
@@ -97,6 +97,19 @@ class MainWindow(QMainWindow):
         self.project_panel = ProjectPanel(main_window=self, parent=self) # Pass self here
         self.project_dock.setWidget(self.project_panel)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.project_dock)
+        
+        # --- Layers dock --- 
+        self.layer_dock = QDockWidget("Layers", self)
+        self.layer_dock.setObjectName("LayerDock")
+        self.layer_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
+        
+        self.layer_tree = QTreeWidget(self.layer_dock)
+        self.layer_tree.setHeaderHidden(True)
+        self.layer_dock.setWidget(self.layer_tree)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.layer_dock) # Add to left by default
+        
+        # Connect the signal for item changes (checkbox toggles)
+        self.layer_tree.itemChanged.connect(self._on_layer_visibility_changed)
         
         # Give visualization panel a reference to the main window (for project access etc)
         # self.visualization_panel.set_main_window(self) # Or pass project directly later
@@ -207,9 +220,11 @@ class MainWindow(QMainWindow):
         # Add view toggles here (e.g., toggle Project Panel)
         self.view_menu.addSeparator()
         self.view_menu.addAction(self.project_dock.toggleViewAction())
-        # Add toggle for Layer Panel if it was created
-        # if self.layer_dock:
-        #     self.view_menu.addAction(self.layer_dock.toggleViewAction())
+        # Add toggle for Layer Dock
+        if self.layer_dock:
+             self.view_menu.addAction(self.layer_dock.toggleViewAction())
+        else: # Should not happen, but safety check
+             self.logger.warning("Layer dock was not created, cannot add toggle action.")
         self.view_menu.addSeparator()
         self.view_menu.addAction(self.toggle_tracing_action) # Add tracing action
         
@@ -304,6 +319,24 @@ class MainWindow(QMainWindow):
         self.project_panel.set_project(self.current_project) # Update project panel view
         self.visualization_panel.set_project(self.current_project) # Update viz panel project ref
         
+        # --- Populate Layers Dock --- 
+        try:
+            self.layer_tree.itemChanged.disconnect(self._on_layer_visibility_changed) # Disconnect to avoid signals during population
+        except RuntimeError: # Signal might not be connected yet on first run
+            pass
+        self.layer_tree.clear()
+        if hasattr(self, 'visualization_panel') and hasattr(self.visualization_panel, 'layer_selector'):
+            for i in range(self.visualization_panel.layer_selector.count()):
+                name = self.visualization_panel.layer_selector.itemText(i)
+                item = QTreeWidgetItem(self.layer_tree, [name])
+                item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+                item.setCheckState(0, Qt.Checked) # default: visible
+            self.layer_tree.expandAll()
+        try: 
+            self.layer_tree.itemChanged.connect(self._on_layer_visibility_changed) # Reconnect
+        except RuntimeError: # Already connected? Should not happen often
+            self.logger.warning("Error reconnecting layer_tree.itemChanged signal.")
+            
         # Update window title and status bar & Redisplay loaded surfaces
         if self.current_project:
              # Display loaded surfaces in visualization panel
@@ -513,6 +546,7 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Saving project to '{Path(filename).name}'...")
         try:
             # Call the project's save method
+            self.logger.info(f"Calling _update_project for project: {self.current_project.name}")
             success = self.current_project.save(filename)
             if success:
                 self.statusBar().showMessage(f"Project saved successfully to '{Path(filename).name}'", 5000)
@@ -926,6 +960,18 @@ class MainWindow(QMainWindow):
             self.toggle_tracing_action.setText("Disable Tracing" if checked else "Enable Tracing")
         else:
             self.logger.warning("Cannot toggle tracing mode: VisualizationPanel not found.")
+
+    @Slot(QTreeWidgetItem, int)
+    def _on_layer_visibility_changed(self, item: QTreeWidgetItem, column: int):
+        """Slot called when a layer's checkbox state changes in the dock."""
+        if column == 0: # Ensure change is in the first column (where checkbox is)
+            layer_name = item.text(0)
+            is_visible = item.checkState(0) == Qt.Checked
+            self.logger.debug(f"Layer '{layer_name}' visibility toggle -> {is_visible}")
+            if hasattr(self, 'visualization_panel') and hasattr(self.visualization_panel, 'scene_2d') and hasattr(self.visualization_panel.scene_2d, 'setLayerVisible'):
+                self.visualization_panel.scene_2d.setLayerVisible(layer_name, is_visible)
+            else:
+                self.logger.warning("Cannot toggle layer visibility: Visualization panel, scene_2d, or setLayerVisible method not found.")
 
 
 class VolumeCalculationDialog(QDialog):
