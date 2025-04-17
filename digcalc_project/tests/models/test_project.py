@@ -37,18 +37,27 @@ def test_layer_storage_basic(caplog):
     assert "Should Be Ignored" not in pr.traced_polylines, "Layer for ignored polyline should not be created"
     
     # Check logger warning for ignored polyline
-    assert "Ignoring polyline with fewer than 2 points." in caplog.text
+    assert "Attempted to add polyline with < 2 points" in caplog.text
+    assert "layer 'Should Be Ignored'" in caplog.text
+    assert "Skipping" in caplog.text
 
 
 def test_save_and_load_roundtrip(tmp_path: Path):
     """Test saving and loading the project preserves the traced_polylines dict."""
     pr = Project(name="test_proj_roundtrip")
-    polyline_data = {
-        "Test Layer 1": [_poly((5, 5), (6, 6)), _poly((7, 7), (8, 8))],
-        "Test Layer 2": [_poly((10, 10), (11, 11))]
+    
+    # Setup using the NEW format: Dict[str, List[PolylineData]]
+    polyline_data_new_format = {
+        "Test Layer 1": [
+            {"points": _poly((5, 5), (6, 6)), "elevation": 10.0},
+            {"points": _poly((7, 7), (8, 8)), "elevation": None}
+        ],
+        "Test Layer 2": [
+            {"points": _poly((10, 10), (11, 11)), "elevation": 20.5}
+        ]
     }
-    # Add polylines using the dictionary directly for setup
-    pr.traced_polylines = polyline_data
+    # Assign the correctly structured data
+    pr.traced_polylines = polyline_data_new_format
     pr.is_modified = True # Simulate modification before save
     
     file = tmp_path / "proj.json"
@@ -62,24 +71,30 @@ def test_save_and_load_roundtrip(tmp_path: Path):
     assert "traced_polylines" in saved_data
     assert isinstance(saved_data["traced_polylines"], dict)
     
-    # Compare saved JSON data (lists) against the expected list structure
-    expected_polylines_in_json = {
-        layer: [[list(pt) for pt in poly] for poly in polys]
-        for layer, polys in polyline_data.items()
-    }
-    assert saved_data["traced_polylines"] == expected_polylines_in_json, "Saved JSON data should match expected list structure"
+    # Compare saved JSON data (which should have points as lists)
+    # against the expected structure derived from the NEW input format
+    expected_polylines_in_json = {}
+    for layer, polys_list in polyline_data_new_format.items():
+        expected_polys_list = []
+        for poly_dict in polys_list:
+            expected_polys_list.append({
+                "points": [[float(c) for c in p] for p in poly_dict["points"]], # Ensure lists of floats
+                "elevation": poly_dict["elevation"]
+            })
+        expected_polylines_in_json[layer] = expected_polys_list
+
+    assert saved_data["traced_polylines"] == expected_polylines_in_json, \
+        "Saved JSON data should match expected structure with points as lists"
 
     # Now load it back
     pr2 = Project.load(file)
     assert pr2 is not None, "Project load should succeed"
     assert not pr2.is_modified, "is_modified should be False after load"
 
-    # Convert original tuples to lists for comparison after JSON load
-    expected_polylines_after_load = {
-        layer: [[list(pt) for pt in poly] for poly in polys]
-        for layer, polys in pr.traced_polylines.items()
-    }
-    assert pr2.traced_polylines == expected_polylines_after_load, "Loaded polylines dict should match original (with tuples converted to lists)"
+    # Compare loaded data against the expected structure after JSON load (points as lists)
+    # The loaded data structure should match the expected JSON structure directly
+    assert pr2.traced_polylines == expected_polylines_in_json, \
+        "Loaded polylines dict should match the expected JSON structure"
 
 
 def test_legacy_migration(tmp_path: Path, caplog):

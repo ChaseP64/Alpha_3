@@ -12,12 +12,28 @@ import logging
 import json
 import datetime
 from pathlib import Path
-from typing import List, Dict, Optional, Any, Union, Tuple
+from typing import List, Dict, Optional, Any, Union, Tuple, TypedDict
 
 # Use relative imports
 from .surface import Surface
 from .calculation import VolumeCalculation
 
+# Configure logging for the module
+logger = logging.getLogger(__name__)
+# Set default level if not configured by caller (e.g., main app)
+# Library code shouldn't call basicConfig; configure in main app
+# if not logger.hasHandlers():
+#     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+# Type alias for clarity on the new polyline data structure
+class PolylineData(TypedDict):
+    points: List[Tuple[float, float]]
+    elevation: Optional[float]
+
+# Type alias for the main storage structure
+TracedPolylinesType = Dict[str, List[PolylineData]]
+
+DEFAULT_LAYER = "Default Layer"
 
 class Project:
     """
@@ -57,7 +73,7 @@ class Project:
         self.pdf_background_dpi: int = 150
         # Store polylines as dict mapping layer name -> list of polylines
         # where each polyline is a list of (x, y) tuples
-        self.traced_polylines: Dict[str, List[List[Tuple[float, float]]]] = {}
+        self.traced_polylines: TracedPolylinesType = {}
         self.is_modified: bool = False # Track if project has unsaved changes
         
         self.logger.debug(f"Project '{name}' initialized")
@@ -69,11 +85,12 @@ class Project:
         This lets older code that still iterates over
         `project.legacy_traced_polylines` work without change.
         """
-        return [
-            pl
-            for layer_polys in self.traced_polylines.values()
-            for pl in layer_polys
-        ]
+        flat_list = []
+        for layer_name in self.traced_polylines:
+            for polyline_data in self.traced_polylines[layer_name]:
+                if "points" in polyline_data: # Check for robustness
+                    flat_list.append(polyline_data["points"])
+        return flat_list
 
     def add_surface(self, surface: Surface) -> None:
         """
@@ -155,36 +172,108 @@ class Project:
         self.logger.info(f"Calculation '{calculation.name}' added to project")
     
     def add_traced_polyline(
-        self, 
-        polyline_points: List[Tuple[float, float]], 
-        layer_name: str = "Existing Surface",
-    ) -> None:
-        """ Store polyline_points under layer_name.
-        polyline_points must contain at least 2 (x, y) tuples.
+        self,
+        polyline: Union[List[Tuple[float, float]], PolylineData],
+        layer_name: str = "Existing Surface", # Default layer name
+        elevation: Optional[float] = None
+    ) -> bool:
         """
-        # Use logger from instance if available, otherwise get a new one
-        logger = getattr(self, 'logger', logging.getLogger(__name__)) 
+        Adds a traced polyline to the specified layer.
 
-        if len(polyline_points) < 2:
-            logger.warning("Ignoring polyline with fewer than 2 points.")
-            return
-        
-        # Use setdefault to create the list if the layer doesn't exist
-        self.traced_polylines.setdefault(layer_name, []).append(polyline_points)
+        Accepts either a raw list of points (List[Tuple[float, float]]) for backward
+        compatibility (elevation will be set to None, or the value provided in the
+        optional 'elevation' argument), or a PolylineData dictionary.
+
+        Args:
+            polyline (Union[List[Tuple[float, float]], PolylineData]):
+                      The polyline data. Can be a list of (x, y) points or a
+                      PolylineData dict containing 'points' and 'elevation'.
+            layer_name (str, optional): The name of the layer to add the polyline to.
+                                        Defaults to "Existing Surface".
+            elevation (Optional[float]): Optional elevation value to use if 'polyline'
+                                         is provided as a raw list of points. This
+                                         is ignored if 'polyline' is a PolylineData dict.
+
+        Returns:
+            bool: True if the polyline was added successfully, False otherwise (e.g., invalid polyline).
+        """
+        polyline_obj: Optional[PolylineData] = None
+
+        if isinstance(polyline, list):
+            # Handle backward compatibility: wrap raw point list
+            if len(polyline) < 2:
+                self.logger.warning(f"Attempted to add polyline with < 2 points to layer '{layer_name}'. Skipping.")
+                return False
+            polyline_obj = {"points": polyline, "elevation": elevation}
+            self.logger.debug(f"Wrapping legacy polyline list for layer '{layer_name}' with elevation {elevation}.")
+        elif isinstance(polyline, dict) and "points" in polyline:
+            # Handle new format
+            if len(polyline["points"]) < 2:
+                self.logger.warning(f"Attempted to add polyline dict with < 2 points to layer '{layer_name}'. Skipping.")
+                return False
+            # Ensure elevation key exists, defaulting to None if missing
+            polyline_obj = {
+                "points": polyline["points"],
+                "elevation": polyline.get("elevation") # Use get for safety
+            }
+        else:
+            self.logger.warning(f"Invalid polyline data format provided for layer '{layer_name}'. Skipping.")
+            return False
+
+        if layer_name not in self.traced_polylines:
+            self.traced_polylines[layer_name] = []
+
+        # Type checker might complain here, but we've ensured polyline_obj is PolylineData
+        self.traced_polylines[layer_name].append(polyline_obj) # type: ignore
         self.modified_at = datetime.datetime.now()
         self.is_modified = True
-        logger.debug(f"Added traced polyline with {len(polyline_points)} points to layer '{layer_name}'.")
-            
-    def clear_traced_polylines(self):
-        """
-        Removes all traced polylines from all layers in the project.
-        """
-        if self.traced_polylines:
-            count = sum(len(polys) for polys in self.traced_polylines.values())
-            self.logger.debug(f"Clearing {count} traced polylines from {len(self.traced_polylines)} layers.")
-            self.traced_polylines.clear() # Clear the dictionary
-            self.modified_at = datetime.datetime.now()
+        self.logger.info(f"Added polyline to layer '{layer_name}' (Points: {len(polyline_obj['points'])}, Elevation: {polyline_obj['elevation']}).")
+        return True
+
+    def remove_polyline(self, layer_name: str, polyline_index: int) -> bool:
+        """Removes a polyline from a layer by its index."""
+        if layer_name in self.traced_polylines and 0 <= polyline_index < len(self.traced_polylines[layer_name]):
+            removed = self.traced_polylines[layer_name].pop(polyline_index)
+            self.logger.info(f"Removed polyline at index {polyline_index} from layer '{layer_name}' (Elevation: {removed.get('elevation')}).")
+            if not self.traced_polylines[layer_name]: # Remove layer if empty
+                del self.traced_polylines[layer_name]
+                self.logger.info(f"Removed empty layer: '{layer_name}'")
             self.is_modified = True
+            return True
+        self.logger.warning(f"Could not remove polyline: Layer '{layer_name}' or index {polyline_index} not found.")
+        return False
+
+    def clear_traced_polylines(self):
+        """Removes all traced polylines from the project."""
+        if self.traced_polylines:
+            self.traced_polylines.clear()
+            self.is_modified = True
+            self.logger.info("Cleared all traced polylines.")
+
+    def get_layers(self) -> List[str]:
+        """Returns a list of layer names that contain traced polylines."""
+        return list(self.traced_polylines.keys())
+
+    def _serialisable_polylines(self) -> TracedPolylinesType:
+        """Return a JSON-safe copy (all points as lists)."""
+        # Note: While TypedDict implies structure, JSON will save as dict.
+        # The TracedPolylinesType helps internally but output is standard dict.
+        def tup2list(pt: Tuple[float, float]) -> List[float]:
+            # Convert tuple to list for JSON compatibility
+            return list(pt)
+
+        out: TracedPolylinesType = {}
+        for layer, polys in self.traced_polylines.items():
+            serialised_polys = []
+            for poly_data in polys:
+                # Ensure points are lists
+                serialised_points = [tup2list(p) for p in poly_data["points"]]
+                serialised_polys.append({
+                    "points": serialised_points,
+                    "elevation": poly_data["elevation"],
+                })
+            out[layer] = serialised_polys
+        return out
 
     def save(self, filename: Optional[str] = None) -> bool:
         """
@@ -224,8 +313,8 @@ class Project:
                     "page": self.pdf_background_page,
                     "dpi": self.pdf_background_dpi
                 },
-                # Save the entire dictionary
-                "traced_polylines": self.traced_polylines 
+                # Save the entire dictionary, ensuring points are lists
+                "traced_polylines": self._serialisable_polylines() 
             }
             
             # Ensure directory exists
@@ -371,3 +460,9 @@ class Project:
         except Exception as e:
             logger.exception(f"Unexpected error loading project: {e}")
             return None 
+
+    def __repr__(self) -> str:
+        """Returns a string representation of the Project."""
+        modified_status = "*" if self.is_modified else ""
+        num_polylines = sum(len(polys) for polys in self.traced_polylines.values())
+        return f"<Project(name='{self.name}{modified_status}', path='{self.project_file}', layers={len(self.traced_polylines)}, polylines={num_polylines})>" 

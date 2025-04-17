@@ -14,6 +14,8 @@ import numpy as np
 
 # PySide6 imports
 from PySide6.QtCore import Qt, Slot, Signal, QRectF, QPointF, QPoint
+# Import QtWidgets for QDialog enum access
+from PySide6 import QtWidgets 
 # Import QQuickWidget if we were fully integrating QML here
 # from PySide6.QtQuickWidgets import QQuickWidget 
 # Import QJSValue for type hinting if needed
@@ -35,6 +37,8 @@ from ..models.surface import Surface, Point3D, Triangle
 from ..visualization.pdf_renderer import PDFRenderer, PDFRendererError
 from .tracing_scene import TracingScene # Relative within ui package
 from ..models.project import Project
+# Import the new dialog
+from .dialogs.elevation_dialog import ElevationDialog
 
 
 class InteractiveGraphicsView(QGraphicsView):
@@ -51,6 +55,8 @@ class InteractiveGraphicsView(QGraphicsView):
         # Start with no drag mode; middle mouse will activate ScrollHandDrag
         self.setDragMode(QGraphicsView.DragMode.NoDrag)
         self.logger = logging.getLogger(__name__ + ".InteractiveGraphicsView")
+        self._is_manual_panning = False # Flag for middle/alt+left panning
+        self._last_pan_pos: Optional[QPoint] = None
 
     def wheelEvent(self, event: QWheelEvent):
         """Handles mouse wheel events for zooming."""
@@ -84,61 +90,54 @@ class InteractiveGraphicsView(QGraphicsView):
             super().wheelEvent(event)
 
     def mousePressEvent(self, event: QMouseEvent):
-        """Handles mouse press events to initiate panning with middle button."""
-        # Check for Middle Button OR Alt+LeftButton for panning
-        alt_pressed = event.modifiers() == Qt.AltModifier # Check for exact Alt modifier
+        """Handles mouse press events to initiate panning with middle button or Alt+Left."""
+        alt_pressed = event.modifiers() == Qt.AltModifier
         is_middle_button = event.button() == Qt.MiddleButton
         is_alt_left_button = alt_pressed and event.button() == Qt.LeftButton
 
         if is_middle_button or is_alt_left_button:
-            self.logger.debug(f"Pan initiated ({'Middle Button' if is_middle_button else 'Alt+Left Button'}) - Activating ScrollHandDrag")
-            # Activate ScrollHandDrag mode for middle mouse button panning
-            self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
-            # Create a synthesized left mouse press event to actually start the drag
-            # This is a common workaround for activating ScrollHandDrag with middle mouse
-            # Use event.position() (QPointF) directly
-            synthesized_event = QMouseEvent(
-                event.type(),
-                event.position(),
-                Qt.LeftButton,   # Pretend it's a left button press
-                Qt.LeftButton,   # Buttons state should include LeftButton
-                event.modifiers()
-            )
-            super().mousePressEvent(synthesized_event) # Send synthesized event to base class
-            event.accept() # Accept the original middle mouse event
-        else:
-            # Pass other mouse presses (normal left click, right click, etc.) to base class
-            super().mousePressEvent(event)
-
-    # mouseMoveEvent is implicitly handled by ScrollHandDrag when active
-
-    def mouseReleaseEvent(self, event: QMouseEvent):
-        """Handles mouse release events to stop panning."""
-        pan_was_active = self.dragMode() == QGraphicsView.DragMode.ScrollHandDrag
-
-        # If a pan was active AND (the left button is released OR the middle button is released)
-        if pan_was_active and (event.button() == Qt.LeftButton or event.button() == Qt.MiddleButton):
-            self.logger.debug(f"Pan-ending button released ({event.button()}) - Deactivating ScrollHandDrag")
-
-            # Deactivate ScrollHandDrag mode FIRST
-            self.setDragMode(QGraphicsView.DragMode.NoDrag)
-
-            # Synthesize the left mouse release event to ensure the base class stops dragging
-            # This is crucial because the drag was likely initiated with a synthesized left press.
-            synthesized_event = QMouseEvent(
-                 event.type(),
-                 event.position(),
-                 Qt.LeftButton,   # ALWAYS synthesize LeftButton release
-                 Qt.NoButton,     # Buttons state should be NoButton now
-                 event.modifiers() # Pass original modifiers
-             )
-            super().mouseReleaseEvent(synthesized_event) # Send synthesized event
-
-            # Accept the ORIGINAL event (Left or Middle) that triggered this handler
+            self.logger.debug("Manual pan initiated.")
+            self._is_manual_panning = True
+            self._last_pan_pos = event.pos() # Store QPoint view coordinates
+            self.setCursor(Qt.ClosedHandCursor)
             event.accept()
         else:
-            # If not ending a pan, pass the event to the base class for normal handling
-            # (e.g., normal left click release for tracing, right click release)
+            self.logger.debug("Standard mouse press, letting base class handle (current dragMode: %s).", self.dragMode())
+            self._is_manual_panning = False
+            super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event: QMouseEvent):
+        """Handles mouse move for manual panning or passes to base class."""
+        if self._is_manual_panning and self._last_pan_pos is not None:
+            delta = event.pos() - self._last_pan_pos
+            # Scroll the view's scroll bars
+            self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() - delta.x())
+            self.verticalScrollBar().setValue(self.verticalScrollBar().value() - delta.y())
+            self._last_pan_pos = event.pos() # Update position
+            event.accept()
+        else:
+            # Let the base class handle move events, e.g., for ScrollHandDrag
+            super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event: QMouseEvent):
+        """Handles mouse release events to stop manual panning or passes to base class."""
+        if self._is_manual_panning and (event.button() == Qt.MiddleButton or event.button() == Qt.LeftButton):
+            self.logger.debug("Manual pan finished.")
+            self._is_manual_panning = False
+            # Check current dragMode to set appropriate cursor
+            cursor = Qt.ArrowCursor # Default
+            if self.dragMode() == QGraphicsView.DragMode.ScrollHandDrag:
+                 cursor = Qt.OpenHandCursor
+            elif self.dragMode() == QGraphicsView.DragMode.NoDrag:
+                 # If NoDrag, maybe we are tracing? Check parent panel?
+                 # For now, assume Arrow or check if viewport cursor is CrossCursor
+                 if self.viewport().cursor().shape() == Qt.CrossCursor:
+                      cursor = Qt.CrossCursor
+            self.setCursor(cursor)
+            self._last_pan_pos = None
+            event.accept()
+        else:
+            # Let the base class handle release, e.g., for ScrollHandDrag
             super().mouseReleaseEvent(event)
 
 
@@ -231,9 +230,12 @@ class VisualizationPanel(QWidget):
         #    self.logger.error("Failed to get QML root object!")
 
         # --- Legacy 2D Scene/View (To be removed/replaced by QML) ---
-        self.scene_2d = TracingScene(self) # Create the scene first
-        self.view_2d = InteractiveGraphicsView(self.scene_2d, self) # Use the new custom view
-        # DragMode, TransformationAnchor, ResizeAnchor are now set within InteractiveGraphicsView.__init__
+        # Create the VIEW first
+        self.view_2d = InteractiveGraphicsView(None, self) # Pass None for scene initially
+        # Create the SCENE, passing the VIEW reference to it
+        self.scene_2d = TracingScene(self.view_2d, self) 
+        self.view_2d.setScene(self.scene_2d) # Set the scene for the view
+        # DragMode, TransformationAnchor, ResizeAnchor are set within InteractiveGraphicsView.__init__
         self.view_2d.setVisible(False) # Keep legacy hidden by default if migrating
         layout.addWidget(self.view_2d)
         
@@ -712,7 +714,8 @@ class VisualizationPanel(QWidget):
     def _on_legacy_polyline_finalized(self, points_qpointf: List[QPointF]):
         """
         Slot to receive finalized polyline data from the legacy TracingScene.
-        Converts QPointF list to list of (float, float) tuples and saves to project.
+        Prompts for elevation, converts QPointF list to list of (float, float) tuples,
+        and saves the polyline with elevation to the project.
         """
         if self.current_project is None:
             self.logger.warning("_on_legacy_polyline_finalized called but no project is active.")
@@ -729,22 +732,30 @@ class VisualizationPanel(QWidget):
             self.logger.warning(f"Received legacy polyline with {len(points)} points, ignoring (needs >= 2).")
             return
         
-        # --- Save the polyline to the Project Model ---
-        # Use the panel's currently selected active layer for legacy traces
+        # --- Prompt for Elevation ---
+        dlg = ElevationDialog(self)
+        z = dlg.value() if dlg.exec() == QtWidgets.QDialog.Accepted else None
+        # Create the polyline data structure expected by Project.add_traced_polyline
+        polyline_data = {"points": points, "elevation": z}
+        layer_to_save = self.active_layer_name # Use panel's active layer
+
         self.logger.debug(
-            "VisualizationPanel: saving legacy polyline with %d vertices to layer '%s'",
+            "VisualizationPanel: saving legacy polyline with %d vertices to layer '%s' (Elevation: %s)",
             len(points),
-            self.active_layer_name, # Use panel's active layer
+            layer_to_save,
+            z
         )
+        # --- Save the polyline to the Project Model ---
         self.current_project.add_traced_polyline(
-            points,
-            layer_name=self.active_layer_name, # Use panel's active layer
+            polyline_data, # Pass the dictionary
+            layer_name=layer_to_save, 
+            # Elevation is now inside polyline_data, no need for separate arg here
         )
         
         # Consider emitting a signal if other UI parts need to know about the update
         # self.project_updated.emit() 
         
-        self.logger.info(f"Saved polyline with {len(points)} points to layer '{self.active_layer_name}' from legacy scene.")
+        self.logger.info(f"Saved polyline with {len(points)} points (Elevation: {z}) to layer '{layer_to_save}' from legacy scene.")
 
     def set_tracing_mode(self, enabled: bool):
          """
@@ -862,12 +873,13 @@ class VisualizationPanel(QWidget):
 
     # --- QML Integration Slots (Placeholder/Future) ---
     @Slot(QJSValue, str) # Or Slot(list, str) if QML sends plain lists
-    def _on_qml_polyline_finalized(self, polyline_data: QJSValue, layer_name: str):
+    def _on_qml_polyline_finalized(self, polyline_data_qjs: QJSValue, layer_name: str):
         """
         Slot to receive finalized polyline data from QML.
+        Prompts for elevation and saves the polyline with elevation to the project.
         
         Args:
-            polyline_data: The QJSValue representing the array of points from QML.
+            polyline_data_qjs: The QJSValue representing the array of points from QML.
                            Each point should be an object like { x: number, y: number }.
             layer_name: The name of the layer the polyline belongs to (passed from QML).
         """
@@ -879,13 +891,13 @@ class VisualizationPanel(QWidget):
         
         # --- Convert QJSValue to Python list of tuples ---
         points: List[Tuple[float, float]] = []
-        if not polyline_data or not polyline_data.isArray():
+        if not polyline_data_qjs or not polyline_data_qjs.isArray():
             self.logger.error("Invalid polyline data received from QML: not an array or is null.")
             return
             
-        length = polyline_data.property('length').toInt() # QJSValue arrays need length property
+        length = polyline_data_qjs.property('length').toInt() # QJSValue arrays need length property
         for i in range(length):
-            qml_point = polyline_data.property(i) # Get the QJSValue for the point object
+            qml_point = polyline_data_qjs.property(i) # Get the QJSValue for the point object
             if qml_point and qml_point.isObject():
                 x = qml_point.property('x').toNumber()
                 y = qml_point.property('y').toNumber()
@@ -904,26 +916,31 @@ class VisualizationPanel(QWidget):
         if len(points) < 2:
             self.logger.warning(f"Received polyline with {len(points)} points from QML, ignoring (needs >= 2).")
             return
-            
-        # --- Save the polyline to the Project Model ---
-        # Use the layer_name received *from QML*
-        # Note: The layer_name parameter in this function signature should come from QML,
-        # overriding the panel's self.active_layer_name for QML-initiated lines.
-        # If QML doesn't send a layer, we might fall back, but the signal implies it should.
-        
+
+        # --- Prompt for Elevation ---
+        dlg = ElevationDialog(self)
+        z = dlg.value() if dlg.exec() == QtWidgets.QDialog.Accepted else None
+        # Create the polyline data structure expected by Project.add_traced_polyline
+        polyline_data = {"points": points, "elevation": z}
+        # Use the layer_name provided by the QML signal
+        layer_to_save = layer_name 
+
         self.logger.debug(
-            "VisualizationPanel: saving QML polyline with %d vertices to layer '%s'",
+            "VisualizationPanel: saving QML polyline with %d vertices to layer '%s' (Elevation: %s)",
             len(points),
-            layer_name, # Use layer_name passed from QML
+            layer_to_save,
+            z
         )
+        # --- Save the polyline to the Project Model ---
         self.current_project.add_traced_polyline(
-            points,
-            layer_name=layer_name, # Use layer_name passed from QML
+            polyline_data, # Pass the dictionary
+            layer_name=layer_to_save,
+            # Elevation is now inside polyline_data
         )
         # Consider emitting a signal if other UI parts need to know about the update
         # self.project_updated.emit() 
         
-        self.logger.info(f"Saved polyline with {len(points)} points to layer '{layer_name}' from QML.")
+        self.logger.info(f"Saved polyline with {len(points)} points (Elevation: {z}) to layer '{layer_to_save}' from QML.")
 
     # --- End QML Slots ---
     
@@ -932,7 +949,8 @@ class VisualizationPanel(QWidget):
     def _on_legacy_polyline_finalized(self, points_qpointf: List[QPointF]):
         """
         Slot to receive finalized polyline data from the legacy TracingScene.
-        Converts QPointF list to list of (float, float) tuples and saves to project.
+        Prompts for elevation, converts QPointF list to list of (float, float) tuples,
+        and saves the polyline with elevation to the project.
         """
         if self.current_project is None:
             self.logger.warning("_on_legacy_polyline_finalized called but no project is active.")
@@ -949,22 +967,30 @@ class VisualizationPanel(QWidget):
             self.logger.warning(f"Received legacy polyline with {len(points)} points, ignoring (needs >= 2).")
             return
         
-        # --- Save the polyline to the Project Model ---
-        # Use the panel's currently selected active layer for legacy traces
+        # --- Prompt for Elevation ---
+        dlg = ElevationDialog(self)
+        z = dlg.value() if dlg.exec() == QtWidgets.QDialog.Accepted else None
+        # Create the polyline data structure expected by Project.add_traced_polyline
+        polyline_data = {"points": points, "elevation": z}
+        layer_to_save = self.active_layer_name # Use panel's active layer
+
         self.logger.debug(
-            "VisualizationPanel: saving legacy polyline with %d vertices to layer '%s'",
+            "VisualizationPanel: saving legacy polyline with %d vertices to layer '%s' (Elevation: %s)",
             len(points),
-            self.active_layer_name, # Use panel's active layer
+            layer_to_save,
+            z
         )
+        # --- Save the polyline to the Project Model ---
         self.current_project.add_traced_polyline(
-            points,
-            layer_name=self.active_layer_name, # Use panel's active layer
+            polyline_data, # Pass the dictionary
+            layer_name=layer_to_save, 
+            # Elevation is now inside polyline_data, no need for separate arg here
         )
         
         # Consider emitting a signal if other UI parts need to know about the update
         # self.project_updated.emit() 
         
-        self.logger.info(f"Saved polyline with {len(points)} points to layer '{self.active_layer_name}' from legacy scene.")
+        self.logger.info(f"Saved polyline with {len(points)} points (Elevation: {z}) to layer '{layer_to_save}' from legacy scene.")
 
     def set_tracing_mode(self, enabled: bool):
          """

@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QGraphicsScene,
     QGraphicsSceneMouseEvent,
     QGraphicsItemGroup,
+    QGraphicsView
 )
 
 class TracingScene(QGraphicsScene):
@@ -26,10 +27,16 @@ class TracingScene(QGraphicsScene):
     # Sends the list of QPointF vertices and the layer name it was added to.
     polyline_finalized = Signal(list)
 
-    def __init__(self, parent=None):
-        """Initialize the TracingScene."""
+    def __init__(self, view: QGraphicsView, parent=None):
+        """Initialize the TracingScene.
+
+        Args:
+            view (QGraphicsView): The view that displays this scene.
+            parent (QObject, optional): Parent object. Defaults to None.
+        """
         super().__init__(parent)
         self.logger = logging.getLogger(__name__)
+        self.parent_view = view # Store reference to the parent view
 
         self._background_item: Optional[QGraphicsPixmapItem] = None
         self._tracing_enabled: bool = False
@@ -89,10 +96,18 @@ class TracingScene(QGraphicsScene):
 
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
         """Handles mouse press events to add vertices to the polyline."""
+        # Check if the parent view is currently performing manual panning
+        if self.parent_view and hasattr(self.parent_view, '_is_manual_panning') and self.parent_view._is_manual_panning:
+            self.logger.debug("Scene mousePress ignored: View is manually panning.")
+            event.accept() # Prevent further processing
+            return 
+
         if not self._tracing_enabled:
-            super().mousePressEvent(event)
+            # If tracing is disabled, do nothing and let the event propagate to the view.
+            # The view will handle panning based on its dragMode.
             return
 
+        # --- Tracing is Enabled --- 
         if event.button() == Qt.LeftButton:
             pos = event.scenePos()
             can_draw = True
@@ -111,8 +126,10 @@ class TracingScene(QGraphicsScene):
                     self._update_temporary_line(pos)
                     self.logger.debug(f"Added vertex at: {pos.x():.2f}, {pos.y():.2f}")
             else:
-                 super().mousePressEvent(event)
+                 # If click is outside drawable area when tracing, allow view to handle (e.g., pan)
+                 super().mousePressEvent(event) # Pass to base scene, might not be needed if view handles it
         else:
+            # Pass non-left clicks (e.g., right-click for context menu) to base scene
             super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent):
