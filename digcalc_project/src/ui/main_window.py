@@ -13,7 +13,7 @@ from typing import Optional, Dict, List, Tuple
 
 # PySide6 imports
 from PySide6.QtCore import Qt, QSize, Signal, Slot
-from PySide6.QtGui import QIcon, QAction, QKeySequence, QKeyEvent
+from PySide6.QtGui import QIcon, QAction, QKeySequence, QKeyEvent, QActionGroup
 from PySide6 import QtWidgets
 from PySide6.QtWidgets import (
     QMainWindow, QDockWidget, QMenu, QToolBar,
@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
     QComboBox, QLabel, QGridLayout, QPushButton, QLineEdit, QSpinBox,
     QDoubleSpinBox, QCheckBox, QFormLayout, QHBoxLayout, QDialogButtonBox,
     QSplitter, QMenuBar, QStatusBar, QSizePolicy, QTreeWidget, QTreeWidgetItem,
-    QGraphicsItem, QGraphicsPathItem # Added QGraphicsItem/PathItem
+    QGraphicsItem, QGraphicsPathItem
 )
 
 # Local imports - Use relative paths
@@ -32,17 +32,19 @@ from ..core.importers.landxml_parser import LandXMLParser
 from ..core.importers.pdf_parser import PDFParser
 from ..models.project import Project, PolylineData
 from ..models.surface import Surface
-from .project_panel import ProjectPanel # Relative within ui package
-from .visualization_panel import VisualizationPanel # Relative within ui package
-from .properties_dock import PropertiesDock # <-- Import the new dock
+from .project_panel import ProjectPanel
+from .visualization_panel import VisualizationPanel
+from .properties_dock import PropertiesDock
 from ..core.calculations.volume_calculator import VolumeCalculator
-from .dialogs.import_options_dialog import ImportOptionsDialog # Relative within ui package
-from .dialogs.report_dialog import ReportDialog # Relative within ui package
-from .dialogs.volume_calculation_dialog import VolumeCalculationDialog # Relative within ui package
+from .dialogs.import_options_dialog import ImportOptionsDialog
+from .dialogs.report_dialog import ReportDialog
+from .dialogs.volume_calculation_dialog import VolumeCalculationDialog
 from ..visualization.pdf_renderer import PDFRenderer, PDFRendererError
 from .dialogs.elevation_dialog import ElevationDialog
+from .dialogs.build_surface_dialog import BuildSurfaceDialog
+from ..core.geometry.surface_builder import SurfaceBuilder, SurfaceBuilderError
 
-logger = logging.getLogger(__name__) # Define logger at module level
+logger = logging.getLogger(__name__)
 
 
 class MainWindow(QMainWindow):
@@ -60,8 +62,8 @@ class MainWindow(QMainWindow):
         
         self.logger = logging.getLogger(__name__)
         self.current_project: Optional[Project] = None
-        self._selected_scene_item: Optional[QGraphicsPathItem] = None # NEW: Track selected item
-        self.pdf_dpi_setting = 300 # Default DPI for rendering - Increased from 150
+        self._selected_scene_item: Optional[QGraphicsPathItem] = None
+        self.pdf_dpi_setting = 300
         
         # Set up the main window properties
         self.setWindowTitle("DigCalc - Excavation Takeoff Tool")
@@ -69,14 +71,14 @@ class MainWindow(QMainWindow):
         
         # Initialize UI components
         self._init_ui()
+        self.menu_bar = self.menuBar()
         self._create_actions()
         self._create_menus()
         self._create_toolbars()
         self._create_statusbar()
-        self._connect_signals() # Connect signals after UI is built
-        
-        # Create default project
+        self._connect_signals()
         self._create_default_project()
+        self._update_view_actions_state()
         
         self.logger.debug("MainWindow initialized")
     
@@ -98,7 +100,7 @@ class MainWindow(QMainWindow):
         self.project_dock.setFeatures(
             QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable
         )
-        self.project_panel = ProjectPanel(main_window=self, parent=self) # Pass self here
+        self.project_panel = ProjectPanel(main_window=self, parent=self)
         self.project_dock.setWidget(self.project_panel)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.project_dock)
         
@@ -110,19 +112,19 @@ class MainWindow(QMainWindow):
         self.layer_tree = QTreeWidget(self.layer_dock)
         self.layer_tree.setHeaderHidden(True)
         self.layer_dock.setWidget(self.layer_tree)
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.layer_dock) # Add to left by default
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.layer_dock)
         
         # --- NEW: Create and add Properties Dock ---
         self.prop_dock = PropertiesDock(self)
         self.addDockWidget(Qt.RightDockWidgetArea, self.prop_dock)
-        self.prop_dock.hide() # Start hidden
+        self.prop_dock.hide()
         # --- END NEW ---
         
         # Connect the signal for item changes (checkbox toggles)
         self.layer_tree.itemChanged.connect(self._on_layer_visibility_changed)
         
         # Give visualization panel a reference to the main window (for project access etc)
-        # self.visualization_panel.set_main_window(self) # Or pass project directly later
+        # self.visualization_panel.set_main_window(self)
         
         # --- Layer Control Panel Dock ---
         # self.layer_control_panel_widget = self.visualization_panel.get_layer_control_panel()
@@ -133,8 +135,8 @@ class MainWindow(QMainWindow):
         #     )
         #     self.layer_dock.setWidget(self.layer_control_panel_widget)
         #     # Start hidden, only relevant when PDF is loaded? Or always visible? Let's start visible.
-        #     self.addDockWidget(Qt.RightDockWidgetArea, self.layer_dock) # Add to the right side
-        #     self.layer_dock.setVisible(True) # Make it visible by default
+        #     self.addDockWidget(Qt.RightDockWidgetArea, self.layer_dock)
+        #     self.layer_dock.setVisible(True)
         # else:
         #     self.layer_dock = None
         #     self.logger.error("Could not create Layer Control dock widget: Panel not found.")
@@ -149,12 +151,8 @@ class MainWindow(QMainWindow):
 
         # Connect tracing scene signals (via visualization panel)
         if hasattr(self.visualization_panel, 'scene_2d'):
-            # Check the signal signature from tracing_scene.py
-            # It now emits (list_of_points, QGraphicsPathItem)
             self.visualization_panel.scene_2d.polyline_finalized.connect(self._on_polyline_drawn)
-            # --- NEW: Connect selection changed signal --- 
             self.visualization_panel.scene_2d.selectionChanged.connect(self._on_item_selected)
-            # --- END NEW ---
         else:
              self.logger.warning("Could not connect tracing scene signals: scene_2d not found on visualization_panel.")
 
@@ -167,6 +165,17 @@ class MainWindow(QMainWindow):
 
         # Connect project panel signals (if any needed later)
         # self.project_panel.some_signal.connect(self._some_handler)
+
+        # --- NEW: Connect View Actions ---
+        if hasattr(self, 'view_2d_action') and self.view_2d_action:
+            self.view_2d_action.triggered.connect(self.on_view_2d)
+        else:
+             logger.error("view_2d_action not found during signal connection.")
+        if hasattr(self, 'view_3d_action') and self.view_3d_action:
+            self.view_3d_action.triggered.connect(self.on_view_3d)
+        else:
+             logger.error("view_3d_action not found during signal connection.")
+        # --- END NEW ---
 
         self.logger.debug("MainWindow signals connected.")
     
@@ -198,6 +207,13 @@ class MainWindow(QMainWindow):
         self.import_csv_action = QAction("Import CSV", self)
         self.import_csv_action.triggered.connect(self.on_import_csv)
         
+        # --- NEW: Surface Actions ---
+        self.build_surface_action = QAction("Build Surface from Layer...", self)
+        self.build_surface_action.setStatusTip("Create a TIN surface from a layer of traced polylines with elevation.")
+        self.build_surface_action.triggered.connect(self.on_build_surface)
+        self.build_surface_action.setEnabled(True)
+        # --- END NEW ---
+
         # Analysis actions
         self.calculate_volume_action = QAction("Calculate Volumes...", self)
         self.calculate_volume_action.setStatusTip("Calculate cut/fill volumes between two surfaces")
@@ -212,7 +228,7 @@ class MainWindow(QMainWindow):
         self.clear_pdf_background_action = QAction("Clear PDF Background", self)
         self.clear_pdf_background_action.setStatusTip("Remove the current PDF background image")
         self.clear_pdf_background_action.triggered.connect(self.on_clear_pdf_background)
-        self.clear_pdf_background_action.setEnabled(False) # Initially disabled
+        self.clear_pdf_background_action.setEnabled(False)
 
         self.next_pdf_page_action = QAction("Next Page", self)
         self.next_pdf_page_action.triggered.connect(self.on_next_pdf_page)
@@ -227,9 +243,35 @@ class MainWindow(QMainWindow):
         self.toggle_tracing_action.setStatusTip("Toggle interactive polyline tracing on the PDF background")
         self.toggle_tracing_action.setCheckable(True)
         self.toggle_tracing_action.toggled.connect(self.on_toggle_tracing_mode)
-        self.toggle_tracing_action.setEnabled(False) # Initially disabled
+        self.toggle_tracing_action.setEnabled(False)
         
-        # Maybe add actions for DPI, calibrate later
+        # --- NEW: View Actions --- 
+        self.view_group = QActionGroup(self)
+        self.view_group.setExclusive(True)
+
+        self.view_2d_action = QAction("View 2D (PDF/Tracing)", self, checkable=True)
+        self.view_2d_action.setStatusTip("Switch to the 2D PDF and tracing view")
+        self.view_2d_action.setShortcut("Alt+2")
+        self.view_group.addAction(self.view_2d_action)
+
+        self.view_3d_action = QAction("View 3D (Terrain)", self, checkable=True)
+        self.view_3d_action.setStatusTip("Switch to the 3D terrain view")
+        self.view_3d_action.setShortcut("Alt+3")
+        self.view_group.addAction(self.view_3d_action)
+        # --- END NEW --- 
+
+        # --- NEW: Surfaces Menu ---
+        self.surfaces_menu = self.menu_bar.addMenu("Surfaces")
+        self.surfaces_menu.addAction(self.build_surface_action)
+        # --- END NEW ---
+
+        # Analysis menu
+        self.analysis_menu = self.menu_bar.addMenu("Analysis")
+        self.analysis_menu.addAction(self.calculate_volume_action)
+        
+        # Help menu
+        self.help_menu = self.menu_bar.addMenu("Help")
+        # Add help actions here
     
     def _create_menus(self):
         """Create the application menus."""
@@ -258,7 +300,9 @@ class MainWindow(QMainWindow):
         self.view_menu.addSeparator()
         self.view_menu.addAction(self.prev_pdf_page_action)
         self.view_menu.addAction(self.next_pdf_page_action)
-        # Add view toggles here (e.g., toggle Project Panel)
+        self.view_menu.addSeparator()
+        self.view_menu.addAction(self.view_2d_action)
+        self.view_menu.addAction(self.view_3d_action)
         self.view_menu.addSeparator()
         # Ensure project_dock exists before adding its action
         if hasattr(self, 'project_dock'):
@@ -300,8 +344,13 @@ class MainWindow(QMainWindow):
             self.logger.error("Properties dock not created, cannot add toggle action.")
         # --- End Properties Dock Toggle Action ---
         self.view_menu.addSeparator()
-        self.view_menu.addAction(self.toggle_tracing_action) # Add tracing action
+        self.view_menu.addAction(self.toggle_tracing_action)
         
+        # --- NEW: Surfaces Menu ---
+        self.surfaces_menu = self.menu_bar.addMenu("Surfaces")
+        self.surfaces_menu.addAction(self.build_surface_action)
+        # --- END NEW ---
+
         # Analysis menu
         self.analysis_menu = self.menu_bar.addMenu("Analysis")
         self.analysis_menu.addAction(self.calculate_volume_action)
@@ -325,8 +374,8 @@ class MainWindow(QMainWindow):
         
         # Add the layer selector from VisualizationPanel
         if hasattr(self, 'visualization_panel') and hasattr(self.visualization_panel, 'layer_selector'):
-            self.main_toolbar.addSeparator() # Optional separator
-            self.main_toolbar.addWidget(QLabel(" Layer:")) # Optional label
+            self.main_toolbar.addSeparator()
+            self.main_toolbar.addWidget(QLabel(" Layer:"))
             self.main_toolbar.addWidget(self.visualization_panel.layer_selector)
         else:
             self.logger.warning("Could not add layer selector to toolbar: visualization_panel or layer_selector not found.")
@@ -353,21 +402,28 @@ class MainWindow(QMainWindow):
         self.pdf_toolbar.addAction(self.clear_pdf_background_action)
         self.pdf_toolbar.addSeparator()
         self.pdf_toolbar.addAction(self.prev_pdf_page_action)
-        # Add page number display/control
         self.pdf_page_label = QLabel(" Page: ")
         self.pdf_page_spinbox = QSpinBox()
-        self.pdf_page_spinbox.setRange(0, 0) # Disabled initially
+        self.pdf_page_spinbox.setRange(0, 0)
         self.pdf_page_spinbox.setEnabled(False)
         self.pdf_page_spinbox.valueChanged.connect(self.on_set_pdf_page_from_spinbox)
         self.pdf_toolbar.addWidget(self.pdf_page_label)
         self.pdf_toolbar.addWidget(self.pdf_page_spinbox)
         self.pdf_toolbar.addAction(self.next_pdf_page_action)
-        self.pdf_toolbar.setVisible(False) # Initially hidden
+        self.pdf_toolbar.setVisible(False)
         
         # --- Tracing Toolbar Action ---
-        # Add the tracing action to the PDF toolbar
         self.pdf_toolbar.addSeparator()
         self.pdf_toolbar.addAction(self.toggle_tracing_action)
+        
+        # --- NEW: Optional View Toolbar --- 
+        self.view_toolbar = QToolBar("View Toolbar")
+        self.view_toolbar.setIconSize(QSize(24, 24))
+        self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self.view_toolbar)
+        # Add actions (use icons later if desired)
+        self.view_toolbar.addAction(self.view_2d_action)
+        self.view_toolbar.addAction(self.view_3d_action)
+        # --- END NEW --- 
     
     def _create_statusbar(self):
         """Create the status bar."""
@@ -386,17 +442,17 @@ class MainWindow(QMainWindow):
         # Clear PDF before changing project context
         if hasattr(self, 'visualization_panel') and self.visualization_panel:
              self.visualization_panel.clear_pdf_background()
-             self._update_pdf_controls() # Disable PDF controls
+             self._update_pdf_controls()
              self.visualization_panel.clear_all()
         
         self.current_project = project
-        self.project_panel.set_project(self.current_project) # Update project panel view
-        self.visualization_panel.set_project(self.current_project) # Update viz panel project ref
+        self.project_panel.set_project(self.current_project)
+        self.visualization_panel.set_project(self.current_project)
         
         # --- Populate Layers Dock --- 
         try:
-            self.layer_tree.itemChanged.disconnect(self._on_layer_visibility_changed) # Disconnect to avoid signals during population
-        except RuntimeError: # Signal might not be connected yet on first run
+            self.layer_tree.itemChanged.disconnect(self._on_layer_visibility_changed)
+        except RuntimeError:
             pass
         self.layer_tree.clear()
         if hasattr(self, 'visualization_panel') and hasattr(self.visualization_panel, 'layer_selector'):
@@ -404,11 +460,11 @@ class MainWindow(QMainWindow):
                 name = self.visualization_panel.layer_selector.itemText(i)
                 item = QTreeWidgetItem(self.layer_tree, [name])
                 item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-                item.setCheckState(0, Qt.Checked) # default: visible
+                item.setCheckState(0, Qt.Checked)
             self.layer_tree.expandAll()
         try: 
-            self.layer_tree.itemChanged.connect(self._on_layer_visibility_changed) # Reconnect
-        except RuntimeError: # Already connected? Should not happen often
+            self.layer_tree.itemChanged.connect(self._on_layer_visibility_changed)
+        except RuntimeError:
             self.logger.warning("Error reconnecting layer_tree.itemChanged signal.")
             
         # Update window title and status bar & Redisplay loaded surfaces
@@ -417,7 +473,6 @@ class MainWindow(QMainWindow):
              if hasattr(self, 'visualization_panel') and self.visualization_panel:
                  self.logger.info(f"Displaying {len(self.current_project.surfaces)} loaded surfaces...")
                  for surface in self.current_project.surfaces.values():
-                     # TODO: Check surface visibility state saved in project if implemented
                      self.visualization_panel.display_surface(surface)
                      # Note: _adjust_view_to_surface is called internally by display_surface on first surface
              
@@ -436,19 +491,17 @@ class MainWindow(QMainWindow):
         # --- Load PDF/Tracing state from Project --- 
         if project and project.pdf_background_path:
             try:
-                # --- REVERTED: Use the DPI stored in the project file --- 
-                self.visualization_panel.load_pdf_background(project.pdf_background_path, project.pdf_background_dpi)
-                # self.visualization_panel.load_pdf_background(project.pdf_background_path, self.pdf_dpi_setting) # Previous attempt
-                # --- END REVERT --- 
+                # Add log here to check the value being passed
+                self.logger.info(f"Calling load_pdf_background with path='{project.pdf_background_path}' and dpi={project.pdf_background_dpi}")
+                self.visualization_panel.load_pdf_background(
+                    project.pdf_background_path, project.pdf_background_dpi
+                )
                 self.visualization_panel.set_pdf_page(project.pdf_background_page)
                 
-                # --- Load ALL Polylines --- 
-                # Pass the layered dictionary directly to the correct method
                 if project.traced_polylines:
                     self.logger.info(f"Restoring {sum(len(v) for v in project.traced_polylines.values())} polylines across {len(project.traced_polylines)} layers.")
                     self.visualization_panel.load_and_display_polylines(project.traced_polylines)
                 else:
-                    # Clear the display if no polylines exist in the project
                     self.visualization_panel.clear_polylines_from_scene()
                     
                 # TODO: When QML is integrated, call load_polylines_into_qml here
@@ -456,16 +509,13 @@ class MainWindow(QMainWindow):
             except Exception as e:
                  self.logger.error(f"Error restoring PDF/Tracing state from project: {e}", exc_info=True)
                  QMessageBox.warning(self, "Project Load Warning", f"Could not restore PDF background or traced lines:\n{e}")
-                 # Clear potentially partial state
                  if self.visualization_panel.pdf_renderer:
                       self.visualization_panel.clear_pdf_background()
-                 project.pdf_background_path = None # Clear from project if load failed
+                 project.pdf_background_path = None
                  project.traced_polylines = {}
         else:
-            # If no PDF path in project, ensure view is clear
             if self.visualization_panel.pdf_renderer:
                  self.visualization_panel.clear_pdf_background()
-                 # Use the correct method to clear polylines from the scene
                  self.visualization_panel.clear_polylines_from_scene()
         
         # Update controls based on final state
@@ -479,12 +529,10 @@ class MainWindow(QMainWindow):
         """
         can_calculate = bool(self.current_project and len(self.current_project.surfaces) >= 2)
         self.calculate_volume_action.setEnabled(can_calculate)
-        # Add other analysis actions here later if needed
         self.logger.debug(f"Calculate Volume action enabled state: {can_calculate}")
     
     def _update_pdf_controls(self):
         """Updates the state of PDF navigation and tracing controls."""
-        # Check if the visualization panel exists and has a PDF renderer
         pdf_loaded = False
         page_count = 0
         current_page = 0
@@ -495,18 +543,14 @@ class MainWindow(QMainWindow):
 
         self.logger.debug(f"Updating PDF controls: pdf_loaded={pdf_loaded}, page_count={page_count}, current_page={current_page}")
 
-        # Update toolbar visibility
         self.pdf_toolbar.setVisible(pdf_loaded)
 
-        # Update navigation actions
         self.clear_pdf_background_action.setEnabled(pdf_loaded)
         self.prev_pdf_page_action.setEnabled(pdf_loaded and current_page > 1)
         self.next_pdf_page_action.setEnabled(pdf_loaded and current_page < page_count)
 
-        # Update page spinbox
         self.pdf_page_spinbox.setEnabled(pdf_loaded)
         if pdf_loaded:
-            # Block signals temporarily to prevent feedback loop
             self.pdf_page_spinbox.blockSignals(True)
             self.pdf_page_spinbox.setRange(1, page_count)
             self.pdf_page_spinbox.setValue(current_page)
@@ -515,11 +559,9 @@ class MainWindow(QMainWindow):
             self.pdf_page_spinbox.setRange(0, 0)
             self.pdf_page_spinbox.setValue(0)
             
-        # Update tracing action state
         self.toggle_tracing_action.setEnabled(pdf_loaded)
-        # Uncheck tracing if PDF is unloaded
         if not pdf_loaded and self.toggle_tracing_action.isChecked():
-             self.toggle_tracing_action.setChecked(False) # This will trigger the toggled signal
+             self.toggle_tracing_action.setChecked(False)
 
     # Event handlers
     def on_new_project(self):
@@ -532,8 +574,7 @@ class MainWindow(QMainWindow):
         
         # Clear visualization (including PDF and traces)
         if hasattr(self, 'visualization_panel'):
-             self.visualization_panel.clear_all() # Assumes clear_all also handles PDF/traces
-             # Explicitly ensure polylines are cleared if clear_all doesn't handle it
+             self.visualization_panel.clear_all()
              self.visualization_panel.clear_polylines_from_scene() 
             
         # Update the UI with the new project
@@ -543,12 +584,6 @@ class MainWindow(QMainWindow):
     
     def on_open_project(self):
         """Handle the 'Open Project' action."""
-        # Manual Test Suggestion:
-        # 1. Click 'File -> Open Project'.
-        # 2. If a project is open and unsaved, expect a 'Save Project?' prompt.
-        # 3. Select a valid '.digcalc' file.
-        # 4. Expect the project to load, window title to update, and surfaces to appear in panels.
-        # 5. Try opening an invalid/corrupt file; expect an error message.
         if not self._confirm_close_project():
             return
 
@@ -564,37 +599,25 @@ class MainWindow(QMainWindow):
                     self._update_project(project)
                     self.statusBar().showMessage(f"Project '{project.name}' opened successfully.", 5000)
                 else:
-                    # This case might indicate an issue with the load method itself
                     raise RuntimeError("Project.load returned None without raising an exception.")
             except Exception as e:
                 self.logger.exception(f"Error opening project file: {filename}")
                 QMessageBox.critical(self, "Open Project Error", f"Failed to open project file.\n\nError: {e}")
                 self.statusBar().showMessage("Error opening project.", 5000)
-                self._create_default_project() # Reset to a clean state
+                self._create_default_project()
         else:
             self.logger.info("Open project dialog cancelled by user.")
             self.statusBar().showMessage("Open cancelled.", 3000)
     
     def on_save_project(self, save_as=False) -> bool:
         """Handle the 'Save Project' and 'Save Project As' actions."""
-        # Manual Test Suggestion (Save):
-        # 1. Create or open a project, make a change (e.g., import a surface).
-        # 2. Click 'File -> Save Project'.
-        # 3. If it's a new project, expect 'Save As' dialog.
-        # 4. If it's an existing project, expect it to save without a dialog.
-        # Manual Test Suggestion (Save As):
-        # 1. Open an existing project.
-        # 2. Click 'File -> Save Project As...'.
-        # 3. Expect 'Save As' dialog.
-        # 4. Save with a new name. Expect window title to update.
         self.logger.debug(f"Save Project action triggered (save_as={save_as})")
         if not self.current_project:
             self.logger.warning("Save attempt failed: No active project.")
-            return True # No project, so technically save wasn't needed/failed
+            return True
             
         filename = self.current_project.project_file
         
-        # Determine if we need to show the 'Save As' dialog
         if save_as or not filename:
             prompt_title = "Save Project As" if save_as else "Save Project"
             filename, _ = QFileDialog.getSaveFileName(
@@ -603,26 +626,21 @@ class MainWindow(QMainWindow):
             if not filename:
                  self.logger.info("Save project dialog cancelled by user.")
                  self.statusBar().showMessage("Save cancelled.", 3000)
-                 return False # User cancelled
+                 return False
             
-            # Ensure filename has the correct extension
             if not filename.lower().endswith(".digcalc"):
                  filename += ".digcalc"
         
-        # Proceed with saving
         self.logger.info(f"Saving project to: {filename}")
         self.statusBar().showMessage(f"Saving project to '{Path(filename).name}'...")
         try:
-            # Call the project's save method
             self.logger.info(f"Calling _update_project for project: {self.current_project.name}")
             success = self.current_project.save(filename)
             if success:
                 self.statusBar().showMessage(f"Project saved successfully to '{Path(filename).name}'", 5000)
-                # Update window title if file path changed
                 self._update_project(self.current_project) 
                 return True
             else:
-                 # Should ideally not happen if save returns bool, but handle defensively
                  raise RuntimeError("Project save method returned False without raising an exception.")
         except Exception as e:
             error_msg = f"Failed to save project to '{Path(filename).name}'.\n\nError: {str(e)}"
@@ -684,21 +702,12 @@ class MainWindow(QMainWindow):
         Internal helper to handle file import logic, including options dialog
         and adding the surface to the project.
         """
-        # Manual Test Suggestion (Import):
-        # 1. Ensure a project is open (or create new).
-        # 2. Click 'File -> Import -> [File Type]'.
-        # 3. Select a valid data file (e.g., sample.csv).
-        # 4. Configure options in the Import Options dialog (e.g., select columns for CSV).
-        # 5. Click 'OK' / 'Import'.
-        # 6. Expect the surface to appear in the Project Panel and Visualization Panel.
-        # 7. Try importing an invalid file or cancelling; expect appropriate feedback.
         if not self.current_project:
             self.logger.error("Cannot import file: No active project.")
             QMessageBox.warning(self, "No Project", "Please create or open a project before importing files.")
             return
 
         if not parser_class:
-             # Basic file type detection (can be expanded)
              ext = Path(filename).suffix.lower()
              if ext == '.dxf':
                  parser_class = DXFParser
@@ -714,11 +723,8 @@ class MainWindow(QMainWindow):
 
         try:
             parser = parser_class()
-            # Use filename base as default surface name
             default_surface_name = Path(filename).stem 
 
-            # Show options dialog
-            # Pass filename to dialog to allow peeking headers
             options_dialog = ImportOptionsDialog(self, parser, default_surface_name, filename=filename)
             if options_dialog.exec():
                 surface_name = options_dialog.get_surface_name()
@@ -730,20 +736,17 @@ class MainWindow(QMainWindow):
                 surface = parser.parse(filename, options)
 
                 if surface:
-                    # Check if the points dictionary is empty
                     if not surface.points:
                         self.logger.warning(f"Imported surface '{surface_name}' from '{filename}' contains no data points.")
                         QMessageBox.warning(self, "Import Warning", f"The imported surface '{surface_name}' contains no data points.")
                     
-                    # Ensure unique surface name within the project
                     unique_name = self.current_project.get_unique_surface_name(surface_name)
                     if unique_name != surface_name:
                         self.logger.info(f"Surface name adjusted to '{unique_name}' for uniqueness.")
                         QMessageBox.information(self, "Name Adjusted", f"The surface name was changed to '{unique_name}' to avoid duplicates.")
                     
-                    surface.name = unique_name # Assign the final name
+                    surface.name = unique_name
                     
-                    # Add surface to project
                     self.current_project.add_surface(surface)
                     self.project_panel._update_tree()
                     self._update_analysis_actions_state()
@@ -751,11 +754,9 @@ class MainWindow(QMainWindow):
                     self.statusBar().showMessage(f"Successfully imported '{surface.name}'", 5000)
                     self.logger.info(f"Surface '{surface.name}' added to project '{self.current_project.name}'.")
 
-                    # Optionally visualize the newly imported surface
                     self.visualization_panel.display_surface(surface)
 
                 else:
-                    # Parser might return None if parsing fundamentally failed
                     raise RuntimeError("Parser returned None, indicating import failure.")
 
             else:
@@ -795,8 +796,6 @@ class MainWindow(QMainWindow):
             surface_name: Name of the surface that failed to visualize
             error_msg: Error message
         """
-        # Don't show a modal dialog as this can disrupt workflow, 
-        # just update the status bar and log the error
         self.statusBar().showMessage(f"Failed to visualize surface '{surface_name}': {error_msg}", 5000)
         self.logger.error(f"Visualization failed for surface '{surface_name}': {error_msg}")
 
@@ -811,12 +810,6 @@ class MainWindow(QMainWindow):
         surface_names = list(self.current_project.surfaces.keys())
         dialog = VolumeCalculationDialog(surface_names, self)
         
-        # Manual Test Suggestion: 
-        # 1. Create/Open a project with at least two surfaces (e.g., 'existing', 'proposed').
-        # 2. Click 'Analysis -> Calculate Volumes...'.
-        # 3. In the dialog, select 'existing' and 'proposed'. Set a resolution (e.g., 5.0).
-        # 4. Click 'OK'. Expect results or error message.
-
         if dialog.exec():
             selection = dialog.get_selected_surfaces()
             resolution = dialog.get_grid_resolution()
@@ -825,7 +818,7 @@ class MainWindow(QMainWindow):
                 existing_name = selection['existing']
                 proposed_name = selection['proposed']
                 self.logger.info(f"Starting volume calculation: Existing='{existing_name}', Proposed='{proposed_name}', Resolution={resolution}")
-                self.statusBar().showMessage(f"Calculating volumes (Grid: {resolution})...", 0) # Persistent message
+                self.statusBar().showMessage(f"Calculating volumes (Grid: {resolution})...", 0)
 
                 try:
                     existing_surface = self.current_project.get_surface(existing_name)
@@ -834,13 +827,10 @@ class MainWindow(QMainWindow):
                     if not existing_surface or not proposed_surface:
                          raise ValueError("Selected surface(s) not found in project.")
                          
-                    # Corrected check: verify if the points dictionary is empty
                     if not existing_surface.points or not proposed_surface.points:
                          raise ValueError("Selected surface(s) have no data points for calculation.")
 
-                    # Initialize calculator without arguments
                     calculator = VolumeCalculator()
-                    # Call the appropriate method and unpack results from the dictionary
                     results = calculator.calculate_surface_to_surface(
                         surface1=existing_surface, 
                         surface2=proposed_surface, 
@@ -850,11 +840,9 @@ class MainWindow(QMainWindow):
                     fill_volume = results['fill_volume']
                     net_volume = results['net_volume']
 
-                    # Calculation successful
                     self.statusBar().showMessage(f"Calculation complete: Cut={cut_volume:.2f}, Fill={fill_volume:.2f}, Net={net_volume:.2f}", 5000)
                     self.logger.info(f"Volume calculation successful: Cut={cut_volume:.2f}, Fill={fill_volume:.2f}, Net={net_volume:.2f}")
                     
-                    # --- Show Report Dialog ---
                     report_dialog = ReportDialog(
                         existing_surface_name=existing_name,
                         proposed_surface_name=proposed_name,
@@ -866,7 +854,6 @@ class MainWindow(QMainWindow):
                     )
                     self.logger.debug("Displaying volume calculation report.")
                     report_dialog.exec()
-                    # --------------------------
 
                 except Exception as e:
                     self.logger.exception(f"Error during volume calculation: {e}")
@@ -878,7 +865,6 @@ class MainWindow(QMainWindow):
                     self.logger.warning("Volume calculation cancelled: Invalid grid resolution.")
                     QMessageBox.warning(self, "Invalid Input", "Grid resolution must be greater than zero.")
                  else:
-                    # Selection was likely invalid (same surface twice), handled in dialog validation
                     self.logger.warning("Volume calculation cancelled: Invalid surface selection.")
                  self.statusBar().showMessage("Calculation cancelled.", 3000)
         else:
@@ -894,39 +880,35 @@ class MainWindow(QMainWindow):
             bool: True if the operation should proceed (saved, not saved, or no changes), 
                   False if the user cancels the operation.
         """
-        # TODO: Implement actual change tracking in the Project model
-        # For now, assume changes exist if a project is loaded.
-        if not self.current_project: #or not self.current_project.has_unsaved_changes: 
+        if not self.current_project:
             return True
             
         reply = QMessageBox.question(self, 'Unsaved Changes',
                                      "The current project has unsaved changes. Do you want to save them before proceeding?",
                                      QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
-                                     QMessageBox.Cancel) # Default to Cancel
+                                     QMessageBox.Cancel)
 
         if reply == QMessageBox.Cancel:
             self.logger.debug("Project close/switch cancelled by user due to unsaved changes.")
             return False
         elif reply == QMessageBox.Save:
-            # Attempt to save, if save fails or is cancelled by user, don't proceed
             return self.on_save_project()
         elif reply == QMessageBox.Discard:
             self.logger.info("Discarding unsaved changes in current project.")
             return True
             
-        return False # Should not be reached
+        return False
 
     def closeEvent(self, event):
         """Handle the main window close event."""
         self.logger.info("Close event triggered.")
         if self._confirm_close_project():
-            # Clean up PDF renderer before closing
-            if hasattr(self, 'visualization_panel') and self.visualization_panel:
+            if hasattr(self, 'visualization_panel'):
                  self.visualization_panel.clear_pdf_background() 
             self.logger.info("Closing application.")
-            event.accept() # Proceed with closing
+            event.accept()
         else:
-            event.ignore() # User cancelled closing
+            event.ignore()
 
     # --- PDF Background and Tracing Handlers ---
 
@@ -935,7 +917,7 @@ class MainWindow(QMainWindow):
         filename, _ = QFileDialog.getOpenFileName(
             self,
             "Load PDF Background",
-            "", # Start directory
+            "",
             "PDF Files (*.pdf);;All Files (*)"
         )
         
@@ -943,24 +925,21 @@ class MainWindow(QMainWindow):
             self.logger.info(f"User selected PDF for background: {filename}")
             self.statusBar().showMessage(f"Loading PDF background '{Path(filename).name}'...", 0)
             try:
-                # Use the DPI setting
                 self.visualization_panel.load_pdf_background(filename, dpi=self.pdf_dpi_setting)
-                # Store PDF info in the project
                 if self.current_project:
                     self.current_project.pdf_background_path = filename
-                    self.current_project.pdf_background_page = 1 # Reset to page 1 on new load
+                    self.current_project.pdf_background_page = 1
                     self.current_project.pdf_background_dpi = self.pdf_dpi_setting
-                    # Clear any previous polylines when loading a new PDF
                     self.current_project.clear_traced_polylines()
-                    # Call the correct method for scene clearing
-                    self.visualization_panel.clear_polylines_from_scene() 
+                    self.visualization_panel.clear_polylines_from_scene()
                 self.statusBar().showMessage(f"Loaded PDF background '{Path(filename).name}' ({self.visualization_panel.pdf_renderer.get_page_count()} pages).", 5000)
             except (FileNotFoundError, PDFRendererError, Exception) as e:
                  self.logger.exception(f"Failed to load PDF background: {e}")
                  QMessageBox.critical(self, "PDF Load Error", f"Failed to load PDF background:\n{e}")
                  self.statusBar().showMessage("Failed to load PDF background.", 5000)
             finally:
-                 self._update_pdf_controls() # Update UI state regardless of success/failure
+                 self._update_pdf_controls()
+                 self._update_view_actions_state()
         else:
             self.logger.info("Load PDF background cancelled by user.")
             self.statusBar().showMessage("Load cancelled.", 3000)
@@ -968,17 +947,18 @@ class MainWindow(QMainWindow):
     def on_clear_pdf_background(self):
         """Handles clearing the PDF background."""
         self.logger.info("Clearing PDF background.")
-        self.visualization_panel.clear_pdf_background()
-        # Clear PDF info from the project
+        if hasattr(self, 'visualization_panel'):
+            self.visualization_panel.clear_pdf_background()
         if self.current_project:
             self.current_project.pdf_background_path = None
             self.current_project.pdf_background_page = 1
             self.current_project.pdf_background_dpi = 150
-            # Also clear traced polylines when PDF is cleared
             self.current_project.clear_traced_polylines()
-            # Call the correct method for scene clearing
-            self.visualization_panel.clear_polylines_from_scene() 
+            if hasattr(self, 'visualization_panel'):
+                self.visualization_panel.clear_polylines_from_scene()
+
         self._update_pdf_controls()
+        self._update_view_actions_state()
         
     def on_next_pdf_page(self):
         """Handles moving to the next PDF page."""
@@ -1006,13 +986,12 @@ class MainWindow(QMainWindow):
                   
     def on_set_pdf_page_from_spinbox(self, page_number: int):
         """Handles setting the PDF page from the spinbox."""
-        # This check prevents acting if the value is set programmatically while signals blocked
         if self.pdf_page_spinbox.isEnabled() and page_number > 0:
              self.logger.debug(f"Setting PDF page from spinbox to: {page_number}")
              self.visualization_panel.set_pdf_page(page_number)
              if self.current_project:
                   self.current_project.pdf_background_page = page_number
-             self._update_pdf_controls() # Update button states after spinbox change
+             self._update_pdf_controls()
              total = self.visualization_panel.pdf_renderer.get_page_count() if self.visualization_panel.pdf_renderer else 0
              self.statusBar().showMessage(f"Showing PDF page {page_number}/{total}", 3000)
 
@@ -1024,7 +1003,6 @@ class MainWindow(QMainWindow):
         if hasattr(self, 'visualization_panel'):
             self.visualization_panel.set_tracing_mode(checked)
             self.logger.info(f"Tracing mode {'enabled' if checked else 'disabled'} via MainWindow action.")
-            # Update action text for clarity
             self.toggle_tracing_action.setText("Disable Tracing" if checked else "Enable Tracing")
         else:
             self.logger.warning("Cannot toggle tracing mode: VisualizationPanel not found.")
@@ -1032,7 +1010,7 @@ class MainWindow(QMainWindow):
     @Slot(QTreeWidgetItem, int)
     def _on_layer_visibility_changed(self, item: QTreeWidgetItem, column: int):
         """Slot called when a layer's checkbox state changes in the dock."""
-        if column == 0: # Ensure change is in the first column (where checkbox is)
+        if column == 0:
             layer_name = item.text(0)
             is_visible = item.checkState(0) == Qt.Checked
             self.logger.debug(f"Layer '{layer_name}' visibility toggle -> {is_visible}")
@@ -1056,7 +1034,7 @@ class MainWindow(QMainWindow):
         layer_name = item.data(0)
         if layer_name is None:
              logger.error("Finalized polyline item is missing layer data! Assigning to 'Default'.")
-             layer_name = "Default" # Fallback needed
+             layer_name = "Default"
 
         point_tuples = [(p.x(), p.y()) for p in points_qpointf]
 
@@ -1065,36 +1043,28 @@ class MainWindow(QMainWindow):
              if item.scene(): item.scene().removeItem(item)
              return
 
-        # --- Prompt for Elevation --- 
         dlg = ElevationDialog(self)
         dialog_result = dlg.exec()
-        # Use QtWidgets.QDialog.Accepted
         elevation = dlg.value() if dialog_result == QtWidgets.QDialog.Accepted else None
         logger.debug(f"Elevation dialog result: Accepted={dialog_result == QtWidgets.QDialog.Accepted}, Elevation={elevation}")
 
-        # --- Create the PolylineData dictionary ---
         polyline_data: PolylineData = {"points": point_tuples, "elevation": elevation}
-        # --- END FIX ---
 
-        # --- Call add_traced_polyline and handle Optional[int] return ---
         new_index: Optional[int] = self.current_project.add_traced_polyline(
-            polyline=polyline_data, # Pass the dictionary
+            polyline=polyline_data,
             layer_name=layer_name,
-            # Elevation is now inside polyline_data
         )
 
-        if new_index is not None: # Check if index was returned (success)
+        if new_index is not None:
             try:
-                item.setData(1, new_index) # Store the returned index
+                item.setData(1, new_index)
                 self.logger.info(f"Added traced polyline (Index: {new_index}, Elevation: {elevation}) to layer '{layer_name}'.")
                 self.project_panel._update_tree()
                 self._update_layer_tree()
                 self.statusBar().showMessage(f"Polyline added to layer '{layer_name}' (Elev: {elevation})", 3000)
-            except Exception as e: # Catch potential errors during UI update/logging
+            except Exception as e:
                  logger.error(f"Error updating UI/logging after adding polyline (Index: {new_index}, Layer: '{layer_name}'): {e}", exc_info=True)
-                 # Don't remove item here, as data was added successfully
         else:
-             # add_traced_polyline returned None (failure)
              self.logger.error(f"Failed to add traced polyline to layer '{layer_name}' in project (add_traced_polyline returned None).")
              if item.scene(): item.scene().removeItem(item) # Clean up scene item
              QMessageBox.warning(self, "Error", f"Could not add polyline to project layer '{layer_name}'.")
@@ -1182,38 +1152,57 @@ class MainWindow(QMainWindow):
     @Slot(str, int, float)
     def _apply_elevation_edit(self, layer_name: str, index: int, new_elevation: float):
         """
-        Handles the 'edited' signal from PropertiesDock.
-        Updates the elevation in the current project's data model.
+        Handles the \'edited\' signal from PropertiesDock.
+        Updates the elevation in the current project\'s data model.
         """
+        # --- DEBUG: Log entry ---
+        logger.debug(f"_apply_elevation_edit called: Layer={layer_name}, Index={index}, New Elevation={new_elevation}")
+        # --- END DEBUG ---
+
         if not self.current_project:
             logger.error("Cannot apply elevation edit: No current project.")
             QMessageBox.critical(self, "Error", "No active project to apply changes to.")
             return
 
         try:
-            # Access the specific polyline dictionary
             poly_list = self.current_project.traced_polylines.get(layer_name)
             if poly_list is None or not isinstance(poly_list, list) or index >= len(poly_list):
                 raise IndexError(f"Invalid layer '{layer_name}' or index {index} for elevation edit.")
 
-            # Check if the elevation actually changed
+            if not isinstance(poly_list[index], dict):
+                raise TypeError(f"Polyline data at {layer_name}[{index}] is not a dictionary.")
+
             current_elevation = poly_list[index].get("elevation")
-            # Compare floats carefully, considering None
+
+            # --- DEBUG: Log values before comparison ---
+            logger.debug(f"Comparing elevation for {layer_name}[{index}]: Current={current_elevation} (Type: {type(current_elevation)}), New={new_elevation} (Type: {type(new_elevation)})")
+            # --- END DEBUG ---
+
             elevation_changed = (current_elevation is None and new_elevation is not None) or \
-                                (current_elevation is not None and abs(current_elevation - new_elevation) > 1e-6) # Tolerance for float comparison
+                                (current_elevation is not None and abs(current_elevation - new_elevation) > 1e-6)
+
+            # --- DEBUG: Log comparison result ---
+            logger.debug(f"Elevation changed comparison result: {elevation_changed}")
+            # --- END DEBUG ---
 
             if elevation_changed:
                 poly_list[index]["elevation"] = new_elevation
-                self.current_project.is_modified = True # Mark project as modified
+                self.current_project.is_modified = True
                 logger.info(f"Updated elevation for polyline (Layer: {layer_name}, Index: {index}) to {new_elevation:.2f}")
-                # Optionally update project panel if it shows elevation?
-                # self.project_panel.update_project_data(self.current_project)
-                # Update status bar maybe?
                 self.statusBar().showMessage(f"Elevation updated for {layer_name} polyline {index}.", 3000)
-                # Maybe clear selection in the dock after successful apply?
-                # self.prop_dock.clear_selection()
+
+                # Reload properties dock after update
+                if self._selected_scene_item and \
+                   self._selected_scene_item.data(0) == layer_name and \
+                   self._selected_scene_item.data(1) == index:
+                    if hasattr(self, 'prop_dock') and self.prop_dock:
+                         self.prop_dock.load_polyline(layer_name, index, new_elevation)
+                         logger.debug("Refreshed PropertiesDock with updated elevation.")
+                    else:
+                         logger.warning("Properties dock not found, cannot refresh after edit.")
             else:
-                 logger.debug(f"Elevation for polyline (Layer: {layer_name}, Index: {index}) unchanged ({new_elevation:.2f}).")
+                 # Modify else log for clarity
+                 logger.debug(f"Elevation change check returned False. No update performed.")
 
         except (KeyError, IndexError, AttributeError, TypeError) as e:
             logger.error(f"Error applying elevation edit (Layer: {layer_name}, Index: {index}): {e}", exc_info=True)
@@ -1324,6 +1313,151 @@ class MainWindow(QMainWindow):
         else:
             self.logger.debug("Polyline deletion cancelled by user.")
     # --- END NEW --- 
+
+    # --- NEW: View Toggle Slots ---
+    @Slot()
+    def on_view_2d(self):
+        """Switch to the 2D (PDF/Tracing) view."""
+        if hasattr(self, 'visualization_panel'):
+            self.logger.debug("Switching to 2D view.")
+            self.visualization_panel.show_2d_view()
+            self._update_view_actions_state() # Update check states
+        else:
+            self.logger.error("Cannot switch to 2D view: VisualizationPanel not found.")
+
+    @Slot()
+    def on_view_3d(self):
+        """Switch to the 3D (Terrain) view."""
+        if hasattr(self, 'visualization_panel'):
+            self.logger.debug("Switching to 3D view.")
+            self.visualization_panel.show_3d_view()
+            self._update_view_actions_state() # Update check states
+        else:
+            self.logger.error("Cannot switch to 3D view: VisualizationPanel not found.")
+
+    def _update_view_actions_state(self):
+        """
+        Updates the enabled and checked state of the view toggle actions (2D/3D)
+        based on available content (PDF/Surfaces) and the current view mode.
+        """
+        # Check if actions exist before proceeding
+        if not hasattr(self, 'view_2d_action') or not hasattr(self, 'view_3d_action'):
+            logger.warning("_update_view_actions_state called before view actions were created.")
+            return
+
+        has_pdf = False
+        has_surfaces = False
+        current_view = 'unknown' # Default state
+
+        if hasattr(self, 'visualization_panel'):
+            has_pdf = self.visualization_panel.has_pdf()
+            has_surfaces = self.visualization_panel.has_surfaces()
+            current_view = self.visualization_panel.current_view()
+            logger.debug(f"Updating view actions: has_pdf={has_pdf}, has_surfaces={has_surfaces}, current_view='{current_view}'")
+        else:
+            logger.warning("Cannot update view actions state: VisualizationPanel not found.")
+
+        # Enable actions based on content
+        self.view_2d_action.setEnabled(has_pdf)
+        self.view_3d_action.setEnabled(has_surfaces)
+
+        # Set checked state based on current view
+        self.view_2d_action.setChecked(current_view == '2d' and has_pdf)
+        self.view_3d_action.setChecked(current_view == '3d' and has_surfaces)
+
+        # Ensure at least one is checked if content exists, default to 3D if both possible?
+        # Or handle the case where switching is impossible. If !has_pdf & !has_surfaces, both disabled.
+        if not self.view_2d_action.isChecked() and not self.view_3d_action.isChecked():
+             # If neither is checked, but one *could* be, maybe force a default?
+             # For now, just log. The logic in show_2d/3d should handle the actual switch.
+             logger.debug("Neither view action is checked after update.")
+
+    # --- END NEW ---
+
+    # --- NEW: Slot for Building Surface --- 
+    @Slot()
+    def on_build_surface(self):
+        """Handles the 'Build Surface from Layer' action."""
+        if not self.current_project or not self.current_project.traced_polylines:
+            QMessageBox.information(self, "Build Surface", "No traced polylines available...")
+            logger.warning("Build Surface action triggered but no traced polylines exist.")
+            return
+
+        # --- FIX: Handle list/dict format when checking for elevation --- 
+        layers_with_elevation = []
+        for layer, polys in self.current_project.traced_polylines.items():
+            if not isinstance(polys, list): # Skip if layer data isn't a list
+                logger.warning(f"Layer '{layer}' data is not a list, skipping elevation check.")
+                continue
+            has_elevation = False
+            for p_data in polys:
+                # Check if p_data is a dict AND has a non-None elevation
+                if isinstance(p_data, dict) and p_data.get('elevation') is not None:
+                    has_elevation = True
+                    break # Found one with elevation in this layer
+                # Ignore lists or dicts without elevation for this check
+            if has_elevation:
+                layers_with_elevation.append(layer)
+        # --- END FIX ---
+
+        if not layers_with_elevation:
+             QMessageBox.information(self, "Build Surface", "No layers with elevation data found...")
+             logger.warning("Build Surface action triggered but no layers have elevation data.")
+             return
+
+        dlg = BuildSurfaceDialog(self.current_project, self)
+        if dlg.exec() == QtWidgets.QDialog.Accepted:
+            selected_layer = dlg.layer()
+            surface_name = dlg.surface_name()
+
+            if not selected_layer or not surface_name:
+                 logger.error("Build Surface dialog accepted but returned invalid layer or name.")
+                 return
+
+            unique_surface_name = self.current_project.get_unique_surface_name(surface_name)
+            if unique_surface_name != surface_name:
+                 logger.warning(f"Surface name '{surface_name}' adjusted to '{unique_surface_name}' for uniqueness.")
+                 surface_name = unique_surface_name
+
+            logger.info(f"Starting surface build: Source='{selected_layer}', Target='{surface_name}'")
+            self.statusBar().showMessage(f"Building surface '{surface_name}' from layer '{selected_layer}'...")
+
+            try:
+                polylines_to_build = self.current_project.traced_polylines.get(selected_layer, [])
+                # Filter again here to ensure only dicts with elevation go to builder
+                valid_polys_for_build = [
+                    p for p in polylines_to_build
+                    if isinstance(p, dict) and p.get('elevation') is not None
+                ]
+                if not valid_polys_for_build:
+                    raise SurfaceBuilderError(f"Layer '{selected_layer}' has no polylines with elevation data suitable for building.")
+
+                surface = SurfaceBuilder.build_from_polylines(selected_layer, valid_polys_for_build)
+                surface.name = surface_name
+                self.current_project.add_surface(surface)
+                if hasattr(self, 'visualization_panel'):
+                    displayed = self.visualization_panel.display_surface(surface)
+                    if displayed:
+                         logger.info(f"Successfully displayed new surface '{surface.name}'.")
+                    else:
+                         logger.warning(f"Surface '{surface.name}' added to project, but visualization failed.")
+                         QMessageBox.warning(self, "Visualization Warning", f"Surface '{surface.name}' was created but could not be displayed in the 3D view.")
+                if hasattr(self, 'project_panel'):
+                    self.project_panel._update_tree()
+                self.statusBar().showMessage(f"Surface '{surface_name}' created from layer '{selected_layer}'.", 5000)
+
+            except SurfaceBuilderError as e:
+                 logger.error(f"Surface build failed: {e}", exc_info=True)
+                 QMessageBox.warning(self, "Build Surface Error", str(e))
+                 self.statusBar().showMessage("Surface build failed.", 5000)
+            except Exception as e:
+                 logger.exception(f"Unexpected error during surface build: {e}")
+                 QMessageBox.critical(self, "Build Surface Error", f"An unexpected error occurred:\n{e}")
+                 self.statusBar().showMessage("Surface build failed (unexpected error).", 5000)
+        else:
+             logger.info("Build Surface dialog cancelled by user.")
+             self.statusBar().showMessage("Build surface cancelled.", 3000)
+    # --- END NEW ---
 
 
 class VolumeCalculationDialog(QDialog):

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from __future__ import annotations # Postpones evaluation of type hints
 """
 PDF Rendering Module for DigCalc.
 
@@ -8,16 +9,20 @@ Uses PyMuPDF (fitz) to load and render PDF pages as QImage objects.
 
 import logging
 import sys
+import typing # Import typing
 from typing import List, Optional, Tuple
 
 # --- Dependency Handling ---
 # Check for PyMuPDF (fitz)
-try:
-    import fitz  # PyMuPDF - Requires `pip install PyMuPDF`
-except ImportError:
-    print("Error: PyMuPDF (fitz) library not found.", file=sys.stderr)
-    print("Please install it: pip install PyMuPDF", file=sys.stderr)
-    fitz = None  # Indicate missing library
+if typing.TYPE_CHECKING:
+    import fitz # Move import here
+else:
+    try:
+        import fitz  # PyMuPDF - Requires `pip install PyMuPDF`
+    except ImportError:
+        print("Error: PyMuPDF (fitz) library not found.", file=sys.stderr)
+        print("Please install it: pip install PyMuPDF", file=sys.stderr)
+        fitz = None  # Indicate missing library
 
 # Check for PySide6
 try:
@@ -48,7 +53,7 @@ class PDFRenderer:
         rotation_angle (float): Placeholder for rotation angle in degrees (for future calibration).
         offset_x (float): Placeholder for X offset (for future calibration).
         offset_y (float): Placeholder for Y offset (for future calibration).
-        doc (Optional["fitz.Document"]): The loaded PyMuPDF document object.
+        doc: The loaded PyMuPDF document object.
     """
     logger = logging.getLogger(__name__)
 
@@ -71,8 +76,9 @@ class PDFRenderer:
 
         self.pdf_path: str = pdf_path
         self.dpi: int = dpi
+        self.logger.info(f"PDFRenderer initialized with DPI: {self.dpi}")
         self._rendered_pages: List[QImage] = []
-        self.doc: Optional["fitz.Document"] = None
+        self.doc = None
 
         # Placeholders for future calibration/alignment
         self.scale: float = 1.0
@@ -105,6 +111,10 @@ class PDFRenderer:
         if not self.doc:
             return # Should not happen if __init__ succeeded
 
+        # Type check hint for self.doc within the method if needed
+        if typing.TYPE_CHECKING:
+            assert self.doc is not None
+
         self._rendered_pages = [] # Clear any previous renders
         self.logger.info(f"Rendering {self.doc.page_count} pages at {self.dpi} DPI...")
 
@@ -113,7 +123,8 @@ class PDFRenderer:
             try:
                 # Render page to a pixmap using specified DPI
                 # Using matrix allows for future scaling/rotation during render if needed
-                mat = fitz.Matrix(self.dpi / 72, self.dpi / 72) # Standard conversion from points to pixels at DPI
+                self.logger.debug(f"Calculating matrix for page {page_num} using self.dpi = {self.dpi}")
+                mat = fitz.Matrix(self.dpi / 72, self.dpi / 72) # Standard conversion
                 pix = page.get_pixmap(matrix=mat, alpha=False) # Render as RGB for simplicity now
                 self.logger.debug(f"Page {page_num}: Got pixmap (w={pix.width}, h={pix.height}, colorspace={pix.colorspace.name})")
 

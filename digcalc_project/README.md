@@ -47,10 +47,12 @@ DigCalc is a desktop application for calculating earthwork volumes from digital 
    pip install -r requirements.txt
    ```
 
-5. Run the application:
-   ```
-   python src/main.py
-   ```
+5. **Run the Application:**
+   *   Navigate **one directory up** from `digcalc_project` (e.g., to the `Alpha_3` directory if your structure is `Alpha_3/digcalc_project`).
+   *   Run the application using Python's module execution flag:
+       ```bash
+       python -m digcalc_project.run_digcalc
+       ```
 
 ## Usage
 

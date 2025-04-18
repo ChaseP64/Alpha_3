@@ -49,9 +49,27 @@ class PropertiesDock(QDockWidget):
 
         # --- Buttons ---
         button_box = QDialogButtonBox(QDialogButtonBox.Apply | QDialogButtonBox.Cancel)
-        button_box.button(QDialogButtonBox.Apply).setEnabled(False) # Disabled initially
-        button_box.accepted.connect(self._apply)
-        button_box.rejected.connect(self._cancel)
+
+        # --- FIX: Connect specific button signals --- 
+        apply_button = button_box.button(QDialogButtonBox.Apply)
+        cancel_button = button_box.button(QDialogButtonBox.Cancel)
+
+        if apply_button:
+            apply_button.setEnabled(False) # Disabled initially
+            apply_button.clicked.connect(self._apply) # Connect clicked signal
+        else:
+            logger.error("Could not find Apply button in PropertiesDock button box.")
+
+        if cancel_button:
+            cancel_button.clicked.connect(self._cancel) # Connect clicked signal
+        else:
+            logger.error("Could not find Cancel button in PropertiesDock button box.")
+        # Remove old connections if they existed
+        # try: button_box.accepted.disconnect(self._apply) 
+        # except RuntimeError: pass 
+        # try: button_box.rejected.disconnect(self._cancel) 
+        # except RuntimeError: pass 
+        # --- END FIX --- 
 
         # --- Main Container ---
         vbox = QVBoxLayout()

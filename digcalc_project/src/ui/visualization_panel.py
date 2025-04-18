@@ -39,6 +39,7 @@ from .tracing_scene import TracingScene # Relative within ui package
 from ..models.project import Project
 # Import the new dialog
 from .dialogs.elevation_dialog import ElevationDialog
+from .interactive_graphics_view import InteractiveGraphicsView # Import the custom view
 
 
 class InteractiveGraphicsView(QGraphicsView):
@@ -608,9 +609,9 @@ class VisualizationPanel(QWidget):
 
     # --- PDF Background and Tracing Methods ---
     
-    def load_pdf_background(self, pdf_path: str, dpi: int = 150):
+    def load_pdf_background(self, pdf_path: str, dpi: int):
         """Loads a PDF and displays the first page as background."""
-        self.logger.info(f"Attempting to load PDF background: {pdf_path}")
+        self.logger.info(f"Loading PDF: {pdf_path} at {dpi} DPI")
         # Clean up previous PDF if any
         self.clear_pdf_background()
 
@@ -768,7 +769,7 @@ class VisualizationPanel(QWidget):
         """
         Loads polylines from a dictionary (grouped by layer) into the 2D scene.
 
-        This replaces the previous `load_and_display_legacy_polylines`.
+        This replaces the `load_and_display_legacy_polylines`.
 
         Args:
             polylines_by_layer: Dict where keys are layer names and values are lists of polylines.
@@ -1043,3 +1044,263 @@ class VisualizationPanel(QWidget):
             event.accept()
         else:
             super().wheelEvent(event) 
+
+    # --- NEW: Helper Methods --- 
+    def has_pdf(self) -> bool:
+        """Checks if a PDF background is currently loaded."""
+        return self.pdf_renderer is not None
+
+    def has_surfaces(self) -> bool:
+        """Checks if any 3D surfaces are loaded and visualization is possible."""
+        # Check if view_3d is the actual GLWidget, not the QLabel placeholder
+        return HAS_3D and isinstance(self.view_3d, GLViewWidget) and bool(self.surfaces)
+
+    def current_view(self) -> str:
+        """Returns the currently visible view mode ("2d" or "3d")."""
+        if self.view_2d and self.view_2d.isVisible():
+            return "2d"
+        # Check if view_3d exists and is the actual GLWidget before checking visibility
+        elif HAS_3D and self.view_3d and isinstance(self.view_3d, GLViewWidget) and self.view_3d.isVisible():
+            return "3d"
+        else:
+            # Fallback if state is ambiguous (e.g., during init or if 3D disabled)
+            return "2d" 
+
+    # --- NEW: View Switching Methods --- 
+    def show_2d_view(self):
+        """Shows the 2D view (PDF/Tracing) and hides the 3D view."""
+        self.logger.debug("Switching to 2D view.")
+        if self.view_3d: # Check if view_3d widget exists
+            self.view_3d.setVisible(False)
+        self.view_2d.setVisible(True)
+        self.view_2d.raise_() # Bring to front
+
+    def show_3d_view(self):
+        """Shows the 3D view (Terrain) and hides the 2D view."""
+        if not HAS_3D or not isinstance(self.view_3d, GLViewWidget):
+            self.logger.warning("Attempted to switch to 3D view, but it is unavailable.")
+            # Optionally show a message to the user?
+            # Maybe show the placeholder QLabel if it exists?
+            if isinstance(self.view_3d, QLabel): self.view_3d.setVisible(True)
+            self.view_2d.setVisible(False) # Still hide 2d
+            return
+        self.logger.debug("Switching to 3D view.")
+        self.view_2d.setVisible(False)
+        self.view_3d.setVisible(True)
+        self.view_3d.raise_() # Bring to front
+
+    # --- Update Existing Methods --- 
+    def display_surface(self, surface: Surface) -> bool:
+        # ... (validation) ...
+        if not HAS_3D or not isinstance(self.view_3d, GLViewWidget): # Added check for GLWidget type
+            error_msg = "3D visualization libraries not available or view not initialized"
+            self.logger.warning(f"Cannot display surface: {error_msg}")
+            self.surface_visualization_failed.emit(surface.name, error_msg)
+            return False
+        # ... (validate surface points/triangles) ...
+
+        try:
+            # --- MODIFIED: Call show_3d_view --- 
+            # Only switch if there are points/triangles to show
+            if surface.points and surface.triangles: 
+                 self.show_3d_view()
+            # --- END MODIFIED --- 
+
+            self.logger.info(f"Displaying surface: {surface.name}...")
+            # ... (rest of surface display logic: remove old, create mesh, add item, store, adjust view) ...
+            if surface.name in self.surfaces:
+                 self._remove_surface_visualization(surface.name)
+            
+            mesh_data = self._create_mesh_data(surface)
+            if mesh_data:
+                 mesh = GLMeshItem(
+                     vertexes=mesh_data["vertices"],
+                     faces=mesh_data["faces"],
+                     faceColors=mesh_data["colors"],
+                     smooth=True,
+                     drawEdges=True,
+                     edgeColor=(0, 0, 0, 0.5)
+                 )
+                 self.view_3d.addItem(mesh)
+                 self.surfaces[surface.name] = {"mesh": mesh} # Store vis item
+                 
+                 if len(self.surfaces) == 1:
+                     self._adjust_view_to_surface(surface)
+                     
+                 self.logger.info(f"Successfully rendered surface: {surface.name}")
+                 return True
+            else:
+                error_msg = "Failed to create mesh data for visualization"
+                self.logger.warning(f"Cannot display surface '{surface.name}': {error_msg}")
+                self.surface_visualization_failed.emit(surface.name, error_msg)
+                return False
+        except Exception as e:
+            error_msg = f"Visualization error: {str(e)}"
+            self.logger.exception(f"Error displaying surface '{surface.name}': {e}")
+            self.surface_visualization_failed.emit(surface.name, error_msg)
+            return False
+
+    def load_pdf_background(self, pdf_path: str, dpi: int):
+        # ... (clear existing if any) ...
+        # self.clear_pdf_background() # Maybe call this first? Or handle within?
+        if self.pdf_renderer:
+            self.clear_pdf_background() # Ensure clean state
+            
+        try:
+            self.logger.info(f"Loading PDF: {pdf_path} at {dpi} DPI")
+            self.pdf_renderer = PDFRenderer(pdf_path, dpi)
+            page_count = self.pdf_renderer.get_page_count()
+            if page_count == 0:
+                 raise PDFRendererError("PDF has no pages.")
+            self.current_pdf_page = 1
+            self._display_current_pdf_page() # This sets the image in scene_2d
+            # --- MODIFIED: Explicitly switch view --- 
+            self.show_2d_view()
+            # --- END MODIFIED --- 
+            self.logger.info(f"PDF background loaded: {pdf_path}")
+        except (PDFRendererError, FileNotFoundError, Exception) as e:
+            self.logger.exception(f"Failed to load PDF background: {e}")
+            # Show error to user?
+            self.pdf_renderer = None # Ensure cleanup on failure
+            self.current_pdf_page = 0
+            # Ensure 2D view remains visible even if load failed
+            self.show_2d_view()
+
+    def _display_current_pdf_page(self):
+        if self.pdf_renderer and self.current_pdf_page > 0:
+             try:
+                 image = self.pdf_renderer.get_page_image(self.current_pdf_page) # Correct call (1-based index)
+                 self.scene_2d.set_background_image(image)
+                 self.logger.debug(f"Displayed PDF page {self.current_pdf_page}")
+             except Exception as e:
+                 self.logger.exception(f"Error rendering PDF page {self.current_pdf_page}: {e}")
+                 self.scene_2d.set_background_image(None) # Clear background on error
+
+    def set_pdf_page(self, page_number: int):
+        if self.pdf_renderer:
+             count = self.pdf_renderer.get_page_count()
+             if 1 <= page_number <= count:
+                 self.current_pdf_page = page_number
+                 self._display_current_pdf_page()
+             else:
+                 self.logger.warning(f"Invalid page number {page_number} requested.")
+
+    def clear_pdf_background(self):
+        if self.pdf_renderer:
+            self.logger.info("Clearing PDF background.")
+            self.scene_2d.set_background_image(None)
+            self.pdf_renderer.close()
+            self.pdf_renderer = None
+        
+        # Clear the background in TracingScene (legacy)
+        self.scene_2d.set_background_image(None)
+        
+        # --- Clear background in QML ---
+        # if self.qml_root_object and hasattr(self.qml_root_object, 'clearPdfBackground'):
+        #    self.qml_root_object.clearPdfBackground()
+        #    self.logger.info("Cleared PDF background in QML.")
+        
+        # Optionally hide the 2D/QML view and show 3D view if available
+        self.view_2d.setVisible(False)
+        # if self.qml_widget: self.qml_widget.setVisible(False)
+        if HAS_3D:
+             self.view_3d.setVisible(True)
+        else:
+            # If no 3D view, maybe show a placeholder or leave blank?
+             pass 
+
+    def clear_all(self):
+        """Clears surfaces, PDF background, and traced lines."""
+        self.logger.info("Clearing all visualization data.")
+        # Clear 3D surfaces
+        if HAS_3D and isinstance(self.view_3d, GLViewWidget):
+            for name in list(self.surfaces.keys()): # Iterate over keys copy
+                self._remove_surface_visualization(name)
+            self.surfaces.clear()
+        # Clear PDF and 2D traces
+        self.clear_pdf_background() # Handles view switching
+        self.clear_polylines_from_scene() # Ensure 2D lines are cleared
+
+    def _remove_surface_visualization(self, surface_name: str):
+        if HAS_3D and isinstance(self.view_3d, GLViewWidget) and surface_name in self.surfaces:
+             vis_data = self.surfaces.pop(surface_name)
+             if "mesh" in vis_data and vis_data["mesh"] in self.view_3d.items:
+                 self.view_3d.removeItem(vis_data["mesh"])
+                 self.logger.debug(f"Removed surface visualization: {surface_name}")
+             else:
+                 self.logger.warning(f"Could not find mesh item for surface {surface_name} to remove.")
+
+    def _adjust_view_to_surface(self, surface: Surface):
+         if not HAS_3D or not isinstance(self.view_3d, GLViewWidget) or not surface or not surface.points:
+             return
+         # ... rest of adjust logic using np ...
+         try:
+            points_list = list(surface.points.values())
+            if not points_list: return # No points to adjust to
+            
+            x_vals = [p.x for p in points_list]
+            y_vals = [p.y for p in points_list]
+            z_vals = [p.z for p in points_list]
+            
+            center = np.array([(min(x_vals) + max(x_vals))/2, (min(y_vals) + max(y_vals))/2, (min(z_vals) + max(z_vals))/2])
+            size = max(max(x_vals) - min(x_vals), max(y_vals) - min(y_vals), max(z_vals) - min(z_vals), 1)
+            distance = size * 2 # Adjust multiplier as needed
+            
+            self.view_3d.opts["center"] = center
+            self.view_3d.opts["distance"] = distance
+            self.view_3d.update()
+            self.logger.debug(f"Adjusted 3D view center={center}, distance={distance}")
+         except Exception as e:
+            self.logger.error(f"Error adjusting 3D view: {e}", exc_info=True)
+
+    def _create_mesh_data(self, surface: Surface) -> Optional[Dict[str, Any]]:
+         if not HAS_3D or not surface.triangles or not surface.points:
+             return None
+         # ... rest of mesh creation using np ...
+         try:
+            points_list = list(surface.points.values())
+            points_id_map = {p.id: i for i, p in enumerate(points_list)}
+            vertices = np.array([[p.x, p.y, p.z] for p in points_list])
+            faces = []
+            # ... face creation loop ...
+            for tri_id, triangle in surface.triangles.items():
+                try:
+                    i1 = points_id_map[triangle.p1.id]
+                    i2 = points_id_map[triangle.p2.id]
+                    i3 = points_id_map[triangle.p3.id]
+                    faces.append([i1, i2, i3])
+                except (KeyError, AttributeError) as e:
+                    self.logger.warning(f"Invalid triangle ID {tri_id} in surface {surface.name}: {e}")
+                    continue
+            
+            if not faces: return None
+            faces = np.array(faces)
+            # ... color calculation ...
+            z_min = np.min(vertices[:, 2])
+            z_max = np.max(vertices[:, 2])
+            z_range = max(z_max - z_min, 0.1)
+            colors = np.zeros((len(faces), 4))
+            # ... color loop ...
+            for i, face in enumerate(faces):
+                z_avg = np.mean(vertices[face, 2])
+                t = np.clip((z_avg - z_min) / z_range, 0, 1)
+                # Simple blue-red gradient
+                colors[i] = [t, 0, 1-t, 0.7] # R, G, B, Alpha
+                
+            return {"vertices": vertices, "faces": faces, "colors": colors}
+         except Exception as e:
+             self.logger.exception(f"Error creating mesh data: {e}")
+             return None
+
+    # Add methods related to 2D scene interaction if needed
+    def clear_polylines_from_scene(self):
+        if hasattr(self, "scene_2d"):
+             self.scene_2d.clear_finalized_polylines()
+
+    def load_and_display_polylines(self, polylines_by_layer):
+         if hasattr(self, "scene_2d"):
+             self.scene_2d.load_polylines_with_layers(polylines_by_layer)
+
+    # Potentially add wheelEvent override if needed here instead of InteractiveGraphicsView
+    # def wheelEvent(self, event):
+    #    pass 

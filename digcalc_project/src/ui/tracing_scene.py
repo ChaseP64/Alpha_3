@@ -17,6 +17,13 @@ from PySide6.QtWidgets import (
     QGraphicsView
 )
 
+# Import the type hint from Project model
+try:
+    from ..models.project import PolylineData
+except ImportError:
+    # Fallback or error if needed
+    PolylineData = dict 
+
 class TracingScene(QGraphicsScene):
     """
     A custom QGraphicsScene for interactive polyline tracing over a background image,
@@ -334,9 +341,8 @@ class TracingScene(QGraphicsScene):
     # --- Methods for Loading/Clearing Finalized Lines ---
 
     def clear_finalized_polylines(self):
-        """Removes all finalized QGraphicsPathItems (polylines) from the scene."""
+        """Removes only finalized polyline items (QGraphicsPathItem with layer data)."""
         items_to_remove = []
-        # Iterate directly over scene items
         for item in self.items():
             # Remove only items that have layer data (i.e., finalized polylines)
             if isinstance(item, QGraphicsPathItem) and item.data(0) is not None: # Check key 0 for layer
@@ -346,62 +352,64 @@ class TracingScene(QGraphicsScene):
             self.removeItem(item)
         self.logger.info(f"Cleared {len(items_to_remove)} finalized polyline(s). Layer tags preserved on other items.")
 
-    def load_polylines_with_layers(self, polylines_by_layer: Dict[str, List[List[Tuple[float, float]]]]):
+    def load_polylines_with_layers(self, polylines_by_layer: Dict[str, List["PolylineData"]]):
         """
         Clears existing finalized polylines and loads new ones from project data,
         tagging each created QGraphicsPathItem with its layer name and index.
 
         Args:
             polylines_by_layer: A dictionary where keys are layer names and values
-                                are lists of polylines for that layer.
-                                Each polyline is assumed to be a list of (x, y) tuples/lists.
-                                (Handles the structure loaded from older project files).
+                                are lists of PolylineData dictionaries for that layer.
         """
         self.clear_finalized_polylines() # Clear previous lines first
 
-        # self.logger.info(f"Loading polylines for {len(polylines_by_layer)} layers onto the scene.")
-        self.logger.info(f"Loading polylines for {len(polylines_by_layer)} layers onto the scene (Handling list format).")
+        self.logger.info(f"Loading polylines for {len(polylines_by_layer)} layers onto the scene.")
         total_added = 0
 
         for layer_name, polylines_list in polylines_by_layer.items():
             layer_added_count = 0
-            # --- MODIFIED: Iterate with index over the list of polylines ---
-            # for index, poly_data in enumerate(polylines_list):
-            #     poly_points = poly_data.get("points", [])
-            for index, poly_points in enumerate(polylines_list):
-                # --- FIX: Treat the iterated item 'poly_points' directly as the list of points ---
-                # Check if poly_points is indeed a list and has enough points
-                if isinstance(poly_points, list) and len(poly_points) >= 2:
-                # --- END FIX ---
-                    try:
-                        path = QPainterPath()
-                        # Convert points which might be lists [x,y] back to QPointF
-                        start_point = QPointF(float(poly_points[0][0]), float(poly_points[0][1]))
-                        path.moveTo(start_point)
-                        for point_tuple in poly_points[1:]:
-                            path.lineTo(QPointF(float(point_tuple[0]), float(point_tuple[1])))
+            # Iterate getting index and PolylineData dict
+            for index, poly_data in enumerate(polylines_list):
+                # Check if poly_data is a dictionary and contains 'points'
+                if isinstance(poly_data, dict) and "points" in poly_data:
+                    poly_points = poly_data.get("points") # Extract the points list
+                    elevation = poly_data.get("elevation") # Get elevation (unused for drawing now, but available)
 
-                        path_item = QGraphicsPathItem(path)
-                        path_item.setPen(self._finalized_polyline_pen)
-                        path_item.setZValue(0)
-                        # Store layer name (key 0) and index (key 1)
-                        path_item.setData(0, layer_name)
-                        path_item.setData(1, index) # Store the index from the project data list
+                    # Ensure points list is valid
+                    if isinstance(poly_points, list) and len(poly_points) >= 2:
+                        try:
+                            path = QPainterPath()
+                            # Convert points which might be lists/tuples [x,y] to QPointF
+                            start_point = QPointF(float(poly_points[0][0]), float(poly_points[0][1]))
+                            path.moveTo(start_point)
+                            for point_tuple in poly_points[1:]:
+                                path.lineTo(QPointF(float(point_tuple[0]), float(point_tuple[1])))
 
-                        # Make item selectable
-                        path_item.setFlags(path_item.flags() | QGraphicsItem.ItemIsSelectable)
+                            path_item = QGraphicsPathItem(path)
+                            # TODO: Use elevation for styling later if needed
+                            path_item.setPen(self._finalized_polyline_pen)
+                            path_item.setZValue(0)
 
-                        self.addItem(path_item)
-                        layer_added_count += 1
-                    except (ValueError, TypeError, IndexError) as e:
-                        # self.logger.error(f"Error creating QGraphicsPathItem for loaded polyline in layer '{layer_name}' at index {index}: {e}", exc_info=True)
-                        self.logger.error(f"Error creating QGraphicsPathItem for loaded polyline in layer '{layer_name}' at index {index}: {e}. Data: {poly_points}", exc_info=True)
+                            # Store layer name (key 0) and index (key 1)
+                            path_item.setData(0, layer_name)
+                            path_item.setData(1, index)
+                            # Optional: Store elevation (e.g., key 2) if needed for direct access from item
+                            # path_item.setData(2, elevation)
+
+                            # Make item selectable
+                            path_item.setFlags(path_item.flags() | QGraphicsItem.ItemIsSelectable)
+
+                            self.addItem(path_item)
+                            layer_added_count += 1
+                        except (ValueError, TypeError, IndexError) as e:
+                             self.logger.error(f"Error creating QGraphicsPathItem for loaded polyline in layer '{layer_name}' at index {index}: {e}. Data: {poly_data}", exc_info=True)
+                    else:
+                        # Log if the points list within the dict is invalid or too short
+                        self.logger.warning(f"Skipping loaded polyline dict in layer '{layer_name}' at index {index} due to invalid 'points' list: {poly_points}")
                 else:
-                     # Log if the data format is unexpected or too short
-                     if not isinstance(poly_points, list):
-                         self.logger.warning(f"Skipping loaded item in layer '{layer_name}' at index {index}: Expected list of points, got {type(poly_points)}.")
-                     else: # Is a list, but too short
-                         self.logger.warning(f"Skipping loaded polyline in layer '{layer_name}' at index {index} with less than 2 points: {poly_points}")
+                     # Log if the data format is not the expected dictionary
+                     self.logger.warning(f"Skipping loaded item in layer '{layer_name}' at index {index}: Expected PolylineData dictionary, got {type(poly_data)}.")
+
             if layer_added_count > 0:
                  self.logger.debug(f"Added {layer_added_count} polylines to layer '{layer_name}'.")
             total_added += layer_added_count

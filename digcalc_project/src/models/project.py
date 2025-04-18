@@ -324,131 +324,176 @@ class Project:
     
     @classmethod
     def load(cls, filename: str) -> Optional["Project"]:
-        """
-        Load a project from a file. Handles both new (v2) and old (v1) 
-        formats for traced_polylines.
-        
-        Args:
-            filename: Path to project file
-            
-        Returns:
-            Project or None if loading failed
-        """
         logger = logging.getLogger(__name__)
-        
+        migrated = False # Track if any migration occurred
+
         try:
-            with open(filename, 'r') as f:
-                data = json.load(f)
-            
-            # --- Load and handle traced_polylines first (handles migration) ---
-            raw_polys = data.get("traced_polylines", {}) # Default to empty dict
-            temp_traced_polylines = {}
-            migrated = False
-            if isinstance(raw_polys, list):
-                # Legacy file: single list => migrate to default layer
-                temp_traced_polylines = {"Legacy Traces": raw_polys}
-                logger.warning(
-                    "Migrated legacy polyline list to 'Legacy Traces' layer " 
-                    "(%d polylines). Please save the project to keep these changes.",
-                    len(raw_polys)
-                )
-                migrated = True
-            elif isinstance(raw_polys, dict):
-                # Standard v2 format
-                temp_traced_polylines = raw_polys
-                logger.debug("Loaded traced polylines in dictionary format.")
-            elif raw_polys is not None:
-                 # Handle cases where data exists but is neither dict nor list
-                 logger.warning("Traced polyline data found but is in an unexpected format (%s). No polylines loaded.", type(raw_polys))
-            # If raw_polys is None or {}, temp_traced_polylines remains {}
+            with open(filename, 'r') as f: data = json.load(f)
 
-            # --- Load schema version for potential migrations --- 
-            # (Keep this for other potential future migrations, though not used for polylines now)
-            schema_version = data.get("project_schema_version", 0)
-            if schema_version == 0 and isinstance(data.get("traced_polylines"), list):
-                 schema_version = 1 # Infer version 1 if key exists as list
+            project_name = data.get("name")
+            if not project_name:
+                 # --- FIX: Correct logger f-string syntax --- 
+                 logger.error(f"Project file '{filename}' is missing the required 'name' field.")
+                 # --- END FIX --- 
+                 # Optionally raise an error or return None
+                 # raise ValueError(f"Project file 
+                 return None # Cannot create project without a name
 
-            if schema_version > 2:
-                logger.warning(f"Loading project with schema version {schema_version}, which is newer than supported (2). Some data may be ignored.")
-            
-            # Basic validation
-            if "name" not in data:
-                raise ValueError("Project file missing 'name' attribute.")
-                
-            project = cls(data["name"], filename)
+            # Instantiate using the correct positional arguments
+            project = cls(name=project_name, project_file=filename)
+            # --- END FIX ---
+
+            schema_version = data.get("project_schema_version", 1) # Default to 1 if missing
+            # project = cls(filename=filename) # Incorrect call removed
+            project.project_schema_version = schema_version
+
+            # Load other attributes using .get() for safety
             project.description = data.get("description", "")
-            project.author = data.get("author", "Unknown")
-            
+            project.author = data.get("author", os.environ.get("USERNAME", "Unknown"))
+
             # Load timestamps safely
             try:
                 project.created_at = datetime.datetime.fromisoformat(data["created_at"])
-            except (KeyError, ValueError):
-                logger.warning("Could not load or parse created_at timestamp.")
+            except (KeyError, ValueError, TypeError): # Added TypeError
+                logger.warning("Could not load or parse created_at timestamp. Using current time.")
                 project.created_at = datetime.datetime.now() # Fallback
             try:
-                project.modified_at = datetime.datetime.fromisoformat(data["modified_at"])
-            except (KeyError, ValueError):
-                 logger.warning("Could not load or parse modified_at timestamp.")
-                 project.modified_at = project.created_at # Fallback
-            
-            project.metadata = data.get("metadata", {})
-            
-            # Load surfaces (replace with full deserialization later)
-            surfaces_data = data.get("surfaces", {})
-            if isinstance(surfaces_data, dict):
-                 for name, surface_dict in surfaces_data.items():
-                     try:
-                         # Assuming Surface.from_dict exists and works
-                         surface = Surface.from_dict(surface_dict)
-                         project.surfaces[surface.name] = surface # Add directly to dict
-                     except Exception as surf_e:
-                         logger.error(f"Failed to load surface '{name}' from project data: {surf_e}")
-            else:
-                 logger.warning("Surface data in project file is not a dictionary. Skipping surfaces.")
-            
-            # Load calculations (replace with full deserialization later)
-            calculations_data = data.get("calculations", [])
-            if isinstance(calculations_data, list):
-                 for calc_dict in calculations_data:
-                     try:
-                         # Assuming VolumeCalculation.from_dict exists and works
-                         calc = VolumeCalculation.from_dict(calc_dict)
-                         project.calculations.append(calc)
-                     except Exception as calc_e:
-                          logger.error(f"Failed to load calculation from project data: {calc_e}")
-            else:
-                 logger.warning("Calculation data in project file is not a list. Skipping calculations.")
+                 project.modified_at = datetime.datetime.fromisoformat(data["modified_at"])
+            except (KeyError, ValueError, TypeError): # Added TypeError
+                 logger.warning("Could not load or parse modified_at timestamp. Using created_at/current time.")
+                 project.modified_at = project.created_at # Fallback to created_at
 
-            # --- Load Tracing / PDF State ---
+            project.metadata = data.get("metadata", {})
+
+            # --- Load and Process Traced Polylines --- 
+            raw_polys_data = data.get("traced_polylines", {})
+            processed_polylines: TracedPolylinesType = {}
+
+            if isinstance(raw_polys_data, list): # Legacy V1 format
+                logger.warning("Found legacy list format for traced_polylines. Migrating to 'Legacy Traces' layer with elevation=None.")
+                migrated_layer_polys = []
+                for poly_list in raw_polys_data:
+                    if isinstance(poly_list, list) and len(poly_list) >= 2:
+                        try:
+                            # Convert points to tuples, ensure format correctness
+                            points_as_tuples = [tuple(map(float, p)) for p in poly_list if isinstance(p, list) and len(p)==2]
+                            if len(points_as_tuples) >= 2: # Check if conversion yielded enough valid points
+                                # --- FIX: Create the dict structure --- 
+                                migrated_layer_polys.append({"points": points_as_tuples, "elevation": None})
+                                # --- END FIX --- 
+                            else:
+                                 logger.warning(f"Skipping invalid points within legacy polyline list: {poly_list}")
+                        except (TypeError, ValueError) as conv_err:
+                             logger.warning(f"Error converting points in legacy polyline list: {conv_err}. Skipping: {poly_list}")
+                    else:
+                        logger.warning(f"Skipping invalid item during legacy polyline migration: {poly_list}")
+                if migrated_layer_polys:
+                     processed_polylines["Legacy Traces"] = migrated_layer_polys
+                migrated = True # Mark as modified if V1 data was found
+
+            elif isinstance(raw_polys_data, dict): # V2+ format
+                logger.debug("Loading traced polylines in dictionary format. Verifying structure...")
+                for layer, polys_in_layer in raw_polys_data.items():
+                    if not isinstance(polys_in_layer, list):
+                        logger.warning(f"Data for layer '{layer}' is not a list. Skipping layer.")
+                        continue
+
+                    verified_polys = []
+                    for i, poly_data in enumerate(polys_in_layer):
+                        # Check if it's already the correct dict format
+                        if isinstance(poly_data, dict) and "points" in poly_data and isinstance(poly_data.get("points"), list):
+                             try:
+                                 # Convert points to tuples just in case they were saved as lists
+                                 points_as_tuples = [tuple(map(float, p)) for p in poly_data["points"] if isinstance(p, (list, tuple)) and len(p)==2]
+                                 if len(points_as_tuples) >= 2:
+                                     verified_polys.append({
+                                         "points": points_as_tuples,
+                                         "elevation": poly_data.get("elevation") # Handles None correctly
+                                     })
+                                 else:
+                                      logger.warning(f"Skipping polyline dict with < 2 valid points in layer '{layer}' (index {i}).")
+                             except (TypeError, ValueError) as conv_err:
+                                  logger.warning(f"Error converting points in polyline dict: {conv_err}. Skipping polyline in layer '{layer}' (index {i}).")
+
+                        # --- FIX: Handle list format found within V2 dict --- 
+                        elif isinstance(poly_data, list):
+                            logger.warning(f"Found list format polyline within V2 layer '{layer}' (index {i}). Converting with elevation=None.")
+                            if len(poly_data) >= 2:
+                                try:
+                                    points_as_tuples = [tuple(map(float, p)) for p in poly_data if isinstance(p, (list, tuple)) and len(p)==2]
+                                    if len(points_as_tuples) >= 2:
+                                        verified_polys.append({"points": points_as_tuples, "elevation": None})
+                                        migrated = True # Data format changed, needs save
+                                    else:
+                                         logger.warning(f"Skipping list format polyline with < 2 valid points during V2 load (Layer: {layer}, Index: {i}).")
+                                except (TypeError, ValueError) as conv_err:
+                                     logger.warning(f"Error converting points in list format polyline during V2 load: {conv_err}. Skipping polyline in layer '{layer}' (index {i}).")
+                            else:
+                                logger.warning(f"Skipping list format polyline with < 2 points during V2 load (Layer: {layer}, Index: {i}).")
+                        # --- END FIX --- 
+                        else:
+                             logger.warning(f"Skipping invalid polyline data structure in layer '{layer}' (index {i}): {type(poly_data)}")
+
+                    if verified_polys: # Only add layer if it contains valid polylines
+                         processed_polylines[layer] = verified_polys
+            elif raw_polys_data is not None:
+                 logger.warning("Traced polyline data found but is in an unexpected format (%s). No polylines loaded.", type(raw_polys_data))
+
+            # --- Load Surfaces --- 
+            raw_surfaces = data.get("surfaces", {})
+            if isinstance(raw_surfaces, dict):
+                 for name, surface_data in raw_surfaces.items():
+                     try:
+                         # Reconstruct Surface object
+                         surface = Surface.from_dict(surface_data)
+                         surface.name = name # Assign the name from the dict key
+                         project.surfaces[name] = surface
+                     except Exception as e:
+                         logger.error(f"Failed to load surface '{name}': {e}", exc_info=True)
+            else:
+                 logger.warning("Surface data is not in the expected dictionary format. No surfaces loaded.")
+
+            # --- Load Calculations --- 
+            raw_calcs = data.get("calculations", [])
+            if isinstance(raw_calcs, list):
+                 for calc_data in raw_calcs:
+                     try:
+                         calc = VolumeCalculation.from_dict(calc_data)
+                         project.calculations.append(calc)
+                     except Exception as e:
+                         logger.error(f"Failed to load calculation: {e}", exc_info=True)
+            else:
+                 logger.warning("Calculation data is not in the expected list format. No calculations loaded.")
+
+            # --- Load PDF Background State --- 
+            # Correctly loading the PDF data into the right attributes
             pdf_data = data.get("pdf_background")
             if isinstance(pdf_data, dict):
                 project.pdf_background_path = pdf_data.get("path") # Path can be None
                 project.pdf_background_page = pdf_data.get("page", 1)
                 project.pdf_background_dpi = pdf_data.get("dpi", 150)
             else:
-                logger.warning("PDF background data missing or invalid format. Defaults will be used.")
+                logger.warning("PDF background data missing or invalid format in project file. Defaults will be used.")
                 project.pdf_background_path = None
                 project.pdf_background_page = 1
                 project.pdf_background_dpi = 150
-                
-            # Assign the processed/migrated polylines
-            project.traced_polylines = temp_traced_polylines
-            
-            # Set modified status based ONLY on migration having occurred
-            project.is_modified = migrated 
-            
+
+            # Assign fully processed data last
+            project.traced_polylines = processed_polylines
+            project.is_modified = migrated # Mark modified only if format changed during load
+
             logger.info(f"Project loaded from {filename}")
             return project
-            
+
         except FileNotFoundError:
-             logger.error(f"Project file not found: {filename}")
-             return None
-        except json.JSONDecodeError as json_e:
-             logger.error(f"Error decoding project file (invalid JSON): {filename} - {json_e}")
-             return None
+            logger.error(f"Project file not found: {filename}")
+            return None
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to decode JSON from project file {filename}: {e}")
+            return None
         except Exception as e:
-            logger.exception(f"Unexpected error loading project: {e}")
-            return None 
+            logger.exception(f"An unexpected error occurred loading project {filename}: {e}")
+            return None
 
     def __repr__(self) -> str:
         """Returns a string representation of the Project."""
