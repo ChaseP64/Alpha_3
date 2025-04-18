@@ -48,10 +48,10 @@ class ReportDialog(QDialog):
         self.lbl_existing = QLabel(self.existing_surface_name)
         self.lbl_proposed = QLabel(self.proposed_surface_name)
         self.lbl_resolution = QLabel(f"{self.grid_resolution:.2f} units")
-        # Format volumes to 2 decimal places
-        self.lbl_cut = QLabel(f"{self.cut_volume:.2f} cubic units")
-        self.lbl_fill = QLabel(f"{self.fill_volume:.2f} cubic units")
-        self.lbl_net = QLabel(f"{self.net_volume:.2f} cubic units")
+        # Format volumes with commas and 2 decimal places
+        self.lbl_cut = QLabel(f"{self.cut_volume:,.2f} cubic units")
+        self.lbl_fill = QLabel(f"{self.fill_volume:,.2f} cubic units")
+        self.lbl_net = QLabel(f"{self.net_volume:,.2f} cubic units")
         self.lbl_timestamp = QLabel(self.timestamp)
 
         # Add rows to form layout

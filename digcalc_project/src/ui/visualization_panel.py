@@ -490,44 +490,35 @@ class VisualizationPanel(QWidget):
             y_min, y_max = min(y_vals), max(y_vals)
             z_min, z_max = min(z_vals), max(z_vals)
             
-            # Calculate center
-            center_x = (x_min + x_max) / 2
-            center_y = (y_min + y_max) / 2
-            center_z = (z_min + z_max) / 2
-            
-            # Calculate distance based on size
-            size_x = max(x_max - x_min, 1)
-            size_y = max(y_max - y_min, 1)
-            size_z = max(z_max - z_min, 1)
-            
-            distance = max(size_x, size_y, size_z) * 2
-            
-            # Set camera position using pyqtgraph.Vector
+            # Calculate center coordinates as floats
+            center_x = (min(x_vals) + max(x_vals))/2
+            center_y = (min(y_vals) + max(y_vals))/2
+            center_z = (min(z_vals) + max(z_vals))/2
+
+            # Calculate size and distance
+            size = max(max(x_vals) - min(x_vals), max(y_vals) - min(y_vals), max(z_vals) - min(z_vals), 1)
+            distance = size * 2 # Adjust multiplier as needed
+
+            # Create a pyqtgraph.Vector for the center
+            center_vec = pyqtgraph.Vector(center_x, center_y, center_z)
+
+            # Use setCameraPosition with the Vector using the 'pos' argument
             self.view_3d.setCameraPosition(
-                pos=pyqtgraph.Vector(center_x, center_y, center_z),
+                pos=center_vec,  # Use 'pos' argument for the target position
                 distance=distance,
                 elevation=30,
                 azimuth=45
             )
             
-            # Update the grid to match the size of the surface
-            if hasattr(self, 'view_3d'):
-                for item in self.view_3d.items:
-                    if isinstance(item, GLGridItem):
-                        # Update grid size
-                        grid_size = max(size_x, size_y) * 1.5
-                        grid_spacing = grid_size / 10
-                        item.setSize(x=grid_size, y=grid_size, z=0)
-                        item.setSpacing(x=grid_spacing, y=grid_spacing, z=grid_spacing)
-                        
-                        # Position grid at the lowest point
-                        item.translate(center_x, center_y, z_min)
-                        break
-                        
-            self.logger.debug(f"Adjusted view to surface: {surface.name}")
+            # Remove the incorrect direct opts manipulation (should already be removed)
+            # self.view_3d.opts["center"] = center
+            # self.view_3d.opts["distance"] = distance
+            # self.view_3d.update()
+
+            self.logger.debug(f"Adjusted 3D view pos={center_vec}, distance={distance}")
             
         except Exception as e:
-            self.logger.warning(f"Error adjusting view to surface: {e}")
+            self.logger.error(f"Error adjusting 3D view: {e}", exc_info=True)
     
     def _remove_surface_visualization(self, surface_name: str):
         """
@@ -1242,14 +1233,23 @@ class VisualizationPanel(QWidget):
             y_vals = [p.y for p in points_list]
             z_vals = [p.z for p in points_list]
             
-            center = np.array([(min(x_vals) + max(x_vals))/2, (min(y_vals) + max(y_vals))/2, (min(z_vals) + max(z_vals))/2])
+            center_x = (min(x_vals) + max(x_vals))/2
+            center_y = (min(y_vals) + max(y_vals))/2
+            center_z = (min(z_vals) + max(z_vals))/2
+
             size = max(max(x_vals) - min(x_vals), max(y_vals) - min(y_vals), max(z_vals) - min(z_vals), 1)
             distance = size * 2 # Adjust multiplier as needed
+
+            center_vec = pyqtgraph.Vector(center_x, center_y, center_z)
+
+            self.view_3d.setCameraPosition(
+                pos=center_vec,  # Use 'pos' argument for the target position
+                distance=distance,
+                elevation=30,
+                azimuth=45
+            )
             
-            self.view_3d.opts["center"] = center
-            self.view_3d.opts["distance"] = distance
-            self.view_3d.update()
-            self.logger.debug(f"Adjusted 3D view center={center}, distance={distance}")
+            self.logger.debug(f"Adjusted 3D view pos={center_vec}, distance={distance}")
          except Exception as e:
             self.logger.error(f"Error adjusting 3D view: {e}", exc_info=True)
 

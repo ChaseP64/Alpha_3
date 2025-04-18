@@ -3622,3 +3622,723 @@ AttributeError: 'PDFRenderer' object has no attribute 'render_page'
 2025-04-17 23:27:31,573 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
 2025-04-17 23:27:31,574 - digcalc_project.src.ui.main_window - INFO - Closing application.
 2025-04-17 23:27:31,585 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-18 17:11:13,929 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-18 17:11:13,961 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:11:13,961 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:11:13,961 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:11:13,961 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:11:13,962 - digcalc_project.src.ui.main_window - INFO - Displaying 0 loaded surfaces...
+2025-04-18 17:11:13,962 - digcalc_project.src.ui.main_window - INFO - Switched to project: Untitled Project
+2025-04-18 17:11:57,256 - digcalc_project.src.ui.main_window - INFO - Discarding unsaved changes in current project.
+2025-04-18 17:11:59,656 - digcalc_project.src.ui.main_window - INFO - Opening project from: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Elevation1.1.digcalc
+2025-04-18 17:11:59,657 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/chase/Desktop/Project Alpha/Alpha_3/Elevation1.1.digcalc
+2025-04-18 17:11:59,657 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:11:59,657 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:11:59,657 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:11:59,657 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:11:59,658 - digcalc_project.src.ui.main_window - INFO - Displaying 0 loaded surfaces...
+2025-04-18 17:11:59,658 - digcalc_project.src.ui.main_window - INFO - Switched to project: Untitled Project
+2025-04-18 17:11:59,658 - digcalc_project.src.ui.main_window - INFO - Calling load_pdf_background with path='C:/Users/chase/Downloads/sample_grading_plan_.pdf' and dpi=300
+2025-04-18 17:11:59,658 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF: C:/Users/chase/Downloads/sample_grading_plan_.pdf at 300 DPI
+2025-04-18 17:11:59,659 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-18 17:11:59,659 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:11:59,660 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-04-18 17:11:59,660 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-04-18 17:11:59,779 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-04-18 17:11:59,785 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:11:59,786 - digcalc_project.src.ui.visualization_panel - INFO - PDF background loaded: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:11:59,792 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:11:59,792 - digcalc_project.src.ui.main_window - INFO - Restoring 5 polylines across 2 layers.
+2025-04-18 17:11:59,792 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:11:59,792 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 2 layers onto the scene.
+2025-04-18 17:11:59,793 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 5 polylines across all layers.
+2025-04-18 17:12:05,703 - digcalc_project.src.ui.main_window - INFO - Starting surface build: Source='Existing Surface', Target='Existing Surface_Surface'
+2025-04-18 17:12:05,703 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (4 polylines).
+2025-04-18 17:12:05,703 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 9 unique 3D points with elevation from layer 'Existing Surface'.
+2025-04-18 17:12:05,705 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-04-18 17:12:05,705 - digcalc_project.src.core.geometry.surface_builder - INFO - Added 9 points to surface 'Existing Surface_Surface'.
+2025-04-18 17:12:05,705 - digcalc_project.src.core.geometry.surface_builder - INFO - Added 11 triangles to surface 'Existing Surface_Surface'. Skipped 0 faces.
+2025-04-18 17:12:05,705 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface'.
+2025-04-18 17:12:05,706 - digcalc_project.src.models.project - INFO - Surface 'Existing Surface_Surface' added to project
+2025-04-18 17:12:05,706 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Existing Surface_Surface...
+2025-04-18 17:12:05,706 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Existing Surface_Surface
+2025-04-18 17:12:05,706 - digcalc_project.src.ui.main_window - INFO - Successfully displayed new surface 'Existing Surface_Surface'.
+2025-04-18 17:12:10,936 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-18 17:12:12,138 - digcalc_project.src.ui.main_window - INFO - Discarding unsaved changes in current project.
+2025-04-18 17:12:12,138 - digcalc_project.src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-18 17:12:12,139 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:12:12,139 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:12:12,141 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:12:12,141 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-18 17:12:12,157 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-18 17:17:03,075 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-18 17:17:03,107 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:17:03,108 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:17:03,108 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:17:03,108 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:17:03,109 - digcalc_project.src.ui.main_window - INFO - Displaying 0 loaded surfaces...
+2025-04-18 17:17:03,109 - digcalc_project.src.ui.main_window - INFO - Switched to project: Untitled Project
+2025-04-18 17:17:08,590 - digcalc_project.src.ui.main_window - INFO - Discarding unsaved changes in current project.
+2025-04-18 17:17:10,764 - digcalc_project.src.ui.main_window - INFO - Opening project from: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Elevation1.1.digcalc
+2025-04-18 17:17:10,765 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/chase/Desktop/Project Alpha/Alpha_3/Elevation1.1.digcalc
+2025-04-18 17:17:10,765 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:17:10,765 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:17:10,765 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:17:10,765 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:17:10,766 - digcalc_project.src.ui.main_window - INFO - Displaying 0 loaded surfaces...
+2025-04-18 17:17:10,766 - digcalc_project.src.ui.main_window - INFO - Switched to project: Untitled Project
+2025-04-18 17:17:10,766 - digcalc_project.src.ui.main_window - INFO - Calling load_pdf_background with path='C:/Users/chase/Downloads/sample_grading_plan_.pdf' and dpi=300
+2025-04-18 17:17:10,767 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF: C:/Users/chase/Downloads/sample_grading_plan_.pdf at 300 DPI
+2025-04-18 17:17:10,767 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-18 17:17:10,767 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:17:10,768 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-04-18 17:17:10,768 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-04-18 17:17:10,894 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-04-18 17:17:10,905 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:17:10,905 - digcalc_project.src.ui.visualization_panel - INFO - PDF background loaded: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:17:10,914 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:17:10,915 - digcalc_project.src.ui.main_window - INFO - Restoring 5 polylines across 2 layers.
+2025-04-18 17:17:10,915 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:17:10,915 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 2 layers onto the scene.
+2025-04-18 17:17:10,915 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 5 polylines across all layers.
+2025-04-18 17:17:15,817 - digcalc_project.src.ui.main_window - INFO - Starting surface build: Source='Existing Surface', Target='Existing Surface_Surface'
+2025-04-18 17:17:15,818 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (4 polylines).
+2025-04-18 17:17:15,818 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 9 unique 3D points with elevation from layer 'Existing Surface'.
+2025-04-18 17:17:15,820 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-04-18 17:17:15,820 - digcalc_project.src.core.geometry.surface_builder - INFO - Added 9 points to surface 'Existing Surface_Surface'.
+2025-04-18 17:17:15,821 - digcalc_project.src.core.geometry.surface_builder - INFO - Added 11 triangles to surface 'Existing Surface_Surface'. Skipped 0 faces.
+2025-04-18 17:17:15,821 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface'.
+2025-04-18 17:17:15,821 - digcalc_project.src.models.project - INFO - Surface 'Existing Surface_Surface' added to project
+2025-04-18 17:17:15,821 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Existing Surface_Surface...
+2025-04-18 17:17:15,822 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Existing Surface_Surface
+2025-04-18 17:17:15,822 - digcalc_project.src.ui.main_window - INFO - Successfully displayed new surface 'Existing Surface_Surface'.
+2025-04-18 17:17:17,971 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-18 17:17:18,817 - digcalc_project.src.ui.main_window - INFO - Discarding unsaved changes in current project.
+2025-04-18 17:17:18,817 - digcalc_project.src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-18 17:17:18,819 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:17:18,819 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:17:18,821 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:17:18,821 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-18 17:17:18,837 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-18 17:21:23,398 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-18 17:21:23,430 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:21:23,431 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:21:23,431 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:21:23,431 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:21:23,432 - digcalc_project.src.ui.main_window - INFO - Displaying 0 loaded surfaces...
+2025-04-18 17:21:23,432 - digcalc_project.src.ui.main_window - INFO - Switched to project: Untitled Project
+2025-04-18 17:21:25,887 - digcalc_project.src.ui.main_window - INFO - Discarding unsaved changes in current project.
+2025-04-18 17:21:28,050 - digcalc_project.src.ui.main_window - INFO - Opening project from: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Elevation1.1.digcalc
+2025-04-18 17:21:28,051 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/chase/Desktop/Project Alpha/Alpha_3/Elevation1.1.digcalc
+2025-04-18 17:21:28,051 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:21:28,051 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:21:28,051 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:21:28,051 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:21:28,052 - digcalc_project.src.ui.main_window - INFO - Displaying 0 loaded surfaces...
+2025-04-18 17:21:28,052 - digcalc_project.src.ui.main_window - INFO - Switched to project: Untitled Project
+2025-04-18 17:21:28,052 - digcalc_project.src.ui.main_window - INFO - Calling load_pdf_background with path='C:/Users/chase/Downloads/sample_grading_plan_.pdf' and dpi=300
+2025-04-18 17:21:28,053 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF: C:/Users/chase/Downloads/sample_grading_plan_.pdf at 300 DPI
+2025-04-18 17:21:28,053 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-18 17:21:28,053 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:21:28,054 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-04-18 17:21:28,054 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-04-18 17:21:28,181 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-04-18 17:21:28,191 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:21:28,191 - digcalc_project.src.ui.visualization_panel - INFO - PDF background loaded: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:21:28,201 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:21:28,201 - digcalc_project.src.ui.main_window - INFO - Restoring 5 polylines across 2 layers.
+2025-04-18 17:21:28,202 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:21:28,202 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 2 layers onto the scene.
+2025-04-18 17:21:28,202 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 5 polylines across all layers.
+2025-04-18 17:21:33,182 - digcalc_project.src.ui.main_window - INFO - Load PDF background cancelled by user.
+2025-04-18 17:21:35,760 - digcalc_project.src.ui.main_window - INFO - Starting surface build: Source='Existing Surface', Target='Existing Surface_Surface'
+2025-04-18 17:21:35,761 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (4 polylines).
+2025-04-18 17:21:35,761 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 9 unique 3D points with elevation from layer 'Existing Surface'.
+2025-04-18 17:21:35,763 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-04-18 17:21:35,764 - digcalc_project.src.core.geometry.surface_builder - INFO - Added 9 points to surface 'Existing Surface_Surface'.
+2025-04-18 17:21:35,764 - digcalc_project.src.core.geometry.surface_builder - INFO - Added 11 triangles to surface 'Existing Surface_Surface'. Skipped 0 faces.
+2025-04-18 17:21:35,764 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface'.
+2025-04-18 17:21:35,764 - digcalc_project.src.models.project - INFO - Surface 'Existing Surface_Surface' added to project
+2025-04-18 17:21:35,764 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Existing Surface_Surface...
+2025-04-18 17:21:35,769 - digcalc_project.src.ui.visualization_panel - ERROR - Error adjusting 3D view: GLViewMixin.setCameraPosition() got an unexpected keyword argument 'center'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\visualization_panel.py", line 1245, in _adjust_view_to_surface
+    self.view_3d.setCameraPosition(
+TypeError: GLViewMixin.setCameraPosition() got an unexpected keyword argument 'center'
+2025-04-18 17:21:35,769 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Existing Surface_Surface
+2025-04-18 17:21:35,770 - digcalc_project.src.ui.main_window - INFO - Successfully displayed new surface 'Existing Surface_Surface'.
+2025-04-18 17:21:45,446 - digcalc_project.src.ui.main_window - INFO - Starting surface build: Source='Proposed Surface', Target='Proposed Surface_Surface'
+2025-04-18 17:21:45,446 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Proposed Surface' (1 polylines).
+2025-04-18 17:21:45,446 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 77 unique 3D points with elevation from layer 'Proposed Surface'.
+2025-04-18 17:21:45,447 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Proposed Surface_Surface'...
+2025-04-18 17:21:45,447 - digcalc_project.src.core.geometry.surface_builder - INFO - Added 77 points to surface 'Proposed Surface_Surface'.
+2025-04-18 17:21:45,448 - digcalc_project.src.core.geometry.surface_builder - INFO - Added 113 triangles to surface 'Proposed Surface_Surface'. Skipped 0 faces.
+2025-04-18 17:21:45,448 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Proposed Surface_Surface' from layer 'Proposed Surface'.
+2025-04-18 17:21:45,448 - digcalc_project.src.models.project - INFO - Surface 'Proposed Surface_Surface' added to project
+2025-04-18 17:21:45,448 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Proposed Surface_Surface...
+2025-04-18 17:21:45,449 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Proposed Surface_Surface
+2025-04-18 17:21:45,449 - digcalc_project.src.ui.main_window - INFO - Successfully displayed new surface 'Proposed Surface_Surface'.
+2025-04-18 17:21:47,321 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-18 17:21:48,142 - digcalc_project.src.ui.main_window - INFO - Discarding unsaved changes in current project.
+2025-04-18 17:21:48,142 - digcalc_project.src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-18 17:21:48,144 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:21:48,144 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:21:48,146 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:21:48,146 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-18 17:21:48,161 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-18 17:23:21,357 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-18 17:23:21,388 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:23:21,389 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:23:21,389 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:23:21,389 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:23:21,390 - digcalc_project.src.ui.main_window - INFO - Displaying 0 loaded surfaces...
+2025-04-18 17:23:21,390 - digcalc_project.src.ui.main_window - INFO - Switched to project: Untitled Project
+2025-04-18 17:23:24,726 - digcalc_project.src.ui.main_window - INFO - Discarding unsaved changes in current project.
+2025-04-18 17:23:26,484 - digcalc_project.src.ui.main_window - INFO - Opening project from: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Elevation1.1.digcalc
+2025-04-18 17:23:26,484 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/chase/Desktop/Project Alpha/Alpha_3/Elevation1.1.digcalc
+2025-04-18 17:23:26,485 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:23:26,485 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:23:26,485 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:23:26,485 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:23:26,486 - digcalc_project.src.ui.main_window - INFO - Displaying 0 loaded surfaces...
+2025-04-18 17:23:26,486 - digcalc_project.src.ui.main_window - INFO - Switched to project: Untitled Project
+2025-04-18 17:23:26,486 - digcalc_project.src.ui.main_window - INFO - Calling load_pdf_background with path='C:/Users/chase/Downloads/sample_grading_plan_.pdf' and dpi=300
+2025-04-18 17:23:26,487 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF: C:/Users/chase/Downloads/sample_grading_plan_.pdf at 300 DPI
+2025-04-18 17:23:26,487 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-18 17:23:26,487 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:23:26,488 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-04-18 17:23:26,488 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-04-18 17:23:26,604 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-04-18 17:23:26,612 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:23:26,612 - digcalc_project.src.ui.visualization_panel - INFO - PDF background loaded: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:23:26,618 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:23:26,619 - digcalc_project.src.ui.main_window - INFO - Restoring 5 polylines across 2 layers.
+2025-04-18 17:23:26,619 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:23:26,619 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 2 layers onto the scene.
+2025-04-18 17:23:26,620 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 5 polylines across all layers.
+2025-04-18 17:23:30,109 - digcalc_project.src.ui.main_window - INFO - Starting surface build: Source='Existing Surface', Target='Existing Surface_Surface'
+2025-04-18 17:23:30,110 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (4 polylines).
+2025-04-18 17:23:30,110 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 9 unique 3D points with elevation from layer 'Existing Surface'.
+2025-04-18 17:23:30,112 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-04-18 17:23:30,112 - digcalc_project.src.core.geometry.surface_builder - INFO - Added 9 points to surface 'Existing Surface_Surface'.
+2025-04-18 17:23:30,112 - digcalc_project.src.core.geometry.surface_builder - INFO - Added 11 triangles to surface 'Existing Surface_Surface'. Skipped 0 faces.
+2025-04-18 17:23:30,112 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface'.
+2025-04-18 17:23:30,112 - digcalc_project.src.models.project - INFO - Surface 'Existing Surface_Surface' added to project
+2025-04-18 17:23:30,113 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Existing Surface_Surface...
+2025-04-18 17:23:30,113 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Existing Surface_Surface
+2025-04-18 17:23:30,113 - digcalc_project.src.ui.main_window - INFO - Successfully displayed new surface 'Existing Surface_Surface'.
+2025-04-18 17:23:33,602 - digcalc_project.src.ui.main_window - INFO - Starting surface build: Source='Proposed Surface', Target='Proposed Surface_Surface'
+2025-04-18 17:23:33,602 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Proposed Surface' (1 polylines).
+2025-04-18 17:23:33,603 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 77 unique 3D points with elevation from layer 'Proposed Surface'.
+2025-04-18 17:23:33,604 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Proposed Surface_Surface'...
+2025-04-18 17:23:33,604 - digcalc_project.src.core.geometry.surface_builder - INFO - Added 77 points to surface 'Proposed Surface_Surface'.
+2025-04-18 17:23:33,604 - digcalc_project.src.core.geometry.surface_builder - INFO - Added 113 triangles to surface 'Proposed Surface_Surface'. Skipped 0 faces.
+2025-04-18 17:23:33,605 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Proposed Surface_Surface' from layer 'Proposed Surface'.
+2025-04-18 17:23:33,605 - digcalc_project.src.models.project - INFO - Surface 'Proposed Surface_Surface' added to project
+2025-04-18 17:23:33,605 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Proposed Surface_Surface...
+2025-04-18 17:23:33,606 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Proposed Surface_Surface
+2025-04-18 17:23:33,606 - digcalc_project.src.ui.main_window - INFO - Successfully displayed new surface 'Proposed Surface_Surface'.
+2025-04-18 17:23:37,765 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-18 17:23:38,738 - digcalc_project.src.ui.main_window - INFO - Discarding unsaved changes in current project.
+2025-04-18 17:23:38,738 - digcalc_project.src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-18 17:23:38,739 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:23:38,740 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:23:38,740 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:23:38,741 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-18 17:23:38,753 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-18 17:27:39,467 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-18 17:27:39,498 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:27:39,499 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:27:39,499 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:27:39,499 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:27:39,500 - digcalc_project.src.ui.main_window - INFO - Displaying 0 loaded surfaces...
+2025-04-18 17:27:39,500 - digcalc_project.src.ui.main_window - INFO - Switched to project: Untitled Project
+2025-04-18 17:27:39,500 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:27:39,500 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:27:39,500 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:27:39,500 - digcalc_project.src.main - ERROR - Fatal error in main application: 'VisualizationPanel' object has no attribute 'HAS_3D'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 80, in __init__
+    self._create_default_project()
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 435, in _create_default_project
+    self._update_project(Project(name="Untitled Project"))
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 555, in _update_project
+    if self.visualization_panel.HAS_3D:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'VisualizationPanel' object has no attribute 'HAS_3D'
+2025-04-18 17:29:59,653 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-18 17:29:59,685 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:29:59,686 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:29:59,686 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:29:59,686 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:29:59,687 - digcalc_project.src.ui.main_window - INFO - Displaying 0 loaded surfaces...
+2025-04-18 17:29:59,687 - digcalc_project.src.ui.main_window - INFO - Switched to project: Untitled Project
+2025-04-18 17:29:59,687 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:29:59,687 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:29:59,688 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:29:59,688 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:29:59,688 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 0 layers onto the scene.
+2025-04-18 17:29:59,688 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 0 polylines across all layers.
+2025-04-18 17:30:03,581 - digcalc_project.src.ui.main_window - INFO - Discarding unsaved changes in current project.
+2025-04-18 17:30:05,813 - digcalc_project.src.ui.main_window - INFO - Opening project from: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Elevation1.1.digcalc
+2025-04-18 17:30:05,813 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/chase/Desktop/Project Alpha/Alpha_3/Elevation1.1.digcalc
+2025-04-18 17:30:05,814 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:30:05,814 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:30:05,814 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:30:05,814 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:30:05,814 - digcalc_project.src.ui.main_window - INFO - Displaying 0 loaded surfaces...
+2025-04-18 17:30:05,815 - digcalc_project.src.ui.main_window - INFO - Switched to project: Untitled Project
+2025-04-18 17:30:05,815 - digcalc_project.src.ui.main_window - INFO - Calling load_pdf_background with path='C:/Users/chase/Downloads/sample_grading_plan_.pdf' and dpi=300
+2025-04-18 17:30:05,815 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF: C:/Users/chase/Downloads/sample_grading_plan_.pdf at 300 DPI
+2025-04-18 17:30:05,815 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-18 17:30:05,816 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:30:05,816 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-04-18 17:30:05,817 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-04-18 17:30:05,945 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-04-18 17:30:05,956 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:30:05,957 - digcalc_project.src.ui.visualization_panel - INFO - PDF background loaded: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:30:05,966 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:30:05,966 - digcalc_project.src.ui.main_window - INFO - Restoring 5 polylines across 2 layers.
+2025-04-18 17:30:05,966 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:30:05,967 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 2 layers onto the scene.
+2025-04-18 17:30:05,967 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 5 polylines across all layers.
+2025-04-18 17:30:05,968 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:30:05,968 - digcalc_project.src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-18 17:30:05,970 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:30:05,970 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:30:05,972 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:30:05,972 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 5 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:30:05,972 - digcalc_project.src.ui.main_window - INFO - Loading PDF background from project: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:30:05,973 - digcalc_project.src.ui.main_window - ERROR - Failed to load PDF background from project: 'Project' object has no attribute 'pdf_dpi'
+2025-04-18 17:30:09,420 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:30:09,420 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 2 layers onto the scene.
+2025-04-18 17:30:09,420 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 5 polylines across all layers.
+2025-04-18 17:30:10,902 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-18 17:30:11,915 - digcalc_project.src.ui.main_window - INFO - Discarding unsaved changes in current project.
+2025-04-18 17:30:11,915 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:30:11,915 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-18 17:30:11,935 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-18 17:31:19,414 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-18 17:31:19,445 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:31:19,446 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:31:19,446 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:31:19,446 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:31:19,447 - digcalc_project.src.ui.main_window - INFO - Displaying 0 loaded surfaces...
+2025-04-18 17:31:19,447 - digcalc_project.src.ui.main_window - INFO - Switched to project: Untitled Project
+2025-04-18 17:31:19,447 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:31:19,447 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:31:19,447 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:31:19,448 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:31:19,448 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 0 layers onto the scene.
+2025-04-18 17:31:19,448 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 0 polylines across all layers.
+2025-04-18 17:31:23,705 - digcalc_project.src.ui.main_window - INFO - Discarding unsaved changes in current project.
+2025-04-18 17:31:25,557 - digcalc_project.src.ui.main_window - INFO - Opening project from: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Elevation1.1.digcalc
+2025-04-18 17:31:25,557 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/chase/Desktop/Project Alpha/Alpha_3/Elevation1.1.digcalc
+2025-04-18 17:31:25,557 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:31:25,558 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:31:25,558 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:31:25,558 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:31:25,558 - digcalc_project.src.ui.main_window - INFO - Displaying 0 loaded surfaces...
+2025-04-18 17:31:25,559 - digcalc_project.src.ui.main_window - INFO - Switched to project: Untitled Project
+2025-04-18 17:31:25,559 - digcalc_project.src.ui.main_window - INFO - Calling load_pdf_background with path='C:/Users/chase/Downloads/sample_grading_plan_.pdf' and dpi=300
+2025-04-18 17:31:25,559 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF: C:/Users/chase/Downloads/sample_grading_plan_.pdf at 300 DPI
+2025-04-18 17:31:25,559 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-18 17:31:25,559 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:31:25,560 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-04-18 17:31:25,560 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-04-18 17:31:25,681 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-04-18 17:31:25,688 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:31:25,689 - digcalc_project.src.ui.visualization_panel - INFO - PDF background loaded: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:31:25,695 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:31:25,695 - digcalc_project.src.ui.main_window - INFO - Restoring 5 polylines across 2 layers.
+2025-04-18 17:31:25,695 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:31:25,695 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 2 layers onto the scene.
+2025-04-18 17:31:25,696 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 5 polylines across all layers.
+2025-04-18 17:31:25,697 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:31:25,697 - digcalc_project.src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-18 17:31:25,698 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:31:25,698 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:31:25,700 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:31:25,701 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 5 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:31:25,701 - digcalc_project.src.ui.main_window - INFO - Loading PDF background from project: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:31:25,701 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF: C:/Users/chase/Downloads/sample_grading_plan_.pdf at 300 DPI
+2025-04-18 17:31:25,701 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-18 17:31:25,701 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:31:25,702 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-04-18 17:31:25,702 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-04-18 17:31:25,802 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-04-18 17:31:25,809 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:31:25,809 - digcalc_project.src.ui.visualization_panel - INFO - PDF background loaded: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:31:25,809 - digcalc_project.src.ui.main_window - ERROR - Failed to load PDF background from project: 'Project' object has no attribute 'pdf_current_page'
+2025-04-18 17:31:28,196 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:31:28,196 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 2 layers onto the scene.
+2025-04-18 17:31:28,196 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 5 polylines across all layers.
+2025-04-18 17:31:33,489 - digcalc_project.src.ui.main_window - INFO - Starting surface build: Source='Existing Surface', Target='Existing Surface_Surface'
+2025-04-18 17:31:33,490 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (4 polylines).
+2025-04-18 17:31:33,490 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 9 unique 3D points with elevation from layer 'Existing Surface'.
+2025-04-18 17:31:33,492 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-04-18 17:31:33,492 - digcalc_project.src.core.geometry.surface_builder - INFO - Added 9 points to surface 'Existing Surface_Surface'.
+2025-04-18 17:31:33,493 - digcalc_project.src.core.geometry.surface_builder - INFO - Added 11 triangles to surface 'Existing Surface_Surface'. Skipped 0 faces.
+2025-04-18 17:31:33,493 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface'.
+2025-04-18 17:31:33,493 - digcalc_project.src.models.project - INFO - Surface 'Existing Surface_Surface' added to project
+2025-04-18 17:31:33,493 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Existing Surface_Surface...
+2025-04-18 17:31:33,494 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Existing Surface_Surface
+2025-04-18 17:31:33,494 - digcalc_project.src.ui.main_window - INFO - Successfully displayed new surface 'Existing Surface_Surface'.
+2025-04-18 17:31:37,222 - digcalc_project.src.ui.main_window - INFO - Starting surface build: Source='Proposed Surface', Target='Proposed Surface_Surface'
+2025-04-18 17:31:37,222 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Proposed Surface' (1 polylines).
+2025-04-18 17:31:37,223 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 77 unique 3D points with elevation from layer 'Proposed Surface'.
+2025-04-18 17:31:37,224 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Proposed Surface_Surface'...
+2025-04-18 17:31:37,224 - digcalc_project.src.core.geometry.surface_builder - INFO - Added 77 points to surface 'Proposed Surface_Surface'.
+2025-04-18 17:31:37,224 - digcalc_project.src.core.geometry.surface_builder - INFO - Added 113 triangles to surface 'Proposed Surface_Surface'. Skipped 0 faces.
+2025-04-18 17:31:37,224 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Proposed Surface_Surface' from layer 'Proposed Surface'.
+2025-04-18 17:31:37,224 - digcalc_project.src.models.project - INFO - Surface 'Proposed Surface_Surface' added to project
+2025-04-18 17:31:37,225 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Proposed Surface_Surface...
+2025-04-18 17:31:37,226 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Proposed Surface_Surface
+2025-04-18 17:31:37,226 - digcalc_project.src.ui.main_window - INFO - Successfully displayed new surface 'Proposed Surface_Surface'.
+2025-04-18 17:31:38,767 - digcalc_project.src.ui.main_window - INFO - Saving project to: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Elevation1.1.digcalc
+2025-04-18 17:31:38,767 - digcalc_project.src.ui.main_window - INFO - Calling _update_project for project: Untitled Project
+2025-04-18 17:31:38,774 - digcalc_project.src.models.project - INFO - Project saved to C:/Users/chase/Desktop/Project Alpha/Alpha_3/Elevation1.1.digcalc
+2025-04-18 17:31:38,774 - digcalc_project.src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-18 17:31:38,775 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:31:38,775 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:31:38,777 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:31:38,777 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:31:38,777 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:31:38,778 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 5 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:31:38,779 - digcalc_project.src.ui.main_window - INFO - Displaying 2 loaded surfaces...
+2025-04-18 17:31:38,779 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Existing Surface_Surface...
+2025-04-18 17:31:38,779 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Existing Surface_Surface
+2025-04-18 17:31:38,779 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Proposed Surface_Surface...
+2025-04-18 17:31:38,781 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Proposed Surface_Surface
+2025-04-18 17:31:38,781 - digcalc_project.src.ui.main_window - INFO - Switched to project: Untitled Project
+2025-04-18 17:31:38,781 - digcalc_project.src.ui.main_window - INFO - Calling load_pdf_background with path='C:/Users/chase/Downloads/sample_grading_plan_.pdf' and dpi=300
+2025-04-18 17:31:38,781 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF: C:/Users/chase/Downloads/sample_grading_plan_.pdf at 300 DPI
+2025-04-18 17:31:38,781 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-18 17:31:38,781 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:31:38,782 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-04-18 17:31:38,782 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-04-18 17:31:38,882 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-04-18 17:31:38,890 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:31:38,891 - digcalc_project.src.ui.visualization_panel - INFO - PDF background loaded: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:31:38,896 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:31:38,896 - digcalc_project.src.ui.main_window - INFO - Restoring 5 polylines across 2 layers.
+2025-04-18 17:31:38,896 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:31:38,896 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 2 layers onto the scene.
+2025-04-18 17:31:38,897 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 5 polylines across all layers.
+2025-04-18 17:31:38,897 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:31:38,898 - digcalc_project.src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-18 17:31:38,899 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:31:38,899 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:31:38,900 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:31:38,901 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 5 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:31:38,901 - digcalc_project.src.ui.main_window - INFO - Displaying surface: Existing Surface_Surface
+2025-04-18 17:31:38,901 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Existing Surface_Surface...
+2025-04-18 17:31:38,902 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Existing Surface_Surface
+2025-04-18 17:31:38,902 - digcalc_project.src.ui.main_window - INFO - Displaying surface: Proposed Surface_Surface
+2025-04-18 17:31:38,902 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Proposed Surface_Surface...
+2025-04-18 17:31:38,903 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Proposed Surface_Surface
+2025-04-18 17:31:38,903 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:31:38,903 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 2 layers onto the scene.
+2025-04-18 17:31:38,903 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 5 polylines across all layers.
+2025-04-18 17:31:45,412 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-18 17:31:46,235 - digcalc_project.src.ui.main_window - INFO - Discarding unsaved changes in current project.
+2025-04-18 17:31:46,236 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:31:46,236 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-18 17:31:46,254 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-18 17:33:44,310 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-18 17:33:44,343 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:33:44,343 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:33:44,343 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:33:44,343 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:33:44,344 - digcalc_project.src.ui.main_window - INFO - Displaying 0 loaded surfaces...
+2025-04-18 17:33:44,344 - digcalc_project.src.ui.main_window - INFO - Switched to project: Untitled Project
+2025-04-18 17:33:44,344 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:33:44,344 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:33:44,344 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:33:50,237 - digcalc_project.src.ui.main_window - INFO - Discarding unsaved changes in current project.
+2025-04-18 17:33:52,190 - digcalc_project.src.ui.main_window - INFO - Opening project from: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Elevation1.1.digcalc
+2025-04-18 17:33:52,192 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/chase/Desktop/Project Alpha/Alpha_3/Elevation1.1.digcalc
+2025-04-18 17:33:52,192 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:33:52,192 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:33:52,192 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:33:52,192 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:33:52,193 - digcalc_project.src.ui.main_window - INFO - Displaying 2 loaded surfaces...
+2025-04-18 17:33:52,194 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Existing Surface_Surface...
+2025-04-18 17:33:52,194 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Existing Surface_Surface
+2025-04-18 17:33:52,195 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Proposed Surface_Surface...
+2025-04-18 17:33:52,195 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Proposed Surface_Surface
+2025-04-18 17:33:52,196 - digcalc_project.src.ui.main_window - INFO - Switched to project: Untitled Project
+2025-04-18 17:33:52,196 - digcalc_project.src.ui.main_window - INFO - Calling load_pdf_background with path='C:/Users/chase/Downloads/sample_grading_plan_.pdf' and dpi=300
+2025-04-18 17:33:52,196 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF: C:/Users/chase/Downloads/sample_grading_plan_.pdf at 300 DPI
+2025-04-18 17:33:52,196 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-18 17:33:52,196 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:33:52,197 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-04-18 17:33:52,198 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-04-18 17:33:52,314 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-04-18 17:33:52,321 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:33:52,321 - digcalc_project.src.ui.visualization_panel - INFO - PDF background loaded: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:33:52,327 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:33:52,327 - digcalc_project.src.ui.main_window - INFO - Restoring 5 polylines across 2 layers.
+2025-04-18 17:33:52,328 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:33:52,328 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 2 layers onto the scene.
+2025-04-18 17:33:52,328 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 5 polylines across all layers.
+2025-04-18 17:33:52,329 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:33:52,329 - digcalc_project.src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-18 17:33:52,330 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:33:52,330 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:33:52,331 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:33:52,332 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 5 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:33:52,332 - digcalc_project.src.ui.main_window - INFO - Displaying surface: Existing Surface_Surface
+2025-04-18 17:33:52,332 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Existing Surface_Surface...
+2025-04-18 17:33:52,332 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Existing Surface_Surface
+2025-04-18 17:33:52,332 - digcalc_project.src.ui.main_window - INFO - Displaying surface: Proposed Surface_Surface
+2025-04-18 17:33:52,332 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Proposed Surface_Surface...
+2025-04-18 17:33:52,333 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Proposed Surface_Surface
+2025-04-18 17:33:52,333 - digcalc_project.src.ui.main_window - INFO - Loading PDF background from project: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:33:52,334 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF: C:/Users/chase/Downloads/sample_grading_plan_.pdf at 300 DPI
+2025-04-18 17:33:52,334 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-18 17:33:52,334 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:33:52,334 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-04-18 17:33:52,334 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-04-18 17:33:52,432 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-04-18 17:33:52,438 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:33:52,439 - digcalc_project.src.ui.visualization_panel - INFO - PDF background loaded: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:33:52,445 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:33:52,445 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:33:52,445 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 2 layers onto the scene.
+2025-04-18 17:33:52,445 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 5 polylines across all layers.
+2025-04-18 17:33:59,354 - digcalc_project.src.ui.main_window - INFO - Build Surface dialog cancelled by user.
+2025-04-18 17:34:14,453 - digcalc_project.src.ui.main_window - INFO - Starting volume calculation: Existing='Existing Surface_Surface', Proposed='Proposed Surface_Surface', Resolution=5.0
+2025-04-18 17:34:14,453 - digcalc_project.src.core.calculations.volume_calculator - INFO - Starting volume calculation between 'Existing Surface_Surface' and 'Proposed Surface_Surface'. Grid resolution: 5.0
+2025-04-18 17:34:14,454 - digcalc_project.src.core.calculations.volume_calculator - INFO - Interpolating surface 'Existing Surface_Surface' onto 123201 grid points...
+2025-04-18 17:34:14,524 - digcalc_project.src.core.calculations.volume_calculator - INFO - Interpolating surface 'Proposed Surface_Surface' onto 123201 grid points...
+2025-04-18 17:34:14,528 - digcalc_project.src.core.calculations.volume_calculator - INFO - Calculating differences for 36824 valid overlapping grid points.
+2025-04-18 17:34:14,529 - digcalc_project.src.core.calculations.volume_calculator - INFO - Volume Calculation Complete: Cut=0.000, Fill=9206000.000, Net=9206000.000
+2025-04-18 17:34:14,529 - digcalc_project.src.ui.main_window - INFO - Volume calculation successful: Cut=0.00, Fill=9206000.00, Net=9206000.00
+2025-04-18 17:34:27,972 - digcalc_project.src.ui.main_window - INFO - Starting volume calculation: Existing='Existing Surface_Surface', Proposed='Proposed Surface_Surface', Resolution=5.0
+2025-04-18 17:34:27,973 - digcalc_project.src.core.calculations.volume_calculator - INFO - Starting volume calculation between 'Existing Surface_Surface' and 'Proposed Surface_Surface'. Grid resolution: 5.0
+2025-04-18 17:34:27,973 - digcalc_project.src.core.calculations.volume_calculator - INFO - Interpolating surface 'Existing Surface_Surface' onto 123201 grid points...
+2025-04-18 17:34:27,978 - digcalc_project.src.core.calculations.volume_calculator - INFO - Interpolating surface 'Proposed Surface_Surface' onto 123201 grid points...
+2025-04-18 17:34:27,983 - digcalc_project.src.core.calculations.volume_calculator - INFO - Calculating differences for 36824 valid overlapping grid points.
+2025-04-18 17:34:27,983 - digcalc_project.src.core.calculations.volume_calculator - INFO - Volume Calculation Complete: Cut=0.000, Fill=9206000.000, Net=9206000.000
+2025-04-18 17:34:27,983 - digcalc_project.src.ui.main_window - INFO - Volume calculation successful: Cut=0.00, Fill=9206000.00, Net=9206000.00
+2025-04-18 17:34:30,708 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-18 17:34:31,801 - digcalc_project.src.ui.main_window - INFO - Discarding unsaved changes in current project.
+2025-04-18 17:34:31,801 - digcalc_project.src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-18 17:34:31,802 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:34:31,802 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:34:31,803 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:34:31,803 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-18 17:34:31,817 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-18 17:36:34,688 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-18 17:36:34,722 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:36:34,722 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:36:34,722 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:36:34,723 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:36:34,724 - digcalc_project.src.ui.main_window - INFO - Displaying 0 loaded surfaces...
+2025-04-18 17:36:34,724 - digcalc_project.src.ui.main_window - INFO - Switched to project: Untitled Project
+2025-04-18 17:36:34,724 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:36:34,724 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:36:34,724 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:36:37,991 - digcalc_project.src.ui.main_window - INFO - Discarding unsaved changes in current project.
+2025-04-18 17:36:40,037 - digcalc_project.src.ui.main_window - INFO - Opening project from: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Elevation1.1.digcalc
+2025-04-18 17:36:40,039 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/chase/Desktop/Project Alpha/Alpha_3/Elevation1.1.digcalc
+2025-04-18 17:36:40,039 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:36:40,039 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:36:40,039 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:36:40,039 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:36:40,041 - digcalc_project.src.ui.main_window - INFO - Displaying 2 loaded surfaces...
+2025-04-18 17:36:40,041 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Existing Surface_Surface...
+2025-04-18 17:36:40,042 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Existing Surface_Surface
+2025-04-18 17:36:40,042 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Proposed Surface_Surface...
+2025-04-18 17:36:40,043 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Proposed Surface_Surface
+2025-04-18 17:36:40,044 - digcalc_project.src.ui.main_window - INFO - Switched to project: Untitled Project
+2025-04-18 17:36:40,044 - digcalc_project.src.ui.main_window - INFO - Calling load_pdf_background with path='C:/Users/chase/Downloads/sample_grading_plan_.pdf' and dpi=300
+2025-04-18 17:36:40,044 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF: C:/Users/chase/Downloads/sample_grading_plan_.pdf at 300 DPI
+2025-04-18 17:36:40,044 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-18 17:36:40,044 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:36:40,047 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-04-18 17:36:40,048 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-04-18 17:36:40,165 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-04-18 17:36:40,171 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:36:40,172 - digcalc_project.src.ui.visualization_panel - INFO - PDF background loaded: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:36:40,177 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:36:40,177 - digcalc_project.src.ui.main_window - INFO - Restoring 5 polylines across 2 layers.
+2025-04-18 17:36:40,178 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:36:40,178 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 2 layers onto the scene.
+2025-04-18 17:36:40,178 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 5 polylines across all layers.
+2025-04-18 17:36:40,179 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:36:40,179 - digcalc_project.src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-18 17:36:40,180 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:36:40,180 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:36:40,181 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:36:40,181 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 5 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:36:40,182 - digcalc_project.src.ui.main_window - INFO - Displaying surface: Existing Surface_Surface
+2025-04-18 17:36:40,182 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Existing Surface_Surface...
+2025-04-18 17:36:40,182 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Existing Surface_Surface
+2025-04-18 17:36:40,182 - digcalc_project.src.ui.main_window - INFO - Displaying surface: Proposed Surface_Surface
+2025-04-18 17:36:40,182 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Proposed Surface_Surface...
+2025-04-18 17:36:40,183 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Proposed Surface_Surface
+2025-04-18 17:36:40,183 - digcalc_project.src.ui.main_window - INFO - Loading PDF background from project: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:36:40,183 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF: C:/Users/chase/Downloads/sample_grading_plan_.pdf at 300 DPI
+2025-04-18 17:36:40,184 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-18 17:36:40,184 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:36:40,184 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-04-18 17:36:40,184 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-04-18 17:36:40,282 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-04-18 17:36:40,289 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:36:40,289 - digcalc_project.src.ui.visualization_panel - INFO - PDF background loaded: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:36:40,295 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:36:40,295 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:36:40,296 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 2 layers onto the scene.
+2025-04-18 17:36:40,296 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 5 polylines across all layers.
+2025-04-18 17:36:43,345 - digcalc_project.src.ui.main_window - INFO - Starting volume calculation: Existing='Existing Surface_Surface', Proposed='Proposed Surface_Surface', Resolution=5.0
+2025-04-18 17:36:43,345 - digcalc_project.src.core.calculations.volume_calculator - INFO - Starting volume calculation between 'Existing Surface_Surface' and 'Proposed Surface_Surface'. Grid resolution: 5.0
+2025-04-18 17:36:43,346 - digcalc_project.src.core.calculations.volume_calculator - INFO - Interpolating surface 'Existing Surface_Surface' onto 123201 grid points...
+2025-04-18 17:36:43,414 - digcalc_project.src.core.calculations.volume_calculator - INFO - Interpolating surface 'Proposed Surface_Surface' onto 123201 grid points...
+2025-04-18 17:36:43,419 - digcalc_project.src.core.calculations.volume_calculator - INFO - Calculating differences for 36824 valid overlapping grid points.
+2025-04-18 17:36:43,419 - digcalc_project.src.core.calculations.volume_calculator - INFO - Volume Calculation Complete: Cut=0.000, Fill=9206000.000, Net=9206000.000
+2025-04-18 17:36:43,420 - digcalc_project.src.ui.main_window - INFO - Volume calculation successful: Cut=0.00, Fill=9206000.00, Net=9206000.00
+2025-04-18 17:36:52,363 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-18 17:36:53,845 - digcalc_project.src.ui.main_window - INFO - Discarding unsaved changes in current project.
+2025-04-18 17:36:53,845 - digcalc_project.src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-18 17:36:53,847 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:36:53,847 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:36:53,848 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:36:53,848 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-18 17:36:53,861 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-18 17:38:09,252 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-18 17:38:09,283 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:38:09,283 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:38:09,283 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:38:09,284 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:38:09,284 - digcalc_project.src.ui.main_window - INFO - Displaying 0 loaded surfaces...
+2025-04-18 17:38:09,284 - digcalc_project.src.ui.main_window - INFO - Switched to project: Untitled Project
+2025-04-18 17:38:09,284 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:38:09,285 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:38:09,285 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:38:15,683 - digcalc_project.src.ui.main_window - INFO - Discarding unsaved changes in current project.
+2025-04-18 17:38:17,013 - digcalc_project.src.ui.main_window - INFO - Opening project from: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Elevation1.1.digcalc
+2025-04-18 17:38:17,015 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/chase/Desktop/Project Alpha/Alpha_3/Elevation1.1.digcalc
+2025-04-18 17:38:17,015 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:38:17,015 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:38:17,015 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:38:17,015 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:38:17,017 - digcalc_project.src.ui.main_window - INFO - Displaying 2 loaded surfaces...
+2025-04-18 17:38:17,017 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Existing Surface_Surface...
+2025-04-18 17:38:17,018 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Existing Surface_Surface
+2025-04-18 17:38:17,018 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Proposed Surface_Surface...
+2025-04-18 17:38:17,019 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Proposed Surface_Surface
+2025-04-18 17:38:17,019 - digcalc_project.src.ui.main_window - INFO - Switched to project: Untitled Project
+2025-04-18 17:38:17,019 - digcalc_project.src.ui.main_window - INFO - Calling load_pdf_background with path='C:/Users/chase/Downloads/sample_grading_plan_.pdf' and dpi=300
+2025-04-18 17:38:17,020 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF: C:/Users/chase/Downloads/sample_grading_plan_.pdf at 300 DPI
+2025-04-18 17:38:17,020 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-18 17:38:17,020 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:38:17,021 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-04-18 17:38:17,021 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-04-18 17:38:17,148 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-04-18 17:38:17,157 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:38:17,158 - digcalc_project.src.ui.visualization_panel - INFO - PDF background loaded: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:38:17,167 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:38:17,167 - digcalc_project.src.ui.main_window - INFO - Restoring 5 polylines across 2 layers.
+2025-04-18 17:38:17,167 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:38:17,167 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 2 layers onto the scene.
+2025-04-18 17:38:17,168 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 5 polylines across all layers.
+2025-04-18 17:38:17,169 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:38:17,169 - digcalc_project.src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-18 17:38:17,171 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:38:17,171 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:38:17,173 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:38:17,174 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 5 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:38:17,174 - digcalc_project.src.ui.main_window - INFO - Displaying surface: Existing Surface_Surface
+2025-04-18 17:38:17,174 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Existing Surface_Surface...
+2025-04-18 17:38:17,174 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Existing Surface_Surface
+2025-04-18 17:38:17,175 - digcalc_project.src.ui.main_window - INFO - Displaying surface: Proposed Surface_Surface
+2025-04-18 17:38:17,175 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Proposed Surface_Surface...
+2025-04-18 17:38:17,176 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Proposed Surface_Surface
+2025-04-18 17:38:17,176 - digcalc_project.src.ui.main_window - INFO - Loading PDF background from project: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:38:17,176 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF: C:/Users/chase/Downloads/sample_grading_plan_.pdf at 300 DPI
+2025-04-18 17:38:17,176 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-18 17:38:17,176 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:38:17,177 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-04-18 17:38:17,177 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-04-18 17:38:17,287 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-04-18 17:38:17,295 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:38:17,296 - digcalc_project.src.ui.visualization_panel - INFO - PDF background loaded: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:38:17,303 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:38:17,303 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:38:17,304 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 2 layers onto the scene.
+2025-04-18 17:38:17,304 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 5 polylines across all layers.
+2025-04-18 17:38:21,053 - digcalc_project.src.ui.main_window - INFO - Starting volume calculation: Existing='Existing Surface_Surface', Proposed='Proposed Surface_Surface', Resolution=5.0
+2025-04-18 17:38:21,053 - digcalc_project.src.core.calculations.volume_calculator - INFO - Starting volume calculation between 'Existing Surface_Surface' and 'Proposed Surface_Surface'. Grid resolution: 5.0
+2025-04-18 17:38:21,054 - digcalc_project.src.core.calculations.volume_calculator - INFO - Interpolating surface 'Existing Surface_Surface' onto 123201 grid points...
+2025-04-18 17:38:21,119 - digcalc_project.src.core.calculations.volume_calculator - INFO - Interpolating surface 'Proposed Surface_Surface' onto 123201 grid points...
+2025-04-18 17:38:21,124 - digcalc_project.src.core.calculations.volume_calculator - INFO - Calculating differences for 36824 valid overlapping grid points.
+2025-04-18 17:38:21,126 - digcalc_project.src.core.calculations.volume_calculator - INFO - Volume Calculation Complete: Cut=0.000, Fill=9206000.000, Net=9206000.000
+2025-04-18 17:38:21,127 - digcalc_project.src.ui.main_window - INFO - Volume calculation successful: Cut=0.00, Fill=9206000.00, Net=9206000.00
+2025-04-18 17:38:29,574 - digcalc_project.src.ui.main_window - INFO - Saving project to: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Elevation1.1.digcalc
+2025-04-18 17:38:29,574 - digcalc_project.src.ui.main_window - INFO - Calling _update_project for project: Untitled Project
+2025-04-18 17:38:29,580 - digcalc_project.src.models.project - INFO - Project saved to C:/Users/chase/Desktop/Project Alpha/Alpha_3/Elevation1.1.digcalc
+2025-04-18 17:38:29,581 - digcalc_project.src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-18 17:38:29,582 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:38:29,582 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:38:29,584 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:38:29,584 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:38:29,584 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:38:29,584 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 5 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:38:29,586 - digcalc_project.src.ui.main_window - INFO - Displaying 2 loaded surfaces...
+2025-04-18 17:38:29,586 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Existing Surface_Surface...
+2025-04-18 17:38:29,586 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Existing Surface_Surface
+2025-04-18 17:38:29,586 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Proposed Surface_Surface...
+2025-04-18 17:38:29,587 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Proposed Surface_Surface
+2025-04-18 17:38:29,587 - digcalc_project.src.ui.main_window - INFO - Switched to project: Untitled Project
+2025-04-18 17:38:29,588 - digcalc_project.src.ui.main_window - INFO - Calling load_pdf_background with path='C:/Users/chase/Downloads/sample_grading_plan_.pdf' and dpi=300
+2025-04-18 17:38:29,588 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF: C:/Users/chase/Downloads/sample_grading_plan_.pdf at 300 DPI
+2025-04-18 17:38:29,588 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-18 17:38:29,588 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:38:29,589 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-04-18 17:38:29,589 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-04-18 17:38:29,687 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-04-18 17:38:29,694 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:38:29,695 - digcalc_project.src.ui.visualization_panel - INFO - PDF background loaded: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:38:29,701 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:38:29,701 - digcalc_project.src.ui.main_window - INFO - Restoring 5 polylines across 2 layers.
+2025-04-18 17:38:29,701 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:38:29,701 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 2 layers onto the scene.
+2025-04-18 17:38:29,701 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 5 polylines across all layers.
+2025-04-18 17:38:29,702 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-18 17:38:29,702 - digcalc_project.src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-18 17:38:29,703 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:38:29,703 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:38:29,705 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:38:29,705 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 5 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:38:29,705 - digcalc_project.src.ui.main_window - INFO - Displaying surface: Existing Surface_Surface
+2025-04-18 17:38:29,706 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Existing Surface_Surface...
+2025-04-18 17:38:29,706 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Existing Surface_Surface
+2025-04-18 17:38:29,706 - digcalc_project.src.ui.main_window - INFO - Displaying surface: Proposed Surface_Surface
+2025-04-18 17:38:29,706 - digcalc_project.src.ui.visualization_panel - INFO - Displaying surface: Proposed Surface_Surface...
+2025-04-18 17:38:29,707 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered surface: Proposed Surface_Surface
+2025-04-18 17:38:29,708 - digcalc_project.src.ui.main_window - INFO - Loading PDF background from project: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:38:29,708 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF: C:/Users/chase/Downloads/sample_grading_plan_.pdf at 300 DPI
+2025-04-18 17:38:29,708 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-18 17:38:29,708 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:38:29,709 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-04-18 17:38:29,709 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-04-18 17:38:29,808 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-04-18 17:38:29,815 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:38:29,815 - digcalc_project.src.ui.visualization_panel - INFO - PDF background loaded: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:38:29,821 - digcalc_project.src.ui.tracing_scene - INFO - Background image set with size: 2550x3300
+2025-04-18 17:38:29,821 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-18 17:38:29,822 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 2 layers onto the scene.
+2025-04-18 17:38:29,822 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 5 polylines across all layers.
+2025-04-18 17:38:31,017 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-18 17:38:32,320 - digcalc_project.src.ui.main_window - INFO - Discarding unsaved changes in current project.
+2025-04-18 17:38:32,320 - digcalc_project.src.ui.visualization_panel - INFO - Clearing PDF background.
+2025-04-18 17:38:32,322 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:38:32,322 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-18 17:38:32,324 - digcalc_project.src.ui.tracing_scene - INFO - Background image cleared.
+2025-04-18 17:38:32,324 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-18 17:38:32,338 - digcalc_project.src.main - INFO - Application exited with code 0

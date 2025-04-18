@@ -33,7 +33,7 @@ from ..core.importers.pdf_parser import PDFParser
 from ..models.project import Project, PolylineData
 from ..models.surface import Surface
 from .project_panel import ProjectPanel
-from .visualization_panel import VisualizationPanel
+from .visualization_panel import VisualizationPanel, HAS_3D
 from .properties_dock import PropertiesDock
 from ..core.calculations.volume_calculator import VolumeCalculator
 from .dialogs.import_options_dialog import ImportOptionsDialog
@@ -521,6 +521,48 @@ class MainWindow(QMainWindow):
         # Update controls based on final state
         self._update_analysis_actions_state()
         self._update_pdf_controls()
+
+        # Refresh visualization
+        self.visualization_panel.clear_all()
+        if project:
+            # Load surfaces
+            surfaces_exist = bool(project.surfaces)
+            if surfaces_exist:
+                for surface_name, surface in project.surfaces.items():
+                    self.logger.info(f"Displaying surface: {surface_name}")
+                    self.visualization_panel.display_surface(surface)
+            
+            # Load PDF background if path exists
+            pdf_loaded = False
+            if project.pdf_background_path:
+                try:
+                    self.logger.info(f"Loading PDF background from project: {project.pdf_background_path}")
+                    self.visualization_panel.load_pdf_background(
+                        project.pdf_background_path,
+                        project.pdf_background_dpi
+                    )
+                    self.visualization_panel.set_pdf_page(project.pdf_background_page)
+                    pdf_loaded = True # Mark PDF as successfully loaded
+                except Exception as e:
+                    self.logger.error(f"Failed to load PDF background from project: {e}")
+                    QMessageBox.warning(self, "PDF Error", f"Could not load PDF background:\n{project.pdf_background_path}\nError: {e}")
+            
+            # Load traced polylines (always load if they exist, visibility handled by view)
+            if project.traced_polylines:
+                self.visualization_panel.load_and_display_polylines(project.traced_polylines)
+
+            # REMOVED explicit view switching logic from here.
+            # Let _update_view_actions_state handle the final state.
+
+        else:
+            # No project loaded, clear everything and let actions update
+            pass # clear_all() already called
+
+        # Update status bar
+        self.statusBar().showMessage(f"Project '{project.name if project else 'None'}' loaded", 5000)
+        
+        # Update the enabled/checked state of view actions based on loaded content
+        self._update_view_actions_state() 
 
     def _update_analysis_actions_state(self):
         """
@@ -1507,7 +1549,10 @@ class VolumeCalculationDialog(QDialog):
         self.button_box.rejected.connect(self.reject)
         layout.addWidget(self.button_box)
 
-        # Connect signals for validation
+        # Attempt to pre-select surfaces
+        self._preselect_surfaces()
+
+        # Connect signals for validation AFTER pre-selection attempt
         self.combo_existing.currentIndexChanged.connect(self._validate_selection)
         self.combo_proposed.currentIndexChanged.connect(self._validate_selection)
         self._validate_selection() # Initial validation
@@ -1515,6 +1560,44 @@ class VolumeCalculationDialog(QDialog):
         self.setLayout(layout)
         self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
         self.adjustSize() # Adjust size to fit contents
+
+    def _preselect_surfaces(self):
+        """Attempts to pre-select likely existing and proposed surfaces based on name."""
+        existing_keywords = ["existing", "eg", "topo", "original"]
+        proposed_keywords = ["proposed", "design", "fg", "final"]
+
+        found_existing = None
+        found_proposed = None
+
+        # Find first match for existing
+        for name in self.surface_names:
+            name_lower = name.lower()
+            if any(keyword in name_lower for keyword in existing_keywords):
+                found_existing = name
+                break
+        
+        # Find first match for proposed (must be different from existing)
+        for name in self.surface_names:
+            name_lower = name.lower()
+            if any(keyword in name_lower for keyword in proposed_keywords):
+                if name != found_existing: # Ensure it's not the same surface
+                    found_proposed = name
+                    break
+
+        # Set selections if found
+        if found_existing:
+            self.combo_existing.setCurrentText(found_existing)
+            logger.debug(f"Pre-selected Existing Surface: {found_existing}")
+        
+        if found_proposed:
+            self.combo_proposed.setCurrentText(found_proposed)
+            logger.debug(f"Pre-selected Proposed Surface: {found_proposed}")
+        elif len(self.surface_names) > 1 and found_existing: 
+            # If only existing was found, try setting proposed to the first *different* surface
+            first_different = next((s for s in self.surface_names if s != found_existing), None)
+            if first_different:
+                self.combo_proposed.setCurrentText(first_different)
+                logger.debug(f"Pre-selected Proposed Surface (fallback): {first_different}")
 
     def _validate_selection(self):
         """Enable OK button only if different surfaces are selected."""
