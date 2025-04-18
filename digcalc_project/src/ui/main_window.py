@@ -13,13 +13,15 @@ from typing import Optional, Dict, List, Tuple
 
 # PySide6 imports
 from PySide6.QtCore import Qt, QSize, Signal, Slot
-from PySide6.QtGui import QIcon, QAction, QKeySequence
+from PySide6.QtGui import QIcon, QAction, QKeySequence, QKeyEvent
+from PySide6 import QtWidgets
 from PySide6.QtWidgets import (
     QMainWindow, QDockWidget, QMenu, QToolBar,
     QFileDialog, QMessageBox, QVBoxLayout, QWidget, QDialog,
     QComboBox, QLabel, QGridLayout, QPushButton, QLineEdit, QSpinBox,
     QDoubleSpinBox, QCheckBox, QFormLayout, QHBoxLayout, QDialogButtonBox,
-    QSplitter, QMenuBar, QStatusBar, QSizePolicy, QTreeWidget, QTreeWidgetItem
+    QSplitter, QMenuBar, QStatusBar, QSizePolicy, QTreeWidget, QTreeWidgetItem,
+    QGraphicsItem, QGraphicsPathItem # Added QGraphicsItem/PathItem
 )
 
 # Local imports - Use relative paths
@@ -28,15 +30,19 @@ from ..core.importers.dxf_parser import DXFParser
 from ..core.importers.file_parser import FileParser
 from ..core.importers.landxml_parser import LandXMLParser
 from ..core.importers.pdf_parser import PDFParser
-from ..models.project import Project
+from ..models.project import Project, PolylineData
 from ..models.surface import Surface
 from .project_panel import ProjectPanel # Relative within ui package
 from .visualization_panel import VisualizationPanel # Relative within ui package
+from .properties_dock import PropertiesDock # <-- Import the new dock
 from ..core.calculations.volume_calculator import VolumeCalculator
 from .dialogs.import_options_dialog import ImportOptionsDialog # Relative within ui package
 from .dialogs.report_dialog import ReportDialog # Relative within ui package
 from .dialogs.volume_calculation_dialog import VolumeCalculationDialog # Relative within ui package
 from ..visualization.pdf_renderer import PDFRenderer, PDFRendererError
+from .dialogs.elevation_dialog import ElevationDialog
+
+logger = logging.getLogger(__name__) # Define logger at module level
 
 
 class MainWindow(QMainWindow):
@@ -54,6 +60,7 @@ class MainWindow(QMainWindow):
         
         self.logger = logging.getLogger(__name__)
         self.current_project: Optional[Project] = None
+        self._selected_scene_item: Optional[QGraphicsPathItem] = None # NEW: Track selected item
         self.pdf_dpi_setting = 300 # Default DPI for rendering - Increased from 150
         
         # Set up the main window properties
@@ -66,10 +73,7 @@ class MainWindow(QMainWindow):
         self._create_menus()
         self._create_toolbars()
         self._create_statusbar()
-        
-        # Connect visualization panel signals
-        if hasattr(self, 'visualization_panel') and hasattr(self.visualization_panel, 'surface_visualization_failed'):
-             self.visualization_panel.surface_visualization_failed.connect(self._on_visualization_failed)
+        self._connect_signals() # Connect signals after UI is built
         
         # Create default project
         self._create_default_project()
@@ -98,7 +102,7 @@ class MainWindow(QMainWindow):
         self.project_dock.setWidget(self.project_panel)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.project_dock)
         
-        # --- Layers dock --- 
+        # --- Verify Project Dock ---
         self.layer_dock = QDockWidget("Layers", self)
         self.layer_dock.setObjectName("LayerDock")
         self.layer_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
@@ -107,6 +111,12 @@ class MainWindow(QMainWindow):
         self.layer_tree.setHeaderHidden(True)
         self.layer_dock.setWidget(self.layer_tree)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.layer_dock) # Add to left by default
+        
+        # --- NEW: Create and add Properties Dock ---
+        self.prop_dock = PropertiesDock(self)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.prop_dock)
+        self.prop_dock.hide() # Start hidden
+        # --- END NEW ---
         
         # Connect the signal for item changes (checkbox toggles)
         self.layer_tree.itemChanged.connect(self._on_layer_visibility_changed)
@@ -128,6 +138,37 @@ class MainWindow(QMainWindow):
         # else:
         #     self.layer_dock = None
         #     self.logger.error("Could not create Layer Control dock widget: Panel not found.")
+    
+    def _connect_signals(self):
+        """Connect signals from UI components to main window slots."""
+        self.logger.debug("Connecting MainWindow signals...")
+
+        # Connect visualization panel signals
+        if hasattr(self.visualization_panel, 'surface_visualization_failed'):
+            self.visualization_panel.surface_visualization_failed.connect(self._on_visualization_failed)
+
+        # Connect tracing scene signals (via visualization panel)
+        if hasattr(self.visualization_panel, 'scene_2d'):
+            # Check the signal signature from tracing_scene.py
+            # It now emits (list_of_points, QGraphicsPathItem)
+            self.visualization_panel.scene_2d.polyline_finalized.connect(self._on_polyline_drawn)
+            # --- NEW: Connect selection changed signal --- 
+            self.visualization_panel.scene_2d.selectionChanged.connect(self._on_item_selected)
+            # --- END NEW ---
+        else:
+             self.logger.warning("Could not connect tracing scene signals: scene_2d not found on visualization_panel.")
+
+        # Connect layer tree signal
+        self.layer_tree.itemChanged.connect(self._on_layer_visibility_changed)
+
+        # --- NEW: Connect PropertiesDock signal --- 
+        self.prop_dock.edited.connect(self._apply_elevation_edit)
+        # --- END NEW ---
+
+        # Connect project panel signals (if any needed later)
+        # self.project_panel.some_signal.connect(self._some_handler)
+
+        self.logger.debug("MainWindow signals connected.")
     
     def _create_actions(self):
         """Create actions for menus and toolbars."""
@@ -219,12 +260,45 @@ class MainWindow(QMainWindow):
         self.view_menu.addAction(self.next_pdf_page_action)
         # Add view toggles here (e.g., toggle Project Panel)
         self.view_menu.addSeparator()
-        self.view_menu.addAction(self.project_dock.toggleViewAction())
-        # Add toggle for Layer Dock
-        if self.layer_dock:
+        # Ensure project_dock exists before adding its action
+        if hasattr(self, 'project_dock'):
+            self.view_menu.addAction(self.project_dock.toggleViewAction())
+        else:
+             self.logger.error("Project dock not created, cannot add toggle action.")
+        # --- Verify Layer Dock Toggle Action ---
+        # Check if layer_dock exists before adding its action
+        if hasattr(self, 'layer_dock') and self.layer_dock:
              self.view_menu.addAction(self.layer_dock.toggleViewAction())
-        else: # Should not happen, but safety check
-             self.logger.warning("Layer dock was not created, cannot add toggle action.")
+        else:
+             self.logger.error("Layer dock not created or is None, cannot add toggle action.")
+        # --- End Verify Layer Dock Toggle Action ---
+        # --- Properties Dock Toggle Action --- 
+        # Check if prop_dock exists before adding its action
+        if hasattr(self, 'prop_dock'):
+            view_menu_actions = self.view_menu.actions()
+            insert_before_action = None
+            layer_toggle_action = self.layer_dock.toggleViewAction() if hasattr(self, 'layer_dock') and self.layer_dock else None
+
+            if layer_toggle_action:
+                try:
+                    idx = view_menu_actions.index(layer_toggle_action)
+                    for i in range(idx + 1, len(view_menu_actions)):
+                         if view_menu_actions[i].isSeparator():
+                             insert_before_action = view_menu_actions[i]
+                             break
+                    if not insert_before_action:
+                        if idx + 1 < len(view_menu_actions):
+                             insert_before_action = view_menu_actions[idx+1]
+                except ValueError:
+                    self.logger.warning("Layer toggle action not found in view menu for inserting properties toggle.")
+
+            if insert_before_action:
+                self.view_menu.insertAction(insert_before_action, self.prop_dock.toggleViewAction())
+            else:
+                self.view_menu.addAction(self.prop_dock.toggleViewAction())
+        else:
+            self.logger.error("Properties dock not created, cannot add toggle action.")
+        # --- End Properties Dock Toggle Action ---
         self.view_menu.addSeparator()
         self.view_menu.addAction(self.toggle_tracing_action) # Add tracing action
         
@@ -966,6 +1040,290 @@ class MainWindow(QMainWindow):
                 self.visualization_panel.scene_2d.setLayerVisible(layer_name, is_visible)
             else:
                 self.logger.warning("Cannot toggle layer visibility: Visualization panel, scene_2d, or setLayerVisible method not found.")
+
+    @Slot(list, QGraphicsPathItem)
+    def _on_polyline_drawn(self, points_qpointf: list, item: QGraphicsPathItem):
+        """
+        Handles the polyline_finalized signal from TracingScene.
+        Prompts for elevation and adds the polyline data to the project.
+        Stores the final index back into the QGraphicsPathItem.
+        """
+        if not self.current_project:
+            logger.warning("Polyline drawn but no active project.")
+            if item.scene(): item.scene().removeItem(item)
+            return
+
+        layer_name = item.data(0)
+        if layer_name is None:
+             logger.error("Finalized polyline item is missing layer data! Assigning to 'Default'.")
+             layer_name = "Default" # Fallback needed
+
+        point_tuples = [(p.x(), p.y()) for p in points_qpointf]
+
+        if len(point_tuples) < 2:
+             logger.warning(f"Ignoring finalized polyline with < 2 points for layer '{layer_name}'.")
+             if item.scene(): item.scene().removeItem(item)
+             return
+
+        # --- Prompt for Elevation --- 
+        dlg = ElevationDialog(self)
+        dialog_result = dlg.exec()
+        # Use QtWidgets.QDialog.Accepted
+        elevation = dlg.value() if dialog_result == QtWidgets.QDialog.Accepted else None
+        logger.debug(f"Elevation dialog result: Accepted={dialog_result == QtWidgets.QDialog.Accepted}, Elevation={elevation}")
+
+        # --- Create the PolylineData dictionary ---
+        polyline_data: PolylineData = {"points": point_tuples, "elevation": elevation}
+        # --- END FIX ---
+
+        # --- Call add_traced_polyline and handle Optional[int] return ---
+        new_index: Optional[int] = self.current_project.add_traced_polyline(
+            polyline=polyline_data, # Pass the dictionary
+            layer_name=layer_name,
+            # Elevation is now inside polyline_data
+        )
+
+        if new_index is not None: # Check if index was returned (success)
+            try:
+                item.setData(1, new_index) # Store the returned index
+                self.logger.info(f"Added traced polyline (Index: {new_index}, Elevation: {elevation}) to layer '{layer_name}'.")
+                self.project_panel._update_tree()
+                self._update_layer_tree()
+                self.statusBar().showMessage(f"Polyline added to layer '{layer_name}' (Elev: {elevation})", 3000)
+            except Exception as e: # Catch potential errors during UI update/logging
+                 logger.error(f"Error updating UI/logging after adding polyline (Index: {new_index}, Layer: '{layer_name}'): {e}", exc_info=True)
+                 # Don't remove item here, as data was added successfully
+        else:
+             # add_traced_polyline returned None (failure)
+             self.logger.error(f"Failed to add traced polyline to layer '{layer_name}' in project (add_traced_polyline returned None).")
+             if item.scene(): item.scene().removeItem(item) # Clean up scene item
+             QMessageBox.warning(self, "Error", f"Could not add polyline to project layer '{layer_name}'.")
+        # --- END FIX ---
+
+    @Slot(QGraphicsItem)
+    def _on_item_selected(self, item: Optional[QGraphicsItem]):
+        """
+        Handles the selectionChanged signal from the TracingScene.
+        Loads the selected polyline's data into the PropertiesDock.
+        Stores a reference to the selected scene item.
+        """
+        logger.debug(f"--- _on_item_selected --- START --- Item: {item}")
+
+        if not self.current_project:
+            self._selected_scene_item = None # Clear selection reference
+            logger.warning("_on_item_selected called but no current project.")
+            if hasattr(self, 'prop_dock'): self.prop_dock.clear_selection()
+            if hasattr(self, 'prop_dock'): self.prop_dock.hide()
+            logger.debug("--- _on_item_selected --- END (no project) ---")
+            return
+        if not hasattr(self, 'prop_dock') or not self.prop_dock:
+            self._selected_scene_item = None # Clear selection reference
+            logger.error("Properties dock not initialized.")
+            logger.debug("--- _on_item_selected --- END (no properties dock) ---")
+            return
+
+        if item and isinstance(item, QGraphicsPathItem):
+            # --- Store reference to selected item --- 
+            self._selected_scene_item = item
+            # --- End Store ---
+            layer_name = item.data(0)
+            index = item.data(1)
+            logger.debug(f"  Item is QGraphicsPathItem. Layer Data (0): {layer_name}, Index Data (1): {index}")
+
+            if layer_name is not None and index is not None:
+                logger.debug(f"  Attempting to load data for Layer=\'{layer_name}\', Index={index}")
+                try:
+                    # Retrieve the polyline data - could be dict or list
+                    if layer_name not in self.current_project.traced_polylines or \
+                       not isinstance(self.current_project.traced_polylines[layer_name], list) or \
+                       index >= len(self.current_project.traced_polylines[layer_name]):
+                        logger.warning(f"  Invalid layer/index lookup ({layer_name}/{index}).")
+                        raise IndexError(f"Invalid layer/index ({layer_name}/{index}) for selection.")
+
+                    poly_data = self.current_project.traced_polylines[layer_name][index]
+                    elevation = None
+                    logger.debug(f"  Retrieved poly_data type: {type(poly_data)}, Value: {poly_data}")
+
+                    # Handle old list format vs new dict format
+                    if isinstance(poly_data, dict):
+                        elevation = poly_data.get("elevation")
+                        logger.debug(f"  Loading elevation from dict: {elevation}")
+                    elif isinstance(poly_data, list):
+                        logger.debug("  Loading old format polyline (list), elevation assumed None.")
+                        elevation = None
+                    else:
+                        logger.warning(f"  Unexpected data type for polyline at {layer_name}[{index}]: {type(poly_data)}")
+                        raise TypeError(f"Unexpected data type for polyline: {type(poly_data)}")
+
+                    logger.debug(f"  Calling prop_dock.load_polyline with: layer=\'{layer_name}\', index={index}, elevation={elevation}")
+                    self.prop_dock.load_polyline(layer_name, index, elevation)
+
+                except Exception as e:
+                    logger.error(f"  ERROR during data retrieval/processing for {layer_name}[{index}]: {e}", exc_info=True)
+                    self._selected_scene_item = None # Clear on error
+                    self.prop_dock.clear_selection()
+                    self.prop_dock.hide()
+                    QMessageBox.warning(self, "Selection Error", f"Could not load data for selected polyline:\nLayer: {layer_name}, Index: {index}\nError: {e}")
+            else:
+                logger.warning(f"  Selected QGraphicsPathItem missing layer ({layer_name}) or index ({index}) data.")
+                self._selected_scene_item = None # Clear selection reference
+                self.prop_dock.clear_selection()
+        else:
+            # Selection cleared or non-polyline selected
+            if item:
+                 logger.debug(f"  Selection changed, but item is not a QGraphicsPathItem (Type: {type(item)}). Clearing properties.")
+            else:
+                 logger.debug("  Selection changed to None (cleared). Clearing properties.")
+            self._selected_scene_item = None # Clear selection reference
+            self.prop_dock.clear_selection()
+
+        logger.debug("--- _on_item_selected --- END ---")
+
+    @Slot(str, int, float)
+    def _apply_elevation_edit(self, layer_name: str, index: int, new_elevation: float):
+        """
+        Handles the 'edited' signal from PropertiesDock.
+        Updates the elevation in the current project's data model.
+        """
+        if not self.current_project:
+            logger.error("Cannot apply elevation edit: No current project.")
+            QMessageBox.critical(self, "Error", "No active project to apply changes to.")
+            return
+
+        try:
+            # Access the specific polyline dictionary
+            poly_list = self.current_project.traced_polylines.get(layer_name)
+            if poly_list is None or not isinstance(poly_list, list) or index >= len(poly_list):
+                raise IndexError(f"Invalid layer '{layer_name}' or index {index} for elevation edit.")
+
+            # Check if the elevation actually changed
+            current_elevation = poly_list[index].get("elevation")
+            # Compare floats carefully, considering None
+            elevation_changed = (current_elevation is None and new_elevation is not None) or \
+                                (current_elevation is not None and abs(current_elevation - new_elevation) > 1e-6) # Tolerance for float comparison
+
+            if elevation_changed:
+                poly_list[index]["elevation"] = new_elevation
+                self.current_project.is_modified = True # Mark project as modified
+                logger.info(f"Updated elevation for polyline (Layer: {layer_name}, Index: {index}) to {new_elevation:.2f}")
+                # Optionally update project panel if it shows elevation?
+                # self.project_panel.update_project_data(self.current_project)
+                # Update status bar maybe?
+                self.statusBar().showMessage(f"Elevation updated for {layer_name} polyline {index}.", 3000)
+                # Maybe clear selection in the dock after successful apply?
+                # self.prop_dock.clear_selection()
+            else:
+                 logger.debug(f"Elevation for polyline (Layer: {layer_name}, Index: {index}) unchanged ({new_elevation:.2f}).")
+
+        except (KeyError, IndexError, AttributeError, TypeError) as e:
+            logger.error(f"Error applying elevation edit (Layer: {layer_name}, Index: {index}): {e}", exc_info=True)
+            QMessageBox.warning(self, "Edit Error", f"Could not apply elevation change:\nLayer: {layer_name}, Index: {index}\nError: {e}")
+
+    def _update_layer_tree(self):
+        """Updates the layer tree dock based on project layers."""
+        self.layer_tree.blockSignals(True)
+        self.layer_tree.clear()
+        layers = []
+        if self.current_project:
+             surface_layers = list(self.current_project.surfaces.keys())
+             trace_layers = self.current_project.get_layers()
+             layers = sorted(list(set(surface_layers + trace_layers)))
+
+        if layers:
+            for name in layers:
+                item = QTreeWidgetItem(self.layer_tree, [name])
+                item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+                item.setCheckState(0, Qt.Checked) # Default to checked visually
+            self.layer_tree.expandAll()
+        else:
+            pass # No layers, tree is empty
+
+        self.layer_tree.blockSignals(False)
+        self.logger.debug(f"Layer tree updated with layers: {layers}")
+
+    # --- NEW: Handle Delete Key Press --- 
+    def keyPressEvent(self, event: QKeyEvent):
+        """Handle key presses, specifically the Delete key for selected polylines."""
+        key = event.key()
+
+        # Check if Delete key is pressed and an item is selected
+        if key == Qt.Key_Delete and self._selected_scene_item is not None:
+            self.logger.debug(f"Delete key pressed for selected item: {self._selected_scene_item}")
+            self._delete_selected_polyline()
+            event.accept() # Indicate we handled the key press
+        else:
+            # Pass the event to the base class for default handling
+            super().keyPressEvent(event)
+
+    def _delete_selected_polyline(self):
+        """Deletes the currently selected polyline from the project and scene."""
+        if not self.current_project or not self._selected_scene_item:
+            self.logger.warning("Attempted to delete polyline, but no project or item selected.")
+            return
+
+        layer_name = self._selected_scene_item.data(0)
+        index = self._selected_scene_item.data(1)
+
+        if layer_name is None or index is None:
+            self.logger.error("Selected item is missing layer or index data, cannot delete.")
+            self._selected_scene_item = None
+            if hasattr(self, 'prop_dock'): # Check if dock exists
+                self.prop_dock.clear_selection()
+                self.prop_dock.hide()
+            return
+
+        # Confirm deletion with user
+        reply = QMessageBox.question(
+            self,
+            "Delete Polyline",
+            f"Are you sure you want to delete the selected polyline from layer \'{layer_name}\' (Index: {index})?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+
+        if reply == QMessageBox.Yes:
+            self.logger.info(f"Attempting to delete polyline: Layer=\'{layer_name}\', Index={index}")
+            # --- Remove from Project --- 
+            removed_from_project = self.current_project.remove_polyline(layer_name, index)
+
+            if removed_from_project:
+                # --- Remove from Scene --- 
+                scene = self._selected_scene_item.scene()
+                if scene:
+                    scene.removeItem(self._selected_scene_item)
+                    self.logger.info("Removed polyline item from scene.")
+                else:
+                    self.logger.warning("Could not remove item from scene (item has no scene).")
+
+                # --- Update UI --- 
+                if hasattr(self, 'prop_dock'): # Check if dock exists
+                    self.prop_dock.clear_selection()
+                    self.prop_dock.hide()
+                if hasattr(self, 'project_panel'):
+                    self.project_panel._update_tree()
+                if hasattr(self, 'layer_tree'):
+                    self._update_layer_tree()
+                self.statusBar().showMessage(f"Deleted polyline from \'{layer_name}\'.", 3000)
+
+                # --- Reload polylines for the affected layer to update indices --- 
+                # This ensures subsequent selections/deletions work correctly
+                # Currently reloads all; optimization possible later if needed.
+                if hasattr(self, 'visualization_panel'):
+                    self.logger.info("Reloading all traced polylines in scene to update indices after deletion.")
+                    self.visualization_panel.load_and_display_polylines(self.current_project.traced_polylines)
+                else:
+                    self.logger.error("Visualization panel not found, cannot reload polylines after deletion.")
+
+            else:
+                self.logger.error(f"Failed to remove polyline from project data (Layer: {layer_name}, Index: {index}).")
+                QMessageBox.warning(self, "Deletion Error", "Could not delete the polyline from the project data.")
+
+            # --- Clear selection reference --- 
+            self._selected_scene_item = None
+
+        else:
+            self.logger.debug("Polyline deletion cancelled by user.")
+    # --- END NEW --- 
 
 
 class VolumeCalculationDialog(QDialog):

@@ -239,8 +239,18 @@ class VisualizationPanel(QWidget):
         self.view_2d.setVisible(False) # Keep legacy hidden by default if migrating
         layout.addWidget(self.view_2d)
         
-        # Connect legacy scene signal (keep for now, remove when QML fully replaces it)
-        self.scene_2d.polyline_finalized.connect(self._on_legacy_polyline_finalized)
+        # --- FIX: Disconnect the legacy signal handler --- #
+        # Ensure the connection to the legacy slot is removed.
+        try:
+            # Attempt to disconnect using the correct signal signature (list, QGraphicsPathItem)
+            # Note: This might still fail if the slot signature doesn't match expected,
+            # but the primary goal is to prevent the connection if it exists.
+            self.scene_2d.polyline_finalized.disconnect(self._on_legacy_polyline_finalized)
+            self.logger.debug("Attempted to disconnect legacy polyline_finalized signal from VisualizationPanel._on_legacy_polyline_finalized")
+        except (RuntimeError, TypeError) as e:
+            self.logger.debug("Legacy polyline_finalized signal was not connected or slot mismatch in VisualizationPanel: %s", e)
+            pass # Ignore errors, main goal is removal
+        # --- END FIX ---
         
         # --- 3D View --- 
         if HAS_3D:
@@ -713,49 +723,13 @@ class VisualizationPanel(QWidget):
     @Slot(list)
     def _on_legacy_polyline_finalized(self, points_qpointf: List[QPointF]):
         """
-        Slot to receive finalized polyline data from the legacy TracingScene.
-        Prompts for elevation, converts QPointF list to list of (float, float) tuples,
-        and saves the polyline with elevation to the project.
+        DEPRECATED: This slot should no longer be called as the connection
+        has been removed in _init_ui. Handling is now done in MainWindow.
         """
-        if self.current_project is None:
-            self.logger.warning("_on_legacy_polyline_finalized called but no project is active.")
-            return
-            
-        # Convert QPointF list to list of (float, float) tuples
-        points = [(p.x(), p.y()) for p in points_qpointf]
-        
-        if not points:
-            self.logger.warning("Received empty polyline from legacy scene.")
-            return
-
-        if len(points) < 2:
-            self.logger.warning(f"Received legacy polyline with {len(points)} points, ignoring (needs >= 2).")
-            return
-        
-        # --- Prompt for Elevation ---
-        dlg = ElevationDialog(self)
-        z = dlg.value() if dlg.exec() == QtWidgets.QDialog.Accepted else None
-        # Create the polyline data structure expected by Project.add_traced_polyline
-        polyline_data = {"points": points, "elevation": z}
-        layer_to_save = self.active_layer_name # Use panel's active layer
-
-        self.logger.debug(
-            "VisualizationPanel: saving legacy polyline with %d vertices to layer '%s' (Elevation: %s)",
-            len(points),
-            layer_to_save,
-            z
-        )
-        # --- Save the polyline to the Project Model ---
-        self.current_project.add_traced_polyline(
-            polyline_data, # Pass the dictionary
-            layer_name=layer_to_save, 
-            # Elevation is now inside polyline_data, no need for separate arg here
-        )
-        
-        # Consider emitting a signal if other UI parts need to know about the update
-        # self.project_updated.emit() 
-        
-        self.logger.info(f"Saved polyline with {len(points)} points (Elevation: {z}) to layer '{layer_to_save}' from legacy scene.")
+        self.logger.warning("DEPRECATED _on_legacy_polyline_finalized was called! This should not happen.")
+        # Prevent any residual execution
+        return
+        # ... (Original code removed for clarity) ...
 
     def set_tracing_mode(self, enabled: bool):
          """
@@ -948,49 +922,13 @@ class VisualizationPanel(QWidget):
     @Slot(list)
     def _on_legacy_polyline_finalized(self, points_qpointf: List[QPointF]):
         """
-        Slot to receive finalized polyline data from the legacy TracingScene.
-        Prompts for elevation, converts QPointF list to list of (float, float) tuples,
-        and saves the polyline with elevation to the project.
+        DEPRECATED: This slot should no longer be called as the connection
+        has been removed in _init_ui. Handling is now done in MainWindow.
         """
-        if self.current_project is None:
-            self.logger.warning("_on_legacy_polyline_finalized called but no project is active.")
-            return
-            
-        # Convert QPointF list to list of (float, float) tuples
-        points = [(p.x(), p.y()) for p in points_qpointf]
-        
-        if not points:
-            self.logger.warning("Received empty polyline from legacy scene.")
-            return
-
-        if len(points) < 2:
-            self.logger.warning(f"Received legacy polyline with {len(points)} points, ignoring (needs >= 2).")
-            return
-        
-        # --- Prompt for Elevation ---
-        dlg = ElevationDialog(self)
-        z = dlg.value() if dlg.exec() == QtWidgets.QDialog.Accepted else None
-        # Create the polyline data structure expected by Project.add_traced_polyline
-        polyline_data = {"points": points, "elevation": z}
-        layer_to_save = self.active_layer_name # Use panel's active layer
-
-        self.logger.debug(
-            "VisualizationPanel: saving legacy polyline with %d vertices to layer '%s' (Elevation: %s)",
-            len(points),
-            layer_to_save,
-            z
-        )
-        # --- Save the polyline to the Project Model ---
-        self.current_project.add_traced_polyline(
-            polyline_data, # Pass the dictionary
-            layer_name=layer_to_save, 
-            # Elevation is now inside polyline_data, no need for separate arg here
-        )
-        
-        # Consider emitting a signal if other UI parts need to know about the update
-        # self.project_updated.emit() 
-        
-        self.logger.info(f"Saved polyline with {len(points)} points (Elevation: {z}) to layer '{layer_to_save}' from legacy scene.")
+        self.logger.warning("DEPRECATED _on_legacy_polyline_finalized was called! This should not happen.")
+        # Prevent any residual execution
+        return
+        # ... (Original code removed for clarity) ...
 
     def set_tracing_mode(self, enabled: bool):
          """

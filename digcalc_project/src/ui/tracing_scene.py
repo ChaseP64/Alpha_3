@@ -23,9 +23,17 @@ class TracingScene(QGraphicsScene):
     with support for basic layer management.
     """
 
+    # --- MODIFIED: Update signal definition ---
     # Signal emitted when a polyline is finalized (e.g., by double-click or Enter)
-    # Sends the list of QPointF vertices and the layer name it was added to.
-    polyline_finalized = Signal(list)
+    # Sends the list of QPointF vertices AND the created QGraphicsPathItem.
+    polyline_finalized = Signal(list, QGraphicsPathItem)
+    # --- END MODIFIED ---
+
+    # --- NEW: Signal for item selection ---
+    # Emits the selected QGraphicsItem when selection changes.
+    # In this context, it will be the QGraphicsPathItem representing a polyline.
+    selectionChanged = Signal(QGraphicsItem)
+    # --- END NEW ---
 
     def __init__(self, view: QGraphicsView, parent=None):
         """Initialize the TracingScene.
@@ -52,7 +60,8 @@ class TracingScene(QGraphicsScene):
         self._vertex_brush = QBrush(QColor("cyan"))
         self._vertex_radius = 3.0
         self._rubber_band_pen = QPen(QColor("yellow"), 1, Qt.DashLine)
-        self._finalized_polyline_pen = QPen(QColor("lime"), 2)
+        self._finalized_polyline_pen = QPen(QColor("lime"), 4)
+        self._selected_polyline_pen = QPen(QColor("yellow"), 5, Qt.DotLine)
 
     # --- Background Image ---
 
@@ -189,6 +198,23 @@ class TracingScene(QGraphicsScene):
         else:
             super().keyPressEvent(event)
 
+    # --- NEW: Override mouseReleaseEvent to detect selection ---
+    def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent):
+        """
+        Overrides mouseReleaseEvent to emit selectionChanged signal
+        when a selectable item (polyline) is clicked.
+        """
+        # Important: Call super implementation to handle standard selection behavior first!
+        super().mouseReleaseEvent(event)
+        selected_items = self.selectedItems()
+        if selected_items:
+            # Only handle single selection for now
+            self.selectionChanged.emit(selected_items[0])
+            self.logger.debug(f"Selection changed, emitted signal for item: {selected_items[0]}")
+        # else: # Optional: emit signal with None if selection is cleared
+        #     self.selectionChanged.emit(None)
+    # --- END NEW ---
+
     # --- Helper Methods for Drawing ---
 
     def _add_vertex_marker(self, pos: QPointF):
@@ -226,6 +252,7 @@ class TracingScene(QGraphicsScene):
         """
         Converts the current points into a permanent polyline item,
         tags it with the given layer name, and emits the finalized signal.
+        The index will be added later by the caller (MainWindow) after updating the project model.
         """
         if len(self._current_polyline_points) < 2:
             self.logger.warning("Cannot finalize polyline with less than 2 points.")
@@ -242,17 +269,22 @@ class TracingScene(QGraphicsScene):
         polyline_item = QGraphicsPathItem(path)
         polyline_item.setPen(self._finalized_polyline_pen)
         polyline_item.setZValue(0) # Render below vertices but above background
-        polyline_item.setData(Qt.UserRole, layer_name) # Tag item with layer name
-        self.addItem(polyline_item)
-        
-        self.logger.info(f"Finalized polyline with {len(self._current_polyline_points)} vertices.")
+        # --- MODIFIED: Store only layer name (key 0) initially ---
+        polyline_item.setData(0, layer_name) # Tag item with layer name
+        # --- END MODIFIED ---
 
-        # --- FIX: Emit signal *before* resetting state --- 
+        # --- NEW: Make item selectable ---
+        polyline_item.setFlags(polyline_item.flags() | QGraphicsItem.ItemIsSelectable)
+        # --- END NEW ---
+
+        self.addItem(polyline_item)
+
+        self.logger.info(f"Finalized polyline with {len(self._current_polyline_points)} vertices for layer '{layer_name}'. Item: {polyline_item}")
+
         # Store points before reset, as reset clears the list
-        points_to_emit = list(self._current_polyline_points) 
-        # Emit signal with finalized points
-        self.polyline_finalized.emit(points_to_emit)
-        # ----------------------------------------------
+        points_to_emit = list(self._current_polyline_points)
+        # Emit signal with finalized points AND the created item
+        self.polyline_finalized.emit(points_to_emit, polyline_item)
 
         self._reset_drawing_state()
 
@@ -307,7 +339,7 @@ class TracingScene(QGraphicsScene):
         # Iterate directly over scene items
         for item in self.items():
             # Remove only items that have layer data (i.e., finalized polylines)
-            if isinstance(item, QGraphicsPathItem) and item.data(Qt.UserRole) is not None:
+            if isinstance(item, QGraphicsPathItem) and item.data(0) is not None: # Check key 0 for layer
                 items_to_remove.append(item)
 
         for item in items_to_remove:
@@ -316,23 +348,31 @@ class TracingScene(QGraphicsScene):
 
     def load_polylines_with_layers(self, polylines_by_layer: Dict[str, List[List[Tuple[float, float]]]]):
         """
-        Clears existing finalized polylines and loads new ones from a dictionary,
-        tagging each created QGraphicsPathItem with its layer name.
+        Clears existing finalized polylines and loads new ones from project data,
+        tagging each created QGraphicsPathItem with its layer name and index.
 
         Args:
             polylines_by_layer: A dictionary where keys are layer names and values
                                 are lists of polylines for that layer.
-                                Each polyline is a list of (x, y) tuples.
+                                Each polyline is assumed to be a list of (x, y) tuples/lists.
+                                (Handles the structure loaded from older project files).
         """
         self.clear_finalized_polylines() # Clear previous lines first
 
-        self.logger.info(f"Loading polylines for {len(polylines_by_layer)} layers onto the scene.")
+        # self.logger.info(f"Loading polylines for {len(polylines_by_layer)} layers onto the scene.")
+        self.logger.info(f"Loading polylines for {len(polylines_by_layer)} layers onto the scene (Handling list format).")
         total_added = 0
 
-        for layer_name, polylines_data in polylines_by_layer.items():
+        for layer_name, polylines_list in polylines_by_layer.items():
             layer_added_count = 0
-            for poly_points in polylines_data:
-                if len(poly_points) >= 2:
+            # --- MODIFIED: Iterate with index over the list of polylines ---
+            # for index, poly_data in enumerate(polylines_list):
+            #     poly_points = poly_data.get("points", [])
+            for index, poly_points in enumerate(polylines_list):
+                # --- FIX: Treat the iterated item 'poly_points' directly as the list of points ---
+                # Check if poly_points is indeed a list and has enough points
+                if isinstance(poly_points, list) and len(poly_points) >= 2:
+                # --- END FIX ---
                     try:
                         path = QPainterPath()
                         # Convert points which might be lists [x,y] back to QPointF
@@ -344,17 +384,28 @@ class TracingScene(QGraphicsScene):
                         path_item = QGraphicsPathItem(path)
                         path_item.setPen(self._finalized_polyline_pen)
                         path_item.setZValue(0)
-                        path_item.setData(Qt.UserRole, layer_name) # Set the layer data!
+                        # Store layer name (key 0) and index (key 1)
+                        path_item.setData(0, layer_name)
+                        path_item.setData(1, index) # Store the index from the project data list
+
+                        # Make item selectable
+                        path_item.setFlags(path_item.flags() | QGraphicsItem.ItemIsSelectable)
+
                         self.addItem(path_item)
                         layer_added_count += 1
                     except (ValueError, TypeError, IndexError) as e:
-                        self.logger.error(f"Error creating QGraphicsPathItem for loaded polyline in layer '{layer_name}': {e}", exc_info=True)
+                        # self.logger.error(f"Error creating QGraphicsPathItem for loaded polyline in layer '{layer_name}' at index {index}: {e}", exc_info=True)
+                        self.logger.error(f"Error creating QGraphicsPathItem for loaded polyline in layer '{layer_name}' at index {index}: {e}. Data: {poly_points}", exc_info=True)
                 else:
-                     self.logger.warning(f"Skipping loaded polyline in layer '{layer_name}' with less than 2 points: {poly_points}")
+                     # Log if the data format is unexpected or too short
+                     if not isinstance(poly_points, list):
+                         self.logger.warning(f"Skipping loaded item in layer '{layer_name}' at index {index}: Expected list of points, got {type(poly_points)}.")
+                     else: # Is a list, but too short
+                         self.logger.warning(f"Skipping loaded polyline in layer '{layer_name}' at index {index} with less than 2 points: {poly_points}")
             if layer_added_count > 0:
                  self.logger.debug(f"Added {layer_added_count} polylines to layer '{layer_name}'.")
             total_added += layer_added_count
-            
+
         self.logger.info(f"Finished loading and displayed {total_added} polylines across all layers.")
 
     # --- View Interaction (Future) ---
@@ -379,8 +430,8 @@ class TracingScene(QGraphicsScene):
         self.logger.debug(f"Setting layer '{layer_name}' visibility to {visible}")
         count = 0
         for item in self.items():
-             # Check if item has data set for UserRole and if it matches
-             item_layer = item.data(Qt.UserRole)
+             # Check if item has data set for key 0 (layer name)
+             item_layer = item.data(0) # Use key 0 for layer name
              if item_layer == layer_name:
                  item.setVisible(visible)
                  count += 1

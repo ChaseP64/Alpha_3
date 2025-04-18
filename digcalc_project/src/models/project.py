@@ -173,62 +173,51 @@ class Project:
     
     def add_traced_polyline(
         self,
-        polyline: Union[List[Tuple[float, float]], PolylineData],
-        layer_name: str = "Existing Surface", # Default layer name
-        elevation: Optional[float] = None
-    ) -> bool:
+        polyline: PolylineData, # Expect only the dictionary format now
+        layer_name: str = "Existing Surface",
+    ) -> Optional[int]: # Return index on success, None on failure
         """
-        Adds a traced polyline to the specified layer.
-
-        Accepts either a raw list of points (List[Tuple[float, float]]) for backward
-        compatibility (elevation will be set to None, or the value provided in the
-        optional 'elevation' argument), or a PolylineData dictionary.
+        Adds a traced polyline (as a PolylineData dictionary) to the specified layer.
 
         Args:
-            polyline (Union[List[Tuple[float, float]], PolylineData]):
-                      The polyline data. Can be a list of (x, y) points or a
-                      PolylineData dict containing 'points' and 'elevation'.
+            polyline (PolylineData): The polyline data dictionary containing
+                                     'points' (List[Tuple[float, float]]) and
+                                     'elevation' (Optional[float]).
             layer_name (str, optional): The name of the layer to add the polyline to.
                                         Defaults to "Existing Surface".
-            elevation (Optional[float]): Optional elevation value to use if 'polyline'
-                                         is provided as a raw list of points. This
-                                         is ignored if 'polyline' is a PolylineData dict.
 
         Returns:
-            bool: True if the polyline was added successfully, False otherwise (e.g., invalid polyline).
+            Optional[int]: The index of the added polyline within its layer list,
+                           or None if adding failed.
         """
-        polyline_obj: Optional[PolylineData] = None
+        # Validate the input dictionary
+        if not isinstance(polyline, dict) or "points" not in polyline:
+            self.logger.warning(f"Invalid polyline data format provided for layer '{layer_name}'. Expected dict with 'points'. Skipping.")
+            return None # Failure
 
-        if isinstance(polyline, list):
-            # Handle backward compatibility: wrap raw point list
-            if len(polyline) < 2:
-                self.logger.warning(f"Attempted to add polyline with < 2 points to layer '{layer_name}'. Skipping.")
-                return False
-            polyline_obj = {"points": polyline, "elevation": elevation}
-            self.logger.debug(f"Wrapping legacy polyline list for layer '{layer_name}' with elevation {elevation}.")
-        elif isinstance(polyline, dict) and "points" in polyline:
-            # Handle new format
-            if len(polyline["points"]) < 2:
-                self.logger.warning(f"Attempted to add polyline dict with < 2 points to layer '{layer_name}'. Skipping.")
-                return False
-            # Ensure elevation key exists, defaulting to None if missing
-            polyline_obj = {
-                "points": polyline["points"],
-                "elevation": polyline.get("elevation") # Use get for safety
-            }
-        else:
-            self.logger.warning(f"Invalid polyline data format provided for layer '{layer_name}'. Skipping.")
-            return False
+        points_list = polyline.get("points")
+        # Ensure points_list is actually a list before checking length
+        if not isinstance(points_list, list) or len(points_list) < 2:
+            self.logger.warning(f"Attempted to add polyline with invalid or < 2 points to layer '{layer_name}'. Skipping.")
+            return None # Failure
+
+        # Ensure elevation key exists, defaulting to None if missing
+        polyline_obj: PolylineData = {
+            "points": points_list,
+            "elevation": polyline.get("elevation") # Use get for safety
+        }
 
         if layer_name not in self.traced_polylines:
             self.traced_polylines[layer_name] = []
 
-        # Type checker might complain here, but we've ensured polyline_obj is PolylineData
-        self.traced_polylines[layer_name].append(polyline_obj) # type: ignore
+        self.traced_polylines[layer_name].append(polyline_obj)
         self.modified_at = datetime.datetime.now()
         self.is_modified = True
-        self.logger.info(f"Added polyline to layer '{layer_name}' (Points: {len(polyline_obj['points'])}, Elevation: {polyline_obj['elevation']}).")
-        return True
+        # Calculate index *after* appending
+        new_index = len(self.traced_polylines[layer_name]) - 1
+        self.logger.info(f"Added polyline to layer '{layer_name}' (Index: {new_index}, Points: {len(polyline_obj['points'])}, Elevation: {polyline_obj['elevation']}).")
+        # Return the calculated index
+        return new_index # Success, return index
 
     def remove_polyline(self, layer_name: str, polyline_index: int) -> bool:
         """Removes a polyline from a layer by its index."""
