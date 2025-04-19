@@ -1,7 +1,7 @@
 # digcalc_project/src/core/geometry/surface_builder.py
 
 import logging
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Dict, Optional, Any
 import numpy as np
 from scipy.spatial import Delaunay, QhullError
 
@@ -19,41 +19,42 @@ class SurfaceBuilder:
     """Builds a triangulated surface (TIN) from geometric data."""
 
     @staticmethod
-    def build_from_polylines(layer_name: str,
-                             polylines: List[PolylineData]) -> Surface:
+    def build_from_polylines(
+        layer_name: str,
+        polylines_data: List[Dict[str, Any]], # Expect list of PolylineData dicts
+        revision: int # New argument
+    ) -> Surface:
         """
-        Builds a TIN Surface from a list of polylines belonging to a single layer.
-
-        Only vertices from polylines with a non-None elevation are used.
-        Requires at least 3 unique points with elevation.
+        Builds a TIN surface from a list of polylines with elevation data.
 
         Args:
-            layer_name (str): The name of the source layer (used for error messages).
-            polylines (List[PolylineData]): A list of polyline data dictionaries,
-                                            each containing 'points' and 'elevation'.
+            layer_name: The name of the source layer.
+            polylines_data: List of PolylineData dictionaries (must have 'points' and 'elevation').
+            revision: The revision number of the source layer data.
 
         Returns:
-            Surface: The generated Surface object.
+            A new Surface object.
 
         Raises:
-            SurfaceBuilderError: If fewer than 3 unique points with elevation are found,
-                                 or if triangulation fails.
+            SurfaceBuilderError: If input data is invalid or triangulation fails.
         """
-        logger.info(f"Attempting to build surface from layer '{layer_name}' ({len(polylines)} polylines).")
-        pts_3d: List[Tuple[float, float, float]] = []
+        logger.info(f"Attempting to build surface from layer '{layer_name}' ({len(polylines_data)} polylines).")
+        points_3d: List[Tuple[float, float, float]] = []
         unique_pts_check = set()
 
         # --- Extract 3D Points --- 
-        for i, poly_data in enumerate(polylines):
+        for i, poly_dict in enumerate(polylines_data):
             try:
-                elevation = poly_data.get("elevation")
-                points = poly_data.get("points", [])
-                if elevation is None or not points: continue
+                elevation = poly_dict.get("elevation")
+                points_2d = poly_dict.get("points")
+                if elevation is None or not points_2d:
+                    logger.warning(f"Skipping polyline {i} in layer '{layer_name}' due to missing elevation or points.")
+                    continue
                 added_from_poly = 0
-                for x, y in points:
+                for x, y in points_2d:
                     point_tuple = (float(x), float(y), float(elevation))
                     if point_tuple not in unique_pts_check:
-                        pts_3d.append(point_tuple)
+                        points_3d.append(point_tuple)
                         unique_pts_check.add(point_tuple)
                         added_from_poly += 1
                 if added_from_poly > 0: logger.debug(f"Added {added_from_poly} unique vertices from polyline {i} (Elev: {elevation}).")
@@ -61,7 +62,7 @@ class SurfaceBuilder:
                 logger.warning(f"Skipping polyline {i} in layer '{layer_name}' due to data error: {e}", exc_info=True)
                 continue
 
-        num_unique_pts = len(pts_3d)
+        num_unique_pts = len(points_3d)
         logger.info(f"Extracted {num_unique_pts} unique 3D points with elevation from layer '{layer_name}'.")
 
         if num_unique_pts < 3:
@@ -71,8 +72,8 @@ class SurfaceBuilder:
             )
 
         # --- Triangulation --- 
-        vertices_np = np.array(pts_3d)
-        xy_coords = vertices_np[:, :2]
+        points_array = np.array(points_3d)
+        xy_coords = points_array[:, :2]
         faces_np = None # Initialize faces_np
         try:
             logger.debug("Performing Delaunay triangulation...")
@@ -95,55 +96,56 @@ class SurfaceBuilder:
             logger.exception(f"Unexpected error during triangulation for layer '{layer_name}': {e}")
             raise SurfaceBuilderError(f"An unexpected error occurred during triangulation: {e}") from e
 
-        # --- Create Surface Object --- 
+        # --- Create Surface Object ---
         default_surface_name = f"{layer_name}_Surface"
         logger.info(f"Creating Surface object '{default_surface_name}'...")
 
-        # --- FIX: Create Surface and add points/triangles correctly --- 
-        # 1. Create empty surface
-        surface = Surface(name=default_surface_name, surface_type=Surface.SURFACE_TYPE_TIN)
-
-        # 2. Create Point3D objects and store mapping from original index to Point3D
-        index_to_point3d: Dict[int, Point3D] = {}
-        for i, vertex in enumerate(vertices_np):
+        # Convert points_array into the required dictionary format with Point3D objects
+        surface_points_dict: Dict[str, Point3D] = {}
+        for i, (x, y, z) in enumerate(points_array):
+            # Create Point3D object (ID will be generated automatically)
+            point_obj = Point3D(x=float(x), y=float(y), z=float(z))
+            surface_points_dict[point_obj.id] = point_obj # Use point ID as the key
+            
+        # Convert faces_np into the required dictionary formats using the NEW point IDs
+        # We need a map from the original point index (0, 1, 2...) to the new Point3D ID
+        point_id_list = [p.id for p in surface_points_dict.values()] # Assumes order is preserved from enumerate
+        # Or more robustly create the list alongside the dict:
+        # point_id_list = []
+        # surface_points_dict: Dict[str, Point3D] = {}
+        # for i, (x, y, z) in enumerate(points_array):
+        #     point_obj = Point3D(x=float(x), y=float(y), z=float(z))
+        #     surface_points_dict[point_obj.id] = point_obj 
+        #     point_id_list.append(point_obj.id) 
+        
+        surface_triangles_dict: Dict[str, Triangle] = {}
+        # Assuming faces_np contains indices corresponding to the original points_array order
+        for i, face_indices in enumerate(faces_np):
             try:
-                 # Use try-except for robust float conversion
-                 point = Point3D(x=float(vertex[0]), y=float(vertex[1]), z=float(vertex[2]))
-                 surface.add_point(point) # Adds to surface.points dictionary
-                 index_to_point3d[i] = point # Map original index to the Point3D object
-            except (ValueError, TypeError, IndexError) as p_err:
-                 logger.warning(f"Could not create Point3D from vertex data at index {i}: {vertex}. Error: {p_err}. Skipping point.")
-                 continue # Skip this point if invalid
-        logger.info(f"Added {len(surface.points)} points to surface '{surface.name}'.")
+                # Map original indices to Point3D objects using the points dictionary
+                p1_id = point_id_list[face_indices[0]]
+                p2_id = point_id_list[face_indices[1]]
+                p3_id = point_id_list[face_indices[2]]
+                # Create Triangle object using the actual Point3D objects
+                triangle = Triangle(p1=surface_points_dict[p1_id], 
+                                    p2=surface_points_dict[p2_id], 
+                                    p3=surface_points_dict[p3_id])
+                surface_triangles_dict[triangle.id] = triangle # Use triangle ID as key
+            except IndexError as e_idx:
+                 logger.error(f"Index error creating triangle {i} from face {face_indices}: {e_idx}. Point ID list length: {len(point_id_list)}")
+                 continue # Skip this triangle
+            except KeyError as e_key:
+                 logger.error(f"Key error creating triangle {i} (likely missing point ID): {e_key}. Face indices: {face_indices}")
+                 continue # Skip this triangle
 
-        # 3. Create Triangles using the mapped Point3D objects
-        if faces_np is not None:
-             num_faces_added = 0
-             num_skipped_faces = 0
-             for face_indices in faces_np:
-                 try:
-                     # Use the mapping to get the actual Point3D objects
-                     # Check if all indices were successfully mapped in the previous step
-                     if any(idx not in index_to_point3d for idx in face_indices):
-                         logger.warning(f"Skipping face with invalid vertex index: {face_indices}")
-                         num_skipped_faces += 1
-                         continue
-                     p1 = index_to_point3d[face_indices[0]]
-                     p2 = index_to_point3d[face_indices[1]]
-                     p3 = index_to_point3d[face_indices[2]]
-                     triangle = Triangle(p1=p1, p2=p2, p3=p3)
-                     surface.add_triangle(triangle) # Adds to surface.triangles
-                     num_faces_added += 1
-                 except (KeyError, IndexError) as e:
-                      logger.warning(f"Skipping invalid face during surface creation: Indices={face_indices}, Error={e}")
-                      num_skipped_faces += 1
-                 except Exception as tri_err: # Catch other potential errors during Triangle creation
-                      logger.error(f"Unexpected error creating triangle for indices {face_indices}: {tri_err}", exc_info=True)
-                      num_skipped_faces += 1
-             logger.info(f"Added {num_faces_added} triangles to surface '{surface.name}'. Skipped {num_skipped_faces} faces.")
-        else:
-             logger.warning(f"No faces generated by triangulation for surface '{surface.name}'. Surface will have points only.")
-        # --- END FIX --- 
+        # --- Create Surface object --- 
+        surface = Surface(
+            name=default_surface_name,
+            points=surface_points_dict, # Pass dict of Point3D objects
+            triangles=surface_triangles_dict, # Pass dict of Triangle objects
+            source_layer_name=layer_name,
+            source_layer_revision=revision
+        )
 
-        logger.info(f"Successfully built surface '{surface.name}' from layer '{layer_name}'.")
+        logger.info(f"Successfully built surface '{surface.name}' from layer '{layer_name}' (Rev: {revision}).")
         return surface 

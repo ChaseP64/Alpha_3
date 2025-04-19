@@ -11,6 +11,8 @@ import uuid
 from typing import Dict, List, Optional, Tuple, Set, Union, Any
 import logging
 
+# Define logger at module level
+logger = logging.getLogger(__name__)
 
 class Point3D:
     """
@@ -197,26 +199,41 @@ class Surface:
         points: Dictionary of points in the surface
         triangles: Dictionary of triangles in the surface
         metadata: Additional metadata about the surface
+        source_layer_name: Optional source layer name
+        source_layer_revision: Optional source layer revision
+        is_stale: Boolean indicating if the surface is stale
     """
     
     # Surface type constants
     SURFACE_TYPE_TIN = "TIN"
     SURFACE_TYPE_GRID = "GRID"
     
-    def __init__(self, name: str, surface_type: str = None):
+    def __init__(
+        self,
+        name: str,
+        points: Optional[Dict[str, Point3D]] = None,
+        triangles: Optional[Dict[str, Triangle]] = None,
+        source_layer_name: Optional[str] = None,
+        source_layer_revision: Optional[int] = None
+    ):
         """
         Initialize a surface.
         
         Args:
             name: Name of the surface
-            surface_type: Type of surface (TIN, GRID, etc.)
+            points: Dictionary of points in the surface
+            triangles: Dictionary of triangles in the surface
+            source_layer_name: Optional source layer name
+            source_layer_revision: Optional source layer revision
         """
         self.name = name
-        self.surface_type = surface_type or self.SURFACE_TYPE_TIN
+        self.points: Dict[str, Point3D] = points if points is not None else {}
+        self.triangles: Dict[str, Triangle] = triangles if triangles is not None else {}
         self.id = str(uuid.uuid4())
-        self.points: Dict[str, Point3D] = {}
-        self.triangles: Dict[str, Triangle] = {}
         self.metadata: Dict[str, Any] = {}
+        self.source_layer_name = source_layer_name
+        self.source_layer_revision = source_layer_revision
+        self.is_stale = False
     
     def __str__(self) -> str:
         """String representation of the surface."""
@@ -281,34 +298,80 @@ class Surface:
         return (zmin, zmax)
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert surface to dictionary for serialization."""
-        return {
-            'name': self.name,
-            'surface_type': self.surface_type,
-            'id': self.id,
-            'points': [p.to_dict() for p in self.points.values()],
-            'triangles': [t.to_dict() for t in self.triangles.values()],
-            'metadata': self.metadata
+        """Serializes the surface to a dictionary."""
+        surface_dict = {
+            "name": self.name,
+            "surface_type": self.SURFACE_TYPE_TIN,
+            "id": self.id,
+            "points": {pid: p.to_dict() for pid, p in self.points.items()},
+            "triangles": {tid: t.to_dict() for tid, t in self.triangles.items()},
+            "metadata": self.metadata,
+            "source_layer_name": self.source_layer_name,
+            "source_layer_revision": self.source_layer_revision,
         }
+        return surface_dict
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'Surface':
-        """Create surface from dictionary representation."""
-        surface = cls(data['name'], data.get('surface_type', cls.SURFACE_TYPE_TIN))
-        
-        # Add metadata
-        surface.metadata = data.get('metadata', {})
-        
-        # Add points
-        points_map = {}
-        for point_data in data.get('points', []):
-            point = Point3D.from_dict(point_data)
-            surface.add_point(point)
-            points_map[point.id] = point
-        
-        # Add triangles, using the points map for referencing
-        for triangle_data in data.get('triangles', []):
-            triangle = Triangle.from_dict(triangle_data, points_map)
-            surface.add_triangle(triangle)
-        
+        """Deserializes a surface from a dictionary, handling legacy list format for points."""
+        # Deserialize points first
+        points_dict: Dict[str, Point3D] = {}
+        points_data = data.get("points", {})
+
+        # --- Handle legacy list format for points --- 
+        if isinstance(points_data, list):
+            logger.warning(f"Loading legacy surface '{data.get('name', 'Unknown')}' with list of points.")
+            # Assume list contains point data dicts, generate IDs if missing
+            for i, p_data in enumerate(points_data):
+                if isinstance(p_data, dict):
+                    # Point3D.from_dict should handle potentially missing 'id'
+                    point = Point3D.from_dict(p_data)
+                    # Use point's internal ID if generated, otherwise use index as fallback key
+                    pid = point.id if point.id else str(i)
+                    points_dict[pid] = point
+                else:
+                    logger.warning(f"Skipping invalid point data in list at index {i}: {p_data}")
+        elif isinstance(points_data, dict):
+             # --- Standard dictionary format --- 
+             for pid, p_data in points_data.items():
+                  points_dict[pid] = Point3D.from_dict(p_data)
+        else:
+             logger.error(f"Invalid format for points data in surface '{data.get('name', 'Unknown')}': {type(points_data)}")
+             # Proceed with empty points dict? Or raise error?
+             # Let's proceed with empty for now.
+
+        # Deserialize triangles, linking to points
+        triangles_dict: Dict[str, Triangle] = {}
+        triangles_data = data.get("triangles", {})
+
+        # --- Handle legacy list format for triangles --- 
+        if isinstance(triangles_data, list):
+            logger.warning(f"Loading legacy surface '{data.get('name', 'Unknown')}' with list of triangles.")
+            # Assume list contains triangle data dicts
+            for i, t_data in enumerate(triangles_data):
+                if isinstance(t_data, dict):
+                    # Triangle.from_dict should handle potentially missing 'id' and use points_dict
+                    triangle = Triangle.from_dict(t_data, points_dict)
+                    # Use triangle's internal ID if generated, otherwise use index as fallback key
+                    tid = triangle.id if triangle.id else str(i)
+                    triangles_dict[tid] = triangle
+                else:
+                    logger.warning(f"Skipping invalid triangle data in list at index {i}: {t_data}")
+        elif isinstance(triangles_data, dict):
+             # --- Standard dictionary format --- 
+             for tid, t_data in triangles_data.items():
+                  triangles_dict[tid] = Triangle.from_dict(t_data, points_dict)
+        else:
+             logger.error(f"Invalid format for triangles data in surface '{data.get('name', 'Unknown')}': {type(triangles_data)}")
+             # Proceed with empty triangles dict.
+
+        # Create the Surface instance
+        surface = cls(
+            name=data.get("name", "Unnamed Surface"),
+            points=points_dict,
+            triangles=triangles_dict,
+            source_layer_name=data.get("source_layer_name"),
+            source_layer_revision=data.get("source_layer_revision")
+        )
+        # is_stale is handled during project load
         return surface 

@@ -6,21 +6,24 @@ Project panel for the DigCalc application.
 This module defines the project panel and its components.
 """
 
+import sys
 import logging
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple, Union
 
 # PySide6 imports
 from PySide6.QtCore import Qt, Signal, Slot
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QFont, QColor, QAction, QMouseEvent, QContextMenuEvent
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QTreeWidget, QTreeWidgetItem,
-    QPushButton, QMessageBox, QCheckBox
+    QPushButton, QMessageBox, QCheckBox, QAbstractItemView, QMenu, QHeaderView, QApplication, QDialog
 )
 
 # Local imports - Use relative paths
 from ..models.project import Project
 from ..models.surface import Surface
 
+# --- Logger --- 
+logger = logging.getLogger(__name__) # Initialize logger
 
 class ProjectPanel(QWidget):
     """
@@ -63,6 +66,9 @@ class ProjectPanel(QWidget):
         self.tree_widget.setHeaderLabel("Project Structure")
         self.tree_widget.setMinimumHeight(200)
         self.tree_widget.itemSelectionChanged.connect(self._on_item_selection_changed)
+        self.tree_widget.setHeaderHidden(True)
+        self.tree_widget.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.tree_widget.customContextMenuRequested.connect(self.on_context_menu)
         layout.addWidget(self.tree_widget)
         
         # Toolbar
@@ -97,109 +103,118 @@ class ProjectPanel(QWidget):
         self._update_tree()
     
     def _update_tree(self):
-        """Update the project tree with the current project."""
+        """Populates the tree widget with project data."""
+        self.tree_widget.blockSignals(True)
         self.tree_widget.clear()
-        
         if not self.project:
+            self.tree_widget.blockSignals(False)
             return
-        
-        # Create root item
-        root_item = QTreeWidgetItem(self.tree_widget)
-        root_item.setText(0, self.project.name)
-        root_item.setExpanded(True)
-        
-        # Create surfaces group
-        surfaces_item = QTreeWidgetItem(root_item)
-        surfaces_item.setText(0, "Surfaces")
-        surfaces_item.setExpanded(True)
-        
-        # Add surfaces
+
+        # --- Surfaces Node --- 
+        surfaces_node = QTreeWidgetItem(self.tree_widget, ["Surfaces"])
+        surfaces_node.setData(0, Qt.UserRole, ("category", "surfaces")) # Store type
+        surfaces_node.setFlags(surfaces_node.flags() & ~Qt.ItemIsSelectable)
+
         if self.project.surfaces:
-            for surface in self.project.surfaces.values():
-                self._add_surface_item(surfaces_item, surface)
-        
-        # Create volumes group
-        volumes_item = QTreeWidgetItem(root_item)
-        volumes_item.setText(0, "Volumes")
-        volumes_item.setExpanded(True)
-        
-        # Add volumes
+            sorted_surface_names = sorted(self.project.surfaces.keys())
+            for name in sorted_surface_names:
+                surface = self.project.surfaces.get(name)
+                if not surface: continue # Should not happen, but safety check
+                
+                text = name
+                # --- Stale Indicator --- 
+                is_stale = getattr(surface, 'is_stale', False) # Check if attribute exists
+                if is_stale:
+                    text += " ⚠︎" # Append warning symbol
+                # --- End Stale Indicator ---
+                
+                item = QTreeWidgetItem(surfaces_node, [text])
+                item.setData(0, Qt.UserRole, ("surface", name)) # Store type and name
+                
+                # --- Stale Formatting --- 
+                if is_stale:
+                     font = item.font(0)
+                     font.setItalic(True)
+                     item.setFont(0, font)
+                     # Use standard palette text color for theme compatibility, but maybe gray?
+                     # item.setForeground(0, self.palette().color(self.foregroundRole()))
+                     item.setForeground(0, QColor("gray")) # Use gray for clear visual distinction
+                # --- End Stale Formatting ---
+        else:
+            no_surfaces_item = QTreeWidgetItem(surfaces_node, ["No surfaces loaded"])
+            no_surfaces_item.setFlags(no_surfaces_item.flags() & ~Qt.ItemIsSelectable)
+            no_surfaces_item.setDisabled(True)
+            font = no_surfaces_item.font(0)
+            font.setItalic(True)
+            no_surfaces_item.setFont(0, font)
+
+        # --- Traced Layers Node --- 
+        layers_node = QTreeWidgetItem(self.tree_widget, ["Traced Layers"])
+        layers_node.setData(0, Qt.UserRole, ("category", "layers"))
+        layers_node.setFlags(layers_node.flags() & ~Qt.ItemIsSelectable)
+
         if self.project.calculations:
-            for volume in self.project.calculations:
-                volume_item = QTreeWidgetItem(volumes_item)
-                volume_item.setText(0, volume.name)
-                volume_item.setData(0, Qt.UserRole, volume)
+            sorted_layer_names = sorted(self.project.calculations.keys())
+            for layer_name in sorted_layer_names:
+                polylines = self.project.calculations[layer_name]
+                layer_item = QTreeWidgetItem(layers_node, [f"{layer_name} ({len(polylines)} polylines)"])
+                layer_item.setData(0, Qt.UserRole, ("layer", layer_name))
+                layer_item.setFlags(layer_item.flags() & ~Qt.ItemIsSelectable)
+                # Optionally add individual polylines as children here if needed
+        else:
+            no_layers_item = QTreeWidgetItem(layers_node, ["No traced layers"])
+            no_layers_item.setFlags(no_layers_item.flags() & ~Qt.ItemIsSelectable)
+            no_layers_item.setDisabled(True)
+            font = no_layers_item.font(0)
+            font.setItalic(True)
+            no_layers_item.setFont(0, font)
+
+        # Expand all top-level nodes
+        self.tree_widget.expandItem(surfaces_node)
+        self.tree_widget.expandItem(layers_node)
+        # self.tree_widget.expandAll() # Might expand too much if polylines added later
+        self.tree_widget.blockSignals(False)
+        logger.debug("Project panel tree updated.")
     
-    def _add_surface_item(self, parent_item, surface: Surface) -> QTreeWidgetItem:
-        """
-        Add a surface item to the tree.
-        
-        Args:
-            parent_item: Parent tree item
-            surface: Surface to add
-            
-        Returns:
-            Created tree item
-        """
-        surface_item = QTreeWidgetItem(parent_item)
-        surface_item.setText(0, surface.name)
-        surface_item.setData(0, Qt.UserRole, surface)
-        
-        # Add checkbox for visibility
-        checkbox = self._create_visibility_checkbox(surface)
-        self.tree_widget.setItemWidget(surface_item, 1, checkbox)
-        
-        # Store reference to checkbox
-        self.surface_checkboxes[surface.id] = checkbox
-        
-        # Add details as child items
-        if surface.points:
-            points_item = QTreeWidgetItem(surface_item)
-            points_item.setText(0, f"Points: {len(surface.points)}")
-        
-        if surface.triangles:
-            triangles_item = QTreeWidgetItem(surface_item)
-            triangles_item.setText(0, f"Triangles: {len(surface.triangles)}")
-        
-        # Add elevation range info
-        elev_range = surface.get_elevation_range()
-        if elev_range:
-            elevation_item = QTreeWidgetItem(surface_item)
-            zmin, zmax = elev_range
-            elevation_item.setText(0, f"Elevation: {zmin:.2f} to {zmax:.2f}")
-        
-        return surface_item
-    
-    def _create_visibility_checkbox(self, surface: Surface) -> QCheckBox:
-        """
-        Create a visibility checkbox for a surface.
-        
-        Args:
-            surface: Surface to create checkbox for
-            
-        Returns:
-            Checkbox widget
-        """
-        checkbox = QCheckBox()
-        checkbox.setChecked(True)  # Default to visible
-        checkbox.setToolTip("Toggle visibility")
-        
-        # Connect using lambda to capture surface
-        checkbox.stateChanged.connect(
-            lambda state: self._on_surface_visibility_changed(surface, state == Qt.Checked)
-        )
-        return checkbox
-    
-    def _on_surface_visibility_changed(self, surface: Surface, visible: bool):
-        """
-        Handle visibility change for a surface.
-        
-        Args:
-            surface: Surface whose visibility changed
-            visible: New visibility state
-        """
-        self.logger.debug(f"Surface {surface.name} visibility changed to {visible}")
-        self.surface_visibility_changed.emit(surface, visible)
+    def _update_tree_item_text(self, surface_name: str):
+         """Updates the text and appearance of a specific surface item in the tree."""
+         root = self.tree_widget.invisibleRootItem()
+         surfaces_node = None
+         for i in range(root.childCount()):
+              node = root.child(i)
+              data = node.data(0, Qt.UserRole)
+              if isinstance(data, tuple) and data[0] == "category" and data[1] == "surfaces":
+                   surfaces_node = node
+                   break
+         if not surfaces_node: 
+              logger.warning("Could not find 'Surfaces' category node in tree.")
+              return
+
+         for i in range(surfaces_node.childCount()):
+              item = surfaces_node.child(i)
+              data = item.data(0, Qt.UserRole)
+              # Check if data indicates it's a surface and matches the name
+              if isinstance(data, tuple) and data[0] == "surface" and data[1] == surface_name:
+                   surface = self.project.surfaces.get(surface_name) if self.project else None
+                   if surface:
+                       text = surface_name
+                       is_stale = getattr(surface, 'is_stale', False)
+                       if is_stale:
+                           text += " ⚠︎"
+                       item.setText(0, text)
+
+                       # Reset font/color before applying potentially new style
+                       font = item.font(0)
+                       font.setItalic(False)
+                       item.setFont(0, font)
+                       item.setForeground(0, self.palette().color(self.foregroundRole())) # Use default text color
+
+                       # Apply stale formatting if needed
+                       if is_stale:
+                           font.setItalic(True)
+                           item.setFont(0, font)
+                           item.setForeground(0, QColor("gray")) 
+                   break # Found the item
     
     def _on_item_selection_changed(self):
         """Handle item selection change in the tree."""
@@ -265,4 +280,46 @@ class ProjectPanel(QWidget):
             return
         
         # Placeholder for properties dialog
-        self.logger.debug(f"Properties for surface: {self.selected_surface.name}") 
+        self.logger.debug(f"Properties for surface: {self.selected_surface.name}")
+
+    def on_context_menu(self, point):
+        """Handle context menu request."""
+        selected_items = self.tree_widget.selectedIndexes()
+        if not selected_items:
+            return
+        
+        item = self.tree_widget.itemAt(point)
+        if not item:
+            return
+        
+        data = item.data(0, Qt.UserRole)
+        if isinstance(data, Surface):
+            surface = data
+            menu = QMenu()
+            
+            # Add actions to the context menu
+            action_show = QAction("Show", self)
+            action_show.triggered.connect(lambda: self._on_show_clicked(surface))
+            menu.addAction(action_show)
+            
+            action_hide = QAction("Hide", self)
+            action_hide.triggered.connect(lambda: self._on_hide_clicked(surface))
+            menu.addAction(action_hide)
+            
+            action_delete = QAction("Delete", self)
+            action_delete.triggered.connect(lambda: self._on_delete_clicked(surface))
+            menu.addAction(action_delete)
+            
+            menu.exec(self.tree_widget.viewport().mapToGlobal(point))
+    
+    def _on_show_clicked(self, surface: Surface):
+        """Handle show action."""
+        self.surface_visibility_changed.emit(surface, True)
+    
+    def _on_hide_clicked(self, surface: Surface):
+        """Handle hide action."""
+        self.surface_visibility_changed.emit(surface, False)
+    
+    def _on_delete_clicked(self, surface: Surface):
+        """Handle delete action."""
+        self._on_remove_clicked() 

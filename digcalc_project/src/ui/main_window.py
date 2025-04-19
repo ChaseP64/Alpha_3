@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Optional, Dict, List, Tuple
 
 # PySide6 imports
-from PySide6.QtCore import Qt, QSize, Signal, Slot
+from PySide6.QtCore import Qt, QSize, Signal, Slot, QTimer # Added QTimer
 from PySide6.QtGui import QIcon, QAction, QKeySequence, QKeyEvent, QActionGroup
 from PySide6 import QtWidgets
 from PySide6.QtWidgets import (
@@ -64,6 +64,14 @@ class MainWindow(QMainWindow):
         self.current_project: Optional[Project] = None
         self._selected_scene_item: Optional[QGraphicsPathItem] = None
         self.pdf_dpi_setting = 300
+        
+        # --- Rebuild Engine Members --- 
+        self._rebuild_needed_layers: set[str] = set()
+        self._rebuild_timer = QTimer(self)
+        self._rebuild_timer.setInterval(250) # Debounce interval in ms
+        self._rebuild_timer.setSingleShot(True)
+        self._rebuild_timer.timeout.connect(self._process_rebuild_queue)
+        # --- End Rebuild Engine Members ---
         
         # Set up the main window properties
         self.setWindowTitle("DigCalc - Excavation Takeoff Tool")
@@ -1104,6 +1112,9 @@ class MainWindow(QMainWindow):
                 self.project_panel._update_tree()
                 self._update_layer_tree()
                 self.statusBar().showMessage(f"Polyline added to layer '{layer_name}' (Elev: {elevation})", 3000)
+                # --- Trigger Rebuild --- 
+                self._queue_surface_rebuilds_for_layer(layer_name)
+                # --- End Trigger --- 
             except Exception as e:
                  logger.error(f"Error updating UI/logging after adding polyline (Index: {new_index}, Layer: '{layer_name}'): {e}", exc_info=True)
         else:
@@ -1192,7 +1203,7 @@ class MainWindow(QMainWindow):
         logger.debug("--- _on_item_selected --- END ---")
 
     @Slot(str, int, float)
-    def _apply_elevation_edit(self, layer_name: str, index: int, new_elevation: float):
+    def _apply_elevation_edit(self, layer_name: str, index: int, new_elevation: Optional[float]): # Allow None
         """
         Handles the \'edited\' signal from PropertiesDock.
         Updates the elevation in the current project\'s data model.
@@ -1220,17 +1231,25 @@ class MainWindow(QMainWindow):
             logger.debug(f"Comparing elevation for {layer_name}[{index}]: Current={current_elevation} (Type: {type(current_elevation)}), New={new_elevation} (Type: {type(new_elevation)})")
             # --- END DEBUG ---
 
-            elevation_changed = (current_elevation is None and new_elevation is not None) or \
-                                (current_elevation is not None and abs(current_elevation - new_elevation) > 1e-6)
-
-            # --- DEBUG: Log comparison result ---
-            logger.debug(f"Elevation changed comparison result: {elevation_changed}")
-            # --- END DEBUG ---
+            elevation_changed = False
+            if current_elevation is None and new_elevation is not None:
+                elevation_changed = True
+            elif current_elevation is not None and new_elevation is None:
+                 elevation_changed = True
+            elif current_elevation is not None and new_elevation is not None:
+                 if abs(current_elevation - new_elevation) > 1e-6:
+                     elevation_changed = True
+            # --- END FIX ---
 
             if elevation_changed:
                 poly_list[index]["elevation"] = new_elevation
-                self.current_project.is_modified = True
-                logger.info(f"Updated elevation for polyline (Layer: {layer_name}, Index: {index}) to {new_elevation:.2f}")
+                # self.current_project.is_modified = True # Done by bump revision
+                
+                # --- Bump Revision --- 
+                new_revision = self.current_project._bump_layer_revision(layer_name) # Call project helper
+                # --- End Bump ---
+                
+                logger.info(f"Updated elevation for polyline (Layer: {layer_name}, Index: {index}) to {new_elevation}. New layer revision: {new_revision}")
                 self.statusBar().showMessage(f"Elevation updated for {layer_name} polyline {index}.", 3000)
 
                 # Reload properties dock after update
@@ -1242,9 +1261,12 @@ class MainWindow(QMainWindow):
                          logger.debug("Refreshed PropertiesDock with updated elevation.")
                     else:
                          logger.warning("Properties dock not found, cannot refresh after edit.")
+
+                # --- Trigger Rebuild --- 
+                self._queue_surface_rebuilds_for_layer(layer_name)
+                # --- End Trigger --- 
             else:
-                 # Modify else log for clarity
-                 logger.debug(f"Elevation change check returned False. No update performed.")
+                 logger.debug(f"Elevation change check returned False for {layer_name}[{index}]. No update performed.")
 
         except (KeyError, IndexError, AttributeError, TypeError) as e:
             logger.error(f"Error applying elevation edit (Layer: {layer_name}, Index: {index}): {e}", exc_info=True)
@@ -1313,7 +1335,9 @@ class MainWindow(QMainWindow):
         )
 
         if reply == QMessageBox.Yes:
-            self.logger.info(f"Attempting to delete polyline: Layer=\'{layer_name}\', Index={index}")
+            self.logger.info(f"Attempting to delete polyline: Layer='{layer_name}', Index={index}")
+            layer_name_to_rebuild = layer_name # Store before item might be invalidated
+            
             # --- Remove from Project --- 
             removed_from_project = self.current_project.remove_polyline(layer_name, index)
 
@@ -1327,34 +1351,31 @@ class MainWindow(QMainWindow):
                     self.logger.warning("Could not remove item from scene (item has no scene).")
 
                 # --- Update UI --- 
-                if hasattr(self, 'prop_dock'): # Check if dock exists
+                if hasattr(self, 'prop_dock'):
                     self.prop_dock.clear_selection()
                     self.prop_dock.hide()
                 if hasattr(self, 'project_panel'):
                     self.project_panel._update_tree()
-                if hasattr(self, 'layer_tree'):
-                    self._update_layer_tree()
-                self.statusBar().showMessage(f"Deleted polyline from \'{layer_name}\'.", 3000)
-
-                # --- Reload polylines for the affected layer to update indices --- 
-                # This ensures subsequent selections/deletions work correctly
-                # Currently reloads all; optimization possible later if needed.
-                if hasattr(self, 'visualization_panel'):
-                    self.logger.info("Reloading all traced polylines in scene to update indices after deletion.")
-                    self.visualization_panel.load_and_display_polylines(self.current_project.traced_polylines)
-                else:
-                    self.logger.error("Visualization panel not found, cannot reload polylines after deletion.")
-
+                self.statusBar().showMessage(f"Deleted polyline from '{layer_name}'.", 3000)
+                
+                # --- Trigger Rebuild --- 
+                self._queue_surface_rebuilds_for_layer(layer_name_to_rebuild)
+                # --- End Trigger --- 
+                
+                # --- Reload polylines for the affected layer --- (Optional, but good for indices)
+                # if hasattr(self, 'visualization_panel'):
+                #     self.logger.info("Reloading all traced polylines in scene to update indices after deletion.")
+                #     self.visualization_panel.load_and_display_polylines(self.current_project.traced_polylines)
+                # else:
+                #     self.logger.error("Visualization panel not found, cannot reload polylines after deletion.")
             else:
                 self.logger.error(f"Failed to remove polyline from project data (Layer: {layer_name}, Index: {index}).")
                 QMessageBox.warning(self, "Deletion Error", "Could not delete the polyline from the project data.")
-
+            
             # --- Clear selection reference --- 
             self._selected_scene_item = None
-
         else:
             self.logger.debug("Polyline deletion cancelled by user.")
-    # --- END NEW --- 
 
     # --- NEW: View Toggle Slots ---
     @Slot()
@@ -1474,8 +1495,17 @@ class MainWindow(QMainWindow):
                 if not valid_polys_for_build:
                     raise SurfaceBuilderError(f"Layer '{selected_layer}' has no polylines with elevation data suitable for building.")
 
-                surface = SurfaceBuilder.build_from_polylines(selected_layer, valid_polys_for_build)
+                # --- Get current layer revision for the build --- 
+                current_layer_rev = self.current_project.layer_revisions.get(selected_layer, 0)
+                self.logger.debug(f"Building surface '{surface_name}' from layer '{selected_layer}' at revision {current_layer_rev}")
+
+                surface = SurfaceBuilder.build_from_polylines(
+                    layer_name=selected_layer, 
+                    polylines_data=valid_polys_for_build, 
+                    revision=current_layer_rev # Pass the revision
+                )
                 surface.name = surface_name
+                # source_layer_name and source_layer_revision are now set by the builder
                 self.current_project.add_surface(surface)
                 if hasattr(self, 'visualization_panel'):
                     displayed = self.visualization_panel.display_surface(surface)
@@ -1500,6 +1530,129 @@ class MainWindow(QMainWindow):
              logger.info("Build Surface dialog cancelled by user.")
              self.statusBar().showMessage("Build surface cancelled.", 3000)
     # --- END NEW ---
+
+    # --- NEW: Rebuild Helpers --- 
+    def _queue_surface_rebuilds_for_layer(self, layer_name: str):
+        """Adds a layer to the rebuild queue and starts the debounce timer."""
+        if layer_name: # Ensure layer_name is valid
+            self.logger.debug(f"Queueing rebuild for layer: {layer_name}")
+            self._rebuild_needed_layers.add(layer_name)
+            # Start or restart the timer with the interval
+            self._rebuild_timer.start() # Uses the interval set in __init__
+        else:
+            self.logger.warning("Attempted to queue rebuild for None layer name.")
+
+    def _process_rebuild_queue(self):
+        """Processes layers marked for rebuild, rebuilding derived surfaces."""
+        if not self.current_project or not self._rebuild_needed_layers:
+            if self._rebuild_needed_layers:
+                 self.logger.warning("Rebuild queue processed but no current project.")
+                 self._rebuild_needed_layers.clear()
+            return
+
+        layers_to_process = self._rebuild_needed_layers.copy()
+        self._rebuild_needed_layers.clear() # Clear queue before processing
+
+        self.logger.info(f"Processing rebuild queue for layers: {layers_to_process}")
+        surfaces_to_check = list(self.current_project.surfaces.values()) # Copy to avoid issues if modified
+
+        processed_count = 0
+        for surf in surfaces_to_check:
+            # Check if surface exists in project (might have been deleted)
+            if surf.name not in self.current_project.surfaces:
+                 continue
+            if surf.source_layer_name in layers_to_process:
+                self._rebuild_surface_now(surf.name)
+                processed_count += 1
+
+        self.logger.info(f"Finished processing rebuild queue. Rebuilt {processed_count} surfaces derived from {layers_to_process}.")
+
+    def _rebuild_surface_now(self, surface_name: str):
+        """Rebuilds a specific surface if necessary."""
+        if not self.current_project: return
+        surf = self.current_project.surfaces.get(surface_name)
+
+        if not surf or not surf.source_layer_name:
+            self.logger.debug(f"Skipping rebuild for '{surface_name}': No surface or source layer.")
+            return
+
+        layer = surf.source_layer_name
+        current_layer_rev = self.current_project.layer_revisions.get(layer, 0)
+
+        self.logger.debug(f"Rebuild check for '{surface_name}': Layer='{layer}', CurrentLayerRev={current_layer_rev}, SurfaceSavedRev={surf.source_layer_revision}")
+
+        # --- Check if already up-to-date ---
+        if surf.source_layer_revision is not None and surf.source_layer_revision == current_layer_rev:
+             # --- Add specific log here --- 
+             self.logger.info(f"CONDITION MET: Surface '{surface_name}' revision ({surf.source_layer_revision}) matches current layer revision ({current_layer_rev}). Skipping rebuild.")
+             # --- End add --- 
+             self.logger.debug(f" -> Surface '{surface_name}' is already up-to-date (Revision {current_layer_rev}). Skipping rebuild.")
+             if surf.is_stale:
+                  # Restore original code to clear stale state
+                  surf.is_stale = False
+                  self.current_project.is_modified = True
+                  if hasattr(self.project_panel, '_update_tree_item_text'):
+                      self.project_panel._update_tree_item_text(surf.name)
+             return
+        
+        self.logger.debug(f" -> Surface '{surface_name}' needs rebuild (SavedRev={surf.source_layer_revision} != CurrentRev={current_layer_rev}).")
+        # ... (rest of rebuild logic) ...
+
+        polys_data = self.current_project.traced_polylines.get(layer, [])
+        valid_polys = [
+            p for p in polys_data
+            if isinstance(p, dict) and p.get("elevation") is not None
+        ]
+
+        if not valid_polys:
+            logger.warning(f"Layer '{layer}' has no valid polylines with elevation to rebuild surface '{surface_name}'. Marking as stale.")
+            surf.is_stale = True
+            self.current_project.is_modified = True
+            if hasattr(self.project_panel, '_update_tree_item_text'): # Check if method exists
+                self.project_panel._update_tree_item_text(surf.name)
+            return
+
+        self.statusBar().showMessage(f"Rebuilding surface '{surface_name}' from layer '{layer}'...", 0)
+        try:
+            # Use SurfaceBuilder directly
+            new_surf = SurfaceBuilder.build_from_polylines(layer, valid_polys, current_layer_rev)
+            new_surf.name = surface_name # Keep the original name
+            new_surf.is_stale = False # Mark as not stale
+
+            # Replace in project
+            self.current_project.surfaces[surface_name] = new_surf
+            self.current_project.is_modified = True
+
+            # Update visualization - Use update_surface_mesh (defined in Part 4)
+            if hasattr(self.visualization_panel, 'update_surface_mesh'):
+                self.visualization_panel.update_surface_mesh(new_surf)
+            else:
+                 logger.error("VisualizationPanel does not have 'update_surface_mesh' method.")
+
+            # Update project panel
+            if hasattr(self.project_panel, '_update_tree_item_text'): # Check if method exists
+                self.project_panel._update_tree_item_text(new_surf.name)
+
+            self.logger.info(f"Successfully rebuilt surface '{surface_name}' from layer '{layer}' (New Rev: {current_layer_rev}).")
+            self.statusBar().showMessage(f"Surface '{surface_name}' rebuilt successfully.", 3000)
+
+        except SurfaceBuilderError as e:
+            logger.error(f"Failed to rebuild surface '{surface_name}': {e}")
+            QMessageBox.warning(self, "Rebuild Failed", f"Could not rebuild surface '{surface_name}':\n{e}")
+            self.statusBar().showMessage(f"Rebuild failed for '{surface_name}'.", 5000)
+            surf.is_stale = True
+            self.current_project.is_modified = True
+            if hasattr(self.project_panel, '_update_tree_item_text'): # Check if method exists
+                self.project_panel._update_tree_item_text(surf.name)
+        except Exception as e:
+            logger.exception(f"Unexpected error rebuilding surface '{surface_name}'")
+            QMessageBox.critical(self, "Rebuild Error", f"An unexpected error occurred rebuilding '{surface_name}':\n{e}")
+            self.statusBar().showMessage(f"Rebuild error for '{surface_name}'.", 5000)
+            surf.is_stale = True
+            self.current_project.is_modified = True
+            if hasattr(self.project_panel, '_update_tree_item_text'): # Check if method exists
+                 self.project_panel._update_tree_item_text(surf.name)
+    # --- End Rebuild Helpers ---
 
 
 class VolumeCalculationDialog(QDialog):

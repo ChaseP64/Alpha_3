@@ -4,6 +4,7 @@
 
 import logging
 from PySide6 import QtWidgets, QtCore
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -14,14 +15,19 @@ _LAST_ELEV: float = 0.0
 class ElevationDialog(QtWidgets.QDialog):
     """A simple dialog to get a constant elevation from the user."""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, initial_value: Optional[float] = None):
         """Initializes the dialog.
 
         Args:
             parent (QWidget, optional): Parent widget. Defaults to None.
+            initial_value (float, optional): Initial value for the spinbox. 
+                                           If None, uses the last remembered value.
         """
         super().__init__(parent)
         global _LAST_ELEV
+
+        # Determine the starting value
+        start_value = initial_value if initial_value is not None else _LAST_ELEV
 
         self.setWindowTitle("Enter Constant Elevation")
         self.setModal(True)
@@ -31,7 +37,7 @@ class ElevationDialog(QtWidgets.QDialog):
         self._spinbox = QtWidgets.QDoubleSpinBox()
         self._spinbox.setRange(-10000.00, 10000.00)
         self._spinbox.setDecimals(2)
-        self._spinbox.setValue(_LAST_ELEV) # Set default to last value
+        self._spinbox.setValue(start_value) # Use determined start value
         self._spinbox.selectAll() # Select text for easy replacement
 
         self._buttonbox = QtWidgets.QDialogButtonBox(
@@ -53,7 +59,7 @@ class ElevationDialog(QtWidgets.QDialog):
         self._buttonbox.rejected.connect(self.reject)
         self.accepted.connect(self._update_last_elevation) # Update memory on accept
 
-        logger.debug("ElevationDialog initialized with default value: %.2f", _LAST_ELEV)
+        logger.debug("ElevationDialog initialized with value: %.2f", start_value)
 
     def value(self) -> float:
         """Returns the current value in the spin box."""
