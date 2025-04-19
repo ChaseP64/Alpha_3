@@ -22,7 +22,7 @@ from PySide6 import QtWidgets
 # Import QJSValue for type hinting if needed
 from PySide6.QtQml import QJSValue # Use for type hint if receiving from QML
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QComboBox, QMessageBox
-from PySide6.QtGui import QImage, QPixmap, QMouseEvent, QWheelEvent
+from PySide6.QtGui import QImage, QPixmap, QMouseEvent, QWheelEvent, QTransform
 
 # Import visualization libraries
 try:
@@ -46,6 +46,7 @@ from ..models.project import Project
 # Import the new dialog
 from .dialogs.elevation_dialog import ElevationDialog
 from .interactive_graphics_view import InteractiveGraphicsView # Import the custom view
+from ..utils.color_maps import dz_to_rgba # Import the new color utility
 
 # --- Logger --- 
 logger = logging.getLogger(__name__)
@@ -206,6 +207,12 @@ class VisualizationPanel(QWidget):
         self.scene_2d: TracingScene = None # Will be initialized in _init_ui
         # --- QML Widget Placeholder (to be added when integrating QML) ---
         # self.qml_widget: Optional[QQuickWidget] = None 
+        
+        # --- Cut/Fill Map Attributes ---
+        self._dz_image_item: Optional[QGraphicsPixmapItem] = None
+        self._dz_mesh_item: Optional[gl.GLMeshItem] = None # For 3D pyqtgraph mesh
+        self._cutfill_visible: bool = False
+        # --- End Cut/Fill Map Attributes ---
         
         # Initialize UI components
         self._init_ui()
@@ -438,10 +445,11 @@ class VisualizationPanel(QWidget):
              self.logger.error(f"Mesh item for '{surface.name}' does not have setVisible method.")
 
     def clear_all(self):
-        """Clears surfaces, PDF background, and traced lines."""
+        """Clears surfaces, PDF background, traced lines, and cut/fill map."""
         self.logger.info("Clearing all visualization data.")
-        self.clear_pdf_background() # Handles view switching potentially
-        self.clear_polylines_from_scene() # Ensure 2D lines are cleared
+        self.clear_pdf_background()
+        self.clear_polylines_from_scene()
+        self.clear_cutfill_map() # Added call to clear cut/fill map
 
         # Clear 3D surfaces
         if HAS_3D and isinstance(self.view_3d, gl.GLViewWidget):
@@ -462,6 +470,7 @@ class VisualizationPanel(QWidget):
         if hasattr(self, 'view_3d') and isinstance(self.view_3d, gl.GLViewWidget):
             try:
                  self.view_3d.setCameraPosition(distance=100, elevation=30, azimuth=45)
+                 self.view_3d.update()
             except Exception as cam_e:
                  self.logger.warning(f"Could not reset camera position: {cam_e}")
 
@@ -1039,3 +1048,221 @@ class VisualizationPanel(QWidget):
             self.logger.error(f"Failed to get image for page {page_number} from renderer.")
             # Optionally show error message?
             # QMessageBox.warning(self, "PDF Page Error", f"Could not load page {page_number}.") 
+
+    # --- Cut/Fill Map Methods --- NEW SECTION ---
+
+    def set_cutfill_visible(self, on: bool):
+        """Toggle the visibility of the cut/fill map in both views."""
+        if on == self._cutfill_visible:
+            return
+        self._cutfill_visible = on
+        self.logger.debug(f"Setting cut/fill visibility to: {on}")
+
+        if self._dz_image_item:
+            self._dz_image_item.setVisible(on)
+            self.logger.debug(f"2D cut/fill item visibility set to: {self._dz_image_item.isVisible()}")
+
+        if HAS_3D and self._dz_mesh_item:
+            self._dz_mesh_item.setVisible(on)
+            # Log the action, not the state (as isVisible() is missing)
+            self.logger.debug(f"Called 3D cut/fill item setVisible({on})")
+
+        # Force redraw/update of the views
+        if self.view_2d:
+            self.view_2d.viewport().update()
+        if HAS_3D and isinstance(self.view_3d, gl.GLViewWidget):
+             self.view_3d.update()
+
+    def update_cutfill_map(self, dz: np.ndarray, gx: np.ndarray, gy: np.ndarray):
+        """
+        Update or create the cut/fill map visualization.
+
+        Args:
+            dz (np.ndarray): 2D numpy array (height, width) of elevation differences.
+            gx (np.ndarray): 1D numpy array of X coordinates for the grid.
+            gy (np.ndarray): 1D numpy array of Y coordinates for the grid.
+        """
+        if dz is None or gx is None or gy is None or dz.size == 0 or gx.size == 0 or gy.size == 0:
+            self.logger.warning("update_cutfill_map called with invalid data. Clearing map.")
+            self.clear_cutfill_map()
+            return
+
+        self.logger.info(f"Updating cut/fill map. dz shape: {dz.shape}, gx size: {gx.size}, gy size: {gy.size}")
+
+        try:
+            # --- 2D Heatmap (QGraphicsPixmapItem) ---
+            rgba_image = dz_to_rgba(dz) # Get (H, W, 4) uint8 RGBA data
+            if rgba_image is None or rgba_image.size == 0:
+                 raise ValueError("dz_to_rgba returned invalid data")
+
+            h, w = rgba_image.shape[:2]
+            # Create QImage with correct stride if necessary, ensure data buffer isn't garbage collected
+            # For numpy arrays in C-contiguous order (default), stride is usually fine.
+            qimage = QImage(rgba_image.data, w, h, QImage.Format.Format_RGBA8888).copy() # Use copy to be safe
+            pixmap = QPixmap.fromImage(qimage)
+
+            if not self.scene_2d:
+                 self.logger.error("Cannot add 2D cut/fill map: scene_2d is not initialized.")
+                 return # Cannot proceed without a scene
+
+            if not self._dz_image_item:
+                self._dz_image_item = self.scene_2d.addPixmap(pixmap)
+                self._dz_image_item.setZValue(-5) # Ensure it's below traced lines
+                self.logger.debug("Created new 2D cut/fill pixmap item.")
+            else:
+                self._dz_image_item.setPixmap(pixmap)
+                self.logger.debug("Updated existing 2D cut/fill pixmap item.")
+
+            # Calculate position and scale for the pixmap
+            x_min, x_max = gx.min(), gx.max()
+            y_min, y_max = gy.min(), gy.max()
+            scene_width = x_max - x_min
+            scene_height = y_max - y_min
+
+            # Basic check for valid dimensions
+            if w <= 0 or h <= 0 or scene_width <= 0 or scene_height <= 0:
+                 self.logger.warning(f"Invalid dimensions for scaling pixmap: w={w}, h={h}, scene_width={scene_width}, scene_height={scene_height}. Skipping 2D map positioning.")
+            else:
+                # Create a transform: scale then translate
+                transform = QTransform()
+                transform.translate(x_min, y_min) # Translate to the top-left corner
+                transform.scale(scene_width / w, scene_height / h) # Scale to fit bounds
+                self._dz_image_item.setTransform(transform)
+                self.logger.debug(f"2D map positioned at ({x_min},{y_min}), scaled ({scene_width / w:.2f}, {scene_height / h:.2f})")
+
+            self._dz_image_item.setVisible(self._cutfill_visible)
+
+            # --- 3D Colored Mesh (pyqtgraph.opengl.GLMeshItem) ---
+            if HAS_3D and isinstance(self.view_3d, gl.GLViewWidget):
+                # Create mesh vertices (X, Y, Z) on Z=0 plane
+                xx, yy = np.meshgrid(gx, gy)
+                zz = np.zeros_like(xx)
+
+                # Ensure shapes match for vertices and colors
+                if xx.shape[0] != dz.shape[0] or xx.shape[1] != dz.shape[1]:
+                     self.logger.warning(f"Shape mismatch: meshgrid ({xx.shape}), dz ({dz.shape}). Cannot create 3D mesh.")
+                else:
+                    verts = np.vstack([xx.ravel(), yy.ravel(), zz.ravel()]).T
+
+                    # Create faces (triangles) for the grid
+                    rows, cols = dz.shape
+                    faces = []
+                    for r in range(rows - 1):
+                        for c in range(cols - 1):
+                            p1 = r * cols + c
+                            p2 = p1 + 1
+                            p3 = (r + 1) * cols + c
+                            p4 = p3 + 1
+                            faces.append([p1, p2, p4])
+                            faces.append([p1, p4, p3])
+                    faces = np.array(faces, dtype=np.uint32)
+
+                    # Create vertex colors from dz_to_rgba
+                    vertex_colors_uint8 = dz_to_rgba(dz)
+                    if vertex_colors_uint8.shape[0] != rows or vertex_colors_uint8.shape[1] != cols:
+                         raise ValueError("Color array shape does not match dz grid shape after processing")
+                    vertex_colors_float = vertex_colors_uint8.reshape(-1, 4) / 255.0
+
+                    if verts.shape[0] != vertex_colors_float.shape[0]:
+                        raise ValueError(f"Vertex count ({verts.shape[0]}) does not match color count ({vertex_colors_float.shape[0]}) for 3D mesh")
+
+                    # Create or update the GLMeshItem
+                    if not self._dz_mesh_item:
+                        self._dz_mesh_item = gl.GLMeshItem(
+                            vertexes=verts,
+                            faces=faces,
+                            vertexColors=vertex_colors_float,
+                            smooth=False, # Flat shading for grid cells
+                            shader='shaded',
+                            glOptions='translucent' # Use translucent for potential blending
+                        )
+                        self.view_3d.addItem(self._dz_mesh_item)
+                        self.logger.debug("Created new 3D cut/fill mesh item.")
+                    else:
+                        self._dz_mesh_item.setMeshData(
+                            vertexes=verts,
+                            faces=faces,
+                            vertexColors=vertex_colors_float
+                        )
+                        self.logger.debug("Updated existing 3D cut/fill mesh item.")
+
+                    self._dz_mesh_item.setVisible(self._cutfill_visible)
+            elif HAS_3D and not isinstance(self.view_3d, gl.GLViewWidget):
+                 self.logger.warning("Cannot create 3D cut/fill mesh: view_3d is not a GLViewWidget.")
+            # No warning if HAS_3D is False
+
+            self.logger.info("Cut/fill map updated successfully.")
+
+        except Exception as e:
+            self.logger.error(f"Failed to update cut/fill map: {e}", exc_info=True)
+            QMessageBox.warning(self, "Cut/Fill Map Error", f"Could not generate or display the cut/fill map:\n{e}")
+            self.clear_cutfill_map() # Clear any partial state
+
+    def clear_cutfill_map(self):
+        """Remove the cut/fill map visualizations from both views."""
+        self.logger.debug("Clearing cut/fill map visualization.")
+        if self._dz_image_item:
+            if self.scene_2d and self._dz_image_item in self.scene_2d.items():
+                 try:
+                     self.scene_2d.removeItem(self._dz_image_item)
+                 except RuntimeError as e:
+                     self.logger.warning(f"Error removing 2D map item (might be deleted): {e}")
+            self._dz_image_item = None
+
+        if HAS_3D and self._dz_mesh_item:
+            if isinstance(self.view_3d, gl.GLViewWidget) and self._dz_mesh_item in self.view_3d.items:
+                 try:
+                      self.view_3d.removeItem(self._dz_mesh_item)
+                 except Exception as e:
+                      self.logger.warning(f"Error removing 3D mesh item: {e}")
+            self._dz_mesh_item = None
+        # Visibility state (_cutfill_visible) is managed by the action/MainWindow
+
+    # --- End Cut/Fill Map Methods ---
+
+    # --- Update clear_all --- 
+    def clear_all(self):
+        """Clears surfaces, PDF background, traced lines, and cut/fill map."""
+        self.logger.info("Clearing all visualization data.")
+        self.clear_pdf_background()
+        self.clear_polylines_from_scene()
+        self.clear_cutfill_map() # Added call to clear cut/fill map
+
+        # Clear 3D surfaces
+        if HAS_3D and isinstance(self.view_3d, gl.GLViewWidget):
+            # Use list of keys to avoid RuntimeError: dictionary changed size during iteration
+            for surface_name in list(self.surface_mesh_items.keys()):
+                self._remove_surface_visualization(surface_name)
+        # Ensure the dictionary is empty after attempts
+        if self.surface_mesh_items:
+             self.logger.warning("surface_mesh_items not empty after clear_all loop. Force clearing.")
+             # Force remove remaining items from view just in case
+             if HAS_3D and isinstance(self.view_3d, gl.GLViewWidget):
+                  for item in self.surface_mesh_items.values():
+                       if item in self.view_3d.items:
+                            self.view_3d.removeItem(item)
+             self.surface_mesh_items.clear()
+
+        # Reset the view camera position if 3D view exists
+        if hasattr(self, 'view_3d') and isinstance(self.view_3d, gl.GLViewWidget):
+            try:
+                 self.view_3d.setCameraPosition(distance=100, elevation=30, azimuth=45)
+                 self.view_3d.update()
+            except Exception as cam_e:
+                 self.logger.warning(f"Could not reset camera position: {cam_e}")
+
+        # Clear project reference
+        self.current_project = None 
+
+        # Reset camera/view
+        if hasattr(self, 'view_2d'):
+            self.view_2d.viewport().update()
+
+    # Make sure to import QTransform at the top
+    # from PySide6.QtGui import QImage, QPixmap, QMouseEvent, QWheelEvent, QTransform
+    # Make sure to import dz_to_rgba at the top
+    # from ..utils.color_maps import dz_to_rgba
+
+    # Potentially add wheelEvent override if needed here instead of InteractiveGraphicsView
+    # def wheelEvent(self, event):
+    #    pass 

@@ -1,14 +1,17 @@
 import logging
 from typing import Optional, Dict, List
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QComboBox, QLabel, QDoubleSpinBox, QFormLayout, 
-    QDialogButtonBox, QWidget, QSizePolicy
+    QDialogButtonBox, QWidget, QSizePolicy, QCheckBox
 )
+import numpy as np
 
 class VolumeCalculationDialog(QDialog):
     """Dialog for selecting surfaces and parameters for volume calculation."""
+    # volumeComputed = Signal(float, float, float, np.ndarray, np.ndarray, np.ndarray, bool) # Removed unused signal
+
     def __init__(self, surface_names: List[str], parent: Optional[QWidget] = None):
         super().__init__(parent)
         self.setWindowTitle("Calculate Volumes")
@@ -40,12 +43,23 @@ class VolumeCalculationDialog(QDialog):
         self.spin_resolution.setSingleStep(0.5)
         self.spin_resolution.setToolTip("Specify the size of the grid cells for volume calculation (e.g., 5.0 means 5x5 units). Smaller values increase accuracy but take longer.")
         form_layout.addRow("Grid Resolution (units):", self.spin_resolution)
-        
+
+        # --- Cut/Fill Map Option ---
+        self.check_generate_map = QCheckBox("Generate cut/fill map", self)
+        self.check_generate_map.setChecked(True) # Default to checked
+        self.check_generate_map.setToolTip("Generate a visual representation of cut (red) and fill (blue) areas.")
+        form_layout.addRow(self.check_generate_map) # Add checkbox to layout
+
         # Align labels to the right
         for i in range(form_layout.rowCount()):
             label_item = form_layout.itemAt(i, QFormLayout.LabelRole)
             if label_item and label_item.widget():
                 label_item.widget().setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            # Handle checkbox alignment if it spans both columns
+            widget_item = form_layout.itemAt(i, QFormLayout.FieldRole)
+            if isinstance(widget_item.widget(), QCheckBox):
+                 # Reset alignment or specific handling if needed, currently adds to FieldRole
+                 pass
 
         layout.addLayout(form_layout)
 
@@ -88,4 +102,27 @@ class VolumeCalculationDialog(QDialog):
 
     def get_grid_resolution(self) -> float:
         """Get the selected grid resolution."""
-        return self.spin_resolution.value() 
+        return self.spin_resolution.value()
+
+    def should_generate_map(self) -> bool:
+        """Check if the cut/fill map generation is requested."""
+        return self.check_generate_map.isChecked()
+
+    # Note: The actual calculation and signal emission would typically happen
+    # in the MainWindow after the dialog is accepted and surfaces are retrieved.
+    # This dialog class itself usually doesn't perform the calculation.
+    # If the calculation logic *is* meant to be here (less common),
+    # it would need access to the actual Surface objects.
+    # Assuming calculation happens externally, this dialog only provides parameters.
+
+    # Example of how signal *would* be emitted if calculation was internal:
+    # def _perform_calculation_and_emit(self, existing_surf, proposed_surf):
+    #     resolution = self.get_grid_resolution()
+    #     generate_map = self.should_generate_map()
+    #     # ... call calculation function (e.g., grid_method) ...
+    #     # cut, fill, net, dz_grid, grid_x, grid_y = calculate_stuff(...)
+    #     if generate_map and dz_grid is not None:
+    #          self.volumeComputed.emit(cut, fill, net, dz_grid, grid_x, grid_y, True)
+    #     else:
+    #          # Emit without dz data if map not generated or calculation failed
+    #          self.volumeComputed.emit(cut, fill, net, np.array([]), np.array([]), np.array([]), False) 

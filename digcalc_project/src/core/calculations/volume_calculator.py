@@ -8,7 +8,7 @@ This module provides functionality to calculate volumes between surfaces.
 
 import logging
 import numpy as np
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, Any
 
 # Use relative import
 from ...models.surface import Surface
@@ -21,35 +21,32 @@ class VolumeCalculator:
         """Initialize the volume calculator."""
         self.logger = logging.getLogger(__name__)
     
-    def calculate_surface_to_surface(self, surface1: Surface, 
-                                    surface2: Surface, 
-                                    grid_resolution: float = 1.0) -> Dict[str, float]:
+    def calculate_grid_method(self, surface1: Surface,
+                              surface2: Surface,
+                              grid_resolution: float = 1.0) -> Dict[str, Any]:
         """
-        Calculates cut, fill, and net volumes between two surfaces using a grid method.
-
-        This method creates a grid over the combined area of both surfaces, interpolates
-        the elevation of each surface at the grid points, calculates the difference,
-        and sums the volume contributions for cut and fill based on the sign of the difference.
+        Calculates cut, fill, net volumes, and the difference grid between two surfaces.
 
         Args:
             surface1 (Surface): The existing terrain surface model (or first surface).
             surface2 (Surface): The proposed design surface model (or second surface).
-            grid_resolution (float): The side length of the square grid cells used for
-                                     calculation. Smaller values yield higher accuracy but
-                                     increase computation time. Defaults to 1.0.
+            grid_resolution (float): The side length of the square grid cells.
 
         Returns:
-            Dict[str, float]: A dictionary containing calculated volumes:
-                - 'cut_volume': Total volume where surface1 > surface2 (material to remove). Positive value.
-                - 'fill_volume': Total volume where surface2 > surface1 (material to add). Positive value.
-                - 'net_volume': fill_volume - cut_volume. Can be positive (net fill) or negative (net cut).
-                Units are cubic units corresponding to the input surface coordinates.
+            Dict[str, Any]: A dictionary containing:
+                - 'cut': Total volume where surface1 > surface2 (float).
+                - 'fill': Total volume where surface2 > surface1 (float).
+                - 'net': fill - cut (float).
+                - 'dz_grid': 2D np.ndarray of elevation differences (surface2 - surface1),
+                             shape (num_y_cells, num_x_cells). NaN where no data.
+                - 'grid_x': 1D np.ndarray of X coordinates for grid cell centers/edges.
+                - 'grid_y': 1D np.ndarray of Y coordinates for grid cell centers/edges.
 
         Raises:
-            TypeError: If inputs are not Surface objects (or compatible).
-            ValueError: If both input surfaces are empty, or if grid_resolution is non-positive.
+            TypeError: If inputs are not Surface objects.
+            ValueError: If surfaces are empty or grid_resolution is non-positive.
         """
-        self.logger.info(f"Starting volume calculation between '{surface1.name}' and '{surface2.name}'. Grid resolution: {grid_resolution}")
+        self.logger.info(f"Starting grid method volume calculation between '{surface1.name}' and '{surface2.name}'. Grid resolution: {grid_resolution}")
 
         # --- Input Validation ---
         if not hasattr(surface1, 'points') or not hasattr(surface2, 'points'):
@@ -68,61 +65,80 @@ class VolumeCalculator:
              self.logger.error(f"Calculation failed: Invalid grid resolution '{grid_resolution}'. Must be positive.")
              raise ValueError("Grid resolution must be positive.")
 
-        # --- Calculation Steps (Using helper methods assumed to exist) ---
+        # --- Calculation Steps ---
         # 1. Determine Combined Bounding Box
         try:
-            # Pass the actual Surface objects to the helper
             bbox = self._get_combined_bounding_box(surface1, surface2)
         except ValueError as e:
-             self.logger.error(f"Error determining bounding box: {e}")
-             raise # Re-raise the specific error
+            self.logger.error(f"Error determining bounding box: {e}")
+            raise
 
-        # 2. Create Calculation Grid
-        grid_points_xy = self._create_grid(bbox, grid_resolution)
+        # 2. Create Calculation Grid Coordinates (gx, gy) and Points (grid_points_xy)
+        # Modify _create_grid to return gx, gy as well
+        gx, gy, grid_points_xy = self._create_grid(bbox, grid_resolution)
         if grid_points_xy.shape[0] == 0:
-            self.logger.warning("Calculation grid is empty. Returning zero volumes.")
-            return {'cut_volume': 0.0, 'fill_volume': 0.0, 'net_volume': 0.0}
+            self.logger.warning("Calculation grid is empty. Returning zero volumes and empty grids.")
+            # Return empty/default values for grid data
+            return {
+                'cut': 0.0, 'fill': 0.0, 'net': 0.0,
+                'dz_grid': np.array([[]], dtype=np.float32),
+                'grid_x': np.array([], dtype=np.float32),
+                'grid_y': np.array([], dtype=np.float32)
+            }
 
-        # 3. Interpolate Elevations onto Grid Points for Both Surfaces
-        self.logger.info(f"Interpolating surface '{surface1.name}' onto {grid_points_xy.shape[0]} grid points...")
+        num_x_cells = len(gx)
+        num_y_cells = len(gy)
+        self.logger.debug(f"Grid created: {num_y_cells} rows (Y), {num_x_cells} columns (X)")
+
+        # 3. Interpolate Elevations onto Grid Points
+        self.logger.info(f"Interpolating surface '{surface1.name}'...")
         z1_interp = self._interpolate_surface(surface1, grid_points_xy)
-        
-        self.logger.info(f"Interpolating surface '{surface2.name}' onto {grid_points_xy.shape[0]} grid points...")
+        self.logger.info(f"Interpolating surface '{surface2.name}'...")
         z2_interp = self._interpolate_surface(surface2, grid_points_xy)
 
-        # 4. Calculate Elevation Differences and Filter Invalid Points
+        # 4. Calculate Elevation Differences and Create dz_grid
         valid_mask = ~np.isnan(z1_interp) & ~np.isnan(z2_interp)
-        
         num_valid_points = np.sum(valid_mask)
+
         if num_valid_points == 0:
-             self.logger.warning("No overlapping grid points with valid elevations found. Check if surfaces overlap.")
-             return {'cut_volume': 0.0, 'fill_volume': 0.0, 'net_volume': 0.0}
-        
-        self.logger.info(f"Calculating differences for {num_valid_points} valid overlapping grid points.")
-        
-        # Calculate difference only for valid points (surface2 - surface1)
-        z_diff = np.full_like(z1_interp, np.nan)
-        z_diff[valid_mask] = z2_interp[valid_mask] - z1_interp[valid_mask]
+            self.logger.warning("No overlapping grid points with valid elevations found.")
+            return {
+                'cut': 0.0, 'fill': 0.0, 'net': 0.0,
+                'dz_grid': np.full((num_y_cells, num_x_cells), np.nan, dtype=np.float32),
+                'grid_x': gx,
+                'grid_y': gy
+            }
+
+        self.logger.info(f"Calculating differences for {num_valid_points} valid grid points.")
+
+        # Calculate difference (surface2 - surface1)
+        z_diff_flat = np.full_like(z1_interp, np.nan)
+        z_diff_flat[valid_mask] = z2_interp[valid_mask] - z1_interp[valid_mask]
+
+        # --- Reshape the difference array into the 2D dz_grid --- 
+        # Reshape needs to match the grid dimensions (num_y_cells, num_x_cells)
+        # Ensure the reshape order matches meshgrid ('C' order usually correct)
+        dz_grid = z_diff_flat.reshape(num_y_cells, num_x_cells)
 
         # 5. Calculate Cell Volumes and Sum Cut/Fill
         cell_area = grid_resolution * grid_resolution
-        cell_volumes = z_diff[valid_mask] * cell_area 
+        # Use the flat, masked array for volume calculation
+        cell_volumes = z_diff_flat[valid_mask] * cell_area
 
-        # Fill volume: where surface2 > surface1 (positive difference)
-        fill_volume = np.sum(cell_volumes[cell_volumes > 0])
-        
-        # Cut volume: where surface1 > surface2 (negative difference)
-        cut_volume = np.abs(np.sum(cell_volumes[cell_volumes < 0])) 
+        fill = np.sum(cell_volumes[cell_volumes > 0])
+        cut = np.abs(np.sum(cell_volumes[cell_volumes < 0]))
+        net = fill - cut
 
-        net_volume = fill_volume - cut_volume
+        self.logger.info(f"Grid Volume Calculation Complete: Cut={cut:.3f}, Fill={fill:.3f}, Net={net:.3f}")
 
-        self.logger.info(f"Volume Calculation Complete: Cut={cut_volume:.3f}, Fill={fill_volume:.3f}, Net={net_volume:.3f}")
-
-        # Return results using the keys expected by MainWindow
+        # --- Return results including grid data ---
         return {
-            'cut_volume': float(cut_volume),
-            'fill_volume': float(fill_volume),
-            'net_volume': float(net_volume)
+            'cut': float(cut),
+            'fill': float(fill),
+            'net': float(net),
+            'dz_grid': dz_grid.astype(np.float32), # Ensure correct dtype
+            'grid_x': gx.astype(np.float32),
+            'grid_y': gy.astype(np.float32)
         }
 
     # Ensure helper methods _get_combined_bounding_box, _create_grid, 
@@ -176,19 +192,25 @@ class VolumeCalculator:
         self.logger.debug(f"Calculated combined bounding box: ({min_x}, {min_y}) to ({max_x}, {max_y})")
         return min_x, min_y, max_x, max_y
 
-    def _create_grid(self, bbox: Tuple[float, float, float, float], resolution: float) -> np.ndarray:
-        # ... (Implementation from previous steps) ...
+    def _create_grid(self, bbox: Tuple[float, float, float, float], resolution: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Creates grid coordinates and flattened points."""
         min_x, min_y, max_x, max_y = bbox
-        epsilon = resolution * 1e-6 
-        x_coords = np.arange(min_x, max_x + epsilon, resolution)
-        y_coords = np.arange(min_y, max_y + epsilon, resolution)
-        if len(x_coords) == 0 or len(y_coords) == 0:
-             self.logger.warning(f"Grid dimensions are zero for bbox {bbox} and resolution {resolution}. Returning empty grid.")
-             return np.empty((0,2))
-        grid_x, grid_y = np.meshgrid(x_coords, y_coords)
-        grid_points = np.vstack([grid_x.ravel(), grid_y.ravel()]).T
-        self.logger.debug(f"Created grid with {grid_points.shape[0]} points. Resolution: {resolution}. BBox: {bbox}")
-        return grid_points
+        # Use cell centers for coordinate arrays? Or edges? Let's use edges/arange.
+        epsilon = resolution * 1e-6
+        # gx corresponds to columns (X), gy corresponds to rows (Y)
+        gx = np.arange(min_x, max_x + epsilon, resolution)
+        gy = np.arange(min_y, max_y + epsilon, resolution)
+
+        if len(gx) == 0 or len(gy) == 0:
+            self.logger.warning(f"Grid dimensions are zero for bbox {bbox} and resolution {resolution}. Returning empty grid.")
+            return np.array([]), np.array([]), np.empty((0, 2))
+
+        # Create meshgrid for flattened points (consistent with previous logic)
+        grid_x_mesh, grid_y_mesh = np.meshgrid(gx, gy)
+        grid_points = np.vstack([grid_x_mesh.ravel(), grid_y_mesh.ravel()]).T
+        self.logger.debug(f"Created grid with {len(gy)} Y-coords, {len(gx)} X-coords. Total points: {grid_points.shape[0]}")
+        # Return 1D coordinate arrays AND the 2D flattened points
+        return gx, gy, grid_points
 
     def _interpolate_surface(self, surface: Surface, grid_points: np.ndarray) -> np.ndarray:
         # ... (Implementation from previous steps, requires scipy) ...
@@ -214,3 +236,15 @@ class VolumeCalculator:
         except Exception as e:
             self.logger.error(f"Linear interpolation failed for '{surface.name}': {e}", exc_info=True)
             return np.full(grid_points.shape[0], np.nan) 
+
+    # Deprecate or rename calculate_surface_to_surface if calculate_grid_method is the primary one
+    def calculate_surface_to_surface(self, *args, **kwargs):
+         # Keep for backward compatibility if needed, or raise DeprecationWarning
+         self.logger.warning("calculate_surface_to_surface is deprecated, use calculate_grid_method")
+         # Call the new method but only return the volumes
+         results = self.calculate_grid_method(*args, **kwargs)
+         return {
+             'cut_volume': results['cut'],
+             'fill_volume': results['fill'],
+             'net_volume': results['net']
+         } 

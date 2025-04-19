@@ -43,6 +43,7 @@ from ..visualization.pdf_renderer import PDFRenderer, PDFRendererError
 from .dialogs.elevation_dialog import ElevationDialog
 from .dialogs.build_surface_dialog import BuildSurfaceDialog
 from ..core.geometry.surface_builder import SurfaceBuilder, SurfaceBuilderError
+import numpy as np # Added for type hinting dz_grid etc.
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +65,8 @@ class MainWindow(QMainWindow):
         self.current_project: Optional[Project] = None
         self._selected_scene_item: Optional[QGraphicsPathItem] = None
         self.pdf_dpi_setting = 300
+        self._last_volume_calculation_params: Optional[dict] = None # Cache params
+        self._last_dz_cache: Optional[Tuple[np.ndarray, np.ndarray, np.ndarray]] = None # Cache dz grid
         
         # --- Rebuild Engine Members --- 
         self._rebuild_needed_layers: set[str] = set()
@@ -185,6 +188,10 @@ class MainWindow(QMainWindow):
              logger.error("view_3d_action not found during signal connection.")
         # --- END NEW ---
 
+        # --- NEW: Connect Cut/Fill Action ---
+        self.cutfill_action.toggled.connect(self.visualization_panel.set_cutfill_visible)
+        # --- END NEW ---
+
         self.logger.debug("MainWindow signals connected.")
     
     def _create_actions(self):
@@ -248,29 +255,38 @@ class MainWindow(QMainWindow):
         
         # --- Tracing Action ---
         self.toggle_tracing_action = QAction("Enable Tracing", self)
-        self.toggle_tracing_action.setStatusTip("Toggle interactive polyline tracing on the PDF background")
+        self.toggle_tracing_action.setStatusTip("Toggle snapping and polyline drawing mode")
         self.toggle_tracing_action.setCheckable(True)
-        self.toggle_tracing_action.toggled.connect(self.on_toggle_tracing_mode)
+        self.toggle_tracing_action.setChecked(False)
+        self.toggle_tracing_action.triggered.connect(self.on_toggle_tracing_mode)
         self.toggle_tracing_action.setEnabled(False)
         
         # --- NEW: View Actions --- 
         self.view_group = QActionGroup(self)
         self.view_group.setExclusive(True)
 
-        self.view_2d_action = QAction("View 2D (PDF/Tracing)", self, checkable=True)
+        self.view_2d_action = QAction("Show 2D View", self, checkable=True)
         self.view_2d_action.setStatusTip("Switch to the 2D PDF and tracing view")
         self.view_2d_action.setShortcut("Alt+2")
         self.view_group.addAction(self.view_2d_action)
 
-        self.view_3d_action = QAction("View 3D (Terrain)", self, checkable=True)
+        self.view_3d_action = QAction("Show 3D View", self, checkable=True)
         self.view_3d_action.setStatusTip("Switch to the 3D terrain view")
         self.view_3d_action.setShortcut("Alt+3")
         self.view_group.addAction(self.view_3d_action)
         # --- END NEW --- 
 
+        # --- NEW: Cut/Fill Map Action ---
+        self.cutfill_action = QAction("Show Cut/Fill Map", self, checkable=True)
+        self.cutfill_action.setChecked(False)
+        self.cutfill_action.setEnabled(False) # Disabled until a map is generated
+        self.cutfill_action.setStatusTip("Toggle visibility of the cut/fill heatmap/mesh")
+        # --- END NEW ---
+
         # --- NEW: Surfaces Menu ---
-        self.surfaces_menu = self.menu_bar.addMenu("Surfaces")
-        self.surfaces_menu.addAction(self.build_surface_action)
+        # Action creation belongs here, menu population happens in _create_menus
+        # self.surfaces_menu = self.menu_bar.addMenu("Surfaces") # Moved to _create_menus
+        # self.surfaces_menu.addAction(self.build_surface_action) # Moved to _create_menus
         # --- END NEW ---
 
         # Analysis menu
@@ -572,6 +588,11 @@ class MainWindow(QMainWindow):
         # Update the enabled/checked state of view actions based on loaded content
         self._update_view_actions_state() 
 
+        # Reset cut/fill map state when project changes
+        self._clear_cutfill_state()
+
+        self.logger.info(f"Updated project: {project.name if project else 'None'}")
+
     def _update_analysis_actions_state(self):
         """
         Enable/disable analysis actions based on the current project state.
@@ -798,13 +819,17 @@ class MainWindow(QMainWindow):
                     surface.name = unique_name
                     
                     self.current_project.add_surface(surface)
-                    self.project_panel._update_tree()
-                    self._update_analysis_actions_state()
-                    
+                    # self.project_panel._update_tree() # _update_project handles this
+                    # self._update_analysis_actions_state() # Remove direct call
+
                     self.statusBar().showMessage(f"Successfully imported '{surface.name}'", 5000)
                     self.logger.info(f"Surface '{surface.name}' added to project '{self.current_project.name}'.")
 
-                    self.visualization_panel.display_surface(surface)
+                    # self.visualization_panel.display_surface(surface) # _update_project handles this
+
+                    # --- Call _update_project to refresh everything --- 
+                    self._update_project(self.current_project)
+                    # --- End Call --- 
 
                 else:
                     raise RuntimeError("Parser returned None, indicating import failure.")
@@ -995,21 +1020,14 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Load cancelled.", 3000)
 
     def on_clear_pdf_background(self):
-        """Handles clearing the PDF background."""
-        self.logger.info("Clearing PDF background.")
-        if hasattr(self, 'visualization_panel'):
-            self.visualization_panel.clear_pdf_background()
-        if self.current_project:
-            self.current_project.pdf_background_path = None
-            self.current_project.pdf_background_page = 1
-            self.current_project.pdf_background_dpi = 150
-            self.current_project.clear_traced_polylines()
-            if hasattr(self, 'visualization_panel'):
-                self.visualization_panel.clear_polylines_from_scene()
-
+        """Removes the PDF background from the visualization panel."""
+        self.logger.debug("Clearing PDF background via MainWindow action.")
+        self.visualization_panel.clear_pdf_background()
+        # Consider if clearing PDF should also clear/disable cut/fill map?
+        # Let's assume yes for now, as context might be lost.
+        self._clear_cutfill_state()
         self._update_pdf_controls()
-        self._update_view_actions_state()
-        
+
     def on_next_pdf_page(self):
         """Handles moving to the next PDF page."""
         if self.visualization_panel.pdf_renderer:
@@ -1654,6 +1672,52 @@ class MainWindow(QMainWindow):
                  self.project_panel._update_tree_item_text(surf.name)
     # --- End Rebuild Helpers ---
 
+    def _clear_cutfill_state(self):
+        """Resets the cut/fill map action and clears visualization."""
+        self.logger.debug("Clearing cut/fill map state.")
+        self._last_dz_cache = None
+        self.cutfill_action.setChecked(False)
+        self.cutfill_action.setEnabled(False)
+        # Ensure the visualization is also cleared/hidden
+        self.visualization_panel.set_cutfill_visible(False)
+        self.visualization_panel.clear_cutfill_map()
+
+    @Slot(float, float, float, np.ndarray, np.ndarray, np.ndarray, bool)
+    def _on_volume_computed(self, cut: float, fill: float, net: float,
+                            dz_grid: Optional[np.ndarray],
+                            gx: Optional[np.ndarray],
+                            gy: Optional[np.ndarray],
+                            generate_map: bool):
+        """
+        Handles the results of a volume calculation, including updating the cut/fill map.
+        "
+"""
+        self.logger.info(f"Volume computed: Cut={cut:.2f}, Fill={fill:.2f}, Net={net:.2f}, GenerateMap={generate_map}")
+        # Display results (e.g., in a dialog or status bar)
+        # Keep existing report dialog logic
+        report_dialog = ReportDialog(cut, fill, net, self)
+        report_dialog.exec()
+
+        # Update cut/fill map if requested and data is valid
+        if generate_map and dz_grid is not None and gx is not None and gy is not None:
+            try:
+                self.visualization_panel.update_cutfill_map(dz_grid, gx, gy)
+                self.cutfill_action.setEnabled(True)
+                # Ensure visibility matches checkbox state after generation
+                # Check the action *after* enabling it
+                self.cutfill_action.setChecked(True) 
+                # Set visibility directly - toggled signal will handle the rest
+                self.visualization_panel.set_cutfill_visible(True)
+                self.logger.info("Cut/Fill map generated and displayed.")
+            except Exception as e:
+                 self.logger.error(f"Failed to update visualization panel with cut/fill map: {e}", exc_info=True)
+                 QMessageBox.warning(self, "Map Error", f"Could not display the cut/fill map: {e}")
+                 self._clear_cutfill_state() # Reset on error
+        else:
+            # If map wasn't generated or data was invalid, ensure it's cleared/disabled
+            self.logger.info("Cut/Fill map not generated or data invalid, ensuring it is cleared.")
+            self._clear_cutfill_state()
+
 
 class VolumeCalculationDialog(QDialog):
     """Dialog for selecting surfaces and parameters for volume calculation."""
@@ -1774,6 +1838,10 @@ class VolumeCalculationDialog(QDialog):
     def get_grid_resolution(self) -> float:
         """Get the selected grid resolution."""
         return self.spin_resolution.value()
+
+    def should_generate_map(self) -> bool:
+        """Get the state of the checkbox for generating a cut/fill map."""
+        return self.button_box.button(QDialogButtonBox.Ok).isEnabled()
 
 class ImportOptionsDialog(QDialog):
     """Dialog for configuring import options for various file types."""
