@@ -5340,3 +5340,459 @@ AttributeError: 'MainWindow' object has no attribute 'cutfill_action'
 2025-04-19 15:15:21,210 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
 2025-04-19 15:15:21,210 - digcalc_project.src.ui.main_window - INFO - Closing application.
 2025-04-19 15:15:21,226 - __main__ - INFO - Application exited with code 0
+2025-04-19 19:53:09,174 - __main__ - INFO - Starting DigCalc application
+2025-04-19 19:53:09,206 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-19 19:53:09,206 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-19 19:53:09,207 - digcalc_project.src.ui.main_window - INFO - Displaying 0 loaded surfaces...
+2025-04-19 19:53:09,208 - digcalc_project.src.ui.main_window - INFO - Switched to project: Untitled Project
+2025-04-19 19:53:09,208 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-19 19:53:09,208 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-19 19:53:09,209 - digcalc_project.src.ui.main_window - INFO - Updated project: Untitled Project
+2025-04-19 20:08:11,155 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-19 20:08:12,766 - digcalc_project.src.ui.main_window - INFO - Discarding unsaved changes in current project.
+2025-04-19 20:08:12,766 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-19 20:08:12,783 - __main__ - INFO - Application exited with code 0
+2025-04-19 20:29:31,947 - __main__ - INFO - Starting DigCalc application
+2025-04-19 20:29:31,965 - digcalc_project.src.ui.project_controller - INFO - Creating a new default project.
+2025-04-19 20:29:31,965 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Untitled Project
+2025-04-19 20:29:31,965 - __main__ - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'project_panel'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 75, in __init__
+    self.project_controller = ProjectController(self)
+                              ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\project_controller.py", line 45, in __init__
+    self._create_default_project() # Start with an empty project
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\project_controller.py", line 55, in _create_default_project
+    self._update_project(default_project)
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\project_controller.py", line 67, in _update_project
+    self.main_window._update_ui_for_project(self.current_project)
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 1746, in _update_ui_for_project
+    self.project_panel.set_project(project) # Update project panel tree
+    ^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'project_panel'
+2025-04-19 20:30:19,543 - __main__ - INFO - Starting DigCalc application
+2025-04-19 20:30:19,575 - digcalc_project.src.ui.project_controller - INFO - Creating a new default project.
+2025-04-19 20:30:19,575 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Untitled Project
+2025-04-19 20:30:19,576 - __main__ - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'current_project'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 95, in __init__
+    self.project_controller = ProjectController(self)
+                              ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\project_controller.py", line 45, in __init__
+    self._create_default_project() # Start with an empty project
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\project_controller.py", line 55, in _create_default_project
+    self._update_project(default_project)
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\project_controller.py", line 67, in _update_project
+    self.main_window._update_ui_for_project(self.current_project)
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 1754, in _update_ui_for_project
+    self._update_layer_tree() # Update layer tree
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 1319, in _update_layer_tree
+    if self.current_project:
+       ^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'current_project'
+2025-04-19 20:31:13,072 - __main__ - INFO - Starting DigCalc application
+2025-04-19 20:31:13,103 - digcalc_project.src.ui.project_controller - INFO - Creating a new default project.
+2025-04-19 20:31:13,103 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Untitled Project
+2025-04-19 20:31:13,104 - __main__ - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'project_controller'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 95, in __init__
+    self.project_controller = ProjectController(self)
+                              ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\project_controller.py", line 45, in __init__
+    self._create_default_project() # Start with an empty project
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\project_controller.py", line 55, in _create_default_project
+    self._update_project(default_project)
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\project_controller.py", line 67, in _update_project
+    self.main_window._update_ui_for_project(self.current_project)
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 1762, in _update_ui_for_project
+    self._update_layer_tree() # Update layer tree
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 1320, in _update_layer_tree
+    project = self.project_controller.get_current_project()
+              ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'project_controller'
+2025-04-19 20:33:14,348 - __main__ - INFO - Starting DigCalc application
+2025-04-19 20:33:14,378 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-19 20:33:14,380 - __main__ - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'current_project'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 107, in __init__
+    self._update_ui_for_project(self.project_controller.get_current_project())
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 1764, in _update_ui_for_project
+    self._update_analysis_actions_state() # Update menu/toolbar item enabled state
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 622, in _update_analysis_actions_state
+    can_calculate = bool(self.current_project and len(self.current_project.surfaces) >= 2)
+                         ^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'current_project'
+2025-04-19 20:34:01,546 - __main__ - INFO - Starting DigCalc application
+2025-04-19 20:34:01,577 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-19 20:34:01,580 - __main__ - ERROR - Fatal error in main application: 'Project' object has no attribute 'filepath'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 107, in __init__
+    self._update_ui_for_project(self.project_controller.get_current_project())
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 1766, in _update_ui_for_project
+    self._update_window_title() # Update window title
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 1781, in _update_window_title
+    if project.filepath:
+       ^^^^^^^^^^^^^^^^
+AttributeError: 'Project' object has no attribute 'filepath'
+2025-04-19 20:34:16,561 - __main__ - INFO - Starting DigCalc application
+2025-04-19 20:34:16,590 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-19 20:34:16,593 - __main__ - ERROR - Fatal error in main application: 'Project' object has no attribute 'filepath'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 107, in __init__
+    self._update_ui_for_project(self.project_controller.get_current_project())
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 1766, in _update_ui_for_project
+    self._update_window_title() # Update window title
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 1781, in _update_window_title
+    if project.filepath:
+       ^^^^^^^^^^^^^^^^
+AttributeError: 'Project' object has no attribute 'filepath'
+2025-04-19 20:35:01,501 - __main__ - INFO - Starting DigCalc application
+2025-04-19 20:35:01,531 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-19 20:35:01,534 - __main__ - ERROR - Fatal error in main application: 'Project' object has no attribute 'is_dirty'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 107, in __init__
+    self._update_ui_for_project(self.project_controller.get_current_project())
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 1766, in _update_ui_for_project
+    self._update_window_title() # Update window title
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 1783, in _update_window_title
+    if project.is_dirty:
+       ^^^^^^^^^^^^^^^^
+AttributeError: 'Project' object has no attribute 'is_dirty'
+2025-04-19 20:35:33,441 - __main__ - INFO - Starting DigCalc application
+2025-04-19 20:35:33,470 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-19 20:35:33,473 - __main__ - ERROR - Fatal error in main application: 'PropertiesDock' object has no attribute 'clear_properties'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 107, in __init__
+    self._update_ui_for_project(self.project_controller.get_current_project())
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 1767, in _update_ui_for_project
+    self.prop_dock.clear_properties() # Clear properties dock
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'PropertiesDock' object has no attribute 'clear_properties'
+2025-04-19 20:36:07,044 - __main__ - INFO - Starting DigCalc application
+2025-04-19 20:36:07,073 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-19 20:36:15,383 - digcalc_project.src.ui.project_controller - INFO - Attempting to open project file: C:/Users/chase/Downloads/Terrain1.1.digcalc
+2025-04-19 20:36:15,383 - digcalc_project.src.models.serializers - INFO - Loading project from C:/Users/chase/Downloads/Terrain1.1.digcalc using pickle.
+2025-04-19 20:36:15,384 - digcalc_project.src.models.serializers - ERROR - Error unpickling project from C:/Users/chase/Downloads/Terrain1.1.digcalc: invalid load key, '{'.
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\models\serializers.py", line 62, in load
+    project = pickle.load(f)
+              ^^^^^^^^^^^^^^
+_pickle.UnpicklingError: invalid load key, '{'.
+2025-04-19 20:36:15,385 - digcalc_project.src.ui.project_controller - ERROR - Failed to load project: Failed to load project from C:/Users/chase/Downloads/Terrain1.1.digcalc. File may be corrupted, incompatible, or from an older version. Error: invalid load key, '{'.
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\models\serializers.py", line 62, in load
+    project = pickle.load(f)
+              ^^^^^^^^^^^^^^
+_pickle.UnpicklingError: invalid load key, '{'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\project_controller.py", line 103, in on_open_project
+    project = self._serializer.load(filename)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\models\serializers.py", line 79, in load
+    raise ProjectLoadError(f"Failed to load project from {filepath}. File may be corrupted, incompatible, or from an older version. Error: {e}")
+digcalc_project.src.models.serializers.ProjectLoadError: Failed to load project from C:/Users/chase/Downloads/Terrain1.1.digcalc. File may be corrupted, incompatible, or from an older version. Error: invalid load key, '{'.
+2025-04-19 20:36:16,742 - digcalc_project.src.ui.project_controller - INFO - Creating default project after failed load.
+2025-04-19 20:36:16,742 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Untitled Project
+2025-04-19 20:36:17,751 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-19 20:36:17,768 - __main__ - INFO - Application exited with code 0
+2025-04-19 20:38:13,581 - __main__ - INFO - Starting DigCalc application
+2025-04-19 20:38:13,609 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-19 20:38:18,952 - digcalc_project.src.ui.project_controller - INFO - Attempting to open project file: C:/Users/chase/Downloads/Terrain1.1.digcalc
+2025-04-19 20:38:18,952 - digcalc_project.src.models.serializers - INFO - Delegating load for C:/Users/chase/Downloads/Terrain1.1.digcalc to Project.load.
+2025-04-19 20:38:18,953 - digcalc_project.src.models.project - INFO - Found PDF background path in project file: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-19 20:38:18,954 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/chase/Downloads/Terrain1.1.digcalc
+2025-04-19 20:38:18,954 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Untitled Project
+2025-04-19 20:38:25,122 - digcalc_project.src.ui.project_controller - INFO - Attempting to open project file: C:/Users/chase/Downloads/Terrain1.1.digcalc
+2025-04-19 20:38:25,122 - digcalc_project.src.models.serializers - INFO - Delegating load for C:/Users/chase/Downloads/Terrain1.1.digcalc to Project.load.
+2025-04-19 20:38:25,123 - digcalc_project.src.models.project - INFO - Found PDF background path in project file: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-19 20:38:25,123 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/chase/Downloads/Terrain1.1.digcalc
+2025-04-19 20:38:25,124 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Untitled Project
+2025-04-19 20:38:26,498 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-19 20:38:26,498 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-19 20:38:26,515 - __main__ - INFO - Application exited with code 0
+2025-04-19 20:41:11,962 - __main__ - INFO - Starting DigCalc application
+2025-04-19 20:41:11,991 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-19 20:41:11,993 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-04-19 20:41:11,994 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-19 20:41:11,994 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-19 20:42:36,681 - digcalc_project.src.ui.project_controller - INFO - Attempting to open project file: C:/Users/chase/Downloads/Terrain1.1.digcalc
+2025-04-19 20:42:36,681 - digcalc_project.src.models.serializers - INFO - Delegating load for C:/Users/chase/Downloads/Terrain1.1.digcalc to Project.load.
+2025-04-19 20:42:36,682 - digcalc_project.src.models.project - INFO - Found PDF background path in project file: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-19 20:42:36,683 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/chase/Downloads/Terrain1.1.digcalc
+2025-04-19 20:42:36,683 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Untitled Project
+2025-04-19 20:42:36,684 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-04-19 20:42:36,684 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-19 20:42:36,684 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-19 20:42:36,684 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to load PDF background: 'C:/Users/chase/Downloads/sample_grading_plan_.pdf' at 300 DPI
+2025-04-19 20:42:36,684 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-19 20:42:36,684 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-19 20:42:36,685 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-04-19 20:42:36,686 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-04-19 20:42:36,812 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-04-19 20:42:36,819 - digcalc_project.src.ui.visualization_panel - INFO - Successfully loaded PDF page 1 from 'C:/Users/chase/Downloads/sample_grading_plan_.pdf'
+2025-04-19 20:42:36,820 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to set PDF display to page: 1
+2025-04-19 20:42:36,828 - digcalc_project.src.ui.visualization_panel - INFO - Successfully set PDF display to page 1.
+2025-04-19 20:42:36,828 - digcalc_project.src.ui.visualization_panel - INFO - Displaying/Updating surface: Existing Surface_Surface...
+2025-04-19 20:42:36,829 - digcalc_project.src.ui.visualization_panel - INFO - Displaying/Updating surface: Proposed Surface_Surface...
+2025-04-19 20:42:36,829 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-19 20:42:36,830 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 2 layers onto the scene.
+2025-04-19 20:42:36,830 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 6 polylines across all layers.
+2025-04-19 20:42:47,785 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-19 20:42:47,786 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-19 20:42:47,801 - __main__ - INFO - Application exited with code 0
+2025-04-20 21:01:35,869 - __main__ - INFO - Starting DigCalc application
+2025-04-20 21:01:35,976 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-20 21:01:35,984 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-04-20 21:01:35,984 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-20 21:01:35,984 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-20 21:01:45,624 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-20 21:01:45,624 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-20 21:01:45,638 - __main__ - INFO - Application exited with code 0
+2025-04-20 21:01:52,676 - __main__ - INFO - Starting DigCalc application
+2025-04-20 21:01:52,709 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-20 21:01:52,712 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-04-20 21:01:52,712 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-20 21:01:52,713 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-20 21:01:57,809 - digcalc_project.src.ui.project_controller - INFO - Attempting to open project file: C:/Users/chase/Downloads/Terrain1.1.digcalc
+2025-04-20 21:01:57,809 - digcalc_project.src.models.serializers - INFO - Delegating load for C:/Users/chase/Downloads/Terrain1.1.digcalc to Project.load.
+2025-04-20 21:01:57,809 - digcalc_project.src.models.project - INFO - Found PDF background path in project file: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-20 21:01:57,809 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/chase/Downloads/Terrain1.1.digcalc
+2025-04-20 21:01:57,809 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Untitled Project
+2025-04-20 21:01:57,809 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-04-20 21:01:57,809 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-20 21:01:57,809 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-20 21:01:57,809 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to load PDF background: 'C:/Users/chase/Downloads/sample_grading_plan_.pdf' at 300 DPI
+2025-04-20 21:01:57,809 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-20 21:01:57,809 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-20 21:01:57,831 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-04-20 21:01:57,831 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-04-20 21:01:57,953 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-04-20 21:01:57,971 - digcalc_project.src.ui.visualization_panel - INFO - Successfully loaded PDF page 1 from 'C:/Users/chase/Downloads/sample_grading_plan_.pdf'
+2025-04-20 21:01:57,972 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to set PDF display to page: 1
+2025-04-20 21:01:57,977 - digcalc_project.src.ui.visualization_panel - INFO - Successfully set PDF display to page 1.
+2025-04-20 21:01:57,978 - digcalc_project.src.ui.visualization_panel - INFO - Displaying/Updating surface: Existing Surface_Surface...
+2025-04-20 21:01:57,979 - digcalc_project.src.ui.visualization_panel - INFO - Displaying/Updating surface: Proposed Surface_Surface...
+2025-04-20 21:01:57,979 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-20 21:01:57,980 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 2 layers onto the scene.
+2025-04-20 21:01:57,981 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 6 polylines across all layers.
+2025-04-20 21:02:03,935 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-20 21:02:03,935 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-20 21:02:03,948 - __main__ - INFO - Application exited with code 0
+2025-04-20 21:05:23,000 - __main__ - INFO - Starting DigCalc application
+2025-04-20 21:05:23,037 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-20 21:05:23,044 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-04-20 21:05:23,044 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-20 21:05:23,044 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-20 21:05:27,092 - digcalc_project.src.ui.project_controller - INFO - Attempting to open project file: C:/Users/chase/Downloads/Terrain1.1.digcalc
+2025-04-20 21:05:27,092 - digcalc_project.src.models.serializers - INFO - Delegating load for C:/Users/chase/Downloads/Terrain1.1.digcalc to Project.load.
+2025-04-20 21:05:27,092 - digcalc_project.src.models.project - INFO - Found PDF background path in project file: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-20 21:05:27,092 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/chase/Downloads/Terrain1.1.digcalc
+2025-04-20 21:05:27,092 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Untitled Project
+2025-04-20 21:05:27,108 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-04-20 21:05:27,108 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-20 21:05:27,108 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-20 21:05:27,108 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to load PDF background: 'C:/Users/chase/Downloads/sample_grading_plan_.pdf' at 300 DPI
+2025-04-20 21:05:27,108 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-20 21:05:27,108 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-20 21:05:27,108 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-04-20 21:05:27,108 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-04-20 21:05:27,221 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-04-20 21:05:27,231 - digcalc_project.src.ui.visualization_panel - INFO - Successfully loaded PDF page 1 from 'C:/Users/chase/Downloads/sample_grading_plan_.pdf'
+2025-04-20 21:05:27,231 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to set PDF display to page: 1
+2025-04-20 21:05:27,241 - digcalc_project.src.ui.visualization_panel - INFO - Successfully set PDF display to page 1.
+2025-04-20 21:05:27,242 - digcalc_project.src.ui.visualization_panel - INFO - Displaying/Updating surface: Existing Surface_Surface...
+2025-04-20 21:05:27,243 - digcalc_project.src.ui.visualization_panel - INFO - Displaying/Updating surface: Proposed Surface_Surface...
+2025-04-20 21:05:27,243 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-20 21:05:27,243 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 2 layers onto the scene.
+2025-04-20 21:05:27,244 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 6 polylines across all layers.
+2025-04-20 21:05:34,012 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-20 21:05:34,012 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-20 21:05:34,025 - __main__ - INFO - Application exited with code 0
+2025-04-20 21:08:05,954 - __main__ - INFO - Starting DigCalc application
+2025-04-20 21:08:05,987 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-20 21:08:05,987 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-20 21:08:05,987 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-04-20 21:08:05,988 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-20 21:08:05,988 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-20 21:08:05,988 - digcalc_project.src.ui.main_window - INFO - Displaying 0 loaded surfaces...
+2025-04-20 21:08:05,988 - __main__ - ERROR - Fatal error in main application: 'Project' object has no attribute 'project_file'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 91, in __init__
+    self._create_default_project()
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 459, in _create_default_project
+    self._update_project(Project(name="Untitled Project"))
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 505, in _update_project
+    if self.current_project.project_file:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'Project' object has no attribute 'project_file'
+2025-04-20 21:09:52,668 - __main__ - INFO - Starting DigCalc application
+2025-04-20 21:09:59,422 - digcalc_project.src.ui.main_window - INFO - Opening project from: C:/Users/chase/Downloads/Terrain1.1.digcalc
+2025-04-20 21:09:59,422 - digcalc_project.src.models.project - INFO - Found PDF background path in project file: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-20 21:09:59,422 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/chase/Downloads/Terrain1.1.digcalc
+2025-04-20 21:09:59,422 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-20 21:09:59,422 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-20 21:09:59,422 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-04-20 21:09:59,422 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-20 21:09:59,422 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-20 21:09:59,422 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to load PDF background: 'C:/Users/chase/Downloads/sample_grading_plan_.pdf' at 300 DPI
+2025-04-20 21:09:59,422 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-20 21:09:59,422 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-20 21:09:59,422 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-04-20 21:09:59,422 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-04-20 21:09:59,541 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-04-20 21:09:59,551 - digcalc_project.src.ui.visualization_panel - INFO - Successfully loaded PDF page 1 from 'C:/Users/chase/Downloads/sample_grading_plan_.pdf'
+2025-04-20 21:09:59,552 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to set PDF display to page: 1
+2025-04-20 21:09:59,557 - digcalc_project.src.ui.visualization_panel - INFO - Successfully set PDF display to page 1.
+2025-04-20 21:09:59,558 - digcalc_project.src.ui.visualization_panel - INFO - Displaying/Updating surface: Existing Surface_Surface...
+2025-04-20 21:09:59,559 - digcalc_project.src.ui.visualization_panel - INFO - Displaying/Updating surface: Proposed Surface_Surface...
+2025-04-20 21:09:59,559 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-20 21:09:59,559 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 2 layers onto the scene.
+2025-04-20 21:09:59,559 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 6 polylines across all layers.
+2025-04-20 21:09:59,565 - digcalc_project.src.ui.main_window - INFO - Displaying 2 loaded surfaces...
+2025-04-20 21:09:59,565 - digcalc_project.src.ui.visualization_panel - INFO - Displaying/Updating surface: Existing Surface_Surface...
+2025-04-20 21:09:59,566 - digcalc_project.src.ui.visualization_panel - INFO - Displaying/Updating surface: Proposed Surface_Surface...
+2025-04-20 21:09:59,567 - digcalc_project.src.ui.main_window - ERROR - Error opening project file: C:/Users/chase/Downloads/Terrain1.1.digcalc
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 669, in on_open_project
+    self._update_project(project)
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 504, in _update_project
+    if self.current_project.project_file:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'Project' object has no attribute 'project_file'
+2025-04-20 21:10:03,286 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-20 21:10:04,282 - digcalc_project.src.ui.main_window - INFO - Discarding unsaved changes in current project.
+2025-04-20 21:10:04,282 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
+2025-04-20 21:10:04,282 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-20 21:10:04,302 - __main__ - INFO - Application exited with code 0
+2025-04-20 21:12:04,816 - __main__ - INFO - Starting DigCalc application
+2025-04-20 21:12:04,847 - __main__ - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'project_controller'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 90, in __init__
+    self._connect_signals()
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 169, in _connect_signals
+    self.new_project_action.triggered.connect(self.project_controller.on_new_project)
+                                              ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'project_controller'
+2025-04-20 21:21:26,711 - __main__ - INFO - Starting DigCalc application
+2025-04-20 21:21:26,740 - __main__ - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'on_new_project'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 86, in __init__
+    self._create_actions()
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 216, in _create_actions
+    self.new_project_action.triggered.connect(self.on_new_project)
+                                              ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'on_new_project'
+2025-04-20 21:22:17,164 - __main__ - INFO - Starting DigCalc application
+2025-04-20 21:22:17,206 - __main__ - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'project_controller'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 90, in __init__
+    self._connect_signals()
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 169, in _connect_signals
+    self.new_project_action.triggered.connect(self.project_controller.on_new_project)
+                                              ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'project_controller'
+2025-04-20 21:23:19,239 - __main__ - INFO - Starting DigCalc application
+2025-04-20 21:23:19,282 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-20 21:23:26,870 - digcalc_project.src.ui.project_controller - INFO - Attempting to open project file: C:/Users/chase/Downloads/Terrain1.1.digcalc
+2025-04-20 21:23:26,870 - digcalc_project.src.models.serializers - INFO - Delegating load for C:/Users/chase/Downloads/Terrain1.1.digcalc to Project.load.
+2025-04-20 21:23:26,870 - digcalc_project.src.models.project - INFO - Found PDF background path in project file: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-20 21:23:26,870 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/chase/Downloads/Terrain1.1.digcalc
+2025-04-20 21:23:26,870 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Untitled Project
+2025-04-20 21:23:26,870 - digcalc_project.src.ui.project_controller - ERROR - Unexpected error loading project C:/Users/chase/Downloads/Terrain1.1.digcalc: 'MainWindow' object has no attribute '_update_ui_for_project'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\project_controller.py", line 104, in on_open_project
+    self._update_project(project)
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\project_controller.py", line 65, in _update_project
+    self.main_window._update_ui_for_project(self.current_project)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute '_update_ui_for_project'
+2025-04-20 21:23:28,145 - digcalc_project.src.ui.project_controller - INFO - Creating default project after failed load.
+2025-04-20 21:23:28,145 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Untitled Project
+2025-04-20 21:23:29,487 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-20 21:23:29,502 - __main__ - INFO - Application exited with code 0
+2025-04-20 21:25:21,075 - __main__ - INFO - Starting DigCalc application
+2025-04-20 21:25:21,104 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-20 21:25:28,546 - digcalc_project.src.ui.project_controller - INFO - Attempting to open project file: C:/Users/chase/Downloads/Terrain1.1.digcalc
+2025-04-20 21:25:28,546 - digcalc_project.src.models.serializers - INFO - Delegating load for C:/Users/chase/Downloads/Terrain1.1.digcalc to Project.load.
+2025-04-20 21:25:28,546 - digcalc_project.src.models.project - INFO - Found PDF background path in project file: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-20 21:25:28,546 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/chase/Downloads/Terrain1.1.digcalc
+2025-04-20 21:25:28,546 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Untitled Project
+2025-04-20 21:25:28,546 - digcalc_project.src.ui.project_controller - ERROR - Unexpected error loading project C:/Users/chase/Downloads/Terrain1.1.digcalc: 'MainWindow' object has no attribute '_update_ui_for_project'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\project_controller.py", line 104, in on_open_project
+    self._update_project(project)
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\project_controller.py", line 65, in _update_project
+    self.main_window._update_ui_for_project(self.current_project)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute '_update_ui_for_project'
+2025-04-20 21:25:29,575 - digcalc_project.src.ui.project_controller - INFO - Creating default project after failed load.
+2025-04-20 21:25:29,575 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Untitled Project
+2025-04-20 21:25:30,372 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-20 21:25:30,388 - __main__ - INFO - Application exited with code 0
+2025-04-20 21:30:41,569 - __main__ - INFO - Starting DigCalc application
+2025-04-20 21:30:41,599 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-20 21:30:48,011 - digcalc_project.src.ui.project_controller - INFO - Attempting to open project file: C:/Users/chase/Downloads/Terrain1.1.digcalc
+2025-04-20 21:30:48,011 - digcalc_project.src.models.serializers - INFO - Delegating load for C:/Users/chase/Downloads/Terrain1.1.digcalc to Project.load.
+2025-04-20 21:30:48,011 - digcalc_project.src.models.project - INFO - Found PDF background path in project file: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-20 21:30:48,011 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/chase/Downloads/Terrain1.1.digcalc
+2025-04-20 21:30:48,011 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Untitled Project
+2025-04-20 21:30:48,011 - digcalc_project.src.ui.project_controller - ERROR - Unexpected error loading project C:/Users/chase/Downloads/Terrain1.1.digcalc: 'MainWindow' object has no attribute '_update_ui_for_project'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\project_controller.py", line 104, in on_open_project
+    self._update_project(project)
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\project_controller.py", line 65, in _update_project
+    self.main_window._update_ui_for_project(self.current_project)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute '_update_ui_for_project'
+2025-04-20 21:30:49,307 - digcalc_project.src.ui.project_controller - INFO - Creating default project after failed load.
+2025-04-20 21:30:49,307 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Untitled Project
+2025-04-20 21:30:50,198 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-20 21:30:50,220 - __main__ - INFO - Application exited with code 0

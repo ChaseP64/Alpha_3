@@ -45,6 +45,10 @@ from .dialogs.build_surface_dialog import BuildSurfaceDialog
 from ..core.geometry.surface_builder import SurfaceBuilder, SurfaceBuilderError
 import numpy as np # Added for type hinting dz_grid etc.
 
+# --- Ensure ProjectController is Imported --- 
+from .project_controller import ProjectController 
+# --- End Import Check ---
+
 logger = logging.getLogger(__name__)
 
 
@@ -62,7 +66,9 @@ class MainWindow(QMainWindow):
         super().__init__()
         
         self.logger = logging.getLogger(__name__)
-        self.current_project: Optional[Project] = None
+        # --- REMOVE self.current_project from MainWindow ---
+        # self.current_project: Optional[Project] = None
+        # --- END REMOVE ---
         self._selected_scene_item: Optional[QGraphicsPathItem] = None
         self.pdf_dpi_setting = 300
         self._last_volume_calculation_params: Optional[dict] = None # Cache params
@@ -82,13 +88,17 @@ class MainWindow(QMainWindow):
         
         # Initialize UI components
         self._init_ui()
+        
+        # --- Instantiate ProjectController AFTER UI Init --- << MUST EXIST HERE
+        self.project_controller = ProjectController(self)
+        # --- End Instantiate ---
+        
         self.menu_bar = self.menuBar()
         self._create_actions()
         self._create_menus()
         self._create_toolbars()
         self._create_statusbar()
         self._connect_signals()
-        self._create_default_project()
         self._update_view_actions_state()
         
         self.logger.debug("MainWindow initialized")
@@ -156,6 +166,22 @@ class MainWindow(QMainWindow):
         """Connect signals from UI components to main window slots."""
         self.logger.debug("Connecting MainWindow signals...")
 
+        # --- Connect Project Controller signals ---
+        # (ProjectController doesn't emit signals yet, MainWindow calls it directly)
+        # Connect file actions to ProjectController slots
+        # --- Remove Explicit Disconnects --- 
+        # try: self.new_project_action.triggered.disconnect(self.on_new_project) 
+        # except (TypeError, RuntimeError): pass # Ignore if not connected or method gone
+        # try: self.open_project_action.triggered.disconnect(self.on_open_project)
+        # except (TypeError, RuntimeError): pass # Ignore if not connected or method gone
+        # try: self.save_project_action.triggered.disconnect(self.on_save_project)
+        # except (TypeError, RuntimeError): pass # Ignore if not connected or method gone
+        # --- End Remove ---
+        self.new_project_action.triggered.connect(self.project_controller.on_new_project)
+        self.open_project_action.triggered.connect(self.project_controller.on_open_project)
+        self.save_project_action.triggered.connect(self.project_controller.on_save_project)
+        # --- End Connect Project Controller signals ---
+
         # Connect visualization panel signals
         if hasattr(self.visualization_panel, 'surface_visualization_failed'):
             self.visualization_panel.surface_visualization_failed.connect(self._on_visualization_failed)
@@ -198,16 +224,22 @@ class MainWindow(QMainWindow):
         """Create actions for menus and toolbars."""
         # File menu actions
         self.new_project_action = QAction("New Project", self)
-        self.new_project_action.triggered.connect(self.on_new_project)
+        # --- Remove obsolete connect --- 
+        # self.new_project_action.triggered.connect(self.on_new_project) 
+        # --- End Remove ---
         
         self.open_project_action = QAction("Open Project", self)
-        self.open_project_action.triggered.connect(self.on_open_project)
+        # --- Remove obsolete connect --- 
+        # self.open_project_action.triggered.connect(self.on_open_project)
+        # --- End Remove ---
         
         self.save_project_action = QAction("Save Project", self)
-        self.save_project_action.triggered.connect(self.on_save_project)
+        # --- Remove obsolete connect --- 
+        # self.save_project_action.triggered.connect(self.on_save_project)
+        # --- End Remove ---
         
         self.exit_action = QAction("Exit", self)
-        self.exit_action.triggered.connect(self.close)
+        self.exit_action.triggered.connect(self.close) # This one is correct
         
         # Import actions
         self.import_cad_action = QAction("Import CAD (DXF)", self)
@@ -453,145 +485,9 @@ class MainWindow(QMainWindow):
         """Create the status bar."""
         self.statusBar().showMessage("Ready")
         # Maybe add PDF page info to status bar later?
+
     
-    def _create_default_project(self):
-        """Creates a new, empty default project on startup."""
-        self._update_project(Project(name="Untitled Project"))
-        # Update Layer Panel UI state after potentially loading project/PDF
-        # if self.layer_control_panel_widget:
-        #     self.layer_control_panel_widget.update_ui_from_scene()
-    
-    def _update_project(self, project: Optional[Project]):
-        """Updates the current project and refreshes relevant UI elements."""
-        # Clear PDF before changing project context
-        if hasattr(self, 'visualization_panel') and self.visualization_panel:
-             self.visualization_panel.clear_pdf_background()
-             self._update_pdf_controls()
-             self.visualization_panel.clear_all()
-        
-        self.current_project = project
-        self.project_panel.set_project(self.current_project)
-        self.visualization_panel.set_project(self.current_project)
-        
-        # --- Populate Layers Dock --- 
-        try:
-            self.layer_tree.itemChanged.disconnect(self._on_layer_visibility_changed)
-        except RuntimeError:
-            pass
-        self.layer_tree.clear()
-        if hasattr(self, 'visualization_panel') and hasattr(self.visualization_panel, 'layer_selector'):
-            for i in range(self.visualization_panel.layer_selector.count()):
-                name = self.visualization_panel.layer_selector.itemText(i)
-                item = QTreeWidgetItem(self.layer_tree, [name])
-                item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-                item.setCheckState(0, Qt.Checked)
-            self.layer_tree.expandAll()
-        try: 
-            self.layer_tree.itemChanged.connect(self._on_layer_visibility_changed)
-        except RuntimeError:
-            self.logger.warning("Error reconnecting layer_tree.itemChanged signal.")
-            
-        # Update window title and status bar & Redisplay loaded surfaces
-        if self.current_project:
-             # Display loaded surfaces in visualization panel
-             if hasattr(self, 'visualization_panel') and self.visualization_panel:
-                 self.logger.info(f"Displaying {len(self.current_project.surfaces)} loaded surfaces...")
-                 for surface in self.current_project.surfaces.values():
-                     self.visualization_panel.display_surface(surface)
-                     # Note: _adjust_view_to_surface is called internally by display_surface on first surface
-             
-             # Update Title
-             title = f"DigCalc - {self.current_project.name}"
-             if self.current_project.project_file:
-                 title += f" [{Path(self.current_project.project_file).name}]"
-             self.setWindowTitle(title)
-             self.statusBar().showMessage(f"Project '{self.current_project.name}' loaded.", 5000)
-             self.logger.info(f"Switched to project: {self.current_project.name}")
-        else:
-             self.setWindowTitle("DigCalc - Excavation Takeoff Tool")
-             self.statusBar().showMessage("No project loaded.", 5000)
-             self.logger.info("Project cleared.")
-
-        # --- Load PDF/Tracing state from Project --- 
-        if project and project.pdf_background_path:
-            try:
-                # Add log here to check the value being passed
-                self.logger.info(f"Calling load_pdf_background with path='{project.pdf_background_path}' and dpi={project.pdf_background_dpi}")
-                self.visualization_panel.load_pdf_background(
-                    project.pdf_background_path, project.pdf_background_dpi
-                )
-                self.visualization_panel.set_pdf_page(project.pdf_background_page)
-                
-                if project.traced_polylines:
-                    self.logger.info(f"Restoring {sum(len(v) for v in project.traced_polylines.values())} polylines across {len(project.traced_polylines)} layers.")
-                    self.visualization_panel.load_and_display_polylines(project.traced_polylines)
-                else:
-                    self.visualization_panel.clear_polylines_from_scene()
-                    
-                # TODO: When QML is integrated, call load_polylines_into_qml here
-                # self.visualization_panel.load_polylines_into_qml() 
-            except Exception as e:
-                 self.logger.error(f"Error restoring PDF/Tracing state from project: {e}", exc_info=True)
-                 QMessageBox.warning(self, "Project Load Warning", f"Could not restore PDF background or traced lines:\n{e}")
-                 if self.visualization_panel.pdf_renderer:
-                      self.visualization_panel.clear_pdf_background()
-                 project.pdf_background_path = None
-                 project.traced_polylines = {}
-        else:
-            if self.visualization_panel.pdf_renderer:
-                 self.visualization_panel.clear_pdf_background()
-                 self.visualization_panel.clear_polylines_from_scene()
-        
-        # Update controls based on final state
-        self._update_analysis_actions_state()
-        self._update_pdf_controls()
-
-        # Refresh visualization
-        self.visualization_panel.clear_all()
-        if project:
-            # Load surfaces
-            surfaces_exist = bool(project.surfaces)
-            if surfaces_exist:
-                for surface_name, surface in project.surfaces.items():
-                    self.logger.info(f"Displaying surface: {surface_name}")
-                    self.visualization_panel.display_surface(surface)
-            
-            # Load PDF background if path exists
-            pdf_loaded = False
-            if project.pdf_background_path:
-                try:
-                    self.logger.info(f"Loading PDF background from project: {project.pdf_background_path}")
-                    self.visualization_panel.load_pdf_background(
-                        project.pdf_background_path,
-                        project.pdf_background_dpi
-                    )
-                    self.visualization_panel.set_pdf_page(project.pdf_background_page)
-                    pdf_loaded = True # Mark PDF as successfully loaded
-                except Exception as e:
-                    self.logger.error(f"Failed to load PDF background from project: {e}")
-                    QMessageBox.warning(self, "PDF Error", f"Could not load PDF background:\n{project.pdf_background_path}\nError: {e}")
-            
-            # Load traced polylines (always load if they exist, visibility handled by view)
-            if project.traced_polylines:
-                self.visualization_panel.load_and_display_polylines(project.traced_polylines)
-
-            # REMOVED explicit view switching logic from here.
-            # Let _update_view_actions_state handle the final state.
-
-        else:
-            # No project loaded, clear everything and let actions update
-            pass # clear_all() already called
-
-        # Update status bar
-        self.statusBar().showMessage(f"Project '{project.name if project else 'None'}' loaded", 5000)
-        
-        # Update the enabled/checked state of view actions based on loaded content
-        self._update_view_actions_state() 
-
-        # Reset cut/fill map state when project changes
-        self._clear_cutfill_state()
-
-        self.logger.info(f"Updated project: {project.name if project else 'None'}")
+   
 
     def _update_analysis_actions_state(self):
         """
@@ -635,90 +531,6 @@ class MainWindow(QMainWindow):
              self.toggle_tracing_action.setChecked(False)
 
     # Event handlers
-    def on_new_project(self):
-        """Handle the 'New Project' action."""
-        if not self._confirm_close_project():
-            return
-            
-        # Create the new project object first
-        new_project = Project("Untitled Project")
-        
-        # Clear visualization (including PDF and traces)
-        if hasattr(self, 'visualization_panel'):
-             self.visualization_panel.clear_all()
-             self.visualization_panel.clear_polylines_from_scene() 
-            
-        # Update the UI with the new project
-        self._update_project(new_project)
-        
-        self.statusBar().showMessage("New project created", 3000)
-    
-    def on_open_project(self):
-        """Handle the 'Open Project' action."""
-        if not self._confirm_close_project():
-            return
-
-        filename, _ = QFileDialog.getOpenFileName(
-            self, "Open Project", "", "DigCalc Project Files (*.digcalc);;All Files (*)"
-        )
-        if filename:
-            self.logger.info(f"Opening project from: {filename}")
-            self.statusBar().showMessage(f"Opening project '{Path(filename).name}'...", 0)
-            try:
-                project = Project.load(filename)
-                if project:
-                    self._update_project(project)
-                    self.statusBar().showMessage(f"Project '{project.name}' opened successfully.", 5000)
-                else:
-                    raise RuntimeError("Project.load returned None without raising an exception.")
-            except Exception as e:
-                self.logger.exception(f"Error opening project file: {filename}")
-                QMessageBox.critical(self, "Open Project Error", f"Failed to open project file.\n\nError: {e}")
-                self.statusBar().showMessage("Error opening project.", 5000)
-                self._create_default_project()
-        else:
-            self.logger.info("Open project dialog cancelled by user.")
-            self.statusBar().showMessage("Open cancelled.", 3000)
-    
-    def on_save_project(self, save_as=False) -> bool:
-        """Handle the 'Save Project' and 'Save Project As' actions."""
-        self.logger.debug(f"Save Project action triggered (save_as={save_as})")
-        if not self.current_project:
-            self.logger.warning("Save attempt failed: No active project.")
-            return True
-            
-        filename = self.current_project.project_file
-        
-        if save_as or not filename:
-            prompt_title = "Save Project As" if save_as else "Save Project"
-            filename, _ = QFileDialog.getSaveFileName(
-                self, prompt_title, "", "DigCalc Project Files (*.digcalc);;All Files (*)"
-            )
-            if not filename:
-                 self.logger.info("Save project dialog cancelled by user.")
-                 self.statusBar().showMessage("Save cancelled.", 3000)
-                 return False
-            
-            if not filename.lower().endswith(".digcalc"):
-                 filename += ".digcalc"
-        
-        self.logger.info(f"Saving project to: {filename}")
-        self.statusBar().showMessage(f"Saving project to '{Path(filename).name}'...")
-        try:
-            self.logger.info(f"Calling _update_project for project: {self.current_project.name}")
-            success = self.current_project.save(filename)
-            if success:
-                self.statusBar().showMessage(f"Project saved successfully to '{Path(filename).name}'", 5000)
-                self._update_project(self.current_project) 
-                return True
-            else:
-                 raise RuntimeError("Project save method returned False without raising an exception.")
-        except Exception as e:
-            error_msg = f"Failed to save project to '{Path(filename).name}'.\n\nError: {str(e)}"
-            self.logger.exception(f"Error saving project: {filename}")
-            QMessageBox.critical(self, "Save Project Error", error_msg)
-            self.statusBar().showMessage("Error saving project.", 5000)
-            return False
     
     def on_import_cad(self):
         """Handle CAD import action."""
@@ -873,6 +685,8 @@ class MainWindow(QMainWindow):
         """
         self.statusBar().showMessage(f"Failed to visualize surface '{surface_name}': {error_msg}", 5000)
         self.logger.error(f"Visualization failed for surface '{surface_name}': {error_msg}")
+        QMessageBox.warning(self, "Visualization Error",
+                            f"Could not visualize surface '{surface_name}'.\nReason: {error_msg}")
 
     def on_calculate_volume(self):
         """Handle the 'Calculate Volumes' action."""
@@ -1446,12 +1260,26 @@ class MainWindow(QMainWindow):
         self.view_2d_action.setChecked(current_view == '2d' and has_pdf)
         self.view_3d_action.setChecked(current_view == '3d' and has_surfaces)
 
-        # Ensure at least one is checked if content exists, default to 3D if both possible?
-        # Or handle the case where switching is impossible. If !has_pdf & !has_surfaces, both disabled.
+        # --- Ensure one view is active if content exists --- 
         if not self.view_2d_action.isChecked() and not self.view_3d_action.isChecked():
-             # If neither is checked, but one *could* be, maybe force a default?
-             # For now, just log. The logic in show_2d/3d should handle the actual switch.
-             logger.debug("Neither view action is checked after update.")
+             # If neither view is currently active (e.g., after loading a project)
+             # prioritize showing 2D if possible, otherwise 3D.
+             if has_pdf:
+                 self.logger.debug("No view active, activating 2D view by default (PDF exists).")
+                 self.view_2d_action.setChecked(True)
+                 self.visualization_panel.show_2d_view()
+             elif has_surfaces:
+                 self.logger.debug("No view active, activating 3D view by default (Surfaces exist).")
+                 self.view_3d_action.setChecked(True)
+                 self.visualization_panel.show_3d_view()
+             else:
+                  # No content, maybe default to 3D view (empty grid)
+                  self.logger.debug("No view active and no content, defaulting to 3D view.")
+                  self.view_3d_action.setChecked(True) # Check it even if disabled
+                  self.visualization_panel.show_3d_view()
+        # --- End Ensure Active View ---
+
+        logger.debug("_update_view_actions_state complete.")
 
     # --- END NEW ---
 
@@ -2005,3 +1833,46 @@ class ImportOptionsDialog(QDialog):
         # elif isinstance(self.parser, DXFParser):
         #     options['layer'] = self.layer_combo.currentText()
         return options 
+
+    # --- Restore Method for Controller to Update UI ---
+    def _update_ui_for_project(self, project: Optional[Project]):
+        """
+        Updates various UI components based on the current project state.
+        Called by ProjectController when the project changes.
+
+        Args:
+            project: The new current project (or None).
+        """
+        self.logger.debug(f"Updating UI for project: {project.name if project else 'None'}")
+        # Update UI elements
+        self.project_panel.set_project(project) # Update project panel tree
+        self._update_layer_tree() # Update layer tree
+        self.visualization_panel.set_project(project) # Update visualization
+        self._update_analysis_actions_state() # Update menu/toolbar item enabled state
+        self._update_pdf_controls() # Update PDF controls based on project state
+        self._update_window_title() # Update window title
+        self.prop_dock.clear_selection() # Clear properties dock
+        if self._selected_scene_item is None: # Don't hide if something is selected
+             self.prop_dock.hide()
+        self._clear_cutfill_state() # Clear any stale cut/fill viz
+        # --- Ensure view actions are updated after project load/change ---
+        self._update_view_actions_state()
+        # --- End ensure --- 
+        self.logger.debug("UI update complete.")
+    # --- End Restore ---
+    
+    # --- Restore Method to Update Window Title ---
+    def _update_window_title(self):
+         """Sets the main window title based on the current project name and dirty state."""
+         project = self.project_controller.get_current_project()
+         base_title = "DigCalc"
+         if project:
+             title = f"{project.name} - {base_title}"
+             if project.filepath:
+                 title += f" [{Path(project.filepath).name}]"
+             if project.is_dirty:
+                 title += " *" # Indicate unsaved changes
+             self.setWindowTitle(title)
+         else:
+             self.setWindowTitle(base_title)
+    # --- End Restore ---

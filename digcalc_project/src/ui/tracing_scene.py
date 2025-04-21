@@ -1,7 +1,7 @@
 # src/ui/tracing_scene.py
 
 import logging
-from typing import List, Optional, Tuple, Dict, Sequence
+from typing import List, Optional, Tuple, Dict, Sequence, Any
 
 from PySide6.QtCore import Qt, QPointF, Signal
 from PySide6.QtGui import QBrush, QColor, QImage, QPainterPath, QPen, QPixmap, QKeyEvent
@@ -284,6 +284,10 @@ class TracingScene(QGraphicsScene):
         polyline_item.setFlags(polyline_item.flags() | QGraphicsItem.ItemIsSelectable)
         # --- END NEW ---
 
+        # --- Explicitly set visible --- 
+        polyline_item.setVisible(True)
+        # --- End Set Visible ---
+
         self.addItem(polyline_item)
 
         self.logger.info(f"Finalized polyline with {len(self._current_polyline_points)} vertices for layer '{layer_name}'. Item: {polyline_item}")
@@ -352,7 +356,7 @@ class TracingScene(QGraphicsScene):
             self.removeItem(item)
         self.logger.info(f"Cleared {len(items_to_remove)} finalized polyline(s). Layer tags preserved on other items.")
 
-    def load_polylines_with_layers(self, polylines_by_layer: Dict[str, List["PolylineData"]]):
+    def load_polylines_with_layers(self, polylines_by_layer: Dict[str, Any]):
         """
         Clears existing finalized polylines and loads new ones from project data,
         tagging each created QGraphicsPathItem with its layer name and index.
@@ -399,6 +403,10 @@ class TracingScene(QGraphicsScene):
                             # Make item selectable
                             path_item.setFlags(path_item.flags() | QGraphicsItem.ItemIsSelectable)
 
+                            # --- Explicitly set visible --- 
+                            path_item.setVisible(True)
+                            # --- End Set Visible ---
+                            
                             self.addItem(path_item)
                             layer_added_count += 1
                         except (ValueError, TypeError, IndexError) as e:

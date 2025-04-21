@@ -12,6 +12,7 @@ import logging
 import enum # Add import
 from typing import Optional, Dict, List, Any, Tuple
 import numpy as np
+from pathlib import Path
 
 # PySide6 imports
 from PySide6.QtCore import Qt, Slot, Signal, QRectF, QPointF, QPoint
@@ -314,11 +315,82 @@ class VisualizationPanel(QWidget):
     
     def set_project(self, project: Optional[Project]):
         """
-        Sets the current project for the panel, allowing access to project data.
+        Sets the current project for the visualization panel and updates the display.
+
+        Args:
+            project: The Project object to visualize, or None to clear.
         """
+        self.logger.info(f"Setting project in VisualizationPanel: {project.name if project else 'None'}")
         self.current_project = project
-        # Potentially update visualizations based on the new project here?
-        # For now, just store the reference.
+
+        # Clear existing visuals first
+        self.clear_all()
+
+        if project:
+            # Load PDF Background if available
+            if project.pdf_background_path and Path(project.pdf_background_path).is_file():
+                self.logger.debug(f"Loading PDF background from project: {project.pdf_background_path}, page {project.pdf_background_page}, dpi {project.pdf_background_dpi}")
+                try:
+                    self.load_pdf_background(project.pdf_background_path, project.pdf_background_dpi)
+                    self.set_pdf_page(project.pdf_background_page) # Set the correct page
+                except Exception as e:
+                    self.logger.error(f"Failed to load PDF background from project: {e}", exc_info=True)
+                    # Optionally show a non-critical message to the user
+                    # QMessageBox.warning(self, "PDF Load Warning", f"Could not load PDF background image:\n{project.pdf_background_path}\n\nError: {e}")
+            else:
+                if project.pdf_background_path:
+                     self.logger.warning(f"PDF background path in project not found: {project.pdf_background_path}")
+                else:
+                     self.logger.debug("No PDF background path in project.")
+
+            # Load Surfaces
+            if project.surfaces:
+                self.logger.debug(f"Loading {len(project.surfaces)} surfaces from project.")
+                for surface_name, surface in project.surfaces.items():
+                    self.logger.debug(f"Displaying surface: {surface_name}")
+                    self.display_surface(surface)
+            else:
+                self.logger.debug("No surfaces found in project.")
+
+            # --- Adjust 3D Camera AFTER loading all surfaces --- 
+            if project.surfaces:
+                all_points = []
+                for surf in project.surfaces.values():
+                    if surf and surf.points: # Check if surface and points exist
+                        # Assuming surf.points is currently a dict {id: Point3D}
+                        # Need to adapt if it changes structure
+                        all_points.extend(surf.points.values()) 
+                
+                if all_points:
+                    self._adjust_view_to_points(all_points)
+                else:
+                     self.logger.warning("Project has surfaces, but no points found to adjust camera view.")
+            # --- End Adjust Camera ---
+
+            # Load Traced Polylines
+            if project.traced_polylines:
+                self.logger.debug(f"Loading traced polylines from project ({len(project.traced_polylines)} layers).")
+                # Assuming load_and_display_polylines takes the dict directly
+                self.load_and_display_polylines(project.traced_polylines)
+            else:
+                self.logger.debug("No traced polylines found in project.")
+
+            # --- Explicitly fit view AFTER loading everything --- 
+            if self.view_2d.isVisible() and self.scene_2d:
+                 # Fit to the entire scene content (PDF + polylines)
+                 try:
+                     # Ensure scene rect is updated if items were added
+                     self.scene_2d.setSceneRect(self.scene_2d.itemsBoundingRect())
+                     self.view_2d.fitInView(self.scene_2d.sceneRect(), Qt.KeepAspectRatio)
+                     self.logger.debug("Called fitInView for 2D scene after loading project content.")
+                 except Exception as fit_e:
+                     self.logger.error(f"Error calling fitInView for 2D view: {fit_e}", exc_info=True)
+            # --- End Fit View --- 
+        else:
+            # No project, ensure view is cleared (already done by clear_all)
+            self.logger.info("Project cleared from VisualizationPanel.")
+            # Set a default view (e.g., empty 3D)
+            self.show_3d_view()
 
     def display_surface(self, surface: Surface) -> bool:
         """
@@ -395,6 +467,9 @@ class VisualizationPanel(QWidget):
                     drawEdges=True,
                     edgeColor=(0, 0, 0, 0.5)
                 )
+                # --- Explicitly set visible --- 
+                new_mesh.setVisible(True)
+                # --- End Set Visible ---
                 self.view_3d.addItem(new_mesh)
                 self.surface_mesh_items[name] = new_mesh # Store new item
                 self.logger.debug(f"Added/Updated mesh item for '{name}'.")
@@ -473,6 +548,13 @@ class VisualizationPanel(QWidget):
                  self.view_3d.update()
             except Exception as cam_e:
                  self.logger.warning(f"Could not reset camera position: {cam_e}")
+
+        # Clear project reference
+        self.current_project = None 
+
+        # Reset camera/view
+        if hasattr(self, 'view_2d'):
+            self.view_2d.viewport().update()
 
     def has_surfaces(self) -> bool:
          """Checks if any 3D surfaces are loaded and visualization is possible."""
@@ -1257,6 +1339,71 @@ class VisualizationPanel(QWidget):
         # Reset camera/view
         if hasattr(self, 'view_2d'):
             self.view_2d.viewport().update()
+
+    # --- Add is_surface_visible method --- 
+    def is_surface_visible(self, surface_name: str) -> bool:
+        """
+        Checks if the mesh item for a given surface name exists and is visible.
+
+        Args:
+            surface_name: The name of the surface to check.
+
+        Returns:
+            True if the surface mesh exists and is visible, False otherwise.
+        """
+        mesh_item = self.surface_mesh_items.get(surface_name)
+        if mesh_item:
+            # Check if the item has isVisible method, default to True if not (should exist)
+            is_visible = getattr(mesh_item, 'isVisible', lambda: True)()
+            self.logger.debug(f"Checking visibility for surface '{surface_name}': {is_visible}")
+            return is_visible
+        else:
+            self.logger.debug(f"Checking visibility for non-existent surface '{surface_name}': False")
+            return False # Surface mesh doesn't exist
+    # --- End Add --- 
+
+    # --- NEW: Helper to adjust view to a list of Point3D objects ---
+    def _adjust_view_to_points(self, points: List[Point3D]):
+        """Adjusts the 3D camera view to encompass a list of Point3D objects."""
+        if not HAS_3D or not isinstance(self.view_3d, gl.GLViewWidget) or not points:
+            return
+        
+        try:
+            x_coords = [p.x for p in points]
+            y_coords = [p.y for p in points]
+            z_coords = [p.z for p in points]
+
+            if not x_coords: # Handle case where points might be empty after filtering
+                self.logger.warning("_adjust_view_to_points called with empty point list after filtering.")
+                return
+
+            min_x, max_x = min(x_coords), max(x_coords)
+            min_y, max_y = min(y_coords), max(y_coords)
+            min_z, max_z = min(z_coords), max(z_coords)
+
+            center_x = (min_x + max_x) / 2
+            center_y = (min_y + max_y) / 2
+            center_z = (min_z + max_z) / 2
+
+            # Calculate max dimension for distance scaling
+            size_x = max_x - min_x
+            size_y = max_y - min_y
+            size_z = max_z - min_z
+            max_dim = max(size_x, size_y, size_z, 1.0) # Ensure at least 1.0
+            distance = max_dim * 2.0 # Adjust multiplier as needed
+
+            center_vec = pyqtgraph.Vector(center_x, center_y, center_z)
+
+            self.view_3d.setCameraPosition(
+                pos=center_vec,      # Set the center point the camera looks at
+                distance=distance,   # Set the distance from the center point
+                elevation=30,        # Keep default elevation angle
+                azimuth=45           # Keep default azimuth angle
+            )
+            self.logger.debug(f"Adjusted 3D view to combined bounds: Center={center_vec}, ApproxDistance={distance:.2f}")
+        except Exception as e:
+            self.logger.error(f"Error adjusting 3D view to points: {e}", exc_info=True)
+    # --- END NEW HELPER --- 
 
     # Make sure to import QTransform at the top
     # from PySide6.QtGui import QImage, QPixmap, QMouseEvent, QWheelEvent, QTransform

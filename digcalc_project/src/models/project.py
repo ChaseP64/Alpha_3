@@ -55,7 +55,9 @@ class Project:
         """
         self.logger = logging.getLogger(__name__)
         self.name = name
-        self.project_file = project_file
+        self.filepath: Optional[str] = project_file # Keep arg for potential backward compat?
+                                                   # Or remove arg and set directly to None?
+                                                   # Let's keep the arg for now but assign to filepath.
         
         # Project properties
         self.description: str = ""
@@ -75,7 +77,7 @@ class Project:
         # Store polylines as dict mapping layer name -> list of polylines
         # where each polyline is a list of (x, y) tuples
         self.traced_polylines: TracedPolylinesType = {}
-        self.is_modified: bool = False # Track if project has unsaved changes
+        self.is_dirty: bool = False # Track if project has unsaved changes
         # --- NEW: Layer Revisions --- 
         # Dictionary to track revisions of layers (used for surface staleness)
         self.layer_revisions: Dict[str, int] = defaultdict(int)
@@ -173,7 +175,7 @@ class Project:
         """
         self.calculations.append(calculation)
         self.modified_at = datetime.datetime.now()
-        self.is_modified = True
+        self.is_dirty = True
         self.logger.info(f"Calculation '{calculation.name}' added to project")
     
     def add_traced_polyline(
@@ -217,7 +219,6 @@ class Project:
 
         self.traced_polylines[layer_name].append(polyline_obj)
         self.modified_at = datetime.datetime.now()
-        # self.is_modified = True # Done by bump revision
         new_index = len(self.traced_polylines[layer_name]) - 1
 
         # --- Bump Revision --- 
@@ -240,7 +241,6 @@ class Project:
             if not self.traced_polylines[layer_name]: # Remove layer if empty
                 del self.traced_polylines[layer_name]
                 self.logger.info(f"Removed empty layer: '{layer_name}'")
-            # self.is_modified = True # Done by bump revision
             return True
         self.logger.warning(f"Could not remove polyline: Layer '{layer_name}' or index {polyline_index} not found.")
         return False
@@ -249,7 +249,7 @@ class Project:
         """Removes all traced polylines from the project."""
         if self.traced_polylines:
             self.traced_polylines.clear()
-            self.is_modified = True
+            self.is_dirty = True
             self.logger.info("Cleared all traced polylines.")
 
     def get_layers(self) -> List[str]:
@@ -275,45 +275,44 @@ class Project:
 
     def save(self, filename: Optional[str] = None) -> bool:
         """Saves the project data to a file in JSON format."""
-        file_path = filename or self.project_file
-        if not file_path:
-            self.logger.error("Save failed: No filename provided and no project file set.")
+        save_path = filename or self.filepath
+        if not save_path:
+            self.logger.error("Cannot save project: No filename provided and project has no associated file.")
             return False
-        try:
-            # --- Serialize data --- 
-            project_data = {
-                "name": self.name,
-                "description": self.description,
-                "created_at": self.created_at.isoformat(),
-                "modified_at": datetime.datetime.now().isoformat(), # Update modified time on save
-                "author": self.author,
-                # --- Serialize surfaces --- 
-                "surfaces": {name: surf.to_dict() for name, surf in self.surfaces.items()},
-                # --- Serialize PDF background info --- 
-                "pdf_background_path": self.pdf_background_path,
-                "pdf_background_page": self.pdf_background_page,
-                "pdf_background_dpi": self.pdf_background_dpi,
-                # --- Serialize layer revisions --- 
-                "layer_revisions": dict(self.layer_revisions), # Convert defaultdict to dict for JSON
-                # --- Serialize traced polylines --- 
-                "traced_polylines": self._serialisable_polylines(),
-                # --- Calculations are not currently saved --- 
-                # "calculations": [calc.to_dict() for calc in self.calculations],
-                "metadata": self.metadata,
-            }
 
-            # --- Write to file --- 
-            os.makedirs(os.path.dirname(os.path.abspath(file_path)), exist_ok=True)
-            with open(file_path, 'w') as f:
-                json.dump(project_data, f, indent=4)
-                
-            self.project_file = file_path
-            self.modified_at = datetime.datetime.fromisoformat(project_data["modified_at"]) # Store the saved time
-            self.is_modified = False # Mark as saved
-            self.logger.info(f"Project '{self.name}' saved to {file_path}")
+        self.filepath = save_path
+        self.modified_at = datetime.datetime.now()
+        self.logger.info(f"Saving project '{self.name}' to {self.filepath}")
+        
+        try:
+            # --- Create serializable representation --- 
+            data_to_save = {
+                'version': 1, # Simple versioning
+                'name': self.name,
+                'description': self.description,
+                'created_at': self.created_at.isoformat(),
+                'modified_at': self.modified_at.isoformat(),
+                'author': self.author,
+                'surfaces': {name: s.to_dict() for name, s in self.surfaces.items()},
+                'calculations': [c.to_dict() for c in self.calculations],
+                'metadata': self.metadata,
+                'pdf_background_path': self.pdf_background_path,
+                'pdf_background_page': self.pdf_background_page,
+                'pdf_background_dpi': self.pdf_background_dpi,
+                'traced_polylines': self._serialisable_polylines(),
+                'layer_revisions': dict(self.layer_revisions) # Convert defaultdict
+            }
+            # --- End serializable representation --- 
+            
+            with open(self.filepath, 'w') as f:
+                json.dump(data_to_save, f, indent=4)
+            
+            self.is_dirty = False # Mark as saved
+            self.logger.info("Project saved successfully.")
             return True
+            
         except Exception as e:
-            self.logger.exception(f"Error saving project to {file_path}: {e}")
+            self.logger.exception(f"Failed to save project to {self.filepath}")
             return False
 
     @classmethod
@@ -331,7 +330,7 @@ class Project:
                 data = json.load(f)
 
             # Create project instance
-            project = cls(name=data.get("name", "Untitled Project"), project_file=filename)
+            project = cls(name=data.get("name", "Untitled Project"))
 
             # Load simple attributes
             project.description = data.get("description", "")
@@ -436,7 +435,7 @@ class Project:
                 else:
                     surface.is_stale = False
             
-            project.is_modified = migrated # Mark modified if migration happened
+            project.is_dirty = migrated # Mark modified if migration happened
             logger.info(f"Project loaded from {filename}")
             return project
 
@@ -449,9 +448,9 @@ class Project:
 
     def __repr__(self) -> str:
         """Returns a string representation of the Project."""
-        modified_status = "*" if self.is_modified else ""
+        modified_status = "*" if self.is_dirty else ""
         num_polylines = sum(len(polys) for polys in self.traced_polylines.values())
-        return f"<Project(name='{self.name}{modified_status}', path='{self.project_file}', layers={len(self.traced_polylines)}, polylines={num_polylines})>" 
+        return f"<Project(name='{self.name}{modified_status}', path='{self.filepath}', layers={len(self.traced_polylines)}, polylines={num_polylines})>" 
 
     # --- NEW: Layer Revision Helper --- 
     def _bump_layer_revision(self, layer_name: str) -> int:
@@ -467,7 +466,7 @@ class Project:
         """
         self.layer_revisions[layer_name] += 1
         new_revision = self.layer_revisions[layer_name]
-        self.is_modified = True # Bumping revision counts as modification
+        self.is_dirty = True # Bumping revision counts as modification
         logger.debug(f"Bumped layer '{layer_name}' revision to {new_revision}")
         return new_revision
     # --- END NEW --- 
