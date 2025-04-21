@@ -5796,3 +5796,678 @@ AttributeError: 'MainWindow' object has no attribute '_update_ui_for_project'
 2025-04-20 21:30:49,307 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Untitled Project
 2025-04-20 21:30:50,198 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
 2025-04-20 21:30:50,220 - __main__ - INFO - Application exited with code 0
+2025-04-21 10:08:36,492 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-21 10:08:36,574 - digcalc_project.src.ui.visualization_panel - WARNING - 3D visualization libraries not available
+2025-04-21 10:08:36,607 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-21 10:08:36,607 - digcalc_project.src.main - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'on_import_cad'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\main_window.py", line 97, in __init__
+    self._create_actions()
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\main_window.py", line 246, in _create_actions
+    self.import_cad_action.triggered.connect(self.on_import_cad)
+                                             ^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'on_import_cad'
+2025-04-21 10:09:24,950 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-21 10:09:24,965 - digcalc_project.src.ui.visualization_panel - WARNING - 3D visualization libraries not available
+2025-04-21 10:09:24,972 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-21 10:09:24,974 - digcalc_project.src.ui.visualization_panel - WARNING - Attempted to switch to 3D view, but it is unavailable.
+2025-04-21 10:09:24,974 - digcalc_project.src.main - ERROR - Fatal error in main application: 'VisualizationPanel' object has no attribute 'view_3d'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\main_window.py", line 102, in __init__
+    self._update_view_actions_state()
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\main_window.py", line 1115, in _update_view_actions_state
+    self.visualization_panel.show_3d_view()
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\visualization_panel.py", line 907, in show_3d_view
+    if isinstance(self.view_3d, QLabel): self.view_3d.setVisible(True)
+                  ^^^^^^^^^^^^
+AttributeError: 'VisualizationPanel' object has no attribute 'view_3d'
+2025-04-21 10:10:28,414 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-21 10:10:28,430 - digcalc_project.src.ui.visualization_panel - WARNING - 3D visualization libraries not available
+2025-04-21 10:10:28,438 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-21 10:10:28,439 - digcalc_project.src.ui.visualization_panel - WARNING - Attempted to switch to 3D view, but it is unavailable.
+2025-04-21 10:16:57,535 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-21 10:16:57,553 - digcalc_project.src.ui.visualization_panel - WARNING - 3D visualization libraries not available
+2025-04-21 10:16:57,557 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-21 10:16:57,562 - digcalc_project.src.ui.visualization_panel - WARNING - Attempted to switch to 3D view, but it is unavailable.
+2025-04-21 10:17:33,608 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-21 10:18:17,447 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-21 10:18:17,469 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-21 10:18:24,615 - digcalc_project.src.ui.project_controller - INFO - Attempting to open project file: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Elevation1.1.digcalc
+2025-04-21 10:18:24,615 - digcalc_project.src.models.serializers - INFO - Delegating load for C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Elevation1.1.digcalc to Project.load.
+2025-04-21 10:18:24,616 - digcalc_project.src.models.project - WARNING - PDF background path 'C:/Users/chase/Downloads/sample_grading_plan_.pdf' in project file does not exist or is not accessible.
+2025-04-21 10:18:24,617 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Elevation1.1.digcalc
+2025-04-21 10:18:24,617 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Untitled Project
+2025-04-21 10:18:24,617 - digcalc_project.src.ui.project_controller - ERROR - Unexpected error loading project C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Elevation1.1.digcalc: 'MainWindow' object has no attribute 'current_project'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\project_controller.py", line 104, in on_open_project
+    self._update_project(project)
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\project_controller.py", line 65, in _update_project
+    self.main_window._update_ui_for_project(self.current_project)
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\main_window.py", line 1133, in _update_ui_for_project
+    self._update_layer_tree() # Update layer tree
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\main_window.py", line 948, in _update_layer_tree
+    if self.current_project:
+       ^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'current_project'
+2025-04-21 10:18:26,409 - digcalc_project.src.ui.project_controller - INFO - Creating default project after failed load.
+2025-04-21 10:18:26,409 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Untitled Project
+2025-04-21 10:18:27,957 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-21 10:18:27,957 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-21 10:18:27,967 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-21 10:19:07,497 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-21 10:19:07,518 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-21 10:19:11,540 - digcalc_project.src.ui.project_controller - INFO - Attempting to open project file: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Elevation1.1.digcalc
+2025-04-21 10:19:11,540 - digcalc_project.src.models.serializers - INFO - Delegating load for C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Elevation1.1.digcalc to Project.load.
+2025-04-21 10:19:11,542 - digcalc_project.src.models.project - WARNING - PDF background path 'C:/Users/chase/Downloads/sample_grading_plan_.pdf' in project file does not exist or is not accessible.
+2025-04-21 10:19:11,542 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Elevation1.1.digcalc
+2025-04-21 10:19:11,543 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Untitled Project
+2025-04-21 10:19:11,543 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-04-21 10:19:11,543 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-21 10:19:11,543 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 10:19:11,544 - digcalc_project.src.ui.visualization_panel - WARNING - PDF background path in project not found: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-21 10:19:11,544 - digcalc_project.src.ui.visualization_panel - INFO - Displaying/Updating surface: Existing Surface_Surface...
+2025-04-21 10:19:11,544 - digcalc_project.src.ui.visualization_panel - INFO - Displaying/Updating surface: Proposed Surface_Surface...
+2025-04-21 10:19:11,545 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 10:19:11,545 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 2 layers onto the scene.
+2025-04-21 10:19:11,545 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 9 polylines across all layers.
+2025-04-21 10:19:11,545 - digcalc_project.src.ui.project_controller - ERROR - Unexpected error loading project C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Elevation1.1.digcalc: 'MainWindow' object has no attribute 'current_project'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\project_controller.py", line 104, in on_open_project
+    self._update_project(project)
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\project_controller.py", line 65, in _update_project
+    self.main_window._update_ui_for_project(self.current_project)
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\main_window.py", line 1139, in _update_ui_for_project
+    self._update_analysis_actions_state() # Update menu/toolbar item enabled state
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\main_window.py", line 497, in _update_analysis_actions_state
+    can_calculate = bool(self.current_project and len(self.current_project.surfaces) >= 2)
+                         ^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'current_project'
+2025-04-21 10:19:12,993 - digcalc_project.src.ui.project_controller - INFO - Creating default project after failed load.
+2025-04-21 10:19:12,993 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Untitled Project
+2025-04-21 10:19:12,993 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-04-21 10:19:12,993 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-21 10:19:12,993 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 9 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 10:19:14,446 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-21 10:19:14,446 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-21 10:19:14,455 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-21 10:20:25,798 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-21 10:20:25,821 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-21 10:20:29,491 - digcalc_project.src.ui.project_controller - INFO - Attempting to open project file: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Elevation1.1.digcalc
+2025-04-21 10:20:29,491 - digcalc_project.src.models.serializers - INFO - Delegating load for C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Elevation1.1.digcalc to Project.load.
+2025-04-21 10:20:29,493 - digcalc_project.src.models.project - WARNING - PDF background path 'C:/Users/chase/Downloads/sample_grading_plan_.pdf' in project file does not exist or is not accessible.
+2025-04-21 10:20:29,493 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Elevation1.1.digcalc
+2025-04-21 10:20:29,493 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Untitled Project
+2025-04-21 10:20:29,493 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-04-21 10:20:29,493 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-21 10:20:29,493 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 10:20:29,494 - digcalc_project.src.ui.visualization_panel - WARNING - PDF background path in project not found: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-04-21 10:20:29,494 - digcalc_project.src.ui.visualization_panel - INFO - Displaying/Updating surface: Existing Surface_Surface...
+2025-04-21 10:20:29,494 - digcalc_project.src.ui.visualization_panel - INFO - Displaying/Updating surface: Proposed Surface_Surface...
+2025-04-21 10:20:29,495 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 10:20:29,495 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 2 layers onto the scene.
+2025-04-21 10:20:29,496 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 9 polylines across all layers.
+2025-04-21 10:20:48,333 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-21 10:20:48,334 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-21 10:20:48,343 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-21 10:22:09,046 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-21 10:22:09,068 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-21 10:23:41,264 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 10:23:41,264 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to load PDF background: 'C:/Users/Tracy/Downloads/Sample file.pdf' at 300 DPI
+2025-04-21 10:23:41,264 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-21 10:23:41,264 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 10:23:41,265 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-04-21 10:23:41,265 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-04-21 10:23:41,324 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-04-21 10:23:41,331 - digcalc_project.src.ui.visualization_panel - INFO - Successfully loaded PDF page 1 from 'C:/Users/Tracy/Downloads/Sample file.pdf'
+2025-04-21 10:23:41,332 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 10:24:04,163 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-04-21 10:24:04,163 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-04-21 10:24:10,122 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 5 vertices for layer 'Existing Surface'. Item: <PySide6.QtWidgets.QGraphicsPathItem(0x1ed6f3c41d0, pos=0,0, flags=(ItemIsSelectable)) at 0x000001ED64C01400>
+2025-04-21 10:24:14,685 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 vertices for layer 'Existing Surface'. Item: <PySide6.QtWidgets.QGraphicsPathItem(0x1ed6f3c46d0, pos=0,0, flags=(ItemIsSelectable)) at 0x000001ED64C136C0>
+2025-04-21 10:24:22,919 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode disabled.
+2025-04-21 10:24:22,919 - digcalc_project.src.ui.main_window - INFO - Tracing mode disabled via MainWindow action.
+2025-04-21 10:27:41,613 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-21 10:27:41,635 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-21 10:28:02,875 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 10:28:02,876 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to load PDF background: 'C:/Users/Tracy/Downloads/Sample file.pdf' at 300 DPI
+2025-04-21 10:28:02,876 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-21 10:28:02,876 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 10:28:02,877 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-04-21 10:28:02,877 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-04-21 10:28:02,934 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-04-21 10:28:02,941 - digcalc_project.src.ui.visualization_panel - INFO - Successfully loaded PDF page 1 from 'C:/Users/Tracy/Downloads/Sample file.pdf'
+2025-04-21 10:28:02,942 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 10:28:09,616 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-04-21 10:28:09,616 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-04-21 10:28:29,729 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 12 vertices for layer 'Existing Surface'. Item: <PySide6.QtWidgets.QGraphicsPathItem(0x24f3b07e450, pos=0,0, flags=(ItemIsSelectable)) at 0x0000024F303EE700>
+2025-04-21 10:28:39,298 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode disabled.
+2025-04-21 10:28:39,298 - digcalc_project.src.ui.main_window - INFO - Tracing mode disabled via MainWindow action.
+2025-04-21 10:28:48,467 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-21 10:28:48,467 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
+2025-04-21 10:28:48,467 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-21 10:28:48,467 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-21 10:29:56,986 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-21 10:29:57,008 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-21 10:30:02,892 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 10:30:02,893 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to load PDF background: 'C:/Users/Tracy/Downloads/Sample file.pdf' at 300 DPI
+2025-04-21 10:30:02,893 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-21 10:30:02,893 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 10:30:02,894 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-04-21 10:30:02,894 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-04-21 10:30:02,953 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-04-21 10:30:02,960 - digcalc_project.src.ui.visualization_panel - INFO - Successfully loaded PDF page 1 from 'C:/Users/Tracy/Downloads/Sample file.pdf'
+2025-04-21 10:30:02,961 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 10:30:08,288 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-04-21 10:30:08,289 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-04-21 10:30:09,320 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 vertices for layer 'Existing Surface'. Item: <PySide6.QtWidgets.QGraphicsPathItem(0x1d411dea2a0, pos=0,0, flags=(ItemIsSelectable)) at 0x000001D458DC9C80>
+2025-04-21 10:30:11,899 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 6, Elevation: 10.0, New Rev: 1).
+2025-04-21 10:30:11,899 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 10.0) to layer 'Existing Surface'.
+2025-04-21 10:30:18,598 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 5 vertices for layer 'Existing Surface'. Item: <PySide6.QtWidgets.QGraphicsPathItem(0x1d411c47c20, pos=0,0, flags=(ItemIsSelectable)) at 0x000001D47F095DC0>
+2025-04-21 10:30:19,983 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 1, Points: 5, Elevation: None, New Rev: 2).
+2025-04-21 10:30:19,983 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 1, Elevation: None) to layer 'Existing Surface'.
+2025-04-21 10:30:20,984 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-04-21 10:30:20,984 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-04-21 10:30:21,302 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode disabled.
+2025-04-21 10:30:21,302 - digcalc_project.src.ui.main_window - INFO - Tracing mode disabled via MainWindow action.
+2025-04-21 10:30:29,751 - digcalc_project.src.ui.properties_dock - INFO - Apply clicked: Layer='Existing Surface', Index=0, New Elevation=100.00
+2025-04-21 10:30:37,242 - digcalc_project.src.ui.properties_dock - INFO - Apply clicked: Layer='Existing Surface', Index=1, New Elevation=500.00
+2025-04-21 10:30:44,982 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-21 10:30:45,968 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
+2025-04-21 10:30:45,968 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-21 10:30:45,968 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-21 10:30:59,569 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-21 10:30:59,590 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-21 10:31:05,881 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 10:31:05,881 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to load PDF background: 'C:/Users/Tracy/Downloads/Sample file.pdf' at 300 DPI
+2025-04-21 10:31:05,881 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-21 10:31:05,881 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 10:31:05,882 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-04-21 10:31:05,882 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-04-21 10:31:05,945 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-04-21 10:31:05,951 - digcalc_project.src.ui.visualization_panel - INFO - Successfully loaded PDF page 1 from 'C:/Users/Tracy/Downloads/Sample file.pdf'
+2025-04-21 10:31:05,952 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 10:31:08,417 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-04-21 10:31:08,417 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-04-21 10:31:09,616 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 vertices for layer 'Existing Surface'. Item: <PySide6.QtWidgets.QGraphicsPathItem(0x2736364a060, pos=0,0, flags=(ItemIsSelectable)) at 0x0000027364036400>
+2025-04-21 10:31:11,905 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 6, Elevation: 10.0, New Rev: 1).
+2025-04-21 10:31:11,905 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 10.0) to layer 'Existing Surface'.
+2025-04-21 10:31:12,159 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-04-21 10:31:12,159 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-04-21 10:31:13,539 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode disabled.
+2025-04-21 10:31:13,539 - digcalc_project.src.ui.main_window - INFO - Tracing mode disabled via MainWindow action.
+2025-04-21 10:31:18,584 - digcalc_project.src.ui.properties_dock - INFO - Apply clicked: Layer='Existing Surface', Index=0, New Elevation=50.00
+2025-04-21 10:31:24,988 - digcalc_project.src.ui.properties_dock - INFO - Apply clicked: Layer='Existing Surface', Index=0, New Elevation=50.00
+2025-04-21 10:31:30,230 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-21 10:31:31,407 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
+2025-04-21 10:31:31,407 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-21 10:31:31,421 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-21 10:33:57,867 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-21 10:33:57,890 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-21 10:34:04,174 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 10:34:04,174 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to load PDF background: 'C:/Users/Tracy/Downloads/Sample file.pdf' at 300 DPI
+2025-04-21 10:34:04,174 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-21 10:34:04,175 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 10:34:04,175 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-04-21 10:34:04,176 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-04-21 10:34:04,234 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-04-21 10:34:04,241 - digcalc_project.src.ui.visualization_panel - INFO - Successfully loaded PDF page 1 from 'C:/Users/Tracy/Downloads/Sample file.pdf'
+2025-04-21 10:34:04,241 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 10:34:10,170 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-04-21 10:34:10,171 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-04-21 10:34:11,242 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 vertices for layer 'Existing Surface'. Item: <PySide6.QtWidgets.QGraphicsPathItem(0x2056778c730, pos=0,0, flags=(ItemIsSelectable)) at 0x000002055CAD8A80>
+2025-04-21 10:34:13,132 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 6, Elevation: 5.0, New Rev: 1).
+2025-04-21 10:34:13,132 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 5.0) to layer 'Existing Surface'.
+2025-04-21 10:34:13,377 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-04-21 10:34:13,377 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-04-21 10:34:15,555 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode disabled.
+2025-04-21 10:34:15,555 - digcalc_project.src.ui.main_window - INFO - Tracing mode disabled via MainWindow action.
+2025-04-21 10:34:21,066 - digcalc_project.src.ui.properties_dock - INFO - Apply clicked: Layer='Existing Surface', Index=0, New Elevation=20.00
+2025-04-21 10:34:21,067 - digcalc_project.src.ui.main_window - INFO - Updated elevation for polyline (Layer: Existing Surface, Index: 0) to 20.0. New layer revision: 2
+2025-04-21 10:34:21,329 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-04-21 10:34:21,330 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-04-21 10:34:24,723 - digcalc_project.src.ui.properties_dock - INFO - Apply clicked: Layer='Existing Surface', Index=0, New Elevation=20.00
+2025-04-21 10:34:29,041 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-21 10:34:30,317 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
+2025-04-21 10:34:30,317 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-21 10:34:30,324 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-21 10:34:37,329 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-21 10:34:37,350 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-21 10:34:48,762 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 10:34:48,763 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to load PDF background: 'C:/Users/Tracy/Downloads/Sample file.pdf' at 300 DPI
+2025-04-21 10:34:48,763 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-21 10:34:48,763 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 10:34:48,763 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-04-21 10:34:48,763 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-04-21 10:34:48,823 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-04-21 10:34:48,831 - digcalc_project.src.ui.visualization_panel - INFO - Successfully loaded PDF page 1 from 'C:/Users/Tracy/Downloads/Sample file.pdf'
+2025-04-21 10:34:48,832 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 10:35:48,424 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-04-21 10:35:48,424 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-04-21 10:36:10,814 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 10 vertices for layer 'Existing Surface'. Item: <PySide6.QtWidgets.QGraphicsPathItem(0x2938e804ef0, pos=0,0, flags=(ItemIsSelectable)) at 0x00000293FEF42000>
+2025-04-21 10:36:15,902 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 10, Elevation: 50.0, New Rev: 1).
+2025-04-21 10:36:15,902 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 50.0) to layer 'Existing Surface'.
+2025-04-21 10:36:16,154 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-04-21 10:36:16,154 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-04-21 10:36:23,881 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 8 vertices for layer 'Existing Surface'. Item: <PySide6.QtWidgets.QGraphicsPathItem(0x293d4a76b90, pos=0,0, flags=(ItemIsSelectable)) at 0x00000293D362FCC0>
+2025-04-21 10:36:28,125 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 1, Points: 8, Elevation: 30.0, New Rev: 2).
+2025-04-21 10:36:28,125 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 1, Elevation: 30.0) to layer 'Existing Surface'.
+2025-04-21 10:36:28,380 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-04-21 10:36:28,380 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-04-21 10:42:14,995 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-21 10:42:14,997 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
+2025-04-21 10:42:14,997 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-21 10:42:15,000 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-21 10:42:26,752 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 5 vertices for layer 'Existing Surface'. Item: <PySide6.QtWidgets.QGraphicsPathItem(0x293d4a77210, pos=0,0, flags=(ItemIsSelectable)) at 0x00000293D364CBC0>
+2025-04-21 10:42:32,854 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 2, Points: 5, Elevation: 750.0, New Rev: 3).
+2025-04-21 10:42:32,854 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 2, Elevation: 750.0) to layer 'Existing Surface'.
+2025-04-21 10:42:33,093 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-04-21 10:42:33,093 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-04-21 10:42:41,706 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 5 vertices for layer 'Existing Surface'. Item: <PySide6.QtWidgets.QGraphicsPathItem(0x293d4a76f90, pos=0,0, flags=(ItemIsSelectable)) at 0x00000293D362C440>
+2025-04-21 10:42:45,670 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 3, Points: 5, Elevation: 50.0, New Rev: 4).
+2025-04-21 10:42:45,670 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 3, Elevation: 50.0) to layer 'Existing Surface'.
+2025-04-21 10:42:45,922 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-04-21 10:42:45,922 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-04-21 10:43:19,413 - digcalc_project.src.ui.project_controller - INFO - Attempting to save project to: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc
+2025-04-21 10:43:19,413 - digcalc_project.src.models.serializers - INFO - Delegating save for project 'Refactor1.1' to Project.save(C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc).
+2025-04-21 10:43:19,413 - digcalc_project.src.models.project - INFO - Saving project 'Refactor1.1' to C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc
+2025-04-21 10:43:19,413 - digcalc_project.src.models.project - INFO - Project saved successfully.
+2025-04-21 10:43:19,413 - digcalc_project.src.ui.project_controller - INFO - Project saved successfully.
+2025-04-21 10:43:22,781 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-21 10:43:22,781 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
+2025-04-21 10:43:22,781 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-21 10:43:22,798 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-21 10:45:30,975 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-21 10:45:30,998 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-21 10:45:37,128 - digcalc_project.src.ui.project_controller - INFO - Attempting to open project file: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc
+2025-04-21 10:45:37,128 - digcalc_project.src.models.serializers - INFO - Delegating load for C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc to Project.load.
+2025-04-21 10:45:37,129 - digcalc_project.src.models.project - INFO - Found PDF background path in project file: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 10:45:37,129 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc
+2025-04-21 10:45:37,129 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Refactor1.1
+2025-04-21 10:45:37,129 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Refactor1.1
+2025-04-21 10:45:37,129 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-21 10:45:37,129 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 10:45:37,129 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to load PDF background: 'C:/Users/Tracy/Downloads/Sample file.pdf' at 300 DPI
+2025-04-21 10:45:37,129 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-21 10:45:37,129 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 10:45:37,129 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-04-21 10:45:37,129 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-04-21 10:45:37,185 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-04-21 10:45:37,196 - digcalc_project.src.ui.visualization_panel - INFO - Successfully loaded PDF page 1 from 'C:/Users/Tracy/Downloads/Sample file.pdf'
+2025-04-21 10:45:37,196 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to set PDF display to page: 1
+2025-04-21 10:45:37,203 - digcalc_project.src.ui.visualization_panel - INFO - Successfully set PDF display to page 1.
+2025-04-21 10:45:37,203 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 10:45:37,203 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 1 layers onto the scene.
+2025-04-21 10:45:37,203 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 4 polylines across all layers.
+2025-04-21 10:45:43,795 - digcalc_project.src.ui.main_window - ERROR - Unexpected error during surface build: name 'valid_polys_for_build' is not defined
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\main_window.py", line 1235, in on_build_surface
+    if not valid_polys_for_build:
+           ^^^^^^^^^^^^^^^^^^^^^
+NameError: name 'valid_polys_for_build' is not defined
+2025-04-21 10:50:15,575 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-21 10:50:15,599 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-21 10:50:41,877 - digcalc_project.src.ui.project_controller - INFO - Attempting to open project file: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc
+2025-04-21 10:50:41,877 - digcalc_project.src.models.serializers - INFO - Delegating load for C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc to Project.load.
+2025-04-21 10:50:41,877 - digcalc_project.src.models.project - INFO - Found PDF background path in project file: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 10:50:41,877 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc
+2025-04-21 10:50:41,877 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Refactor1.1
+2025-04-21 10:50:41,877 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Refactor1.1
+2025-04-21 10:50:41,877 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-21 10:50:41,877 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 10:50:41,877 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to load PDF background: 'C:/Users/Tracy/Downloads/Sample file.pdf' at 300 DPI
+2025-04-21 10:50:41,877 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-21 10:50:41,877 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 10:50:41,877 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-04-21 10:50:41,877 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-04-21 10:50:41,936 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-04-21 10:50:41,951 - digcalc_project.src.ui.visualization_panel - INFO - Successfully loaded PDF page 1 from 'C:/Users/Tracy/Downloads/Sample file.pdf'
+2025-04-21 10:50:41,951 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to set PDF display to page: 1
+2025-04-21 10:50:41,956 - digcalc_project.src.ui.visualization_panel - INFO - Successfully set PDF display to page 1.
+2025-04-21 10:50:41,956 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 10:50:41,956 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 1 layers onto the scene.
+2025-04-21 10:50:41,959 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 4 polylines across all layers.
+2025-04-21 10:50:45,116 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (4 polylines).
+2025-04-21 10:50:45,116 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 24 unique 3D points with elevation from layer 'Existing Surface'.
+2025-04-21 10:50:45,131 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-04-21 10:50:45,131 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface' (Rev: 4).
+2025-04-21 10:50:45,131 - digcalc_project.src.models.project - INFO - Surface 'Existing Surface_Surface' added to project
+2025-04-21 10:50:53,389 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-21 10:50:53,389 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
+2025-04-21 10:50:53,389 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-21 10:50:53,407 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-21 10:52:23,047 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-21 10:52:23,067 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-21 10:52:30,213 - digcalc_project.src.ui.project_controller - INFO - Attempting to open project file: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc
+2025-04-21 10:52:30,213 - digcalc_project.src.models.serializers - INFO - Delegating load for C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc to Project.load.
+2025-04-21 10:52:30,213 - digcalc_project.src.models.project - INFO - Found PDF background path in project file: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 10:52:30,213 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc
+2025-04-21 10:52:30,213 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Refactor1.1
+2025-04-21 10:52:30,213 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Refactor1.1
+2025-04-21 10:52:30,213 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-21 10:52:30,213 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 10:52:30,213 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to load PDF background: 'C:/Users/Tracy/Downloads/Sample file.pdf' at 300 DPI
+2025-04-21 10:52:30,213 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-21 10:52:30,213 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 10:52:30,213 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-04-21 10:52:30,213 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-04-21 10:52:30,270 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-04-21 10:52:30,285 - digcalc_project.src.ui.visualization_panel - INFO - Successfully loaded PDF page 1 from 'C:/Users/Tracy/Downloads/Sample file.pdf'
+2025-04-21 10:52:30,286 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to set PDF display to page: 1
+2025-04-21 10:52:30,291 - digcalc_project.src.ui.visualization_panel - INFO - Successfully set PDF display to page 1.
+2025-04-21 10:52:30,291 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 10:52:30,291 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 1 layers onto the scene.
+2025-04-21 10:52:30,291 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 4 polylines across all layers.
+2025-04-21 10:52:33,433 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (4 polylines).
+2025-04-21 10:52:33,433 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 24 unique 3D points with elevation from layer 'Existing Surface'.
+2025-04-21 10:52:33,433 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-04-21 10:52:33,433 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface' (Rev: 4).
+2025-04-21 10:52:33,433 - digcalc_project.src.models.project - INFO - Surface 'Existing Surface_Surface' added to project
+2025-04-21 10:52:40,495 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-21 10:52:40,495 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
+2025-04-21 10:52:40,495 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-21 10:52:40,512 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-21 10:55:20,969 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-21 10:55:20,993 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-21 10:55:36,704 - digcalc_project.src.ui.project_controller - INFO - Attempting to open project file: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc
+2025-04-21 10:55:36,704 - digcalc_project.src.models.serializers - INFO - Delegating load for C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc to Project.load.
+2025-04-21 10:55:36,704 - digcalc_project.src.models.project - INFO - Found PDF background path in project file: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 10:55:36,704 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc
+2025-04-21 10:55:36,704 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Refactor1.1
+2025-04-21 10:55:36,704 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Refactor1.1
+2025-04-21 10:55:36,704 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-21 10:55:36,704 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 10:55:36,704 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to load PDF background: 'C:/Users/Tracy/Downloads/Sample file.pdf' at 300 DPI
+2025-04-21 10:55:36,704 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-21 10:55:36,704 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 10:55:36,704 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-04-21 10:55:36,704 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-04-21 10:55:36,760 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-04-21 10:55:36,771 - digcalc_project.src.ui.visualization_panel - INFO - Successfully loaded PDF page 1 from 'C:/Users/Tracy/Downloads/Sample file.pdf'
+2025-04-21 10:55:36,771 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to set PDF display to page: 1
+2025-04-21 10:55:36,782 - digcalc_project.src.ui.visualization_panel - INFO - Successfully set PDF display to page 1.
+2025-04-21 10:55:36,782 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 10:55:36,782 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 1 layers onto the scene.
+2025-04-21 10:55:36,783 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 4 polylines across all layers.
+2025-04-21 10:55:39,580 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (4 polylines).
+2025-04-21 10:55:39,580 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 24 unique 3D points with elevation from layer 'Existing Surface'.
+2025-04-21 10:55:39,580 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-04-21 10:55:39,580 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface' (Rev: 4).
+2025-04-21 10:55:39,580 - digcalc_project.src.models.project - INFO - Surface 'Existing Surface_Surface' added to project
+2025-04-21 10:55:51,078 - digcalc_project.src.ui.main_window - INFO - Build Surface dialog cancelled by user.
+2025-04-21 10:55:51,744 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-21 10:55:51,744 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
+2025-04-21 10:55:51,744 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-21 10:55:51,761 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-21 11:00:51,108 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-21 11:00:51,132 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-21 11:01:17,497 - digcalc_project.src.ui.project_controller - INFO - Attempting to open project file: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc
+2025-04-21 11:01:17,497 - digcalc_project.src.models.serializers - INFO - Delegating load for C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc to Project.load.
+2025-04-21 11:01:17,497 - digcalc_project.src.models.project - INFO - Found PDF background path in project file: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 11:01:17,497 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc
+2025-04-21 11:01:17,497 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Refactor1.1
+2025-04-21 11:01:17,497 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Refactor1.1
+2025-04-21 11:01:17,497 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-21 11:01:17,497 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 11:01:17,497 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to load PDF background: 'C:/Users/Tracy/Downloads/Sample file.pdf' at 300 DPI
+2025-04-21 11:01:17,497 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-21 11:01:17,497 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 11:01:17,497 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-04-21 11:01:17,497 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-04-21 11:01:17,552 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-04-21 11:01:17,565 - digcalc_project.src.ui.visualization_panel - INFO - Successfully loaded PDF page 1 from 'C:/Users/Tracy/Downloads/Sample file.pdf'
+2025-04-21 11:01:17,565 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to set PDF display to page: 1
+2025-04-21 11:01:17,577 - digcalc_project.src.ui.visualization_panel - INFO - Successfully set PDF display to page 1.
+2025-04-21 11:01:17,577 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 11:01:17,577 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 1 layers onto the scene.
+2025-04-21 11:01:17,578 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 4 polylines across all layers.
+2025-04-21 11:01:26,378 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (4 polylines).
+2025-04-21 11:01:26,378 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 24 unique 3D points with elevation from layer 'Existing Surface'.
+2025-04-21 11:01:26,378 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-04-21 11:01:26,378 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface' (Rev: 4).
+2025-04-21 11:01:26,378 - digcalc_project.src.models.project - INFO - Surface 'Existing Surface_Surface' added to project
+2025-04-21 11:01:32,085 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-21 11:01:32,085 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
+2025-04-21 11:01:32,085 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-21 11:01:32,106 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-21 11:16:42,835 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-21 11:16:42,857 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-21 11:16:49,514 - digcalc_project.src.ui.project_controller - INFO - Attempting to open project file: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc
+2025-04-21 11:16:49,514 - digcalc_project.src.models.serializers - INFO - Delegating load for C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc to Project.load.
+2025-04-21 11:16:49,515 - digcalc_project.src.models.project - INFO - Found PDF background path in project file: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 11:16:49,515 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc
+2025-04-21 11:16:49,515 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Refactor1.1
+2025-04-21 11:16:49,516 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Refactor1.1
+2025-04-21 11:16:49,516 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-21 11:16:49,516 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 11:16:49,516 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to load PDF background: 'C:/Users/Tracy/Downloads/Sample file.pdf' at 300 DPI
+2025-04-21 11:16:49,516 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-21 11:16:49,517 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 11:16:49,517 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-04-21 11:16:49,518 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-04-21 11:16:49,573 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-04-21 11:16:49,580 - digcalc_project.src.ui.visualization_panel - INFO - Successfully loaded PDF page 1 from 'C:/Users/Tracy/Downloads/Sample file.pdf'
+2025-04-21 11:16:49,580 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to set PDF display to page: 1
+2025-04-21 11:16:49,586 - digcalc_project.src.ui.visualization_panel - INFO - Successfully set PDF display to page 1.
+2025-04-21 11:16:49,586 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 11:16:49,587 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 1 layers onto the scene.
+2025-04-21 11:16:49,587 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 4 polylines across all layers.
+2025-04-21 11:16:52,838 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (4 polylines).
+2025-04-21 11:16:52,838 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 24 unique 3D points with elevation from layer 'Existing Surface'.
+2025-04-21 11:16:52,840 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-04-21 11:16:52,840 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface' (Rev: 4).
+2025-04-21 11:16:52,840 - digcalc_project.src.models.project - INFO - Surface 'Existing Surface_Surface' added to project
+2025-04-21 11:16:56,804 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-21 11:16:56,805 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
+2025-04-21 11:16:56,805 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-21 11:16:56,815 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-21 11:20:39,749 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-21 11:20:39,771 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-21 11:20:44,705 - digcalc_project.src.ui.project_controller - INFO - Attempting to open project file: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc
+2025-04-21 11:20:44,706 - digcalc_project.src.models.serializers - INFO - Delegating load for C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc to Project.load.
+2025-04-21 11:20:44,706 - digcalc_project.src.models.project - INFO - Found PDF background path in project file: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 11:20:44,706 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc
+2025-04-21 11:20:44,706 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Refactor1.1
+2025-04-21 11:20:44,707 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Refactor1.1
+2025-04-21 11:20:44,707 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-21 11:20:44,707 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 11:20:44,707 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to load PDF background: 'C:/Users/Tracy/Downloads/Sample file.pdf' at 300 DPI
+2025-04-21 11:20:44,708 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-21 11:20:44,708 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 11:20:44,708 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-04-21 11:20:44,709 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-04-21 11:20:44,766 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-04-21 11:20:44,773 - digcalc_project.src.ui.visualization_panel - INFO - Successfully loaded PDF page 1 from 'C:/Users/Tracy/Downloads/Sample file.pdf'
+2025-04-21 11:20:44,773 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to set PDF display to page: 1
+2025-04-21 11:20:44,780 - digcalc_project.src.ui.visualization_panel - INFO - Successfully set PDF display to page 1.
+2025-04-21 11:20:44,780 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 11:20:44,780 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 1 layers onto the scene.
+2025-04-21 11:20:44,781 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 4 polylines across all layers.
+2025-04-21 11:20:47,647 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (4 polylines).
+2025-04-21 11:20:47,647 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 24 unique 3D points with elevation from layer 'Existing Surface'.
+2025-04-21 11:20:47,649 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-04-21 11:20:47,649 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface' (Rev: 4).
+2025-04-21 11:20:47,649 - digcalc_project.src.models.project - INFO - Surface 'Existing Surface_Surface' added to project
+2025-04-21 11:20:54,772 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-21 11:20:54,774 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
+2025-04-21 11:20:54,774 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-21 11:20:54,784 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-21 11:24:09,778 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-21 11:24:09,800 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-21 11:24:13,377 - digcalc_project.src.ui.project_controller - INFO - Attempting to open project file: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc
+2025-04-21 11:24:13,378 - digcalc_project.src.models.serializers - INFO - Delegating load for C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc to Project.load.
+2025-04-21 11:24:13,378 - digcalc_project.src.models.project - INFO - Found PDF background path in project file: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 11:24:13,378 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc
+2025-04-21 11:24:13,378 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Refactor1.1
+2025-04-21 11:24:13,379 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Refactor1.1
+2025-04-21 11:24:13,379 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-21 11:24:13,379 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 11:24:13,379 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to load PDF background: 'C:/Users/Tracy/Downloads/Sample file.pdf' at 300 DPI
+2025-04-21 11:24:13,379 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-21 11:24:13,380 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 11:24:13,380 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-04-21 11:24:13,380 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-04-21 11:24:13,439 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-04-21 11:24:13,446 - digcalc_project.src.ui.visualization_panel - INFO - Successfully loaded PDF page 1 from 'C:/Users/Tracy/Downloads/Sample file.pdf'
+2025-04-21 11:24:13,446 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to set PDF display to page: 1
+2025-04-21 11:24:13,452 - digcalc_project.src.ui.visualization_panel - INFO - Successfully set PDF display to page 1.
+2025-04-21 11:24:13,453 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 11:24:13,453 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 1 layers onto the scene.
+2025-04-21 11:24:13,453 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 4 polylines across all layers.
+2025-04-21 11:24:15,967 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (4 polylines).
+2025-04-21 11:24:15,967 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 24 unique 3D points with elevation from layer 'Existing Surface'.
+2025-04-21 11:24:15,969 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-04-21 11:24:15,969 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface' (Rev: 4).
+2025-04-21 11:24:15,970 - digcalc_project.src.models.project - INFO - Surface 'Existing Surface_Surface' added to project
+2025-04-21 11:24:15,970 - digcalc_project.src.ui.main_window - ERROR - Unexpected error during surface build: 'VisualizationPanel' object has no attribute 'add_surface_mesh'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\alpha_3\digcalc_project\src\ui\main_window.py", line 1243, in on_build_surface
+    self.visualization_panel.add_surface_mesh(surface) # Add the surface to the 3D view
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'VisualizationPanel' object has no attribute 'add_surface_mesh'
+2025-04-21 11:24:21,228 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-21 11:24:21,231 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
+2025-04-21 11:24:21,231 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-21 11:24:21,242 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-21 11:25:19,332 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-21 11:25:19,355 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-21 11:25:23,643 - digcalc_project.src.ui.project_controller - INFO - Attempting to open project file: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc
+2025-04-21 11:25:23,644 - digcalc_project.src.models.serializers - INFO - Delegating load for C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc to Project.load.
+2025-04-21 11:25:23,644 - digcalc_project.src.models.project - INFO - Found PDF background path in project file: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 11:25:23,644 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc
+2025-04-21 11:25:23,644 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Refactor1.1
+2025-04-21 11:25:23,645 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Refactor1.1
+2025-04-21 11:25:23,645 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-21 11:25:23,645 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 11:25:23,645 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to load PDF background: 'C:/Users/Tracy/Downloads/Sample file.pdf' at 300 DPI
+2025-04-21 11:25:23,645 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-21 11:25:23,646 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 11:25:23,646 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-04-21 11:25:23,646 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-04-21 11:25:23,702 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-04-21 11:25:23,709 - digcalc_project.src.ui.visualization_panel - INFO - Successfully loaded PDF page 1 from 'C:/Users/Tracy/Downloads/Sample file.pdf'
+2025-04-21 11:25:23,709 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to set PDF display to page: 1
+2025-04-21 11:25:23,715 - digcalc_project.src.ui.visualization_panel - INFO - Successfully set PDF display to page 1.
+2025-04-21 11:25:23,716 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 11:25:23,716 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 1 layers onto the scene.
+2025-04-21 11:25:23,716 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 4 polylines across all layers.
+2025-04-21 11:25:28,256 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (4 polylines).
+2025-04-21 11:25:28,257 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 24 unique 3D points with elevation from layer 'Existing Surface'.
+2025-04-21 11:25:28,258 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-04-21 11:25:28,259 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface' (Rev: 4).
+2025-04-21 11:25:28,259 - digcalc_project.src.models.project - INFO - Surface 'Existing Surface_Surface' added to project
+2025-04-21 11:25:35,350 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-21 11:25:35,351 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
+2025-04-21 11:25:35,351 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-21 11:25:35,360 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-21 11:26:45,730 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-21 11:26:45,752 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-21 11:26:49,091 - digcalc_project.src.ui.project_controller - INFO - Attempting to open project file: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc
+2025-04-21 11:26:49,091 - digcalc_project.src.models.serializers - INFO - Delegating load for C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc to Project.load.
+2025-04-21 11:26:49,092 - digcalc_project.src.models.project - INFO - Found PDF background path in project file: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 11:26:49,092 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc
+2025-04-21 11:26:49,092 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Refactor1.1
+2025-04-21 11:26:49,093 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Refactor1.1
+2025-04-21 11:26:49,093 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-21 11:26:49,093 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 11:26:49,093 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to load PDF background: 'C:/Users/Tracy/Downloads/Sample file.pdf' at 300 DPI
+2025-04-21 11:26:49,093 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-21 11:26:49,093 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 11:26:49,094 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-04-21 11:26:49,094 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-04-21 11:26:49,151 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-04-21 11:26:49,158 - digcalc_project.src.ui.visualization_panel - INFO - Successfully loaded PDF page 1 from 'C:/Users/Tracy/Downloads/Sample file.pdf'
+2025-04-21 11:26:49,159 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to set PDF display to page: 1
+2025-04-21 11:26:49,165 - digcalc_project.src.ui.visualization_panel - INFO - Successfully set PDF display to page 1.
+2025-04-21 11:26:49,165 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 11:26:49,165 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 1 layers onto the scene.
+2025-04-21 11:26:49,166 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 4 polylines across all layers.
+2025-04-21 11:26:53,568 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (4 polylines).
+2025-04-21 11:26:53,569 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 24 unique 3D points with elevation from layer 'Existing Surface'.
+2025-04-21 11:26:53,570 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-04-21 11:26:53,571 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface' (Rev: 4).
+2025-04-21 11:26:53,571 - digcalc_project.src.models.project - INFO - Surface 'Existing Surface_Surface' added to project
+2025-04-21 11:26:53,571 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to update/create mesh for surface: Existing Surface_Surface
+2025-04-21 11:27:33,959 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-04-21 11:27:33,959 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-04-21 11:27:43,255 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 7 vertices for layer 'Proposed Surface'. Item: <PySide6.QtWidgets.QGraphicsPathItem(0x1b21ddb33d0, pos=0,0, flags=(ItemIsSelectable)) at 0x000001B27E9AC100>
+2025-04-21 11:27:47,618 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Proposed Surface' (Index: 0, Points: 7, Elevation: 250.0, New Rev: 1).
+2025-04-21 11:27:47,618 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 250.0) to layer 'Proposed Surface'.
+2025-04-21 11:27:47,866 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Proposed Surface'}
+2025-04-21 11:27:47,867 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Proposed Surface'}.
+2025-04-21 11:28:18,521 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Proposed Surface' (1 polylines).
+2025-04-21 11:28:18,521 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 5 unique 3D points with elevation from layer 'Proposed Surface'.
+2025-04-21 11:28:18,522 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Proposed Surface_Surface'...
+2025-04-21 11:28:18,522 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Proposed Surface_Surface' from layer 'Proposed Surface' (Rev: 1).
+2025-04-21 11:28:18,523 - digcalc_project.src.models.project - INFO - Surface 'Proposed Surface_Surface' added to project
+2025-04-21 11:28:18,523 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to update/create mesh for surface: Proposed Surface_Surface
+2025-04-21 11:29:07,933 - digcalc_project.src.ui.project_controller - INFO - Attempting to save project to: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc
+2025-04-21 11:29:07,933 - digcalc_project.src.models.serializers - INFO - Delegating save for project 'Refactor1.1' to Project.save(C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc).
+2025-04-21 11:29:07,933 - digcalc_project.src.models.project - INFO - Saving project 'Refactor1.1' to C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc
+2025-04-21 11:29:07,935 - digcalc_project.src.models.project - INFO - Project saved successfully.
+2025-04-21 11:29:07,936 - digcalc_project.src.ui.project_controller - INFO - Project saved successfully.
+2025-04-21 11:29:09,502 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-21 11:29:09,504 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
+2025-04-21 11:29:09,504 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-21 11:29:09,515 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-21 11:30:28,658 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-21 11:30:28,680 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-21 11:30:32,347 - digcalc_project.src.ui.project_controller - INFO - Attempting to open project file: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc
+2025-04-21 11:30:32,348 - digcalc_project.src.models.serializers - INFO - Delegating load for C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc to Project.load.
+2025-04-21 11:30:32,348 - digcalc_project.src.models.project - INFO - Found PDF background path in project file: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 11:30:32,348 - digcalc_project.src.models.project - INFO - Project loaded from C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Refactor1.1.digcalc
+2025-04-21 11:30:32,349 - digcalc_project.src.ui.project_controller - INFO - Setting current project to: Refactor1.1
+2025-04-21 11:30:32,349 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Refactor1.1
+2025-04-21 11:30:32,349 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-04-21 11:30:32,350 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 11:30:32,350 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to load PDF background: 'C:/Users/Tracy/Downloads/Sample file.pdf' at 300 DPI
+2025-04-21 11:30:32,350 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-21 11:30:32,350 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-21 11:30:32,351 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-04-21 11:30:32,351 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-04-21 11:30:32,408 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-04-21 11:30:32,414 - digcalc_project.src.ui.visualization_panel - INFO - Successfully loaded PDF page 1 from 'C:/Users/Tracy/Downloads/Sample file.pdf'
+2025-04-21 11:30:32,415 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to set PDF display to page: 1
+2025-04-21 11:30:32,421 - digcalc_project.src.ui.visualization_panel - INFO - Successfully set PDF display to page 1.
+2025-04-21 11:30:32,422 - digcalc_project.src.ui.visualization_panel - INFO - Displaying/Updating surface: Existing Surface_Surface...
+2025-04-21 11:30:32,422 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to update/create mesh for surface: Existing Surface_Surface
+2025-04-21 11:30:32,423 - digcalc_project.src.ui.visualization_panel - INFO - Displaying/Updating surface: Proposed Surface_Surface...
+2025-04-21 11:30:32,423 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to update/create mesh for surface: Proposed Surface_Surface
+2025-04-21 11:30:32,423 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-21 11:30:32,423 - digcalc_project.src.ui.tracing_scene - INFO - Loading polylines for 2 layers onto the scene.
+2025-04-21 11:30:32,424 - digcalc_project.src.ui.tracing_scene - INFO - Finished loading and displayed 5 polylines across all layers.
+2025-04-21 11:30:45,050 - digcalc_project.src.ui.main_window - INFO - Starting volume calculation: Existing='Existing Surface_Surface', Proposed='Proposed Surface_Surface', Resolution=1.0
+2025-04-21 11:30:45,050 - digcalc_project.src.core.calculations.volume_calculator - WARNING - calculate_surface_to_surface is deprecated, use calculate_grid_method
+2025-04-21 11:30:45,050 - digcalc_project.src.core.calculations.volume_calculator - INFO - Starting grid method volume calculation between 'Existing Surface_Surface' and 'Proposed Surface_Surface'. Grid resolution: 1.0
+2025-04-21 11:30:45,072 - digcalc_project.src.core.calculations.volume_calculator - INFO - Interpolating surface 'Existing Surface_Surface'...
+2025-04-21 11:30:46,017 - digcalc_project.src.core.calculations.volume_calculator - INFO - Interpolating surface 'Proposed Surface_Surface'...
+2025-04-21 11:30:46,159 - digcalc_project.src.core.calculations.volume_calculator - INFO - Calculating differences for 5385541 valid grid points.
+2025-04-21 11:30:46,218 - digcalc_project.src.core.calculations.volume_calculator - INFO - Grid Volume Calculation Complete: Cut=287412052.098, Fill=689075117.160, Net=401663065.062
+2025-04-21 11:30:46,228 - digcalc_project.src.ui.main_window - INFO - Volume calculation successful: Cut=287412052.10, Fill=689075117.16, Net=401663065.06
+2025-04-21 11:31:45,058 - digcalc_project.src.ui.main_window - INFO - Starting volume calculation: Existing='Existing Surface_Surface', Proposed='Proposed Surface_Surface', Resolution=200.0
+2025-04-21 11:31:45,058 - digcalc_project.src.core.calculations.volume_calculator - WARNING - calculate_surface_to_surface is deprecated, use calculate_grid_method
+2025-04-21 11:31:45,058 - digcalc_project.src.core.calculations.volume_calculator - INFO - Starting grid method volume calculation between 'Existing Surface_Surface' and 'Proposed Surface_Surface'. Grid resolution: 200.0
+2025-04-21 11:31:45,058 - digcalc_project.src.core.calculations.volume_calculator - INFO - Interpolating surface 'Existing Surface_Surface'...
+2025-04-21 11:31:45,060 - digcalc_project.src.core.calculations.volume_calculator - INFO - Interpolating surface 'Proposed Surface_Surface'...
+2025-04-21 11:31:45,060 - digcalc_project.src.core.calculations.volume_calculator - INFO - Calculating differences for 130 valid grid points.
+2025-04-21 11:31:45,061 - digcalc_project.src.core.calculations.volume_calculator - INFO - Grid Volume Calculation Complete: Cut=291004640.327, Fill=653253447.440, Net=362248807.113
+2025-04-21 11:31:45,061 - digcalc_project.src.ui.main_window - INFO - Volume calculation successful: Cut=291004640.33, Fill=653253447.44, Net=362248807.11
+2025-04-21 11:54:09,317 - digcalc_project.src.ui.main_window - INFO - Starting volume calculation: Existing='Existing Surface_Surface', Proposed='Proposed Surface_Surface', Resolution=5.0
+2025-04-21 11:54:09,318 - digcalc_project.src.core.calculations.volume_calculator - WARNING - calculate_surface_to_surface is deprecated, use calculate_grid_method
+2025-04-21 11:54:09,318 - digcalc_project.src.core.calculations.volume_calculator - INFO - Starting grid method volume calculation between 'Existing Surface_Surface' and 'Proposed Surface_Surface'. Grid resolution: 5.0
+2025-04-21 11:54:09,319 - digcalc_project.src.core.calculations.volume_calculator - INFO - Interpolating surface 'Existing Surface_Surface'...
+2025-04-21 11:54:09,326 - digcalc_project.src.core.calculations.volume_calculator - INFO - Interpolating surface 'Proposed Surface_Surface'...
+2025-04-21 11:54:09,333 - digcalc_project.src.core.calculations.volume_calculator - INFO - Calculating differences for 215326 valid grid points.
+2025-04-21 11:54:09,335 - digcalc_project.src.core.calculations.volume_calculator - INFO - Grid Volume Calculation Complete: Cut=287412212.195, Fill=688596603.953, Net=401184391.758
+2025-04-21 11:54:09,336 - digcalc_project.src.ui.main_window - INFO - Volume calculation successful: Cut=287412212.20, Fill=688596603.95, Net=401184391.76
+2025-04-21 11:54:12,218 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-21 11:54:12,220 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
+2025-04-21 11:54:12,220 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-21 11:54:12,229 - digcalc_project.src.main - INFO - Application exited with code 0

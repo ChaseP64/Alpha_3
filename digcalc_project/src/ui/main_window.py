@@ -243,16 +243,16 @@ class MainWindow(QMainWindow):
         
         # Import actions
         self.import_cad_action = QAction("Import CAD (DXF)", self)
-        self.import_cad_action.triggered.connect(self.on_import_cad)
+        # self.import_cad_action.triggered.connect(self.on_import_cad) # Obsolete
         
         self.import_pdf_action = QAction("Import PDF", self)
-        self.import_pdf_action.triggered.connect(self.on_import_pdf)
+        # self.import_pdf_action.triggered.connect(self.on_import_pdf) # Obsolete
         
         self.import_landxml_action = QAction("Import LandXML", self)
-        self.import_landxml_action.triggered.connect(self.on_import_landxml)
+        # self.import_landxml_action.triggered.connect(self.on_import_landxml) # Obsolete
         
         self.import_csv_action = QAction("Import CSV", self)
-        self.import_csv_action.triggered.connect(self.on_import_csv)
+        # self.import_csv_action.triggered.connect(self.on_import_csv) # Obsolete
         
         # --- NEW: Surface Actions ---
         self.build_surface_action = QAction("Build Surface from Layer...", self)
@@ -494,7 +494,8 @@ class MainWindow(QMainWindow):
         Enable/disable analysis actions based on the current project state.
         Specifically, enables volume calculation if >= 2 surfaces exist.
         """
-        can_calculate = bool(self.current_project and len(self.current_project.surfaces) >= 2)
+        project = self.project_controller.get_current_project()
+        can_calculate = bool(project and len(project.surfaces) >= 2)
         self.calculate_volume_action.setEnabled(can_calculate)
         self.logger.debug(f"Calculate Volume action enabled state: {can_calculate}")
     
@@ -532,148 +533,6 @@ class MainWindow(QMainWindow):
 
     # Event handlers
     
-    def on_import_cad(self):
-        """Handle CAD import action."""
-        if not self.current_project:
-            self._create_default_project()
-            
-        filename, _ = QFileDialog.getOpenFileName(
-            self, "Import CAD", "", "CAD Files (*.dxf);;All Files (*)"
-        )
-        if filename:
-            self.logger.info(f"Importing CAD file: {filename}")
-            self._import_file(filename, DXFParser)
-    
-    def on_import_pdf(self):
-        """Handle PDF import action."""
-        if not self.current_project:
-            self._create_default_project()
-            
-        filename, _ = QFileDialog.getOpenFileName(
-            self, "Import PDF", "", "PDF Files (*.pdf);;All Files (*)"
-        )
-        if filename:
-            self.logger.info(f"Importing PDF file: {filename}")
-            self._import_file(filename, PDFParser)
-    
-    def on_import_landxml(self):
-        """Handle LandXML import action."""
-        if not self.current_project:
-            self._create_default_project()
-            
-        filename, _ = QFileDialog.getOpenFileName(
-            self, "Import LandXML", "", "LandXML Files (*.xml);;All Files (*)"
-        )
-        if filename:
-            self.logger.info(f"Importing LandXML file: {filename}")
-            self._import_file(filename, LandXMLParser)
-    
-    def on_import_csv(self):
-        """Handle CSV import action."""
-        if not self.current_project:
-            self._create_default_project()
-            
-        filename, _ = QFileDialog.getOpenFileName(
-            self, "Import CSV", "", "CSV Files (*.csv);;Text Files (*.txt);;All Files (*)"
-        )
-        if filename:
-            self.logger.info(f"Importing CSV file: {filename}")
-            self._import_file(filename, CSVParser)
-    
-    def _import_file(self, filename: str, parser_class=None):
-        """
-        Internal helper to handle file import logic, including options dialog
-        and adding the surface to the project.
-        """
-        if not self.current_project:
-            self.logger.error("Cannot import file: No active project.")
-            QMessageBox.warning(self, "No Project", "Please create or open a project before importing files.")
-            return
-
-        if not parser_class:
-             ext = Path(filename).suffix.lower()
-             if ext == '.dxf':
-                 parser_class = DXFParser
-             elif ext == '.pdf':
-                 parser_class = PDFParser
-             elif ext == '.xml':
-                 parser_class = LandXMLParser
-             elif ext == '.csv':
-                 parser_class = CSVParser
-             else:
-                 QMessageBox.warning(self, "Unsupported File", f"File type '{ext}' is not supported.")
-                 return
-
-        try:
-            parser = parser_class()
-            default_surface_name = Path(filename).stem 
-
-            options_dialog = ImportOptionsDialog(self, parser, default_surface_name, filename=filename)
-            if options_dialog.exec():
-                surface_name = options_dialog.get_surface_name()
-                options = options_dialog.get_options()
-
-                self.logger.info(f"Parsing '{filename}' with options: {options}. Surface name: '{surface_name}'")
-                self.statusBar().showMessage(f"Importing '{Path(filename).name}' as '{surface_name}'...")
-
-                surface = parser.parse(filename, options)
-
-                if surface:
-                    if not surface.points:
-                        self.logger.warning(f"Imported surface '{surface_name}' from '{filename}' contains no data points.")
-                        QMessageBox.warning(self, "Import Warning", f"The imported surface '{surface_name}' contains no data points.")
-                    
-                    unique_name = self.current_project.get_unique_surface_name(surface_name)
-                    if unique_name != surface_name:
-                        self.logger.info(f"Surface name adjusted to '{unique_name}' for uniqueness.")
-                        QMessageBox.information(self, "Name Adjusted", f"The surface name was changed to '{unique_name}' to avoid duplicates.")
-                    
-                    surface.name = unique_name
-                    
-                    self.current_project.add_surface(surface)
-                    # self.project_panel._update_tree() # _update_project handles this
-                    # self._update_analysis_actions_state() # Remove direct call
-
-                    self.statusBar().showMessage(f"Successfully imported '{surface.name}'", 5000)
-                    self.logger.info(f"Surface '{surface.name}' added to project '{self.current_project.name}'.")
-
-                    # self.visualization_panel.display_surface(surface) # _update_project handles this
-
-                    # --- Call _update_project to refresh everything --- 
-                    self._update_project(self.current_project)
-                    # --- End Call --- 
-
-                else:
-                    raise RuntimeError("Parser returned None, indicating import failure.")
-
-            else:
-                self.logger.info("Import cancelled by user.")
-                self.statusBar().showMessage("Import cancelled.", 3000)
-
-        except Exception as e:
-            self.logger.exception(f"Error importing file '{filename}': {e}")
-            QMessageBox.critical(self, "Import Error", f"Failed to import file:\n{e}")
-            self.statusBar().showMessage("Import failed.", 3000)
-    
-    def _should_save_project(self) -> bool:
-        """
-        Check if the current project should be saved.
-        
-        Returns:
-            bool: True if user wants to save, False otherwise
-        """
-        response = QMessageBox.question(
-            self, "Save Project?",
-            "Do you want to save the current project?",
-            QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
-        )
-        
-        if response == QMessageBox.Cancel:
-            return False
-        elif response == QMessageBox.Yes:
-            return True
-        else:
-            return False
 
     def _on_visualization_failed(self, surface_name: str, error_msg: str):
         """
@@ -690,13 +549,14 @@ class MainWindow(QMainWindow):
 
     def on_calculate_volume(self):
         """Handle the 'Calculate Volumes' action."""
-        if not self.current_project or len(self.current_project.surfaces) < 2:
+        project = self.project_controller.get_current_project()
+        if not project or len(project.surfaces) < 2:
             QMessageBox.warning(self, "Cannot Calculate Volumes", 
                                 "Please ensure at least two surfaces exist in the project.")
             self.logger.warning("Volume calculation attempted with insufficient surfaces.")
             return
 
-        surface_names = list(self.current_project.surfaces.keys())
+        surface_names = list(project.surfaces.keys())
         dialog = VolumeCalculationDialog(surface_names, self)
         
         if dialog.exec():
@@ -710,8 +570,9 @@ class MainWindow(QMainWindow):
                 self.statusBar().showMessage(f"Calculating volumes (Grid: {resolution})...", 0)
 
                 try:
-                    existing_surface = self.current_project.get_surface(existing_name)
-                    proposed_surface = self.current_project.get_surface(proposed_name)
+                    # Use project obtained from controller
+                    existing_surface = project.get_surface(existing_name)
+                    proposed_surface = project.get_surface(proposed_name)
 
                     if not existing_surface or not proposed_surface:
                          raise ValueError("Selected surface(s) not found in project.")
@@ -765,12 +626,16 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         """Handle the main window close event."""
         self.logger.info("Close event triggered.")
-        if self._confirm_close_project():
+        # Delegate confirmation logic to ProjectController
+        if self.project_controller._confirm_close_project():
+            # Perform any MainWindow-specific cleanup before closing
             if hasattr(self, 'visualization_panel'):
                  self.visualization_panel.clear_pdf_background() 
             self.logger.info("Closing application.")
             event.accept()
         else:
+            # User cancelled the close via the controller's dialog
+            self.logger.info("Close cancelled by user.")
             event.ignore()
 
     # --- PDF Background and Tracing Handlers ---
@@ -789,11 +654,13 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(f"Loading PDF background '{Path(filename).name}'...", 0)
             try:
                 self.visualization_panel.load_pdf_background(filename, dpi=self.pdf_dpi_setting)
-                if self.current_project:
-                    self.current_project.pdf_background_path = filename
-                    self.current_project.pdf_background_page = 1
-                    self.current_project.pdf_background_dpi = self.pdf_dpi_setting
-                    self.current_project.clear_traced_polylines()
+                # Get project from controller
+                project = self.project_controller.get_current_project()
+                if project:
+                    project.pdf_background_path = filename
+                    project.pdf_background_page = 1
+                    project.pdf_background_dpi = self.pdf_dpi_setting
+                    project.clear_traced_polylines()
                     self.visualization_panel.clear_polylines_from_scene()
                 self.statusBar().showMessage(f"Loaded PDF background '{Path(filename).name}' ({self.visualization_panel.pdf_renderer.get_page_count()} pages).", 5000)
             except (FileNotFoundError, PDFRendererError, Exception) as e:
@@ -823,8 +690,10 @@ class MainWindow(QMainWindow):
              total = self.visualization_panel.pdf_renderer.get_page_count()
              if current < total:
                   self.visualization_panel.set_pdf_page(current + 1)
-                  if self.current_project:
-                       self.current_project.pdf_background_page = current + 1
+                  # Get project from controller
+                  project = self.project_controller.get_current_project()
+                  if project:
+                       project.pdf_background_page = current + 1
                   self._update_pdf_controls()
                   self.statusBar().showMessage(f"Showing PDF page {current + 1}/{total}", 3000)
 
@@ -835,8 +704,10 @@ class MainWindow(QMainWindow):
              total = self.visualization_panel.pdf_renderer.get_page_count()
              if current > 1:
                   self.visualization_panel.set_pdf_page(current - 1)
-                  if self.current_project:
-                       self.current_project.pdf_background_page = current - 1
+                  # Get project from controller
+                  project = self.project_controller.get_current_project()
+                  if project:
+                       project.pdf_background_page = current - 1
                   self._update_pdf_controls()
                   self.statusBar().showMessage(f"Showing PDF page {current - 1}/{total}", 3000)
                   
@@ -882,7 +753,9 @@ class MainWindow(QMainWindow):
         Prompts for elevation and adds the polyline data to the project.
         Stores the final index back into the QGraphicsPathItem.
         """
-        if not self.current_project:
+        # Get project from controller first
+        project = self.project_controller.get_current_project()
+        if not project:
             logger.warning("Polyline drawn but no active project.")
             if item.scene(): item.scene().removeItem(item)
             return
@@ -906,7 +779,7 @@ class MainWindow(QMainWindow):
 
         polyline_data: PolylineData = {"points": point_tuples, "elevation": elevation}
 
-        new_index: Optional[int] = self.current_project.add_traced_polyline(
+        new_index: Optional[int] = project.add_traced_polyline(
             polyline=polyline_data,
             layer_name=layer_name,
         )
@@ -938,7 +811,9 @@ class MainWindow(QMainWindow):
         """
         logger.debug(f"--- _on_item_selected --- START --- Item: {item}")
 
-        if not self.current_project:
+        # Get project from controller first
+        project = self.project_controller.get_current_project()
+        if not project:
             self._selected_scene_item = None # Clear selection reference
             logger.warning("_on_item_selected called but no current project.")
             if hasattr(self, 'prop_dock'): self.prop_dock.clear_selection()
@@ -960,16 +835,16 @@ class MainWindow(QMainWindow):
             logger.debug(f"  Item is QGraphicsPathItem. Layer Data (0): {layer_name}, Index Data (1): {index}")
 
             if layer_name is not None and index is not None:
-                logger.debug(f"  Attempting to load data for Layer=\'{layer_name}\', Index={index}")
+                logger.debug(f"  Attempting to load data for Layer='{layer_name}', Index={index}")
                 try:
                     # Retrieve the polyline data - could be dict or list
-                    if layer_name not in self.current_project.traced_polylines or \
-                       not isinstance(self.current_project.traced_polylines[layer_name], list) or \
-                       index >= len(self.current_project.traced_polylines[layer_name]):
+                    if layer_name not in project.traced_polylines or \
+                       not isinstance(project.traced_polylines[layer_name], list) or \
+                       index >= len(project.traced_polylines[layer_name]):
                         logger.warning(f"  Invalid layer/index lookup ({layer_name}/{index}).")
                         raise IndexError(f"Invalid layer/index ({layer_name}/{index}) for selection.")
 
-                    poly_data = self.current_project.traced_polylines[layer_name][index]
+                    poly_data = project.traced_polylines[layer_name][index]
                     elevation = None
                     logger.debug(f"  Retrieved poly_data type: {type(poly_data)}, Value: {poly_data}")
 
@@ -984,8 +859,11 @@ class MainWindow(QMainWindow):
                         logger.warning(f"  Unexpected data type for polyline at {layer_name}[{index}]: {type(poly_data)}")
                         raise TypeError(f"Unexpected data type for polyline: {type(poly_data)}")
 
-                    logger.debug(f"  Calling prop_dock.load_polyline with: layer=\'{layer_name}\', index={index}, elevation={elevation}")
+                    logger.debug(f"  Calling prop_dock.load_polyline with: layer='{layer_name}', index={index}, elevation={elevation}")
                     self.prop_dock.load_polyline(layer_name, index, elevation)
+                    # Explicitly show the dock after loading data
+                    self.prop_dock.show()
+                    self.prop_dock.raise_() # Optional: Bring to front
 
                 except Exception as e:
                     logger.error(f"  ERROR during data retrieval/processing for {layer_name}[{index}]: {e}", exc_info=True)
@@ -1011,20 +889,21 @@ class MainWindow(QMainWindow):
     @Slot(str, int, float)
     def _apply_elevation_edit(self, layer_name: str, index: int, new_elevation: Optional[float]): # Allow None
         """
-        Handles the \'edited\' signal from PropertiesDock.
-        Updates the elevation in the current project\'s data model.
+        Handles the 'edited' signal from PropertiesDock.
+        Updates the elevation in the current project's data model.
         """
-        # --- DEBUG: Log entry ---
         logger.debug(f"_apply_elevation_edit called: Layer={layer_name}, Index={index}, New Elevation={new_elevation}")
-        # --- END DEBUG ---
 
-        if not self.current_project:
+        # Get project from controller
+        project = self.project_controller.get_current_project()
+        if not project:
             logger.error("Cannot apply elevation edit: No current project.")
             QMessageBox.critical(self, "Error", "No active project to apply changes to.")
             return
 
         try:
-            poly_list = self.current_project.traced_polylines.get(layer_name)
+            # Use the project variable obtained from the controller
+            poly_list = project.traced_polylines.get(layer_name)
             if poly_list is None or not isinstance(poly_list, list) or index >= len(poly_list):
                 raise IndexError(f"Invalid layer '{layer_name}' or index {index} for elevation edit.")
 
@@ -1033,9 +912,7 @@ class MainWindow(QMainWindow):
 
             current_elevation = poly_list[index].get("elevation")
 
-            # --- DEBUG: Log values before comparison ---
             logger.debug(f"Comparing elevation for {layer_name}[{index}]: Current={current_elevation} (Type: {type(current_elevation)}), New={new_elevation} (Type: {type(new_elevation)})")
-            # --- END DEBUG ---
 
             elevation_changed = False
             if current_elevation is None and new_elevation is not None:
@@ -1045,20 +922,15 @@ class MainWindow(QMainWindow):
             elif current_elevation is not None and new_elevation is not None:
                  if abs(current_elevation - new_elevation) > 1e-6:
                      elevation_changed = True
-            # --- END FIX ---
 
             if elevation_changed:
                 poly_list[index]["elevation"] = new_elevation
-                # self.current_project.is_modified = True # Done by bump revision
                 
-                # --- Bump Revision --- 
-                new_revision = self.current_project._bump_layer_revision(layer_name) # Call project helper
-                # --- End Bump ---
+                # Use the project variable
+                new_revision = project._bump_layer_revision(layer_name) # Call project helper
                 
                 logger.info(f"Updated elevation for polyline (Layer: {layer_name}, Index: {index}) to {new_elevation}. New layer revision: {new_revision}")
                 self.statusBar().showMessage(f"Elevation updated for {layer_name} polyline {index}.", 3000)
-
-                # Reload properties dock after update
                 if self._selected_scene_item and \
                    self._selected_scene_item.data(0) == layer_name and \
                    self._selected_scene_item.data(1) == index:
@@ -1067,10 +939,7 @@ class MainWindow(QMainWindow):
                          logger.debug("Refreshed PropertiesDock with updated elevation.")
                     else:
                          logger.warning("Properties dock not found, cannot refresh after edit.")
-
-                # --- Trigger Rebuild --- 
                 self._queue_surface_rebuilds_for_layer(layer_name)
-                # --- End Trigger --- 
             else:
                  logger.debug(f"Elevation change check returned False for {layer_name}[{index}]. No update performed.")
 
@@ -1083,9 +952,11 @@ class MainWindow(QMainWindow):
         self.layer_tree.blockSignals(True)
         self.layer_tree.clear()
         layers = []
-        if self.current_project:
-             surface_layers = list(self.current_project.surfaces.keys())
-             trace_layers = self.current_project.get_layers()
+        # Get the project from the controller
+        project = self.project_controller.get_current_project()
+        if project:
+             surface_layers = list(project.surfaces.keys())
+             trace_layers = project.get_layers()
              layers = sorted(list(set(surface_layers + trace_layers)))
 
         if layers:
@@ -1116,7 +987,9 @@ class MainWindow(QMainWindow):
 
     def _delete_selected_polyline(self):
         """Deletes the currently selected polyline from the project and scene."""
-        if not self.current_project or not self._selected_scene_item:
+        # Get project from controller
+        project = self.project_controller.get_current_project()
+        if not project or not self._selected_scene_item:
             self.logger.warning("Attempted to delete polyline, but no project or item selected.")
             return
 
@@ -1144,8 +1017,8 @@ class MainWindow(QMainWindow):
             self.logger.info(f"Attempting to delete polyline: Layer='{layer_name}', Index={index}")
             layer_name_to_rebuild = layer_name # Store before item might be invalidated
             
-            # --- Remove from Project --- 
-            removed_from_project = self.current_project.remove_polyline(layer_name, index)
+            # --- Remove from Project (using the controller's project) --- 
+            removed_from_project = project.remove_polyline(layer_name, index)
 
             if removed_from_project:
                 # --- Remove from Scene --- 
@@ -1168,10 +1041,10 @@ class MainWindow(QMainWindow):
                 self._queue_surface_rebuilds_for_layer(layer_name_to_rebuild)
                 # --- End Trigger --- 
                 
-                # --- Reload polylines for the affected layer --- (Optional, but good for indices)
+                # --- Optional: Reload polylines using controller's project --- 
                 # if hasattr(self, 'visualization_panel'):
                 #     self.logger.info("Reloading all traced polylines in scene to update indices after deletion.")
-                #     self.visualization_panel.load_and_display_polylines(self.current_project.traced_polylines)
+                #     self.visualization_panel.load_and_display_polylines(project.traced_polylines)
                 # else:
                 #     self.logger.error("Visualization panel not found, cannot reload polylines after deletion.")
             else:
@@ -1207,53 +1080,37 @@ class MainWindow(QMainWindow):
     def _update_view_actions_state(self):
         """
         Updates the enabled and checked state of the view toggle actions (2D/3D)
-        based on available content (PDF/Surfaces) and the current view mode.
+        based on available content and the current view widget.
         """
-        # Check if actions exist before proceeding
-        if not hasattr(self, 'view_2d_action') or not hasattr(self, 'view_3d_action'):
-            logger.warning("_update_view_actions_state called before view actions were created.")
+        if not hasattr(self, 'view_2d_action') or not hasattr(self, 'view_3d_action') or not hasattr(self, 'visualization_panel'):
+            logger.warning("_update_view_actions_state called before actions/panel were created.")
             return
 
-        has_pdf = False
-        has_surfaces = False
-        current_view = 'unknown' # Default state
+        has_pdf = self.visualization_panel.has_pdf()
+        has_surfaces = self.visualization_panel.has_surfaces()
+        # Determine current view directly from the stacked widget
+        is_2d_current = self.visualization_panel.stacked_widget.currentWidget() == self.visualization_panel.view_2d
+        is_3d_current = self.visualization_panel.stacked_widget.currentWidget() == self.visualization_panel.view_3d
 
-        if hasattr(self, 'visualization_panel'):
-            has_pdf = self.visualization_panel.has_pdf()
-            has_surfaces = self.visualization_panel.has_surfaces()
-            current_view = self.visualization_panel.current_view()
-            logger.debug(f"Updating view actions: has_pdf={has_pdf}, has_surfaces={has_surfaces}, current_view='{current_view}'")
-        else:
-            logger.warning("Cannot update view actions state: VisualizationPanel not found.")
+        logger.debug(f"Updating view actions: has_pdf={has_pdf}, has_surfaces={has_surfaces}, is_2d_current={is_2d_current}, is_3d_current={is_3d_current}")
 
         # Enable actions based on content
         self.view_2d_action.setEnabled(has_pdf)
         self.view_3d_action.setEnabled(has_surfaces)
 
-        # Set checked state based on current view
-        self.view_2d_action.setChecked(current_view == '2d' and has_pdf)
-        self.view_3d_action.setChecked(current_view == '3d' and has_surfaces)
+        # Set checked state based on the current widget in the stack
+        # Block signals to prevent feedback loops if setChecked triggers the slot
+        self.view_2d_action.blockSignals(True)
+        self.view_3d_action.blockSignals(True)
+        self.view_2d_action.setChecked(is_2d_current and has_pdf) # Only check if enabled
+        self.view_3d_action.setChecked(is_3d_current and has_surfaces) # Only check if enabled
+        self.view_2d_action.blockSignals(False)
+        self.view_3d_action.blockSignals(False)
 
-        # --- Ensure one view is active if content exists --- 
-        if not self.view_2d_action.isChecked() and not self.view_3d_action.isChecked():
-             # If neither view is currently active (e.g., after loading a project)
-             # prioritize showing 2D if possible, otherwise 3D.
-             if has_pdf:
-                 self.logger.debug("No view active, activating 2D view by default (PDF exists).")
-                 self.view_2d_action.setChecked(True)
-                 self.visualization_panel.show_2d_view()
-             elif has_surfaces:
-                 self.logger.debug("No view active, activating 3D view by default (Surfaces exist).")
-                 self.view_3d_action.setChecked(True)
-                 self.visualization_panel.show_3d_view()
-             else:
-                  # No content, maybe default to 3D view (empty grid)
-                  self.logger.debug("No view active and no content, defaulting to 3D view.")
-                  self.view_3d_action.setChecked(True) # Check it even if disabled
-                  self.visualization_panel.show_3d_view()
-        # --- End Ensure Active View ---
+        # REMOVED Fallback logic: Initial state is handled by VisualizationPanel._init_ui
+        # and subsequent states by the on_view_... slots calling this.
 
-        logger.debug("_update_view_actions_state complete.")
+        logger.debug("_actions_state complete.")
 
     # --- END NEW ---
  # --- Restore Method for Controller to Update UI ---
@@ -1308,82 +1165,93 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_build_surface(self):
         """Handles the 'Build Surface from Layer' action."""
-        if not self.current_project or not self.current_project.traced_polylines:
+        # Get project from controller
+        project = self.project_controller.get_current_project()
+        if not project or not project.traced_polylines:
             QMessageBox.information(self, "Build Surface", "No traced polylines available...")
             logger.warning("Build Surface action triggered but no traced polylines exist.")
             return
 
         # --- FIX: Handle list/dict format when checking for elevation --- 
         layers_with_elevation = []
-        for layer, polys in self.current_project.traced_polylines.items():
-            if not isinstance(polys, list): # Skip if layer data isn't a list
-                logger.warning(f"Layer '{layer}' data is not a list, skipping elevation check.")
+        # Use project variable
+        for layer, polys in project.traced_polylines.items():
+            # ... (rest of elevation check uses local vars) ...
+            if not isinstance(polys, list): 
+                # ...
                 continue
             has_elevation = False
             for p_data in polys:
-                # Check if p_data is a dict AND has a non-None elevation
+                # ...
                 if isinstance(p_data, dict) and p_data.get('elevation') is not None:
                     has_elevation = True
-                    break # Found one with elevation in this layer
-                # Ignore lists or dicts without elevation for this check
+                    break 
             if has_elevation:
                 layers_with_elevation.append(layer)
         # --- END FIX ---
 
         if not layers_with_elevation:
-             QMessageBox.information(self, "Build Surface", "No layers with elevation data found...")
-             logger.warning("Build Surface action triggered but no layers have elevation data.")
+             # ... (no layers with elevation message) ...
              return
 
-        dlg = BuildSurfaceDialog(self.current_project, self)
+        # Pass project to dialog
+        dlg = BuildSurfaceDialog(project, self)
         if dlg.exec() == QtWidgets.QDialog.Accepted:
             selected_layer = dlg.layer()
             surface_name = dlg.surface_name()
 
             if not selected_layer or not surface_name:
-                 logger.error("Build Surface dialog accepted but returned invalid layer or name.")
+                 # ... (dialog error handling) ...
                  return
 
-            unique_surface_name = self.current_project.get_unique_surface_name(surface_name)
+            # Use project variable
+            unique_surface_name = project.get_unique_surface_name(surface_name)
             if unique_surface_name != surface_name:
-                 logger.warning(f"Surface name '{surface_name}' adjusted to '{unique_surface_name}' for uniqueness.")
+                 # ... (adjust name) ...
                  surface_name = unique_surface_name
 
-            logger.info(f"Starting surface build: Source='{selected_layer}', Target='{surface_name}'")
-            self.statusBar().showMessage(f"Building surface '{surface_name}' from layer '{selected_layer}'...")
+            # ... (logging and status) ...
 
+            # Initialize list before try block to guarantee existence
+            valid_polys_for_build: list = []
             try:
-                polylines_to_build = self.current_project.traced_polylines.get(selected_layer, [])
+                # Use project variable
+                polylines_to_build = project.traced_polylines.get(selected_layer, [])
                 # Filter again here to ensure only dicts with elevation go to builder
+                # Re-assign the real value here
                 valid_polys_for_build = [
                     p for p in polylines_to_build
                     if isinstance(p, dict) and p.get('elevation') is not None
                 ]
+                # Check the filtered list, not the original
                 if not valid_polys_for_build:
                     raise SurfaceBuilderError(f"Layer '{selected_layer}' has no polylines with elevation data suitable for building.")
 
-                # --- Get current layer revision for the build --- 
-                current_layer_rev = self.current_project.layer_revisions.get(selected_layer, 0)
-                self.logger.debug(f"Building surface '{surface_name}' from layer '{selected_layer}' at revision {current_layer_rev}")
+                # Use project variable
+                current_layer_rev = project.layer_revisions.get(selected_layer, 0)
+                # ... (logging) ...
 
                 surface = SurfaceBuilder.build_from_polylines(
                     layer_name=selected_layer, 
-                    polylines_data=valid_polys_for_build, 
-                    revision=current_layer_rev # Pass the revision
+                    polylines_data=valid_polys_for_build, # Pass the filtered list
+                    revision=current_layer_rev
                 )
                 surface.name = surface_name
-                # source_layer_name and source_layer_revision are now set by the builder
-                self.current_project.add_surface(surface)
-                if hasattr(self, 'visualization_panel'):
-                    displayed = self.visualization_panel.display_surface(surface)
-                    if displayed:
-                         logger.info(f"Successfully displayed new surface '{surface.name}'.")
-                    else:
-                         logger.warning(f"Surface '{surface.name}' added to project, but visualization failed.")
-                         QMessageBox.warning(self, "Visualization Warning", f"Surface '{surface.name}' was created but could not be displayed in the 3D view.")
+                # Use project variable
+                project.add_surface(surface)
+                # --- ADD THIS LINE ---
+                self.visualization_panel.update_surface_mesh(surface) # Add the surface to the 3D view
+                # --- END ADD ---
+                # ... (rest of UI updates and error handling) ...
+
                 if hasattr(self, 'project_panel'):
                     self.project_panel._update_tree()
+                # --- ADD THIS --- 
+                self._update_analysis_actions_state() # Check if calc button should be enabled
+                # --- END ADD --- 
                 self.statusBar().showMessage(f"Surface '{surface_name}' created from layer '{selected_layer}'.", 5000)
+                # Update the view action states now that content has changed
+                self._update_view_actions_state()
 
             except SurfaceBuilderError as e:
                  logger.error(f"Surface build failed: {e}", exc_info=True)
@@ -1411,7 +1279,9 @@ class MainWindow(QMainWindow):
 
     def _process_rebuild_queue(self):
         """Processes layers marked for rebuild, rebuilding derived surfaces."""
-        if not self.current_project or not self._rebuild_needed_layers:
+        # Get project from controller
+        project = self.project_controller.get_current_project()
+        if not project or not self._rebuild_needed_layers:
             if self._rebuild_needed_layers:
                  self.logger.warning("Rebuild queue processed but no current project.")
                  self._rebuild_needed_layers.clear()
@@ -1421,30 +1291,35 @@ class MainWindow(QMainWindow):
         self._rebuild_needed_layers.clear() # Clear queue before processing
 
         self.logger.info(f"Processing rebuild queue for layers: {layers_to_process}")
-        surfaces_to_check = list(self.current_project.surfaces.values()) # Copy to avoid issues if modified
+        # Use project variable
+        surfaces_to_check = list(project.surfaces.values()) # Copy to avoid issues if modified
 
         processed_count = 0
         for surf in surfaces_to_check:
             # Check if surface exists in project (might have been deleted)
-            if surf.name not in self.current_project.surfaces:
+            # Use project variable
+            if surf.name not in project.surfaces:
                  continue
             if surf.source_layer_name in layers_to_process:
-                self._rebuild_surface_now(surf.name)
+                # Pass project to rebuild method
+                self._rebuild_surface_now(project, surf.name)
                 processed_count += 1
 
         self.logger.info(f"Finished processing rebuild queue. Rebuilt {processed_count} surfaces derived from {layers_to_process}.")
 
-    def _rebuild_surface_now(self, surface_name: str):
+    # Pass project explicitly
+    def _rebuild_surface_now(self, project: Project, surface_name: str):
         """Rebuilds a specific surface if necessary."""
-        if not self.current_project: return
-        surf = self.current_project.surfaces.get(surface_name)
+        if not project: return # Check passed project
+        surf = project.surfaces.get(surface_name)
 
         if not surf or not surf.source_layer_name:
             self.logger.debug(f"Skipping rebuild for '{surface_name}': No surface or source layer.")
             return
 
         layer = surf.source_layer_name
-        current_layer_rev = self.current_project.layer_revisions.get(layer, 0)
+        # Use project variable
+        current_layer_rev = project.layer_revisions.get(layer, 0)
 
         self.logger.debug(f"Rebuild check for '{surface_name}': Layer='{layer}', CurrentLayerRev={current_layer_rev}, SurfaceSavedRev={surf.source_layer_revision}")
 
@@ -1457,7 +1332,8 @@ class MainWindow(QMainWindow):
              if surf.is_stale:
                   # Restore original code to clear stale state
                   surf.is_stale = False
-                  self.current_project.is_modified = True
+                  # Use project variable
+                  project.is_modified = True
                   if hasattr(self.project_panel, '_update_tree_item_text'):
                       self.project_panel._update_tree_item_text(surf.name)
              return
@@ -1465,7 +1341,7 @@ class MainWindow(QMainWindow):
         self.logger.debug(f" -> Surface '{surface_name}' needs rebuild (SavedRev={surf.source_layer_revision} != CurrentRev={current_layer_rev}).")
         # ... (rest of rebuild logic) ...
 
-        polys_data = self.current_project.traced_polylines.get(layer, [])
+        polys_data = project.traced_polylines.get(layer, [])
         valid_polys = [
             p for p in polys_data
             if isinstance(p, dict) and p.get("elevation") is not None
@@ -1474,7 +1350,7 @@ class MainWindow(QMainWindow):
         if not valid_polys:
             logger.warning(f"Layer '{layer}' has no valid polylines with elevation to rebuild surface '{surface_name}'. Marking as stale.")
             surf.is_stale = True
-            self.current_project.is_modified = True
+            project.is_modified = True
             if hasattr(self.project_panel, '_update_tree_item_text'): # Check if method exists
                 self.project_panel._update_tree_item_text(surf.name)
             return
@@ -1486,9 +1362,9 @@ class MainWindow(QMainWindow):
             new_surf.name = surface_name # Keep the original name
             new_surf.is_stale = False # Mark as not stale
 
-            # Replace in project
-            self.current_project.surfaces[surface_name] = new_surf
-            self.current_project.is_modified = True
+            # Replace in project (use project variable)
+            project.surfaces[surface_name] = new_surf
+            project.is_modified = True
 
             # Update visualization - Use update_surface_mesh (defined in Part 4)
             if hasattr(self.visualization_panel, 'update_surface_mesh'):
@@ -1508,7 +1384,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Rebuild Failed", f"Could not rebuild surface '{surface_name}':\n{e}")
             self.statusBar().showMessage(f"Rebuild failed for '{surface_name}'.", 5000)
             surf.is_stale = True
-            self.current_project.is_modified = True
+            project.is_modified = True
             if hasattr(self.project_panel, '_update_tree_item_text'): # Check if method exists
                 self.project_panel._update_tree_item_text(surf.name)
         except Exception as e:
@@ -1516,7 +1392,7 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Rebuild Error", f"An unexpected error occurred rebuilding '{surface_name}':\n{e}")
             self.statusBar().showMessage(f"Rebuild error for '{surface_name}'.", 5000)
             surf.is_stale = True
-            self.current_project.is_modified = True
+            project.is_modified = True
             if hasattr(self.project_panel, '_update_tree_item_text'): # Check if method exists
                  self.project_panel._update_tree_item_text(surf.name)
     # --- End Rebuild Helpers ---

@@ -15,11 +15,14 @@ PyPDF2>=2.0.0  # PDF parsing
 PyMuPDF>=1.20.0  # Advanced PDF processing (previously listed as fitz)
 
 # Optional 3D Visualization 
-# PyOpenGL>=3.1.6  # OpenGL support (optional, needed by pyqtgraph 3D)
+PyOpenGL>=3.1.6  # OpenGL support (optional, needed by pyqtgraph 3D)
 
 # Exporters
 reportlab>=3.6.0  # PDF report generation
 
 # Testing
 pytest>=7.0.0  # Testing framework
-pytest-qt>=4.0.0  # Qt testing support 
+pytest-qt>=4.0.0  # Qt testing support
+
+# Add matplotlib for color maps
+matplotlib>=3.5.0 

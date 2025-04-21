@@ -22,7 +22,7 @@ from PySide6 import QtWidgets
 # from PySide6.QtQuickWidgets import QQuickWidget 
 # Import QJSValue for type hinting if needed
 from PySide6.QtQml import QJSValue # Use for type hint if receiving from QML
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QComboBox, QMessageBox
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QComboBox, QMessageBox, QStackedWidget
 from PySide6.QtGui import QImage, QPixmap, QMouseEvent, QWheelEvent, QTransform
 
 # Import visualization libraries
@@ -191,6 +191,9 @@ class VisualizationPanel(QWidget):
         # Temporary default until layer selector UI is implemented
         self.active_layer_name: str = "Existing Surface"
         
+        # Give the panel a minimum size
+        self.setMinimumSize(400, 300)
+        
         # Layer selector combobox (will be added to MainWindow toolbar)
         self.layer_selector = QComboBox(self) # Parented to panel, but not added to its layout
         self.layer_selector.addItems([
@@ -238,80 +241,50 @@ class VisualizationPanel(QWidget):
         self.active_layer_name = layer
         
     def _init_ui(self):
-        """Initialize the UI components, including QGraphicsView for 2D/PDF."""
+        """Initialize the UI components, using QStackedWidget for views."""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        
-        # --- QML View Placeholder ---
-        # When integrating QML, instantiate QQuickWidget here
-        # self.qml_widget = QQuickWidget(self)
-        # self.qml_widget.setSource(QUrl.fromLocalFile('path/to/your/TracingComponent.qml')) # Example
-        # self.qml_widget.setResizeMode(QQuickWidget.SizeRootObjectToView)
-        # layout.addWidget(self.qml_widget)
-        # self.qml_widget.setVisible(False) # Initially hidden?
-        
-        # --- Get the root QML object to interact with it ---
-        # self.qml_root_object = self.qml_widget.rootObject()
-        # if self.qml_root_object:
-        #    # Connect signals FROM QML (example)
-        #    self.qml_root_object.polylineFinalized.connect(self._on_qml_polyline_finalized)
-        #    self.logger.info("Connected to QML signals.")
-        # else:
-        #    self.logger.error("Failed to get QML root object!")
 
-        # --- Legacy 2D Scene/View (To be removed/replaced by QML) ---
-        # Create the VIEW first
-        self.view_2d = InteractiveGraphicsView(None, self) # Pass None for scene initially
-        # Create the SCENE, passing the VIEW reference to it
-        self.scene_2d = TracingScene(self.view_2d, self) 
-        self.view_2d.setScene(self.scene_2d) # Set the scene for the view
-        # DragMode, TransformationAnchor, ResizeAnchor are set within InteractiveGraphicsView.__init__
-        self.view_2d.setVisible(False) # Keep legacy hidden by default if migrating
-        layout.addWidget(self.view_2d)
+        # Create the Stacked Widget
+        self.stacked_widget = QStackedWidget(self)
+        layout.addWidget(self.stacked_widget)
+
+        # --- Legacy 2D Scene/View --- 
+        self.view_2d = InteractiveGraphicsView(None, self)
+        self.scene_2d = TracingScene(self.view_2d, self)
+        self.view_2d.setScene(self.scene_2d)
+        # self.view_2d.setVisible(False) # Visibility managed by stack
+        self.stacked_widget.addWidget(self.view_2d)
+
+        # REMOVED: Disconnect legacy signal handler
         
-        # --- FIX: Disconnect the legacy signal handler --- #
-        # Ensure the connection to the legacy slot is removed.
-        try:
-            # Attempt to disconnect using the correct signal signature (list, QGraphicsPathItem)
-            # Note: This might still fail if the slot signature doesn't match expected,
-            # but the primary goal is to prevent the connection if it exists.
-            self.scene_2d.polyline_finalized.disconnect(self._on_legacy_polyline_finalized)
-            self.logger.debug("Attempted to disconnect legacy polyline_finalized signal from VisualizationPanel._on_legacy_polyline_finalized")
-        except (RuntimeError, TypeError) as e:
-            self.logger.debug("Legacy polyline_finalized signal was not connected or slot mismatch in VisualizationPanel: %s", e)
-            pass # Ignore errors, main goal is removal
-        # --- END FIX ---
-        
-        # --- 3D View --- 
+        # --- 3D View / Placeholder --- 
         if HAS_3D:
-            # Create 3D view
             self.view_3d = GLViewWidget()
-            self.view_3d.setCameraPosition(distance=100, elevation=30, azimuth=45)
-            
-            # Add a grid
+            # ... setup grid, axis ...
             grid = GLGridItem()
             grid.setSize(x=100, y=100, z=0)
             grid.setSpacing(x=10, y=10, z=10)
             self.view_3d.addItem(grid)
-            
-            # Add axis items for orientation
             axis = GLAxisItem()
             axis.setSize(x=20, y=20, z=20)
             self.view_3d.addItem(axis)
-            
-            layout.addWidget(self.view_3d)
-            
-            self.logger.debug("3D view initialized")
+            # self.view_3d.setVisible(False) # Visibility managed by stack
+            self.stacked_widget.addWidget(self.view_3d)
+            self.logger.debug("3D view initialized and added to stack")
         else:
-            # Display a message if 3D visualization is not available
-            self.placeholder = QLabel("3D visualization not available.\nPlease install pyqtgraph and PyOpenGL.")
-            self.placeholder.setAlignment(Qt.AlignCenter)
-            self.placeholder.setStyleSheet("background-color: #f0f0f0; padding: 20px;")
-            layout.addWidget(self.placeholder)
-            
-            self.logger.warning("3D visualization libraries not available")
+            # Create and add the placeholder QLabel to the stack
+            self.view_3d = QLabel("3D visualization not available.\nPlease install pyqtgraph and PyOpenGL.")
+            self.view_3d.setAlignment(Qt.AlignCenter)
+            self.view_3d.setStyleSheet("background-color: #f0f0f0; padding: 20px;")
+            # self.view_3d.setVisible(False) # Visibility managed by stack
+            self.stacked_widget.addWidget(self.view_3d)
+            self.logger.warning("3D visualization libraries not available, placeholder added to stack")
         
-        self.logger.debug("VisualizationPanel UI initialized")
+        # Set initial view (e.g., default to 3D/placeholder)
+        self.stacked_widget.setCurrentWidget(self.view_3d)
+        
+        self.logger.debug("VisualizationPanel UI initialized with QStackedWidget")
     
     def set_project(self, project: Optional[Project]):
         """
@@ -415,9 +388,8 @@ class VisualizationPanel(QWidget):
             self.logger.info(f"Displaying/Updating surface: {surface.name}...")
             self.update_surface_mesh(surface) # Call the new update method
 
-            # Adjust view only if it's the very first surface being added
-            if len(self.surface_mesh_items) == 1:
-                 self._adjust_view_to_surface(surface)
+            # Adjust view every time a surface is displayed/updated
+            self._adjust_view_to_surface(surface)
 
             # No separate logging here, update_surface_mesh handles it
             return True # Indicate update was attempted
@@ -441,7 +413,7 @@ class VisualizationPanel(QWidget):
              self.logger.error("Cannot update surface mesh: Surface name is missing.")
              return
 
-        self.logger.debug(f"Updating mesh for surface: {name}")
+        self.logger.info(f"Attempting to update/create mesh for surface: {name}")
 
         # Remove existing mesh item if it exists
         if name in self.surface_mesh_items:
@@ -456,7 +428,15 @@ class VisualizationPanel(QWidget):
             del self.surface_mesh_items[name]
 
         # Create new mesh data and item
-        mesh_data = self._create_mesh_data(surface)
+        mesh_data = None
+        try:
+            mesh_data = self._create_mesh_data(surface)
+        except Exception as e_data:
+            self.logger.error(f"Error calling _create_mesh_data for surface '{name}': {e_data}", exc_info=True)
+            # Emit failure signal if appropriate?
+            self.surface_visualization_failed.emit(name, f"Failed to generate mesh data: {e_data}")
+            return # Exit if data creation fails
+
         if mesh_data:
             try:
                 new_mesh = gl.GLMeshItem(
@@ -880,37 +860,39 @@ class VisualizationPanel(QWidget):
 
     def current_view(self) -> str:
         """Returns the currently visible view mode ("2d" or "3d")."""
-        if self.view_2d and self.view_2d.isVisible():
+        current = self.stacked_widget.currentWidget()
+        if current == self.view_2d:
             return "2d"
-        # Check if view_3d exists and is the actual GLWidget before checking visibility
-        elif HAS_3D and self.view_3d and isinstance(self.view_3d, gl.GLViewWidget) and self.view_3d.isVisible():
+        elif current == self.view_3d:
+            # Return "3d" even if it's the placeholder Label
             return "3d"
         else:
-            # Fallback if state is ambiguous (e.g., during init or if 3D disabled)
-            return "2d" 
+            # Should not happen if stack contains only view_2d and view_3d
+            logger.warning("Current widget in stacked_widget is unexpected!")
+            return "unknown"
 
     # --- NEW: View Switching Methods --- 
     def show_2d_view(self):
         """Shows the 2D view (PDF/Tracing) and hides the 3D view."""
         self.logger.debug("Switching to 2D view.")
-        if self.view_3d: # Check if view_3d widget exists
-            self.view_3d.setVisible(False)
-        self.view_2d.setVisible(True)
-        self.view_2d.raise_() # Bring to front
+        self.stacked_widget.setCurrentWidget(self.view_2d)
+        # No need to call raise_() with QStackedWidget
 
     def show_3d_view(self):
         """Shows the 3D view (Terrain) and hides the 2D view."""
         if not HAS_3D or not isinstance(self.view_3d, gl.GLViewWidget):
             self.logger.warning("Attempted to switch to 3D view, but it is unavailable.")
-            # Optionally show a message to the user?
-            # Maybe show the placeholder QLabel if it exists?
-            if isinstance(self.view_3d, QLabel): self.view_3d.setVisible(True)
-            self.view_2d.setVisible(False) # Still hide 2d
+            # Explicitly set the placeholder if it's the current view_3d widget
+            if isinstance(self.view_3d, QLabel):
+                self.stacked_widget.setCurrentWidget(self.view_3d)
+            else:
+                # Fallback if something unexpected happened (e.g., HAS_3D changed)
+                # Defaulting to 2D might be safer here?
+                self.stacked_widget.setCurrentWidget(self.view_2d)
             return
         self.logger.debug("Switching to 3D view.")
-        self.view_2d.setVisible(False)
-        self.view_3d.setVisible(True)
-        self.view_3d.raise_() # Bring to front
+        self.stacked_widget.setCurrentWidget(self.view_3d)
+        # No need to call raise_() with QStackedWidget
 
     # --- Update Existing Methods --- 
     def _adjust_view_to_surface(self, surface: Surface):
