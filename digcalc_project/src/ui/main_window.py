@@ -760,33 +760,7 @@ class MainWindow(QMainWindow):
             self.logger.info("Volume calculation dialog cancelled by user.")
             self.statusBar().showMessage("Calculation cancelled.", 3000)
 
-    def _confirm_close_project(self) -> bool:
-        """
-        Checks if the current project has unsaved changes and asks the user
-        if they want to save before proceeding (e.g., closing, opening new).
-        
-        Returns:
-            bool: True if the operation should proceed (saved, not saved, or no changes), 
-                  False if the user cancels the operation.
-        """
-        if not self.current_project:
-            return True
-            
-        reply = QMessageBox.question(self, 'Unsaved Changes',
-                                     "The current project has unsaved changes. Do you want to save them before proceeding?",
-                                     QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
-                                     QMessageBox.Cancel)
 
-        if reply == QMessageBox.Cancel:
-            self.logger.debug("Project close/switch cancelled by user due to unsaved changes.")
-            return False
-        elif reply == QMessageBox.Save:
-            return self.on_save_project()
-        elif reply == QMessageBox.Discard:
-            self.logger.info("Discarding unsaved changes in current project.")
-            return True
-            
-        return False
 
     def closeEvent(self, event):
         """Handle the main window close event."""
@@ -1282,7 +1256,54 @@ class MainWindow(QMainWindow):
         logger.debug("_update_view_actions_state complete.")
 
     # --- END NEW ---
+ # --- Restore Method for Controller to Update UI ---
+    def _update_ui_for_project(self, project: Optional[Project]):
+        """
+        Updates various UI components based on the current project state.
+        Called by ProjectController when the project changes.
 
+        Args:
+            project: The new current project (or None).
+        """
+        self.logger.debug(f"Updating UI for project: {project.name if project else 'None'}")
+        # Update UI elements
+        if hasattr(self, 'project_panel'): self.project_panel.set_project(project)
+        self._update_layer_tree() # Update layer tree
+        if hasattr(self, 'visualization_panel'): self.visualization_panel.set_project(project)
+        self._update_analysis_actions_state() # Update menu/toolbar item enabled state
+        self._update_pdf_controls() # Update PDF controls based on project state
+        self._update_window_title() # Update window title
+        if hasattr(self, 'prop_dock'):
+            self.prop_dock.clear_selection() # Clear properties dock
+            if self._selected_scene_item is None: # Don't hide if something is selected
+                self.prop_dock.hide()
+        self._clear_cutfill_state() # Clear any stale cut/fill viz
+        # --- Ensure view actions are updated after project load/change ---
+        self._update_view_actions_state()
+        # --- End ensure ---
+        self.logger.debug("UI update complete.")
+    # --- End Restore ---
+
+    # --- Restore Method to Update Window Title ---
+    def _update_window_title(self):
+         """Sets the main window title based on the current project name and dirty state."""
+         # Check if project_controller exists before accessing it
+         if not hasattr(self, 'project_controller'):
+              self.setWindowTitle("DigCalc") # Default title if controller not ready
+              return
+         project = self.project_controller.get_current_project()
+         base_title = "DigCalc"
+         if project:
+             title = f"{project.name} - {base_title}"
+             if project.filepath:
+                 # Ensure Path is imported (add 'from pathlib import Path' at the top if missing)
+                 title += f" [{Path(project.filepath).name}]"
+             if project.is_dirty:
+                 title += " *" # Indicate unsaved changes
+             self.setWindowTitle(title)
+         else:
+             self.setWindowTitle(base_title)
+    # --- End Restore ---
     # --- NEW: Slot for Building Surface --- 
     @Slot()
     def on_build_surface(self):
