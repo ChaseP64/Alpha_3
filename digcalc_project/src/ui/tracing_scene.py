@@ -53,7 +53,9 @@ class TracingScene(QGraphicsScene):
         self.logger = logging.getLogger(__name__)
         self.parent_view = view # Store reference to the parent view
 
-        self._background_item: Optional[QGraphicsPixmapItem] = None
+        # Allow multiple stacked background layers (one per PDF page)
+        self._background_items: List[QGraphicsPixmapItem] = []
+        self._background_item = None  # legacy alias
         self._tracing_enabled: bool = False
         self._is_drawing: bool = False
         self._current_polyline_points: List[QPointF] = []
@@ -72,27 +74,60 @@ class TracingScene(QGraphicsScene):
 
     # --- Background Image ---
 
-    def set_background_image(self, image: Optional[QImage]):
-        """Sets or clears the background image of the scene."""
-        # Remove existing background if it exists
-        if self._background_item and self._background_item in self.items():
-            self.removeItem(self._background_item)
-            self._background_item = None
-            self.setSceneRect(self.itemsBoundingRect())
+    # ------------------------------------------------------------------
+    # Background layer helpers (multi‑page stacking)
+    # ------------------------------------------------------------------
 
-        if image and not image.isNull():
-            pixmap = QPixmap.fromImage(image)
-            self._background_item = QGraphicsPixmapItem(pixmap)
-            self._background_item.setZValue(-1) # Background is always at the bottom
-            self._background_item.setFlag(QGraphicsItem.ItemIsSelectable, False)
-            self._background_item.setFlag(QGraphicsItem.ItemIsMovable, False)
-            self._background_item.setOpacity(self._background_opacity)
-            self.addItem(self._background_item)
-            self.setSceneRect(self._background_item.boundingRect())
-            self.logger.info(f"Background image set with size: {image.width()}x{image.height()}")
-        else:
+    def addBackgroundLayer(self, pixmap: QPixmap, z: float | None = None) -> None:  # noqa: N802
+        """Add a new PDF page pixmap as a background layer."""
+        item = QGraphicsPixmapItem(pixmap)
+        if z is None:
+            z = -(len(self._background_items) + 1)  # stack downwards
+        item.setZValue(z)
+        item.setFlag(QGraphicsItem.ItemIsSelectable, False)
+        item.setFlag(QGraphicsItem.ItemIsMovable, False)
+        item.setOpacity(self._background_opacity)
+        self.addItem(item)
+        self._background_items.append(item)
+        # Keep legacy alias pointing to *last* added for backward‑compat
+        self._background_item = item
+        # Expand scene rect to fit all layers (use first item's bounds)
+        self.setSceneRect(self.itemsBoundingRect())
+
+    def removeBackgroundLayer(self, index: int) -> None:  # noqa: N802
+        """Remove a background layer by its index in the stack."""
+        if 0 <= index < len(self._background_items):
+            item = self._background_items.pop(index)
+            if item in self.items():
+                self.removeItem(item)
+            # Update Z‑values to keep ordering compact
+            for i, it in enumerate(self._background_items, start=1):
+                it.setZValue(-i)
             self.setSceneRect(self.itemsBoundingRect())
-            self.logger.info("Background image cleared.")
+            # Update legacy alias
+            self._background_item = self._background_items[-1] if self._background_items else None
+        else:
+            self.logger.warning("removeBackgroundLayer: index out of range (%s)", index)
+
+    # Legacy single‑image API retained for compatibility -----------------------------------
+    def set_background_image(self, image: Optional[QImage]):  # noqa: N802
+        """Maintain old API: clear layers then add one."""
+        # clear existing
+        for item in list(self._background_items):
+            if item in self.items():
+                self.removeItem(item)
+        self._background_items.clear()
+        self._background_item = None
+        if image and not image.isNull():
+            self.addBackgroundLayer(QPixmap.fromImage(image))
+
+    # ------------------------------------------------------------------
+    # Backward‑compat helper – some code paths call *setBackgroundImage*.
+    # ------------------------------------------------------------------
+    def setBackgroundImage(self, pixmap: QPixmap):  # camelCase alias
+        """Qt slot‑style camel‑case alias for :py:meth:`set_background_image`."""
+        img = pixmap.toImage() if isinstance(pixmap, QPixmap) else None
+        self.set_background_image(img)
 
     # --- Drawing Control ---
 

@@ -49,6 +49,9 @@ import numpy as np # Added for type hinting dz_grid etc.
 from .project_controller import ProjectController 
 # --- End Import Check ---
 
+from ..services.pdf_service import PdfService
+from .docks.pdf_thumbnail_dock import PdfThumbnailDock
+
 logger = logging.getLogger(__name__)
 
 
@@ -141,42 +144,47 @@ class MainWindow(QMainWindow):
         self.prop_dock.hide()
         # --- END NEW ---
         
+        # --- PDF Thumbnail Dock ---
+        self.pdf_thumbnail_dock = PdfThumbnailDock(self)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.pdf_thumbnail_dock)
+
+        # Set up PdfService singleton and connect signals
+        self.pdf_service = PdfService()
+        self.pdf_service.documentLoaded.connect(self.pdf_thumbnail_dock.model.set_page_count)
+        self.pdf_service.thumbnailReady.connect(self.pdf_thumbnail_dock.model.update_thumbnail)
+
+        # -------------------------------------------------------------
+        # PDF controller wiring – decouples dock from visualization panel
+        # -------------------------------------------------------------
+        try:
+            from ..controllers import PdfController  # local relative import
+        except Exception as _imp_err:  # pragma: no cover – defensive
+            self.logger.error("Failed to import PdfController: %s", _imp_err)
+            PdfController = None  # type: ignore  # noqa: N806
+
+        if PdfController is not None:
+            self.pdf_controller = PdfController(self)
+            # Dock → controller
+            self.pdf_thumbnail_dock.pageClicked.connect(self.pdf_controller.on_page_clicked)
+            # Controller → MainWindow handler (will forward to vis. panel)
+            self.pdf_controller.pageSelected.connect(self.on_pdf_page_selected)
+            # Controller → VisualizationPanel (render page)
+            self.pdf_controller.pageSelected.connect(self.visualization_panel.on_page_selected)
+        else:
+            # Fallback: connect dock directly if controller cannot be imported
+            self.pdf_thumbnail_dock.pageClicked.connect(self.on_pdf_page_selected)
+        
         # Connect the signal for item changes (checkbox toggles)
         self.layer_tree.itemChanged.connect(self._on_layer_visibility_changed)
         
         # Give visualization panel a reference to the main window (for project access etc)
         # self.visualization_panel.set_main_window(self)
         
-        # --- Layer Control Panel Dock ---
-        # self.layer_control_panel_widget = self.visualization_panel.get_layer_control_panel()
-        # if self.layer_control_panel_widget:
-        #     self.layer_dock = QDockWidget("Layers", self)
-        #     self.layer_dock.setFeatures(
-        #         QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable
-        #     )
-        #     self.layer_dock.setWidget(self.layer_control_panel_widget)
-        #     # Start hidden, only relevant when PDF is loaded? Or always visible? Let's start visible.
-        #     self.addDockWidget(Qt.RightDockWidgetArea, self.layer_dock)
-        #     self.layer_dock.setVisible(True)
-        # else:
-        #     self.layer_dock = None
-        #     self.logger.error("Could not create Layer Control dock widget: Panel not found.")
     
     def _connect_signals(self):
         """Connect signals from UI components to main window slots."""
         self.logger.debug("Connecting MainWindow signals...")
 
-        # --- Connect Project Controller signals ---
-        # (ProjectController doesn't emit signals yet, MainWindow calls it directly)
-        # Connect file actions to ProjectController slots
-        # --- Remove Explicit Disconnects --- 
-        # try: self.new_project_action.triggered.disconnect(self.on_new_project) 
-        # except (TypeError, RuntimeError): pass # Ignore if not connected or method gone
-        # try: self.open_project_action.triggered.disconnect(self.on_open_project)
-        # except (TypeError, RuntimeError): pass # Ignore if not connected or method gone
-        # try: self.save_project_action.triggered.disconnect(self.on_save_project)
-        # except (TypeError, RuntimeError): pass # Ignore if not connected or method gone
-        # --- End Remove ---
         self.new_project_action.triggered.connect(self.project_controller.on_new_project)
         self.open_project_action.triggered.connect(self.project_controller.on_open_project)
         self.save_project_action.triggered.connect(self.project_controller.on_save_project)
@@ -224,19 +232,11 @@ class MainWindow(QMainWindow):
         """Create actions for menus and toolbars."""
         # File menu actions
         self.new_project_action = QAction("New Project", self)
-        # --- Remove obsolete connect --- 
-        # self.new_project_action.triggered.connect(self.on_new_project) 
-        # --- End Remove ---
         
         self.open_project_action = QAction("Open Project", self)
-        # --- Remove obsolete connect --- 
-        # self.open_project_action.triggered.connect(self.on_open_project)
-        # --- End Remove ---
         
         self.save_project_action = QAction("Save Project", self)
-        # --- Remove obsolete connect --- 
-        # self.save_project_action.triggered.connect(self.on_save_project)
-        # --- End Remove ---
+
         
         self.exit_action = QAction("Exit", self)
         self.exit_action.triggered.connect(self.close) # This one is correct
@@ -315,11 +315,6 @@ class MainWindow(QMainWindow):
         self.cutfill_action.setStatusTip("Toggle visibility of the cut/fill heatmap/mesh")
         # --- END NEW ---
 
-        # --- NEW: Surfaces Menu ---
-        # Action creation belongs here, menu population happens in _create_menus
-        # self.surfaces_menu = self.menu_bar.addMenu("Surfaces") # Moved to _create_menus
-        # self.surfaces_menu.addAction(self.build_surface_action) # Moved to _create_menus
-        # --- END NEW ---
 
         # Analysis menu
         self.analysis_menu = self.menu_bar.addMenu("Analysis")
@@ -662,7 +657,19 @@ class MainWindow(QMainWindow):
                     project.pdf_background_dpi = self.pdf_dpi_setting
                     project.clear_traced_polylines()
                     self.visualization_panel.clear_polylines_from_scene()
-                self.statusBar().showMessage(f"Loaded PDF background '{Path(filename).name}' ({self.visualization_panel.pdf_renderer.get_page_count()} pages).", 5000)
+                # Inform PdfService so thumbnails are generated
+                try:
+                    doc = self.pdf_service.load_pdf(filename)
+                    if doc is None:
+                        self.logger.warning("PdfService failed to load document – thumbnails will not be available.")
+                except Exception as svc_err:
+                    self.logger.error("PdfService.load_pdf failed: %s", svc_err)
+
+                pg_count = self.visualization_panel.pdf_renderer.get_page_count() if self.visualization_panel.pdf_renderer else 0
+                self.statusBar().showMessage(
+                    f"Loaded PDF background '{Path(filename).name}' ({pg_count} pages).",
+                    5000,
+                )
             except (FileNotFoundError, PDFRendererError, Exception) as e:
                  self.logger.exception(f"Failed to load PDF background: {e}")
                  QMessageBox.critical(self, "PDF Load Error", f"Failed to load PDF background:\n{e}")
@@ -1442,6 +1449,25 @@ class MainWindow(QMainWindow):
             # If map wasn't generated or data was invalid, ensure it's cleared/disabled
             self.logger.info("Cut/Fill map not generated or data invalid, ensuring it is cleared.")
             self._clear_cutfill_state()
+
+    def on_pdf_page_selected(self, page: int):
+        """Handle page change coming from :class:`PdfController` or the dock.
+
+        The method currently only updates the PDF controls (spin‑box, next/prev
+        actions).  The actual rendering is handled by
+        :py:meth:`~digcalc_project.src.ui.visualization_panel.VisualizationPanel.on_page_selected`.
+        """
+        self.logger.debug("on_pdf_page_selected -> %s", page)
+
+        # Update helper state so navigation buttons reflect the new page.
+        if hasattr(self, "visualization_panel"):
+            try:
+                self.visualization_panel.current_pdf_page = page
+            except Exception:  # pragma: no cover – defensive only
+                pass
+
+        # Keep toolbar navigation state in sync.
+        self._update_pdf_controls()
 
 
 class VolumeCalculationDialog(QDialog):

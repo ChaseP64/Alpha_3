@@ -16,14 +16,15 @@ from pathlib import Path
 
 # PySide6 imports
 from PySide6.QtCore import Qt, Slot, Signal, QRectF, QPointF, QPoint
-# Import QtWidgets for QDialog enum access
-from PySide6 import QtWidgets 
+from PySide6 import QtWidgets
+from PySide6.QtGui import QPixmap, QImage
+from PySide6.QtWidgets import QGraphicsPixmapItem
 # Import QQuickWidget if we were fully integrating QML here
 # from PySide6.QtQuickWidgets import QQuickWidget 
 # Import QJSValue for type hinting if needed
 from PySide6.QtQml import QJSValue # Use for type hint if receiving from QML
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QComboBox, QMessageBox, QStackedWidget
-from PySide6.QtGui import QImage, QPixmap, QMouseEvent, QWheelEvent, QTransform
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QGraphicsView, QGraphicsScene, QComboBox, QMessageBox, QStackedWidget
+from PySide6.QtGui import QMouseEvent, QWheelEvent, QTransform
 
 # Import visualization libraries
 try:
@@ -48,6 +49,7 @@ from ..models.project import Project
 from .dialogs.elevation_dialog import ElevationDialog
 from .interactive_graphics_view import InteractiveGraphicsView # Import the custom view
 from ..utils.color_maps import dz_to_rgba # Import the new color utility
+from ..services.pdf_service import PdfService  # local import to avoid cycles
 
 # --- Logger --- 
 logger = logging.getLogger(__name__)
@@ -1062,6 +1064,10 @@ class VisualizationPanel(QWidget):
             # Consider enabling tracing action if it exists in MainWindow
             # Example: self.parent().toggle_tracing_action.setEnabled(True)
 
+            # Keep local reference for later operations (e.g., clearing background)
+            if hasattr(self.scene_2d, "_background_item"):
+                # noinspection PyProtectedMember
+                self._pdf_bg_item = self.scene_2d._background_item  # type: ignore[attr-defined]
         except PDFRendererError as e:
             self.logger.error(f"Failed to load PDF background: {e}")
             QMessageBox.critical(self, "PDF Load Error", f"""Could not load PDF:
@@ -1387,11 +1393,55 @@ class VisualizationPanel(QWidget):
             self.logger.error(f"Error adjusting 3D view to points: {e}", exc_info=True)
     # --- END NEW HELPER --- 
 
-    # Make sure to import QTransform at the top
-    # from PySide6.QtGui import QImage, QPixmap, QMouseEvent, QWheelEvent, QTransform
-    # Make sure to import dz_to_rgba at the top
-    # from ..utils.color_maps import dz_to_rgba
+    # ------------------------------------------------------------------
+    # Slots – external page selection handling
+    # ------------------------------------------------------------------
+    @Slot(int)
+    def on_page_selected(self, page: int) -> None:
+        """Render the selected *page* at full resolution and display it.
 
-    # Potentially add wheelEvent override if needed here instead of InteractiveGraphicsView
-    # def wheelEvent(self, event):
-    #    pass 
+        The slot relies on :class:`digcalc_project.services.pdf_service.
+        PdfService` for access to the currently loaded document – we avoid the
+        heavier :class:`PDFRenderer` because thumbnails are already managed by
+        the service layer.
+        """
+        if page <= 0:
+            self.logger.warning("on_page_selected called with invalid index %s", page)
+            return
+
+        # Prefer the singleton directly – avoids parent lookup edge‑cases in tests.
+        doc = PdfService()._current  # type: ignore[attr-defined]
+
+        # Duck‑typing guard – we only need a render_page(page, width) method.
+        if doc is None or not hasattr(doc, "render_page"):
+            self.logger.warning("No PDF loaded – page selection ignored.")
+            return
+
+        # Render the page keeping aspect ratio.  We use the panel width for
+        # a reasonable on‑screen resolution.
+        try:
+            target_w = max(self.width(), 1)
+            pixmap = doc.render_page(page - 1, target_w)  # PdfDocument uses zero‑based
+        except Exception as err:  # pragma: no cover – defensive
+            self.logger.error("Failed to render page %s: %s", page, err)
+            return
+
+        # Store selection for other parts of the UI (e.g., toolbar sync).
+        self.current_pdf_page = page
+
+        # Feed the pixmap into the tracing scene.
+        if not hasattr(self, "scene_2d") or self.scene_2d is None:
+            self.logger.error("Tracing scene missing – cannot set background.")
+            return
+
+        # Remove previous background if present
+        old_item = getattr(self.scene_2d, "_background_item", None)
+        if isinstance(old_item, QGraphicsPixmapItem):
+            self.scene_2d.removeItem(old_item)
+
+        new_item = QGraphicsPixmapItem(pixmap)
+        self.scene_2d.addItem(new_item)
+        self.scene_2d._background_item = new_item  # type: ignore[attr-defined]
+
+        # Move user to 2‑D view automatically so the change is visible.
+        self.show_2d_view()

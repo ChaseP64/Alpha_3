@@ -6471,3 +6471,14 @@ AttributeError: 'VisualizationPanel' object has no attribute 'add_surface_mesh'
 2025-04-21 11:54:12,220 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
 2025-04-21 11:54:12,220 - digcalc_project.src.ui.main_window - INFO - Closing application.
 2025-04-21 11:54:12,229 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-22 13:05:24,433 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-22 13:05:24,458 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-22 13:05:42,093 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-22 13:05:42,093 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to load PDF background: 'C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf' at 300 DPI
+2025-04-22 13:05:42,093 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-22 13:05:42,093 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-22 13:05:42,093 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-04-22 13:05:42,093 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-04-22 13:05:45,562 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-04-22 13:05:45,619 - digcalc_project.src.ui.visualization_panel - INFO - Successfully loaded PDF page 1 from 'C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-04-22 13:05:45,619 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
