@@ -527,40 +527,53 @@ class MainWindow(QMainWindow):
     def _update_pdf_controls(self):
         """
         Updates the state of PDF-related controls (spinbox, labels, actions).
-        Now uses PdfController to get document state.
+        Now uses VisualizationPanel to get document state.
         """
-        current_doc = self.pdf_controller.get_current_document()
-        has_pdf = current_doc is not None and current_doc.is_loaded
-        page_count = current_doc.page_count if has_pdf else 0
-        current_page = self.pdf_controller.get_current_page_index() # 0-based
+        # Get state directly from VisualizationPanel
+        panel = self.visualization_panel
+        has_pdf = panel.has_pdf() # Checks if renderer and bg item exist
+        page_count = panel.pdf_renderer.get_page_count() if panel.pdf_renderer else 0
+        # current_pdf_page in panel is 1-based
+        current_page_1_based = panel.current_pdf_page if has_pdf else 1 
 
-        if self._pdf_page_spinbox:
-            self._pdf_page_spinbox.setEnabled(has_pdf and page_count > 1)
-            self._pdf_page_spinbox.setRange(1, max(1, page_count))
+        # --- FIX: Use correct attribute names (remove leading underscore) ---
+        if self.pdf_page_spinbox:
+            self.pdf_page_spinbox.setEnabled(has_pdf and page_count > 1)
+            self.pdf_page_spinbox.setRange(1, max(1, page_count))
             # Block signals temporarily to avoid recursive updates
-            self._pdf_page_spinbox.blockSignals(True)
-            self._pdf_page_spinbox.setValue(current_page + 1 if current_page >= 0 else 1)
-            self._pdf_page_spinbox.blockSignals(False)
+            self.pdf_page_spinbox.blockSignals(True)
+            self.pdf_page_spinbox.setValue(current_page_1_based)
+            self.pdf_page_spinbox.blockSignals(False)
         else:
-             self.logger.warning("Cannot update missing _pdf_page_spinbox")
+             self.logger.warning("Cannot update missing pdf_page_spinbox")
 
-        if self._pdf_page_label:
+        if self.pdf_page_label:
             if has_pdf:
-                self._pdf_page_label.setText(f"Page: {current_doc.page_label(current_page)} / {page_count}")
+                # Assuming page_label is not readily available, just show numbers
+                self.pdf_page_label.setText(f"Page: {current_page_1_based} / {page_count}")
             else:
-                self._pdf_page_label.setText("Page: N/A")
+                self.pdf_page_label.setText("Page: N/A")
         else:
-             self.logger.warning("Cannot update missing _pdf_page_label")
+             self.logger.warning("Cannot update missing pdf_page_label")
+        # --- END FIX ---
 
         # Enable/disable next/prev actions (ensure they exist)
+        # Use 1-based index for comparison
         if hasattr(self, 'prev_pdf_page_action'):
-            self.prev_pdf_page_action.setEnabled(has_pdf and current_page > 0)
+            self.prev_pdf_page_action.setEnabled(has_pdf and current_page_1_based > 1)
         if hasattr(self, 'next_pdf_page_action'):
-            self.next_pdf_page_action.setEnabled(has_pdf and current_page < page_count - 1)
+            self.next_pdf_page_action.setEnabled(has_pdf and current_page_1_based < page_count)
             
         # Show/hide thumbnail dock based on whether a PDF is loaded
-        # (Could also be tied to project state later)
         self.pdf_thumbnail_dock.setVisible(has_pdf)
+
+        # --- FIX: Show/hide the PDF toolbar itself --- 
+        if hasattr(self, 'pdf_toolbar'):
+            self.pdf_toolbar.setVisible(has_pdf)
+            self.logger.debug(f"Setting PDF toolbar visibility to: {has_pdf}")
+        else:
+            self.logger.warning("Cannot set PDF toolbar visibility: pdf_toolbar attribute not found.")
+        # --- END FIX ---
 
     # Event handlers
     
@@ -683,22 +696,43 @@ class MainWindow(QMainWindow):
         if filename:
             self.logger.info(f"User selected PDF for background: {filename}")
             self.statusBar().showMessage(f"Loading PDF background '{Path(filename).name}'...", 0)
+            success = False # Flag to track successful loading
             try:
-                self.visualization_panel.load_pdf_background(filename, dpi=self.pdf_dpi_setting)
-                # Get project from controller
-                project = self.project_controller.get_current_project()
-                if project:
-                    project.pdf_background_path = filename
-                    project.pdf_background_page = 1
-                    project.pdf_background_dpi = self.pdf_dpi_setting
-                    project.clear_traced_polylines()
-                    self.visualization_panel.clear_polylines_from_scene()
-                self.statusBar().showMessage(f"Loaded PDF background '{Path(filename).name}' ({self.visualization_panel.pdf_renderer.get_page_count()} pages).", 5000)
+                # Call the panel's load method, which now returns success/failure
+                success = self.visualization_panel.load_pdf_background(filename, dpi=self.pdf_dpi_setting)
+                
+                if success:
+                    # Get project from controller
+                    project = self.project_controller.get_current_project()
+                    if project:
+                        project.pdf_background_path = filename
+                        # Use the actual current page from the panel (might be adjusted if initial_page was invalid)
+                        project.pdf_background_page = self.visualization_panel.current_pdf_page 
+                        project.pdf_background_dpi = self.pdf_dpi_setting
+                        project.clear_traced_polylines() # Clear old traces if new PDF loaded
+                        self.visualization_panel.clear_polylines_from_scene() # Clear visuals too
+                    
+                    # Update status bar only on success, getting page count safely
+                    page_count = self.visualization_panel.pdf_renderer.get_page_count() if self.visualization_panel.pdf_renderer else 0
+                    self.statusBar().showMessage(f"Loaded PDF background '{Path(filename).name}' ({page_count} pages).", 5000)
+                    self.logger.info(f"Successfully loaded PDF background '{Path(filename).name}' with {page_count} pages.")
+                else:
+                    # Loading failed (error already logged by visualization_panel)
+                    raise PDFRendererError("Loading or rendering PDF background failed.") # Re-raise specific error for unified handling
+
             except (FileNotFoundError, PDFRendererError, Exception) as e:
+                 # Catch errors from load_pdf_background OR re-raised error
                  self.logger.exception(f"Failed to load PDF background: {e}")
                  QMessageBox.critical(self, "PDF Load Error", f"Failed to load PDF background:\n{e}")
                  self.statusBar().showMessage("Failed to load PDF background.", 5000)
+                 # Ensure project state reflects failure if project object exists
+                 project = self.project_controller.get_current_project()
+                 if project and project.pdf_background_path == filename:
+                     project.pdf_background_path = None
+                     project.pdf_background_page = 0
+                     project.pdf_background_dpi = 0
             finally:
+                 # Always update controls regardless of success/failure
                  self._update_pdf_controls()
                  self._update_view_actions_state()
         else:
@@ -747,8 +781,11 @@ class MainWindow(QMainWindow):
         if self.pdf_page_spinbox.isEnabled() and page_number > 0:
              self.logger.debug(f"Setting PDF page from spinbox to: {page_number}")
              self.visualization_panel.set_pdf_page(page_number)
-             if self.current_project:
-                  self.current_project.pdf_background_page = page_number
+             # --- FIX: Get project from controller ---
+             project = self.project_controller.get_current_project()
+             if project:
+                  project.pdf_background_page = page_number
+             # --- END FIX ---
              self._update_pdf_controls()
              total = self.visualization_panel.pdf_renderer.get_page_count() if self.visualization_panel.pdf_renderer else 0
              self.statusBar().showMessage(f"Showing PDF page {page_number}/{total}", 3000)

@@ -6706,3 +6706,74 @@ AttributeError: 'NoneType' object has no attribute 'get_page_count'
 2025-04-22 22:33:29,508 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
 2025-04-22 22:33:29,524 - digcalc_project.src.ui.main_window - INFO - Closing application.
 2025-04-22 22:33:29,540 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-23 08:41:56,809 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-23 08:41:56,879 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-23 08:42:31,486 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-23 08:42:31,486 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-04-23 08:42:31,497 - digcalc_project.src.ui.visualization_panel - INFO - PyMuPDF document opened successfully. Page count: 12
+2025-04-23 08:42:31,719 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-23 08:42:31,719 - digcalc_project.src.ui.main_window - ERROR - Failed to load PDF background: 'NoneType' object has no attribute 'get_page_count'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\alpha_3\digcalc_project\src\ui\main_window.py", line 696, in on_load_pdf_background
+    self.statusBar().showMessage(f"Loaded PDF background '{Path(filename).name}' ({self.visualization_panel.pdf_renderer.get_page_count()} pages).", 5000)
+                                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'get_page_count'
+2025-04-23 08:42:34,943 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-23 08:42:34,951 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-23 08:42:34,960 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-23 08:46:22,971 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-23 08:46:22,994 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-23 08:46:27,767 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-23 08:46:27,767 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-04-23 08:46:27,767 - digcalc_project.src.ui.visualization_panel - ERROR - Unexpected error loading PDF background: PDFRenderer.__init__() missing 1 required positional argument: 'pdf_path'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\alpha_3\digcalc_project\src\ui\visualization_panel.py", line 1029, in load_pdf_background
+    self.pdf_renderer = PDFRenderer()
+                        ^^^^^^^^^^^^^
+TypeError: PDFRenderer.__init__() missing 1 required positional argument: 'pdf_path'
+2025-04-23 08:46:27,768 - digcalc_project.src.ui.main_window - ERROR - Failed to load PDF background: Loading or rendering PDF background failed.
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\alpha_3\digcalc_project\src\ui\main_window.py", line 711, in on_load_pdf_background
+    raise PDFRendererError("Loading or rendering PDF background failed.") # Re-raise specific error for unified handling
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+digcalc_project.src.visualization.pdf_renderer.PDFRendererError: Loading or rendering PDF background failed.
+2025-04-23 08:46:31,554 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-23 08:46:31,555 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-23 08:46:31,564 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-23 08:49:09,018 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-23 08:49:09,043 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-23 08:49:14,480 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-23 08:49:14,480 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-04-23 08:49:14,480 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-23 08:49:14,480 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-23 08:49:14,482 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-04-23 08:49:14,482 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-04-23 08:49:17,998 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-04-23 08:49:18,008 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-04-23 08:49:18,008 - digcalc_project.src.ui.visualization_panel - ERROR - _render_and_display_page called but PyMuPDF document is not loaded.
+2025-04-23 08:49:18,008 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-04-23 08:49:18,008 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-23 08:49:18,009 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-04-23 08:49:18,009 - digcalc_project.src.ui.visualization_panel - WARNING - set_pdf_page called but no PyMuPDF document is loaded.
+2025-04-23 08:49:21,252 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-23 08:49:21,318 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-23 08:49:21,328 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-23 08:51:25,275 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-23 08:51:25,298 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-23 08:51:32,422 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-23 08:51:32,422 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-04-23 08:51:32,422 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-23 08:51:32,422 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-23 08:51:32,424 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-04-23 08:51:32,424 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-04-23 08:51:35,881 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-04-23 08:51:35,891 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-04-23 08:51:35,943 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-04-23 08:51:35,944 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-23 08:51:35,944 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-04-23 08:51:53,878 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-23 08:51:53,878 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-23 08:51:53,942 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-23 08:51:53,974 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-23 08:53:28,865 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-23 08:53:28,887 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.

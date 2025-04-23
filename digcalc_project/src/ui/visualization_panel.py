@@ -188,7 +188,8 @@ class VisualizationPanel(QWidget):
         self.surface_mesh_items: Dict[str, gl.GLMeshItem] = {}
         # --- END NEW ---
         self.pdf_renderer: Optional[PDFRenderer] = None
-        self._pymupdf_doc: Optional[fitz.Document] = None
+        # --- REMOVE: _pymupdf_doc is managed by PDFRenderer ---
+        # self._pymupdf_doc: Optional[fitz.Document] = None 
         self._pdf_bg_item: Optional[QGraphicsPixmapItem] = None
         self.current_pdf_page: int = 1
         self.current_project: Optional[Project] = None
@@ -1000,107 +1001,112 @@ class VisualizationPanel(QWidget):
     @Slot()
     def clear_pdf_background(self):
         """Removes the PDF background image and closes the PyMuPDF document."""
-        self.logger.debug("Clearing PDF background.")
+        self.logger.debug("Clearing PDF background and related items.")
+        # --- FIX: Close the renderer, which handles the doc ---
+        if self.pdf_renderer:
+            try:
+                self.pdf_renderer.close()
+            except Exception as e:
+                self.logger.error(f"Error closing PDF renderer: {e}", exc_info=True)
+        self.pdf_renderer = None
+        # --- REMOVE: Doc managed by renderer ---
+        # self._pymupdf_doc = None 
+        
+        # --- FIX: Remove the background item from the scene ---
         if self._pdf_bg_item:
             if self.scene_2d and self._pdf_bg_item in self.scene_2d.items():
                 try:
                     self.scene_2d.removeItem(self._pdf_bg_item)
+                    self.logger.debug("Removed PDF background item from scene.")
                 except RuntimeError as e:
-                    self.logger.warning(f"Error removing PDF background item: {e}")
-            self._pdf_bg_item = None
+                    self.logger.warning(f"Error removing PDF background item (may already be removed): {e}")
+            else:
+                self.logger.debug("PDF background item found but not in scene.")
+        self._pdf_bg_item = None # Clear reference in any case
+        # --- END FIX ---
+        
+        self.current_pdf_page = 1
 
-        if self._pymupdf_doc:
-            try:
-                self._pymupdf_doc.close()
-                self.logger.debug("Closed PyMuPDF document.")
-            except Exception as e:
-                self.logger.error(f"Error closing PyMuPDF document: {e}", exc_info=True)
-            self._pymupdf_doc = None
-
-        self.current_pdf_page = 1 # Reset page number
-
-    def load_pdf_background(self, pdf_path: str, initial_page: int = 1, dpi: int = 150):
-        """Opens a PDF using PyMuPDF and renders the initial page.
+    def load_pdf_background(self, pdf_path: str, initial_page: int = 1, dpi: int = 150) -> bool:
+        """
+        Loads a PDF document, renders the initial page, and displays it.
 
         Args:
-            pdf_path (str): The path to the PDF file.
-            initial_page (int): The 1-based page number to render initially.
-            dpi (int): The target resolution for rendering the PDF page.
+            pdf_path: Path to the PDF file.
+            initial_page: The 1-based page number to display initially.
+            dpi: The resolution for rendering the PDF page.
+            
+        Returns:
+            bool: True if the PDF was loaded and the initial page rendered successfully, False otherwise.
         """
         self.logger.info(f"Loading PDF background: {pdf_path}, initial page: {initial_page}, dpi: {dpi}")
+        
+        # Clear any existing background first
+        self.clear_pdf_background() 
+        
+        try:
+            # Initialize or reuse the renderer
+            if not self.pdf_renderer: # Should always be None after clear_pdf_background
+                self.pdf_renderer = PDFRenderer(pdf_path=pdf_path, dpi=dpi)
+            
+            # --- FIX: Get page count after successful init --- 
+            page_count = self.pdf_renderer.get_original_page_count() # Use original count from doc
+            self.logger.info(f"PDF document opened successfully via renderer. Page count: {page_count}")
 
-        # Clear existing background and close previous document if different
-        if self._pymupdf_doc and self._pymupdf_doc.name != pdf_path:
-            self.logger.debug(f"PDF path changed from '{self._pymupdf_doc.name}' to '{pdf_path}'. Clearing old background.")
-            self.clear_pdf_background()
-
-        # Open new document if needed
-        if not self._pymupdf_doc:
-            try:
-                self.logger.debug(f"Opening PDF with PyMuPDF: {pdf_path}")
-                self._pymupdf_doc = fitz.open(pdf_path)
-                self.logger.info(f"PyMuPDF document opened successfully. Page count: {self._pymupdf_doc.page_count}")
-            except Exception as e:
-                error_msg = f"Failed to open PDF '{pdf_path}' with PyMuPDF: {e}"
-                self.logger.error(error_msg, exc_info=True)
-                QMessageBox.critical(self, "PDF Load Error", error_msg)
-                self._pymupdf_doc = None # Ensure it's None on failure
-                # Explicitly clear any remnants if open failed after previous doc was closed
-                self.clear_pdf_background()
-                return
-
-        # Render the initial page
-        if self._pymupdf_doc:
             # Validate initial page number
-            if not (1 <= initial_page <= self._pymupdf_doc.page_count):
-                self.logger.warning(f"Initial page {initial_page} out of bounds (1-{self._pymupdf_doc.page_count}). Defaulting to page 1.")
+            if not (1 <= initial_page <= page_count):
+                self.logger.warning(f"Initial page {initial_page} is out of range (1-{page_count}). Defaulting to page 1.")
                 initial_page = 1
-
+            
+            # Render and display the initial page
             self._render_and_display_page(initial_page, dpi)
-        else:
-            # This case should ideally not be reached if error handling above is correct
-            self.logger.error("PDF document is not available after attempting to load.")
+            
+            self.current_pdf_page = initial_page
+            self.logger.info(f"Successfully rendered and displayed page {initial_page} of '{Path(pdf_path).name}'")
+            return True # Indicate success
+
+        except PDFRendererError as e:
+            self.logger.error(f"Failed to load or render PDF background: {e}")
+            # Ensure renderer is cleared on any failure during this process
+            self.clear_pdf_background() 
+            return False # Indicate failure
+        except Exception as e: # Catch any other unexpected errors
+            self.logger.exception(f"Unexpected error loading PDF background: {e}")
+            self.clear_pdf_background()
+            return False # Indicate failure
 
     def _render_and_display_page(self, page_number: int, dpi: int):
         """Internal helper to render a specific page using PyMuPDF and display it."""
-        if not self._pymupdf_doc:
-            self.logger.error("_render_and_display_page called but PyMuPDF document is not loaded.")
+        # --- FIX: Check renderer, get image from renderer ---
+        if not self.pdf_renderer:
+            self.logger.error("_render_and_display_page called but PDFRenderer is not initialized.")
             return
 
-        page_index = page_number - 1 # PyMuPDF uses 0-based index
-        if not (0 <= page_index < self._pymupdf_doc.page_count):
-            self.logger.error(f"Invalid page index {page_index} requested for rendering.")
+        page_index = page_number - 1 # Still need 0-based for internal logic if any remains
+        if not (1 <= page_number <= self.pdf_renderer.get_original_page_count()):
+            self.logger.error(f"Invalid page number {page_number} requested for rendering (Max: {self.pdf_renderer.get_original_page_count()}).")
             return
 
-        self.logger.debug(f"Rendering page index {page_index} (Page {page_number}) at {dpi} DPI...")
+        self.logger.debug(f"Getting pre-rendered image for page {page_number} (Index {page_index})...")
         try:
-            page = self._pymupdf_doc.load_page(page_index)
-            zoom = dpi / 72.0 # PyMuPDF default is 72 DPI
-            mat = fitz.Matrix(zoom, zoom)
-            pix = page.get_pixmap(matrix=mat, alpha=False) # Render to PyMuPDF Pixmap
+            # Get the pre-rendered QImage from the renderer
+            qimage = self.pdf_renderer.get_page_image(page_number)
 
-            # Convert PyMuPDF Pixmap (RGB) to QImage
-            img_format = QImage.Format.Format_RGB888
-            if pix.alpha:
-                 img_format = QImage.Format.Format_RGBA8888 # Should not happen with alpha=False
-                 self.logger.warning("PyMuPDF rendered with alpha despite alpha=False request.")
+            if qimage is None or qimage.isNull():
+                 # This might happen if rendering failed for this specific page during init
+                 raise PDFRendererError(f"Failed to retrieve valid QImage for page {page_number} from renderer.")
 
-            qimage = QImage(pix.samples, pix.width, pix.height, pix.stride, img_format)
-            if qimage.isNull():
-                raise ValueError("Failed to create QImage from PyMuPDF pixmap samples.")
-
-            # Important: Copy the QImage to ensure the underlying buffer doesn't get invalidated
-            # when `pix` goes out of scope or is garbage collected.
-            qpixmap = QPixmap.fromImage(qimage.copy())
-            self.logger.debug(f"Page {page_number} rendered successfully (Size: {pix.width}x{pix.height}px).")
+            qpixmap = QPixmap.fromImage(qimage) # No copy needed here, QPixmap shares image data
+            self.logger.debug(f"Retrieved rendered image for page {page_number} (Size: {qimage.width()}x{qimage.height()}).")
+            # --- END FIX ---
 
             # Remove old background item from scene
             if self._pdf_bg_item and self._pdf_bg_item in self.scene_2d.items():
                 try:
                     self.scene_2d.removeItem(self._pdf_bg_item)
                 except RuntimeError as e:
-                    self.logger.warning(f"Error removing previous background item: {e}")
-            self._pdf_bg_item = None # Clear reference
+                     self.logger.warning(f"Error removing PDF background item (may already be removed): {e}")
+            self._pdf_bg_item = None # Clear reference in any case
 
             # Create and add new QGraphicsPixmapItem
             self._pdf_bg_item = QGraphicsPixmapItem(qpixmap)
@@ -1111,7 +1117,7 @@ class VisualizationPanel(QWidget):
             self.logger.debug("Added new PDF background pixmap item to the scene.")
 
             # Update scene rect to match the pixel dimensions of the rendered page
-            scene_rect = QRectF(0, 0, pix.width, pix.height)
+            scene_rect = QRectF(0, 0, qimage.width(), qimage.height())
             self.scene_2d.setSceneRect(scene_rect)
             self.logger.debug(f"Scene rect set to rendered pixmap dimensions: {scene_rect}")
 
@@ -1142,17 +1148,25 @@ class VisualizationPanel(QWidget):
             page_number (int): The 1-based page number to display.
             dpi (int): The target resolution for rendering.
         """
-        if not self._pymupdf_doc:
-            self.logger.warning("set_pdf_page called but no PyMuPDF document is loaded.")
+        # --- FIX: Check pdf_renderer ---
+        if not self.pdf_renderer:
+            self.logger.warning("set_pdf_page called but no PDFRenderer is available.")
             return
+        # --- END FIX ---
 
         if page_number == self.current_pdf_page:
-            self.logger.debug(f"Page {page_number} is already displayed. Skipping re-render.")
-            # Optionally force re-render if needed, e.g., if DPI changed
-            # self._render_and_display_page(page_number, dpi)
+            self.logger.debug(f"Page {page_number} is already displayed. Checking DPI.")
+            # Re-render only if DPI has changed (though current renderer stores DPI...)
+            # Let's assume the renderer's DPI is fixed for now. If DPI needs changing,
+            # the renderer itself would need to be recreated or have a re-render method.
+            # For now, if page number is same, do nothing.
             return
 
+        # --- FIX: Call _render_and_display_page which now gets pre-rendered image ---
+        # The 'dpi' argument here is currently unused by the modified _render_and_display_page
+        # as rendering happens in the renderer's __init__. Keep it for now in case of future refactoring.
         self._render_and_display_page(page_number, dpi)
+        # --- END FIX ---
 
     # --- Cut/Fill Map Methods --- NEW SECTION ---
 
