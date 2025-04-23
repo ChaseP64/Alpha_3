@@ -2,28 +2,32 @@
 # Requirements file
 
 # Core dependencies
-PySide6>=6.6.0  # Qt bindings for Python
+PySide6>=6.6 # Qt bindings for Python (Updated pin)
 PySide6-Addons>=6.6.0 # Additional Qt modules (needed for PDF widgets)
-pydantic>=1.10.0  # Data validation and settings management
-numpy>=1.22.0  # Numerical processing
-scipy>=1.8.0  # Scientific computing
-pyqtgraph>=0.13.0  # Fast plotting for Qt applications
+# pydantic>=1.10.0 # Data validation and settings management - Removing for now, can be added later if needed
+numpy # Numerical processing (No specific version requested)
+scipy # Scientific computing (No specific version requested)
+# pyqtgraph>=0.13.0 # Fast plotting for Qt applications - Removing, PyVista is preferred
 
 # Importers
-ezdxf>=0.17.0  # DXF file parsing
-xmltodict>=0.13.0  # XML parsing utilities
-PyPDF2>=2.0.0  # PDF parsing
-PyMuPDF>=1.20.0  # Advanced PDF processing (previously listed as fitz)
+ezdxf>=0.17.0 # DXF file parsing - Keep existing pin
+xmltodict>=0.13.0 # XML parsing utilities - Keep existing pin
+# PyPDF2>=2.0.0 # PDF parsing - Removing, PyMuPDF is preferred
+PyMuPDF>=1.24 # Advanced PDF processing (Updated pin)
+shapely>=2.0 # Polygon offset & geometry ops (Added)
 
-# Optional 3D Visualization 
-PyOpenGL>=3.1.6  # OpenGL support (optional, needed by pyqtgraph 3D)
+# 3D Visualization
+pyvista>=0.44 # 3-D rendering (wraps VTK) (Added)
+vtk>=9.3 # Required by PyVista (Added)
+# PyOpenGL>=3.1.6 # OpenGL support - Removing, PyVista handles this
 
-# Exporters
-reportlab>=3.6.0  # PDF report generation
+# Exporters / Reporting
+reportlab>=3.6 # PDF report generation (Updated pin)
+matplotlib>=3.9 # Charts in reports (Updated pin)
 
 # Testing
-pytest>=7.0.0  # Testing framework
-pytest-qt>=4.0.0  # Qt testing support
+pytest # Testing framework (No specific version requested)
+pytest-qt>=4.0.0 # Qt testing support - Keep existing pin
 
-# Add matplotlib for color maps
-matplotlib>=3.5.0 
+# Development Dependencies (Optional)
+# mypy # Static typing (Added, commented out) 

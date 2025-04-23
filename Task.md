@@ -113,4 +113,9 @@ This document tracks current tasks, backlog items, and sub-tasks for the DigCalc
 
 ---
 
+## Discovered During Work
+- Added SettingsService singleton in services/settings_service.py and utility Singleton base class in utils/singleton.py (2024-06-11) - Jim // TODO add more description
+
+---
+
 # End of TASK.md
