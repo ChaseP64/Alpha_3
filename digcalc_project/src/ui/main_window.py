@@ -43,14 +43,24 @@ from ..visualization.pdf_renderer import PDFRenderer, PDFRendererError
 from .dialogs.elevation_dialog import ElevationDialog
 from .dialogs.build_surface_dialog import BuildSurfaceDialog
 from ..core.geometry.surface_builder import SurfaceBuilder, SurfaceBuilderError
+# --- NEW: Add missing import --- 
+from .dialogs.pdf_page_selector_dialog import PdfPageSelectorDialog
+# --- END NEW ---
 import numpy as np # Added for type hinting dz_grid etc.
 
-# --- Ensure ProjectController is Imported --- 
-from .project_controller import ProjectController 
-# --- End Import Check ---
+# --- PDF Navigation Imports (Use absolute from src) --- 
+# from src.services.pdf_service import PdfService # OLD
+from digcalc_project.src.services.pdf_service import PdfService # NEW
+# from src.controllers.pdf_controller import PdfController # OLD
+from digcalc_project.src.controllers.pdf_controller import PdfController # NEW
+# from src.ui.docks.pdf_thumbnail_dock import PdfThumbnailDock # OLD
+from digcalc_project.src.ui.docks.pdf_thumbnail_dock import PdfThumbnailDock # NEW
+# --- End PDF Imports ---
 
-from ..services.pdf_service import PdfService
-from .docks.pdf_thumbnail_dock import PdfThumbnailDock
+# --- Ensure ProjectController is Imported --- 
+# from src.ui.project_controller import ProjectController # OLD
+from digcalc_project.src.ui.project_controller import ProjectController # NEW
+# --- End Import Check ---
 
 logger = logging.getLogger(__name__)
 
@@ -69,9 +79,16 @@ class MainWindow(QMainWindow):
         super().__init__()
         
         self.logger = logging.getLogger(__name__)
-        # --- REMOVE self.current_project from MainWindow ---
-        # self.current_project: Optional[Project] = None
-        # --- END REMOVE ---
+
+        
+        # --- PDF Service and Controller --- 
+        # Instantiate PdfService (should likely be singleton or passed in if shared)
+        # self.pdf_service = PdfService(self) # Incorrect - Singleton takes no args
+        self.pdf_service = PdfService() # Correct instantiation for Singleton
+        # self.pdf_controller = PdfController(self.pdf_service, self) # Incorrect - __init__ takes only parent
+        self.pdf_controller = PdfController(self) # Pass only parent
+        # --- End PDF Service --- 
+        
         self._selected_scene_item: Optional[QGraphicsPathItem] = None
         self.pdf_dpi_setting = 300
         self._last_volume_calculation_params: Optional[dict] = None # Cache params
@@ -144,51 +161,32 @@ class MainWindow(QMainWindow):
         self.prop_dock.hide()
         # --- END NEW ---
         
-        # --- PDF Thumbnail Dock ---
-        self.pdf_thumbnail_dock = PdfThumbnailDock(self)
+        # --- NEW: Create and add PDF Thumbnail Dock ---
+        # self.pdf_thumbnail_dock = PdfThumbnailDock(self.pdf_service, self.pdf_controller, self) # Incorrect
+        self.pdf_thumbnail_dock = PdfThumbnailDock(self) # Correct - Pass only parent
         self.addDockWidget(Qt.LeftDockWidgetArea, self.pdf_thumbnail_dock)
-
-        # Set up PdfService singleton and connect signals
-        self.pdf_service = PdfService()
-        self.pdf_service.documentLoaded.connect(self.pdf_thumbnail_dock.model.set_page_count)
-        self.pdf_service.thumbnailReady.connect(self.pdf_thumbnail_dock.model.update_thumbnail)
-
-        # -------------------------------------------------------------
-        # PDF controller wiring – decouples dock from visualization panel
-        # -------------------------------------------------------------
-        try:
-            from ..controllers import PdfController  # local relative import
-        except Exception as _imp_err:  # pragma: no cover – defensive
-            self.logger.error("Failed to import PdfController: %s", _imp_err)
-            PdfController = None  # type: ignore  # noqa: N806
-
-        if PdfController is not None:
-            self.pdf_controller = PdfController(self)
-            # Dock → controller
-            self.pdf_thumbnail_dock.pageClicked.connect(self.pdf_controller.on_page_clicked)
-            # Controller → MainWindow handler (will forward to vis. panel)
-            self.pdf_controller.pageSelected.connect(self.on_pdf_page_selected)
-            # Controller → VisualizationPanel (render page)
-            self.pdf_controller.pageSelected.connect(self.visualization_panel.on_page_selected)
-        else:
-            # Fallback: connect dock directly if controller cannot be imported
-            self.pdf_thumbnail_dock.pageClicked.connect(self.on_pdf_page_selected)
+        self.pdf_thumbnail_dock.hide() # Initially hidden, show when PDF is loaded?
+        # --- END NEW ---
         
         # Connect the signal for item changes (checkbox toggles)
-        self.layer_tree.itemChanged.connect(self._on_layer_visibility_changed)
-        
-        # Give visualization panel a reference to the main window (for project access etc)
-        # self.visualization_panel.set_main_window(self)
-        
+        self.layer_tree.itemChanged.connect(self._on_layer_visibility_changed)     
     
     def _connect_signals(self):
         """Connect signals from UI components to main window slots."""
         self.logger.debug("Connecting MainWindow signals...")
 
+        # --- Project Controller signals ---
         self.new_project_action.triggered.connect(self.project_controller.on_new_project)
         self.open_project_action.triggered.connect(self.project_controller.on_open_project)
-        self.save_project_action.triggered.connect(self.project_controller.on_save_project)
-        # --- End Connect Project Controller signals ---
+        self.save_project_action.triggered.connect(self.project_controller.on_save_project) # save_as=False by default
+        # Connect Save As action to on_save_project with save_as=True
+        self.save_project_as_action.triggered.connect(lambda: self.project_controller.on_save_project(save_as=True))
+        self.exit_action.triggered.connect(self.close)
+        # --- End Connect Project Controller signals ---\
+
+        # --- NEW: Connect Trace PDF Action ---
+        self.trace_pdf_action.triggered.connect(self._on_trace_from_pdf)
+        # --- END NEW ---
 
         # Connect visualization panel signals
         if hasattr(self.visualization_panel, 'surface_visualization_failed'):
@@ -208,8 +206,6 @@ class MainWindow(QMainWindow):
         self.prop_dock.edited.connect(self._apply_elevation_edit)
         # --- END NEW ---
 
-        # Connect project panel signals (if any needed later)
-        # self.project_panel.some_signal.connect(self._some_handler)
 
         # --- NEW: Connect View Actions ---
         if hasattr(self, 'view_2d_action') and self.view_2d_action:
@@ -226,21 +222,45 @@ class MainWindow(QMainWindow):
         self.cutfill_action.toggled.connect(self.visualization_panel.set_cutfill_visible)
         # --- END NEW ---
 
+        # --- NEW: Connect PDF Controller Signals ---
+        # Ensure this line connects to the MainWindow's slot
+        self.pdf_controller.pageSelected.connect(self._on_pdf_page_selected)
+        # --- END NEW ---
+
         self.logger.debug("MainWindow signals connected.")
     
     def _create_actions(self):
         """Create actions for menus and toolbars."""
         # File menu actions
-        self.new_project_action = QAction("New Project", self)
-        
-        self.open_project_action = QAction("Open Project", self)
-        
-        self.save_project_action = QAction("Save Project", self)
+        self.new_project_action = QAction("&New Project", self)
+        self.new_project_action.setShortcut(QKeySequence.StandardKey.New)
+        self.new_project_action.setStatusTip("Create a new empty project.")
 
-        
-        self.exit_action = QAction("Exit", self)
-        self.exit_action.triggered.connect(self.close) # This one is correct
-        
+        self.open_project_action = QAction("&Open Project...", self)
+        self.open_project_action.setShortcut(QKeySequence.StandardKey.Open)
+        self.open_project_action.setStatusTip("Open an existing project file (.dcp).")
+
+        self.save_project_action = QAction("&Save Project", self)
+        self.save_project_action.setShortcut(QKeySequence.StandardKey.Save)
+        self.save_project_action.setStatusTip("Save the current project.")
+        self.save_project_action.setEnabled(False) # Initially disabled
+
+        self.save_project_as_action = QAction("Save Project &As...", self)
+        self.save_project_as_action.setShortcut(QKeySequence.StandardKey.SaveAs)
+        self.save_project_as_action.setStatusTip("Save the current project to a new file.")
+        self.save_project_as_action.setEnabled(False) # Initially disabled
+
+        # --- NEW: Trace PDF Action ---
+        self.trace_pdf_action = QAction(QIcon.fromTheme("document-import"), "&Trace from PDF...", self)
+        self.trace_pdf_action.setStatusTip("Trace layers from a PDF document")
+        self.trace_pdf_action.setEnabled(False) # Disabled until project exists
+        # --- END NEW ---
+
+        self.exit_action = QAction(QIcon.fromTheme("application-exit"), "E&xit", self)
+        self.exit_action.setShortcut(QKeySequence.StandardKey.Quit)
+        self.exit_action.setStatusTip("Exit the application.")
+        # self.exit_action.triggered.connect(self.close) # Connected in _connect_signals
+
         # Import actions
         self.import_cad_action = QAction("Import CAD (DXF)", self)
         # self.import_cad_action.triggered.connect(self.on_import_cad) # Obsolete
@@ -325,17 +345,27 @@ class MainWindow(QMainWindow):
         # Add help actions here
     
     def _create_menus(self):
-        """Create the application menus."""
-        # Main menu bar
+        """Create the main menu bar."""
         self.menu_bar = self.menuBar()
         
         # File menu
-        self.file_menu = self.menu_bar.addMenu("File")
-        self.file_menu.addAction(self.new_project_action)
-        self.file_menu.addAction(self.open_project_action)
-        self.file_menu.addAction(self.save_project_action)
-        self.file_menu.addSeparator()
-        self.file_menu.addAction(self.exit_action)
+        file_menu = self.menu_bar.addMenu("&File")
+        file_menu.addAction(self.new_project_action)
+        file_menu.addAction(self.open_project_action)
+        file_menu.addAction(self.save_project_action)
+        file_menu.addAction(self.save_project_as_action)
+        file_menu.addSeparator()
+        # Add Import actions to File menu for now
+        # file_menu.addAction(self.import_cad_action)
+        # file_menu.addAction(self.import_pdf_action) # This seems like viewing bg, not tracing
+        # file_menu.addAction(self.import_landxml_action)
+        # file_menu.addAction(self.import_csv_action)
+        # file_menu.addSeparator() # Add separator before tracing action?
+        # --- NEW: Add Trace PDF Action ---
+        file_menu.addAction(self.trace_pdf_action)
+        file_menu.addSeparator()
+        # --- END NEW ---
+        file_menu.addAction(self.exit_action)
         
         # Import menu
         self.import_menu = self.menu_bar.addMenu("Import")
@@ -495,36 +525,42 @@ class MainWindow(QMainWindow):
         self.logger.debug(f"Calculate Volume action enabled state: {can_calculate}")
     
     def _update_pdf_controls(self):
-        """Updates the state of PDF navigation and tracing controls."""
-        pdf_loaded = False
-        page_count = 0
-        current_page = 0
-        if hasattr(self, 'visualization_panel') and self.visualization_panel.pdf_renderer:
-            pdf_loaded = True
-            page_count = self.visualization_panel.pdf_renderer.get_page_count()
-            current_page = self.visualization_panel.current_pdf_page
+        """
+        Updates the state of PDF-related controls (spinbox, labels, actions).
+        Now uses PdfController to get document state.
+        """
+        current_doc = self.pdf_controller.get_current_document()
+        has_pdf = current_doc is not None and current_doc.is_loaded
+        page_count = current_doc.page_count if has_pdf else 0
+        current_page = self.pdf_controller.get_current_page_index() # 0-based
 
-        self.logger.debug(f"Updating PDF controls: pdf_loaded={pdf_loaded}, page_count={page_count}, current_page={current_page}")
-
-        self.pdf_toolbar.setVisible(pdf_loaded)
-
-        self.clear_pdf_background_action.setEnabled(pdf_loaded)
-        self.prev_pdf_page_action.setEnabled(pdf_loaded and current_page > 1)
-        self.next_pdf_page_action.setEnabled(pdf_loaded and current_page < page_count)
-
-        self.pdf_page_spinbox.setEnabled(pdf_loaded)
-        if pdf_loaded:
-            self.pdf_page_spinbox.blockSignals(True)
-            self.pdf_page_spinbox.setRange(1, page_count)
-            self.pdf_page_spinbox.setValue(current_page)
-            self.pdf_page_spinbox.blockSignals(False)
+        if self._pdf_page_spinbox:
+            self._pdf_page_spinbox.setEnabled(has_pdf and page_count > 1)
+            self._pdf_page_spinbox.setRange(1, max(1, page_count))
+            # Block signals temporarily to avoid recursive updates
+            self._pdf_page_spinbox.blockSignals(True)
+            self._pdf_page_spinbox.setValue(current_page + 1 if current_page >= 0 else 1)
+            self._pdf_page_spinbox.blockSignals(False)
         else:
-            self.pdf_page_spinbox.setRange(0, 0)
-            self.pdf_page_spinbox.setValue(0)
+             self.logger.warning("Cannot update missing _pdf_page_spinbox")
+
+        if self._pdf_page_label:
+            if has_pdf:
+                self._pdf_page_label.setText(f"Page: {current_doc.page_label(current_page)} / {page_count}")
+            else:
+                self._pdf_page_label.setText("Page: N/A")
+        else:
+             self.logger.warning("Cannot update missing _pdf_page_label")
+
+        # Enable/disable next/prev actions (ensure they exist)
+        if hasattr(self, 'prev_pdf_page_action'):
+            self.prev_pdf_page_action.setEnabled(has_pdf and current_page > 0)
+        if hasattr(self, 'next_pdf_page_action'):
+            self.next_pdf_page_action.setEnabled(has_pdf and current_page < page_count - 1)
             
-        self.toggle_tracing_action.setEnabled(pdf_loaded)
-        if not pdf_loaded and self.toggle_tracing_action.isChecked():
-             self.toggle_tracing_action.setChecked(False)
+        # Show/hide thumbnail dock based on whether a PDF is loaded
+        # (Could also be tied to project state later)
+        self.pdf_thumbnail_dock.setVisible(has_pdf)
 
     # Event handlers
     
@@ -657,19 +693,7 @@ class MainWindow(QMainWindow):
                     project.pdf_background_dpi = self.pdf_dpi_setting
                     project.clear_traced_polylines()
                     self.visualization_panel.clear_polylines_from_scene()
-                # Inform PdfService so thumbnails are generated
-                try:
-                    doc = self.pdf_service.load_pdf(filename)
-                    if doc is None:
-                        self.logger.warning("PdfService failed to load document – thumbnails will not be available.")
-                except Exception as svc_err:
-                    self.logger.error("PdfService.load_pdf failed: %s", svc_err)
-
-                pg_count = self.visualization_panel.pdf_renderer.get_page_count() if self.visualization_panel.pdf_renderer else 0
-                self.statusBar().showMessage(
-                    f"Loaded PDF background '{Path(filename).name}' ({pg_count} pages).",
-                    5000,
-                )
+                self.statusBar().showMessage(f"Loaded PDF background '{Path(filename).name}' ({self.visualization_panel.pdf_renderer.get_page_count()} pages).", 5000)
             except (FileNotFoundError, PDFRendererError, Exception) as e:
                  self.logger.exception(f"Failed to load PDF background: {e}")
                  QMessageBox.critical(self, "PDF Load Error", f"Failed to load PDF background:\n{e}")
@@ -1096,6 +1120,7 @@ class MainWindow(QMainWindow):
         has_pdf = self.visualization_panel.has_pdf()
         has_surfaces = self.visualization_panel.has_surfaces()
         # Determine current view directly from the stacked widget
+        # Use correct attribute names: stacked_widget, view_2d, view_3d
         is_2d_current = self.visualization_panel.stacked_widget.currentWidget() == self.visualization_panel.view_2d
         is_3d_current = self.visualization_panel.stacked_widget.currentWidget() == self.visualization_panel.view_3d
 
@@ -1450,25 +1475,145 @@ class MainWindow(QMainWindow):
             self.logger.info("Cut/Fill map not generated or data invalid, ensuring it is cleared.")
             self._clear_cutfill_state()
 
-    def on_pdf_page_selected(self, page: int):
-        """Handle page change coming from :class:`PdfController` or the dock.
-
-        The method currently only updates the PDF controls (spin‑box, next/prev
-        actions).  The actual rendering is handled by
-        :py:meth:`~digcalc_project.src.ui.visualization_panel.VisualizationPanel.on_page_selected`.
+    # --- NEW: Slot for PDF Page Selection --- 
+    @Slot(int)
+    def _on_pdf_page_selected(self, page_index: int):
         """
-        self.logger.debug("on_pdf_page_selected -> %s", page)
+        Handles the pageSelected signal from the PdfController.
+        Delegates to the VisualizationPanel to display the page.
+        """
+        self.logger.info(f"MainWindow received pageSelected signal for index: {page_index}")
+        # Convert 0-based index from signal to 1-based page number for the method
+        page_number = page_index + 1
+        self.visualization_panel.set_pdf_page(page_number)
 
-        # Update helper state so navigation buttons reflect the new page.
-        if hasattr(self, "visualization_panel"):
-            try:
-                self.visualization_panel.current_pdf_page = page
-            except Exception:  # pragma: no cover – defensive only
-                pass
+    # --- Add new slot for Trace PDF Action ---
+    @Slot()
+    def _on_trace_from_pdf(self):
+        """
+        Handles the 'Trace from PDF...' action.
+        Opens a file dialog, loads the PDF, shows the page selector,
+        and queues creation of tracing layers for selected pages.
+        """
+        self.logger.info("Trace from PDF action triggered.")
+        project = self.project_controller.get_project() # Use controller method
+        if not project:
+            QMessageBox.warning(self, "No Project", "Please open or create a project first.")
+            return
 
-        # Keep toolbar navigation state in sync.
-        self._update_pdf_controls()
+        # Let the user select a PDF file
+        file_path_tuple = QFileDialog.getOpenFileName(
+            self,
+            "Select PDF for Tracing",
+            self.project_controller.get_last_directory(), # Start in last used dir
+            "PDF Files (*.pdf)"
+        )
+        file_path_str = file_path_tuple[0]
 
+        if not file_path_str:
+            self.logger.info("PDF selection cancelled.")
+            return
+
+        file_path = Path(file_path_str)
+        self.project_controller.set_last_directory(str(file_path.parent)) # Update last dir
+
+        # Load the PDF using the PdfService
+        try:
+            # Ensure load_pdf returns boolean or raises error on failure
+            # Let's assume PdfService handles logging internal errors
+            self.pdf_service.load_pdf(str(file_path))
+            if not self.pdf_service.current_document:
+                raise PDFRendererError("Failed to load document object after loading path.")
+            self.logger.info(f"PDF loaded via PdfService: {file_path}")
+        except PDFRendererError as e:
+            self.logger.error(f"Error loading PDF for tracing: {e}")
+            QMessageBox.critical(self, "PDF Load Error", f"Could not load PDF: {e}")
+            # Consider clearing pdf_service state if needed
+            # self.pdf_service.clear_document()
+            return
+        except Exception as e: # Catch other potential errors during loading
+             self.logger.exception(f"Unexpected error loading PDF '{file_path}': {e}")
+             QMessageBox.critical(self, "PDF Load Error", f"An unexpected error occurred while loading the PDF: {e}")
+             return
+
+        # --- NEW: Load PDF into Visualization Panel --- 
+        self.visualization_panel.load_pdf_background(str(file_path))
+        # --- END NEW ---
+
+        # Show the page selection dialog
+        dialog = PdfPageSelectorDialog(self.pdf_service.current_document, self)
+        if dialog.exec() == QDialog.Accepted:
+            selected_indices = dialog.get_selected_pages() # Get list of 0-based indices
+            if not selected_indices:
+                self.logger.info("No pages selected for tracing.")
+                self.statusBar().showMessage("No pages selected for tracing.", 3000)
+                return
+
+            self.logger.info(f"Selected PDF pages for tracing (0-based indices): {selected_indices}")
+            added_layers_count = 0
+            project = self.project_controller.get_project() # Re-get just in case
+            if not project:
+                self.logger.error("Project became unavailable after PDF selection.")
+                QMessageBox.critical(self, "Error", "Project not available. Cannot create layers.")
+                return
+
+            for index in selected_indices:
+                try:
+                    # Construct a base layer name including page label/number
+                    page_label = self.pdf_service.current_document.page_label(index)
+                    base_layer_name = f"PDF Trace - {file_path.name} - Page {page_label}"
+                    
+                    # Get a unique layer name from the project
+                    unique_layer_name = project.get_unique_layer_name(base_layer_name)
+
+                    # Ensure the layer exists in the project's traced_polylines dict
+                    # Add an empty list initially, polylines will be added later during tracing
+                    if unique_layer_name not in project.traced_polylines:
+                        project.traced_polylines[unique_layer_name] = []
+                        self.logger.debug(f"Created empty traced polyline list for layer: {unique_layer_name}")
+                    else:
+                         # Layer might exist from previous tracing or other means
+                         self.logger.warning(f"Layer '{unique_layer_name}' already exists. Adding PDF source info.")
+
+                    # Add the PDF source information using the project method
+                    project.add_pdf_trace_source(unique_layer_name, str(file_path), index)
+                    added_layers_count += 1
+                    self.logger.info(f"Added PDF trace source for layer '{unique_layer_name}' (PDF: {file_path.name}, Page Index: {index})")
+
+                except Exception as e:
+                    self.logger.error(f"Error processing page index {index} for tracing: {e}", exc_info=True)
+                    QMessageBox.warning(self, "Layer Creation Error",
+                                        f"Could not create tracing layer for page {index + 1}.\nError: {e}")
+
+            if added_layers_count > 0:
+                # Update the layer tree UI to show the new layers
+                self._update_layer_tree()
+                self.project_controller.set_project_modified(True) # Mark project as modified
+                self.statusBar().showMessage(f"Added {added_layers_count} PDF trace layer(s).", 5000)
+                self.logger.info(f"Successfully added {added_layers_count} PDF trace sources.")
+                # Enable the action if it was previously disabled and a project exists
+                self.trace_pdf_action.setEnabled(True)
+
+                # --- NEW: Show the first selected page --- 
+                if selected_indices: # Ensure list is not empty
+                    first_page_number = selected_indices[0] + 1 # Convert 0-based index to 1-based page number
+                    self.logger.info(f"Automatically displaying first selected PDF page: {first_page_number}")
+                    self.visualization_panel.set_pdf_page(first_page_number)
+                # --- END NEW ---
+            else:
+                 self.logger.warning("No trace layers were added despite page selection.")
+                 if selected_indices: # Only show message if pages were selected but failed
+                     QMessageBox.warning(self, "No Layers Added", "Could not add tracing layers for the selected pages. Check logs for details.")
+
+        else:
+            self.logger.info("PDF page selection cancelled.")
+            # Keep the PDF loaded in the service, user might want to use it for background.
+            # self.pdf_service.clear_document() # Don't clear automatically
+
+# --- End new slot ---
+
+
+# ... existing code ...
 
 class VolumeCalculationDialog(QDialog):
     """Dialog for selecting surfaces and parameters for volume calculation."""

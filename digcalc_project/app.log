@@ -6482,3 +6482,227 @@ AttributeError: 'VisualizationPanel' object has no attribute 'add_surface_mesh'
 2025-04-22 13:05:45,562 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
 2025-04-22 13:05:45,619 - digcalc_project.src.ui.visualization_panel - INFO - Successfully loaded PDF page 1 from 'C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf'
 2025-04-22 13:05:45,619 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-22 20:17:47,924 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-22 20:17:48,036 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-22 20:17:55,218 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-22 20:17:55,219 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to load PDF background: 'C:/Users/chase/Desktop/Project Alpha/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf' at 300 DPI
+2025-04-22 20:17:55,219 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-22 20:17:55,219 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-22 20:17:55,235 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-04-22 20:17:55,236 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-04-22 20:18:00,313 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-04-22 20:18:00,415 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-22 20:18:09,365 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-22 20:18:09,379 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
+2025-04-22 20:18:09,379 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-22 20:18:09,402 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-22 20:24:10,908 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-22 20:24:10,940 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-22 20:24:24,049 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-22 20:24:24,050 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to load PDF background: 'C:/Users/chase/Desktop/Project Alpha/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf' at 300 DPI
+2025-04-22 20:24:24,050 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-22 20:24:24,050 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-22 20:24:24,052 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-04-22 20:24:24,052 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-04-22 20:24:28,358 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-04-22 20:24:28,380 - digcalc_project.src.ui.visualization_panel - ERROR - Unexpected error loading PDF: 'PySide6.QtGui.QImage' object has no attribute 'toImage'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\visualization_panel.py", line 1052, in load_pdf_background
+    self.scene_2d.set_background_image(pixmap.toImage())
+                                       ^^^^^^^^^^^^^^
+AttributeError: 'PySide6.QtGui.QImage' object has no attribute 'toImage'
+2025-04-22 20:24:29,985 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-22 20:24:44,166 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-22 20:24:44,166 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
+2025-04-22 20:24:44,166 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-22 20:24:44,183 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-22 20:30:22,131 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-22 20:30:22,161 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-22 20:30:28,044 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-22 20:30:28,045 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to load PDF background: 'C:/Users/chase/Desktop/Project Alpha/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf' at 300 DPI
+2025-04-22 20:30:28,045 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-22 20:30:28,045 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-22 20:30:28,047 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-04-22 20:30:28,047 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-04-22 20:30:32,258 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-04-22 20:30:32,321 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-22 20:31:24,984 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-22 20:31:24,984 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
+2025-04-22 20:31:24,985 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-22 20:31:25,001 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-22 20:34:40,043 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-22 20:34:40,075 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-22 20:34:46,031 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-22 20:34:46,032 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to load PDF background: 'C:/Users/chase/Desktop/Project Alpha/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf' at 300 DPI
+2025-04-22 20:34:46,032 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-22 20:34:46,032 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-22 20:34:46,034 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-04-22 20:34:46,034 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-04-22 20:34:50,192 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-04-22 20:34:50,253 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-22 20:35:26,957 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-22 20:35:26,958 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
+2025-04-22 20:35:26,958 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-22 20:35:26,977 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-22 21:13:49,923 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-22 21:13:50,074 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-22 21:13:58,614 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-22 21:14:00,424 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-22 21:14:12,281 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-22 21:14:12,281 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
+2025-04-22 21:14:12,281 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-22 21:14:12,297 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-22 21:19:08,904 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-22 21:19:08,935 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-22 21:19:19,448 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-22 21:19:21,380 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-22 21:19:23,162 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-22 21:19:23,163 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
+2025-04-22 21:19:23,163 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-22 21:19:23,176 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-22 21:23:14,457 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-22 21:23:14,487 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-22 21:23:19,418 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-22 21:23:19,418 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf at target 300 DPI
+2025-04-22 21:23:19,424 - digcalc_project.src.ui.visualization_panel - ERROR - Failed to load PDF (Error.None_). File might be corrupted, password-protected, or unsupported.
+2025-04-22 21:23:21,188 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-22 21:23:22,017 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-22 21:23:22,017 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
+2025-04-22 21:23:22,017 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-22 21:23:22,031 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-22 21:48:09,161 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-22 21:48:09,192 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-22 22:03:16,471 - digcalc_project.src.ui.main_window - INFO - Load PDF background cancelled by user.
+2025-04-22 22:03:17,645 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-22 22:03:17,645 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
+2025-04-22 22:03:17,645 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-22 22:03:17,662 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-22 22:03:44,576 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-22 22:03:44,615 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-22 22:03:49,949 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Downloads/sample-local-pdf.pdf
+2025-04-22 22:03:49,949 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Downloads/sample-local-pdf.pdf at target 300 DPI
+2025-04-22 22:03:49,953 - digcalc_project.src.ui.visualization_panel - ERROR - Failed to load PDF (Error.None_). File might be corrupted, password-protected, or unsupported.
+2025-04-22 22:03:51,377 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-22 22:03:57,817 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-22 22:03:57,817 - digcalc_project.src.ui.visualization_panel - INFO - PDF background cleared.
+2025-04-22 22:03:57,819 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-22 22:03:57,829 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-22 22:22:20,121 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-22 22:22:20,155 - digcalc_project.src.main - ERROR - Fatal error in main application: 'VisualizationPanel' object has no attribute 'on_page_selected'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 93, in __init__
+    self._init_ui()
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 172, in _init_ui
+    self.pdf_controller.pageSelected.connect(self.visualization_panel.on_page_selected)
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'VisualizationPanel' object has no attribute 'on_page_selected'
+2025-04-22 22:23:44,816 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-22 22:23:44,848 - digcalc_project.src.main - ERROR - Fatal error in main application: 'VisualizationPanel' object has no attribute 'on_page_selected'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 93, in __init__
+    self._init_ui()
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 172, in _init_ui
+    self.pdf_controller.pageSelected.connect(self.visualization_panel.on_page_selected)
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'VisualizationPanel' object has no attribute 'on_page_selected'
+2025-04-22 22:24:34,516 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-22 22:24:34,547 - digcalc_project.src.main - ERROR - Fatal error in main application: 'VisualizationPanel' object has no attribute 'on_page_selected'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 93, in __init__
+    self._init_ui()
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 172, in _init_ui
+    self.pdf_controller.pageSelected.connect(self.visualization_panel.on_page_selected)
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'VisualizationPanel' object has no attribute 'on_page_selected'
+2025-04-22 22:27:14,314 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-22 22:27:14,332 - digcalc_project.src.main - ERROR - Fatal error in main application: PdfService.__new__() takes 1 positional argument but 2 were given
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 86, in __init__
+    self.pdf_service = PdfService(self) # Parent to main window
+                       ^^^^^^^^^^^^^^^^
+TypeError: PdfService.__new__() takes 1 positional argument but 2 were given
+2025-04-22 22:27:56,420 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-22 22:27:56,437 - digcalc_project.src.main - ERROR - Fatal error in main application: PdfController.__init__() takes from 1 to 2 positional arguments but 3 were given
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 88, in __init__
+    self.pdf_controller = PdfController(self.pdf_service, self)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: PdfController.__init__() takes from 1 to 2 positional arguments but 3 were given
+2025-04-22 22:28:58,021 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-22 22:28:58,038 - digcalc_project.src.main - ERROR - Fatal error in main application: PdfController.__init__() takes from 1 to 2 positional arguments but 3 were given
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 88, in __init__
+    self.pdf_controller = PdfController(self.pdf_service, self)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: PdfController.__init__() takes from 1 to 2 positional arguments but 3 were given
+2025-04-22 22:30:51,556 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-22 22:30:51,586 - digcalc_project.src.main - ERROR - Fatal error in main application: PdfThumbnailDock.__init__() takes from 1 to 2 positional arguments but 4 were given
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 110, in __init__
+    self._init_ui()
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 165, in _init_ui
+    self.pdf_thumbnail_dock = PdfThumbnailDock(self.pdf_service, self.pdf_controller, self)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: PdfThumbnailDock.__init__() takes from 1 to 2 positional arguments but 4 were given
+2025-04-22 22:31:44,994 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-22 22:31:45,022 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-22 22:31:45,024 - digcalc_project.src.main - ERROR - Fatal error in main application: 'ProjectController' object has no attribute 'on_save_project_as'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 121, in __init__
+    self._connect_signals()
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 182, in _connect_signals
+    self.save_project_as_action.triggered.connect(self.project_controller.on_save_project_as)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProjectController' object has no attribute 'on_save_project_as'
+2025-04-22 22:32:35,767 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-22 22:32:35,797 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-22 22:32:35,800 - digcalc_project.src.main - ERROR - Fatal error in main application: 'VisualizationPanel' object has no attribute 'view_stack'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 122, in __init__
+    self._update_view_actions_state()
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 1123, in _update_view_actions_state
+    is_2d_current = self.visualization_panel.view_stack.currentWidget() == self.visualization_panel.container_2d
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'VisualizationPanel' object has no attribute 'view_stack'
+2025-04-22 22:33:19,532 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-22 22:33:19,561 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-22 22:33:24,684 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-22 22:33:24,684 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-04-22 22:33:24,686 - digcalc_project.src.ui.visualization_panel - INFO - PyMuPDF document opened successfully. Page count: 12
+2025-04-22 22:33:25,001 - digcalc_project.src.ui.tracing_scene - INFO - Cleared 0 finalized polyline(s). Layer tags preserved on other items.
+2025-04-22 22:33:25,002 - digcalc_project.src.ui.main_window - ERROR - Failed to load PDF background: 'NoneType' object has no attribute 'get_page_count'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\Project Alpha\Alpha_3\digcalc_project\src\ui\main_window.py", line 696, in on_load_pdf_background
+    self.statusBar().showMessage(f"Loaded PDF background '{Path(filename).name}' ({self.visualization_panel.pdf_renderer.get_page_count()} pages).", 5000)
+                                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'get_page_count'
+2025-04-22 22:33:29,508 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-22 22:33:29,524 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-22 22:33:29,540 - digcalc_project.src.main - INFO - Application exited with code 0

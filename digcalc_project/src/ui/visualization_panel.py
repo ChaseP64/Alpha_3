@@ -13,11 +13,12 @@ import enum # Add import
 from typing import Optional, Dict, List, Any, Tuple
 import numpy as np
 from pathlib import Path
+import fitz # PyMuPDF
 
 # PySide6 imports
-from PySide6.QtCore import Qt, Slot, Signal, QRectF, QPointF, QPoint
+from PySide6.QtCore import Qt, Slot, Signal, QRectF, QPointF, QPoint, QSize
 from PySide6 import QtWidgets
-from PySide6.QtGui import QPixmap, QImage
+from PySide6.QtGui import QPixmap, QImage, QPainter # Added QPainter, QSize
 from PySide6.QtWidgets import QGraphicsPixmapItem
 # Import QQuickWidget if we were fully integrating QML here
 # from PySide6.QtQuickWidgets import QQuickWidget 
@@ -25,6 +26,7 @@ from PySide6.QtWidgets import QGraphicsPixmapItem
 from PySide6.QtQml import QJSValue # Use for type hint if receiving from QML
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QGraphicsView, QGraphicsScene, QComboBox, QMessageBox, QStackedWidget
 from PySide6.QtGui import QMouseEvent, QWheelEvent, QTransform
+# Removed: from PySide6.QtPdf import QPdfDocument
 
 # Import visualization libraries
 try:
@@ -186,7 +188,8 @@ class VisualizationPanel(QWidget):
         self.surface_mesh_items: Dict[str, gl.GLMeshItem] = {}
         # --- END NEW ---
         self.pdf_renderer: Optional[PDFRenderer] = None
-        self.pdf_background_item: Optional[QGraphicsPixmapItem] = None
+        self._pymupdf_doc: Optional[fitz.Document] = None
+        self._pdf_bg_item: Optional[QGraphicsPixmapItem] = None
         self.current_pdf_page: int = 1
         self.current_project: Optional[Project] = None
         
@@ -231,7 +234,6 @@ class VisualizationPanel(QWidget):
         self.logger.debug("VisualizationPanel initialized")
         
         self.drawing_mode = DrawingMode.SELECT
-        self._pdf_bg_item: Optional[QGraphicsPixmapItem] = None # Initialize here
         self.surface_colors: Dict[str, str] = {}
     
     @Slot(str)
@@ -255,6 +257,8 @@ class VisualizationPanel(QWidget):
         self.view_2d = InteractiveGraphicsView(None, self)
         self.scene_2d = TracingScene(self.view_2d, self)
         self.view_2d.setScene(self.scene_2d)
+        # Add render hints for better quality rendering
+        self.view_2d.setRenderHints(QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform)
         # self.view_2d.setVisible(False) # Visibility managed by stack
         self.stacked_widget.addWidget(self.view_2d)
 
@@ -299,15 +303,20 @@ class VisualizationPanel(QWidget):
         self.current_project = project
 
         # Clear existing visuals first
-        self.clear_all()
+        self.clear_all() # This now closes pymupdf doc
 
         if project:
             # Load PDF Background if available
             if project.pdf_background_path and Path(project.pdf_background_path).is_file():
                 self.logger.debug(f"Loading PDF background from project: {project.pdf_background_path}, page {project.pdf_background_page}, dpi {project.pdf_background_dpi}")
                 try:
-                    self.load_pdf_background(project.pdf_background_path, project.pdf_background_dpi)
-                    self.set_pdf_page(project.pdf_background_page) # Set the correct page
+                    # Call the updated load_pdf_background with initial page and dpi
+                    self.load_pdf_background(
+                        project.pdf_background_path,
+                        initial_page=project.pdf_background_page,
+                        dpi=project.pdf_background_dpi
+                    )
+                    # No need to call set_pdf_page here anymore
                 except Exception as e:
                     self.logger.error(f"Failed to load PDF background from project: {e}", exc_info=True)
                     # Optionally show a non-critical message to the user
@@ -990,134 +999,160 @@ class VisualizationPanel(QWidget):
 
     @Slot()
     def clear_pdf_background(self):
-        """Removes the PDF background image from the 2D view."""
-        if self._pdf_bg_item and self._pdf_bg_item in self.scene_2d.items():
-            self.scene_2d.removeItem(self._pdf_bg_item)
+        """Removes the PDF background image and closes the PyMuPDF document."""
+        self.logger.debug("Clearing PDF background.")
+        if self._pdf_bg_item:
+            if self.scene_2d and self._pdf_bg_item in self.scene_2d.items():
+                try:
+                    self.scene_2d.removeItem(self._pdf_bg_item)
+                except RuntimeError as e:
+                    self.logger.warning(f"Error removing PDF background item: {e}")
             self._pdf_bg_item = None
-            logger.info("PDF background cleared.")
-            # Optionally reset view scale/position if needed
-            # self.view_2d.fitInView(self.scene_2d.sceneRect(), Qt.KeepAspectRatio) 
 
-    @Slot(str, int)
-    def load_pdf_background(self, pdf_path: str, dpi: int = 150):
-        """Loads a PDF page as the background for the 2D view."""
-        self.logger.info(f"Attempting to load PDF background: '{pdf_path}' at {dpi} DPI")
-        
-        # Close existing renderer if path changes or if it's None
-        if self.pdf_renderer and self.pdf_renderer.pdf_path != pdf_path:
-             self.pdf_renderer.close()
-             self.pdf_renderer = None
-             
-        # Create renderer only if needed
-        if self.pdf_renderer is None:
+        if self._pymupdf_doc:
             try:
-                # Pass pdf_path and dpi to constructor
-                self.pdf_renderer = PDFRenderer(pdf_path=pdf_path, dpi=dpi)
-            except PDFRendererError as e_init:
-                self.logger.error(f"Failed to initialize PDF Renderer for '{pdf_path}': {e_init}")
-                QMessageBox.critical(self, "PDF Load Error", f"""Could not initialize PDF renderer:
-{e_init}"""
-                )
-                self.pdf_renderer = None # Ensure it's None
-                return # Stop if renderer failed to init
-            except FileNotFoundError:
-                self.logger.error(f"PDF file not found during renderer init: {pdf_path}")
-                # Use triple quotes for multi-line f-string
-                QMessageBox.critical(self, "PDF Load Error", f"""PDF file not found:
-{pdf_path}"""
-                )
-                self.pdf_renderer = None
-                return
-            except Exception as e_init_other:
-                 self.logger.exception(f"Unexpected error initializing PDF Renderer: {e_init_other}")
-                 QMessageBox.critical(self, "PDF Load Error", f"""Unexpected error initializing PDF renderer:
-{e_init_other}"""
-                 )
-                 self.pdf_renderer = None
-                 return
+                self._pymupdf_doc.close()
+                self.logger.debug("Closed PyMuPDF document.")
+            except Exception as e:
+                self.logger.error(f"Error closing PyMuPDF document: {e}", exc_info=True)
+            self._pymupdf_doc = None
 
-        # Now try rendering the page using the (hopefully) initialized renderer
-        try:
-            # Render the first page for now (add page selection later)
-            self.current_pdf_page = 1
-            qimage: Optional[QImage] = self.pdf_renderer.get_page_image(self.current_pdf_page)
-            
-            if qimage is None:
-                 raise PDFRendererError(f"Renderer failed to provide image for page {self.current_pdf_page}.")
-            
-            # Clear previous background if any
+        self.current_pdf_page = 1 # Reset page number
+
+    def load_pdf_background(self, pdf_path: str, initial_page: int = 1, dpi: int = 150):
+        """Opens a PDF using PyMuPDF and renders the initial page.
+
+        Args:
+            pdf_path (str): The path to the PDF file.
+            initial_page (int): The 1-based page number to render initially.
+            dpi (int): The target resolution for rendering the PDF page.
+        """
+        self.logger.info(f"Loading PDF background: {pdf_path}, initial page: {initial_page}, dpi: {dpi}")
+
+        # Clear existing background and close previous document if different
+        if self._pymupdf_doc and self._pymupdf_doc.name != pdf_path:
+            self.logger.debug(f"PDF path changed from '{self._pymupdf_doc.name}' to '{pdf_path}'. Clearing old background.")
             self.clear_pdf_background()
 
-            # Display the new image
-            pixmap = QPixmap.fromImage(qimage)
-            self._pdf_bg_item = QGraphicsPixmapItem(pixmap)
-            self.scene_2d.addItem(self._pdf_bg_item)
-            self.scene_2d.setSceneRect(self._pdf_bg_item.boundingRect()) # Set scene rect to image size
-            
-            self.logger.info(f"Successfully loaded PDF page {self.current_pdf_page} from '{pdf_path}'")
-            
-            # Switch to 2D view and fit content
-            self.show_2d_view()
-            self.view_2d.fitInView(self._pdf_bg_item, Qt.KeepAspectRatio)
-            
-            # Allow tracing only after PDF is loaded
-            # Consider enabling tracing action if it exists in MainWindow
-            # Example: self.parent().toggle_tracing_action.setEnabled(True)
+        # Open new document if needed
+        if not self._pymupdf_doc:
+            try:
+                self.logger.debug(f"Opening PDF with PyMuPDF: {pdf_path}")
+                self._pymupdf_doc = fitz.open(pdf_path)
+                self.logger.info(f"PyMuPDF document opened successfully. Page count: {self._pymupdf_doc.page_count}")
+            except Exception as e:
+                error_msg = f"Failed to open PDF '{pdf_path}' with PyMuPDF: {e}"
+                self.logger.error(error_msg, exc_info=True)
+                QMessageBox.critical(self, "PDF Load Error", error_msg)
+                self._pymupdf_doc = None # Ensure it's None on failure
+                # Explicitly clear any remnants if open failed after previous doc was closed
+                self.clear_pdf_background()
+                return
 
-            # Keep local reference for later operations (e.g., clearing background)
-            if hasattr(self.scene_2d, "_background_item"):
-                # noinspection PyProtectedMember
-                self._pdf_bg_item = self.scene_2d._background_item  # type: ignore[attr-defined]
-        except PDFRendererError as e:
-            self.logger.error(f"Failed to load PDF background: {e}")
-            QMessageBox.critical(self, "PDF Load Error", f"""Could not load PDF:
-{e}"""
-            )
-            self._pdf_bg_item = None # Ensure item is None on failure
-        except Exception as e:
-            self.logger.exception(f"Unexpected error loading PDF: {e}")
-            QMessageBox.critical(self, "PDF Load Error", f"""An unexpected error occurred:
-{e}"""
-            )
-            self._pdf_bg_item = None # Ensure item is None on failure 
+        # Render the initial page
+        if self._pymupdf_doc:
+            # Validate initial page number
+            if not (1 <= initial_page <= self._pymupdf_doc.page_count):
+                self.logger.warning(f"Initial page {initial_page} out of bounds (1-{self._pymupdf_doc.page_count}). Defaulting to page 1.")
+                initial_page = 1
 
-    @Slot(int)
-    def set_pdf_page(self, page_number: int):
-        """Sets the currently displayed PDF page."""
-        if not self.pdf_renderer:
-            self.logger.warning("Attempted to set PDF page, but no renderer is active.")
+            self._render_and_display_page(initial_page, dpi)
+        else:
+            # This case should ideally not be reached if error handling above is correct
+            self.logger.error("PDF document is not available after attempting to load.")
+
+    def _render_and_display_page(self, page_number: int, dpi: int):
+        """Internal helper to render a specific page using PyMuPDF and display it."""
+        if not self._pymupdf_doc:
+            self.logger.error("_render_and_display_page called but PyMuPDF document is not loaded.")
             return
 
-        self.logger.info(f"Attempting to set PDF display to page: {page_number}")
-        new_image = self.pdf_renderer.get_page_image(page_number)
+        page_index = page_number - 1 # PyMuPDF uses 0-based index
+        if not (0 <= page_index < self._pymupdf_doc.page_count):
+            self.logger.error(f"Invalid page index {page_index} requested for rendering.")
+            return
 
-        if new_image:
+        self.logger.debug(f"Rendering page index {page_index} (Page {page_number}) at {dpi} DPI...")
+        try:
+            page = self._pymupdf_doc.load_page(page_index)
+            zoom = dpi / 72.0 # PyMuPDF default is 72 DPI
+            mat = fitz.Matrix(zoom, zoom)
+            pix = page.get_pixmap(matrix=mat, alpha=False) # Render to PyMuPDF Pixmap
+
+            # Convert PyMuPDF Pixmap (RGB) to QImage
+            img_format = QImage.Format.Format_RGB888
+            if pix.alpha:
+                 img_format = QImage.Format.Format_RGBA8888 # Should not happen with alpha=False
+                 self.logger.warning("PyMuPDF rendered with alpha despite alpha=False request.")
+
+            qimage = QImage(pix.samples, pix.width, pix.height, pix.stride, img_format)
+            if qimage.isNull():
+                raise ValueError("Failed to create QImage from PyMuPDF pixmap samples.")
+
+            # Important: Copy the QImage to ensure the underlying buffer doesn't get invalidated
+            # when `pix` goes out of scope or is garbage collected.
+            qpixmap = QPixmap.fromImage(qimage.copy())
+            self.logger.debug(f"Page {page_number} rendered successfully (Size: {pix.width}x{pix.height}px).")
+
+            # Remove old background item from scene
+            if self._pdf_bg_item and self._pdf_bg_item in self.scene_2d.items():
+                try:
+                    self.scene_2d.removeItem(self._pdf_bg_item)
+                except RuntimeError as e:
+                    self.logger.warning(f"Error removing previous background item: {e}")
+            self._pdf_bg_item = None # Clear reference
+
+            # Create and add new QGraphicsPixmapItem
+            self._pdf_bg_item = QGraphicsPixmapItem(qpixmap)
+            # Scale factor should be 1 here, as scene units will be pixels
+            self._pdf_bg_item.setScale(1.0)
+            self._pdf_bg_item.setZValue(-1) # Ensure it's behind other items
+            self.scene_2d.addItem(self._pdf_bg_item)
+            self.logger.debug("Added new PDF background pixmap item to the scene.")
+
+            # Update scene rect to match the pixel dimensions of the rendered page
+            scene_rect = QRectF(0, 0, pix.width, pix.height)
+            self.scene_2d.setSceneRect(scene_rect)
+            self.logger.debug(f"Scene rect set to rendered pixmap dimensions: {scene_rect}")
+
+            # Update current page tracker
             self.current_pdf_page = page_number
-            pixmap = QPixmap.fromImage(new_image)
-            
-            # Update existing item if possible, otherwise create new
-            if self._pdf_bg_item:
-                self._pdf_bg_item.setPixmap(pixmap)
-                self.logger.debug(f"Updated existing PDF background item to page {page_number}.")
-            else:
-                self._pdf_bg_item = QGraphicsPixmapItem(pixmap)
-                self.scene_2d.addItem(self._pdf_bg_item)
-                self.logger.debug(f"Created new PDF background item for page {page_number}.")
 
-            # Ensure scene rect is updated (might be same size, but good practice)
-            self.scene_2d.setSceneRect(self._pdf_bg_item.boundingRect())
-            
-            # Ensure 2D view is visible
-            if not self.view_2d.isVisible():
-                self.show_2d_view()
-            
-            # Optionally fit view, though maybe preserve user zoom/pan?
-            # self.view_2d.fitInView(self._pdf_bg_item, Qt.KeepAspectRatio)
-            self.logger.info(f"Successfully set PDF display to page {page_number}.")
-        else:
-            self.logger.error(f"Failed to get image for page {page_number} from renderer.")
-            # Optionally show error message?
-            # QMessageBox.warning(self, "PDF Page Error", f"Could not load page {page_number}.") 
+            # Fit view if needed (might be optional depending on desired behavior)
+            self.show_2d_view() # Ensure 2D view is visible
+            self.view_2d.fitInView(scene_rect, Qt.AspectRatioMode.KeepAspectRatio)
+            self.logger.debug("Fit 2D view to new PDF background.")
+
+        except Exception as e:
+            error_msg = f"Error rendering/displaying PDF page {page_number} with PyMuPDF: {e}"
+            self.logger.error(error_msg, exc_info=True)
+            QMessageBox.warning(self, "PDF Display Error", error_msg)
+            # Clear potentially corrupted background item
+            if self._pdf_bg_item and self._pdf_bg_item in self.scene_2d.items():
+                try:
+                    self.scene_2d.removeItem(self._pdf_bg_item)
+                except RuntimeError as remove_err:
+                     self.logger.warning(f"Error removing background item during error handling: {remove_err}")
+            self._pdf_bg_item = None
+
+    def set_pdf_page(self, page_number: int, dpi: int = 150):
+        """Renders and displays the specified page of the currently loaded PDF.
+
+        Args:
+            page_number (int): The 1-based page number to display.
+            dpi (int): The target resolution for rendering.
+        """
+        if not self._pymupdf_doc:
+            self.logger.warning("set_pdf_page called but no PyMuPDF document is loaded.")
+            return
+
+        if page_number == self.current_pdf_page:
+            self.logger.debug(f"Page {page_number} is already displayed. Skipping re-render.")
+            # Optionally force re-render if needed, e.g., if DPI changed
+            # self._render_and_display_page(page_number, dpi)
+            return
+
+        self._render_and_display_page(page_number, dpi)
 
     # --- Cut/Fill Map Methods --- NEW SECTION ---
 
@@ -1392,56 +1427,3 @@ class VisualizationPanel(QWidget):
         except Exception as e:
             self.logger.error(f"Error adjusting 3D view to points: {e}", exc_info=True)
     # --- END NEW HELPER --- 
-
-    # ------------------------------------------------------------------
-    # Slots – external page selection handling
-    # ------------------------------------------------------------------
-    @Slot(int)
-    def on_page_selected(self, page: int) -> None:
-        """Render the selected *page* at full resolution and display it.
-
-        The slot relies on :class:`digcalc_project.services.pdf_service.
-        PdfService` for access to the currently loaded document – we avoid the
-        heavier :class:`PDFRenderer` because thumbnails are already managed by
-        the service layer.
-        """
-        if page <= 0:
-            self.logger.warning("on_page_selected called with invalid index %s", page)
-            return
-
-        # Prefer the singleton directly – avoids parent lookup edge‑cases in tests.
-        doc = PdfService()._current  # type: ignore[attr-defined]
-
-        # Duck‑typing guard – we only need a render_page(page, width) method.
-        if doc is None or not hasattr(doc, "render_page"):
-            self.logger.warning("No PDF loaded – page selection ignored.")
-            return
-
-        # Render the page keeping aspect ratio.  We use the panel width for
-        # a reasonable on‑screen resolution.
-        try:
-            target_w = max(self.width(), 1)
-            pixmap = doc.render_page(page - 1, target_w)  # PdfDocument uses zero‑based
-        except Exception as err:  # pragma: no cover – defensive
-            self.logger.error("Failed to render page %s: %s", page, err)
-            return
-
-        # Store selection for other parts of the UI (e.g., toolbar sync).
-        self.current_pdf_page = page
-
-        # Feed the pixmap into the tracing scene.
-        if not hasattr(self, "scene_2d") or self.scene_2d is None:
-            self.logger.error("Tracing scene missing – cannot set background.")
-            return
-
-        # Remove previous background if present
-        old_item = getattr(self.scene_2d, "_background_item", None)
-        if isinstance(old_item, QGraphicsPixmapItem):
-            self.scene_2d.removeItem(old_item)
-
-        new_item = QGraphicsPixmapItem(pixmap)
-        self.scene_2d.addItem(new_item)
-        self.scene_2d._background_item = new_item  # type: ignore[attr-defined]
-
-        # Move user to 2‑D view automatically so the change is visible.
-        self.show_2d_view()

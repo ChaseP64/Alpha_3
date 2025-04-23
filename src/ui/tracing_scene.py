@@ -42,8 +42,9 @@ class TracingScene(QGraphicsScene):
         self._temporary_line_item: Optional[QGraphicsLineItem] = None
 
         # --- Styling ---
-        # Style for the background image item
-        self._background_opacity = 0.7
+        # Style for the background image item (fully opaque by default – can
+        # be adjusted later via a setter if semi‑transparency is preferred).
+        self._background_opacity = 1.0
 
         # Style for vertices during drawing
         self._vertex_pen = QPen(QColor("cyan"), 1)
@@ -77,6 +78,8 @@ class TracingScene(QGraphicsScene):
             self._background_item.setFlag(QGraphicsItem.ItemIsSelectable, False)
             self._background_item.setFlag(QGraphicsItem.ItemIsMovable, False)
             self._background_item.setOpacity(self._background_opacity)
+            # Enable high‑quality scaling so zoomed‑in text remains readable.
+            self._background_item.setTransformationMode(Qt.SmoothTransformation)
             self.addItem(self._background_item)
             # Set the scene rect to match the background image size
             self.setSceneRect(self._background_item.boundingRect())

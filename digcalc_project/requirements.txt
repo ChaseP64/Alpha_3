@@ -3,6 +3,7 @@
 
 # Core dependencies
 PySide6>=6.6.0  # Qt bindings for Python
+PySide6-Addons>=6.6.0 # Additional Qt modules (needed for PDF widgets)
 pydantic>=1.10.0  # Data validation and settings management
 numpy>=1.22.0  # Numerical processing
 scipy>=1.8.0  # Scientific computing
