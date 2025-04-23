@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.9", "3.10", "3.11"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # ------------------------------------------------------------------
+      # Linux‑specific prerequisites (Mesa for VTK)
+      # ------------------------------------------------------------------
+      - name: Install system libs for VTK
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev
+
+      # ------------------------------------------------------------------
+      # Environment variable to enable off‑screen rendering
+      # ------------------------------------------------------------------
+      - name: Set VTK off-screen env
+        run: echo "VTK_DEFAULT_RENDER_WINDOW_OFFSCREEN=ON" >> $GITHUB_ENV
+
+      # ------------------------------------------------------------------
+      # Install Python dependencies
+      # ------------------------------------------------------------------
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r Alpha_3/digcalc_project/requirements.txt
+
+      # Run tests
+      - name: Run pytest
+        run: |
+          pytest -q 

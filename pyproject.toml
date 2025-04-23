@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "digcalc"
+version = "0.4.0a0"
+description = "Earthwork take-off tool with PDF tracing"
+authors = [{ name = "Tracy", email = "you@example.com" }] # Adjusted placeholder
+readme = "README.md" # Assuming a README.md exists or will be created
+requires-python = ">=3.9" # Adjusted based on CI file
+
+# Core dependencies derived from requirements.txt
+dependencies = [
+  "PySide6>=6.6",
+  "PySide6-Addons>=6.6.0", # Keep existing pin
+  "numpy",
+  "scipy",
+  "ezdxf>=0.17.0",
+  "xmltodict>=0.13.0",
+  "PyMuPDF>=1.24",
+  "shapely>=2.0",
+  "reportlab>=3.6",
+  "matplotlib>=3.9",
+]
+
+[project.optional-dependencies]
+# Dependencies for 3D visualization
+3d  = [
+    "pyvista>=0.44",
+    "vtk>=9.3"
+    ]
+# Development and testing dependencies
+dev = [
+    "pytest",
+    "pytest-qt>=4.0.0",
+    # "mypy" # Can uncomment later if needed
+    ]
+
+# Script entry point (if desired later)
+# [project.scripts]
+# digcalc = "digcalc_project.src.main:main"
+
+[tool.setuptools.packages.find]
+# Point to the directory containing the main 'digcalc_project' package source
+where = ["digcalc_project"]
+include = ["digcalc_project*"] # Include the package and its subpackages 

@@ -6810,3 +6810,247 @@ digcalc_project.src.visualization.pdf_renderer.PDFRendererError: Loading or rend
 2025-04-23 11:18:44,894 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
 2025-04-23 11:18:44,954 - digcalc_project.src.ui.main_window - INFO - Closing application.
 2025-04-23 11:18:44,972 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-23 11:30:54,290 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-23 11:30:54,312 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-23 11:30:54,312 - digcalc_project.src.main - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'on_generate_report'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\main_window.py", line 117, in __init__
+    self._create_actions()
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\main_window.py", line 305, in _create_actions
+    self.generate_report_action.triggered.connect(self.on_generate_report) # Connect to the slot
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'on_generate_report'
+2025-04-23 11:33:18,714 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-23 11:33:18,732 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-23 11:33:18,732 - digcalc_project.src.main - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'on_generate_report'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\main_window.py", line 117, in __init__
+    self._create_actions()
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\main_window.py", line 305, in _create_actions
+    self.generate_report_action.triggered.connect(self.on_generate_report) # Connect to the slot
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'on_generate_report'
+2025-04-23 11:35:24,687 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-23 11:35:24,714 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-23 11:35:24,714 - digcalc_project.src.main - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'on_generate_report'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\main_window.py", line 117, in __init__
+    self._create_actions()
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\main_window.py", line 305, in _create_actions
+    self.generate_report_action.triggered.connect(self.on_generate_report) # Connect to the slot
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'on_generate_report'
+2025-04-23 11:54:19,351 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-23 11:54:19,384 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-23 11:54:19,385 - digcalc_project.src.main - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'on_generate_report'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\main_window.py", line 117, in __init__
+    self._create_actions()
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\main_window.py", line 305, in _create_actions
+    self.generate_report_action.triggered.connect(self.on_generate_report) # Connect to the slot
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'on_generate_report'
+2025-04-23 11:54:35,379 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-23 11:54:35,403 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-23 11:54:35,403 - digcalc_project.src.main - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'on_generate_report'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\main_window.py", line 117, in __init__
+    self._create_actions()
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\main_window.py", line 305, in _create_actions
+    self.generate_report_action.triggered.connect(self.on_generate_report) # Connect to the slot
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'on_generate_report'
+2025-04-23 12:00:46,952 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-23 12:00:46,974 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-23 12:00:46,974 - digcalc_project.src.main - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'on_generate_report'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\main_window.py", line 117, in __init__
+    self._create_actions()
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\main_window.py", line 305, in _create_actions
+    self.generate_report_action.triggered.connect(self.on_generate_report) # Connect to the slot
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'on_generate_report'
+2025-04-23 12:04:30,391 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-23 12:04:30,414 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-23 12:04:30,414 - digcalc_project.src.main - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'on_generate_report'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\alpha_3\digcalc_project\src\ui\main_window.py", line 117, in __init__
+    self._create_actions()
+  File "C:\Users\Tracy\Desktop\DigCalc\alpha_3\digcalc_project\src\ui\main_window.py", line 305, in _create_actions
+    self.generate_report_action.triggered.connect(self.on_generate_report) # Connect to the slot
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'on_generate_report'
+2025-04-23 12:05:00,016 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-23 12:05:00,040 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-23 12:05:00,040 - digcalc_project.src.main - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'on_generate_report'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\main_window.py", line 117, in __init__
+    self._create_actions()
+  File "C:\Users\Tracy\Desktop\DigCalc\Alpha_3\digcalc_project\src\ui\main_window.py", line 305, in _create_actions
+    self.generate_report_action.triggered.connect(self.on_generate_report) # Connect to the slot
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'on_generate_report'
+2025-04-23 12:29:02,278 - __main__ - INFO - Starting DigCalc application
+2025-04-23 12:29:02,300 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-23 12:29:02,300 - __main__ - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'on_generate_report'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 117, in __init__
+    self._create_actions()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 305, in _create_actions
+    self.generate_report_action.triggered.connect(self.on_generate_report) # Connect to the slot
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'on_generate_report'
+2025-04-23 12:37:11,840 - __main__ - INFO - Starting DigCalc application
+2025-04-23 12:37:11,855 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-23 12:37:11,855 - __main__ - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'on_generate_report'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 117, in __init__
+    self._create_actions()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 305, in _create_actions
+    self.generate_report_action.triggered.connect(self.on_generate_report) # Connect to the slot
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'on_generate_report'
+2025-04-23 12:37:54,167 - __main__ - INFO - Starting DigCalc application
+2025-04-23 12:37:54,185 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-23 12:37:54,185 - __main__ - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'on_generate_report'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 117, in __init__
+    self._create_actions()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 308, in _create_actions
+    self.generate_report_action.triggered.connect(self.on_generate_report) # Connect to the slot
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'on_generate_report'
+2025-04-23 12:38:48,615 - __main__ - INFO - Starting DigCalc application
+2025-04-23 12:38:48,638 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-23 12:38:48,638 - __main__ - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'on_about'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 117, in __init__
+    self._create_actions()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 374, in _create_actions
+    self.about_action.triggered.connect(self.on_about)
+                                        ^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'on_about'
+2025-04-23 12:39:28,631 - __main__ - INFO - Starting DigCalc application
+2025-04-23 12:39:28,653 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-23 12:39:28,655 - __main__ - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'prev_pdf_page_action'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 118, in __init__
+    self._create_menus()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 410, in _create_menus
+    self.view_menu.addAction(self.prev_pdf_page_action)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'prev_pdf_page_action'
+2025-04-23 12:42:07,248 - __main__ - INFO - Starting DigCalc application
+2025-04-23 12:42:07,282 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-23 12:42:07,284 - __main__ - ERROR - Fatal error in main application: 'MainWindow' object has no attribute '_create_shortcuts'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 122, in __init__
+    self._create_shortcuts()
+    ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute '_create_shortcuts'
+2025-04-23 12:43:22,801 - __main__ - INFO - Starting DigCalc application
+2025-04-23 12:43:22,823 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-23 12:43:22,825 - __main__ - ERROR - Fatal error in main application: 'MainWindow' object has no attribute '_fit_view_to_scene'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 124, in __init__
+    self._connect_signals()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 204, in _connect_signals
+    self.visualization_panel.scene_2d.pageRectChanged.connect(self._fit_view_to_scene)
+                                                              ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute '_fit_view_to_scene'
+2025-04-23 12:44:20,454 - __main__ - INFO - Starting DigCalc application
+2025-04-23 12:44:20,476 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-23 12:44:33,364 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/_OLD_Alpha3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-23 12:44:33,364 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/_OLD_Alpha3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-04-23 12:44:33,364 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-23 12:44:33,364 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/_OLD_Alpha3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-23 12:44:33,364 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-04-23 12:44:33,364 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-04-23 12:44:36,779 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-04-23 12:44:36,779 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-04-23 12:44:36,829 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-04-23 12:44:36,829 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-04-23 12:44:36,829 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-04-23 12:44:50,823 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-23 12:44:50,823 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/_OLD_Alpha3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-23 12:44:50,898 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-23 12:44:50,913 - __main__ - INFO - Application exited with code 0
+2025-04-23 12:48:27,692 - __main__ - INFO - Starting DigCalc application
+2025-04-23 12:48:27,719 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-23 12:48:40,738 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/_OLD_Alpha3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-23 12:48:40,738 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/_OLD_Alpha3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-04-23 12:48:40,738 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-23 12:48:40,738 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/_OLD_Alpha3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-23 12:48:40,738 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-04-23 12:48:40,738 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-04-23 12:48:44,167 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-04-23 12:48:44,183 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-04-23 12:48:44,235 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-04-23 12:48:44,235 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-04-23 12:48:44,235 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-04-23 12:49:01,276 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-23 12:49:01,276 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/_OLD_Alpha3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-23 12:49:01,348 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-23 12:49:01,352 - __main__ - INFO - Application exited with code 0
+2025-04-23 13:00:40,742 - __main__ - INFO - Starting DigCalc application
+2025-04-23 13:00:40,769 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-23 13:00:50,339 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/_OLD_Alpha3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-23 13:00:50,339 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/_OLD_Alpha3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-04-23 13:00:50,339 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-23 13:00:50,339 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/_OLD_Alpha3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-23 13:00:50,339 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-04-23 13:00:50,355 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-04-23 13:00:53,772 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-04-23 13:00:53,772 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-04-23 13:00:53,826 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-04-23 13:00:53,826 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-04-23 13:00:53,826 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-04-23 13:01:13,190 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-23 13:01:13,190 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/_OLD_Alpha3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-23 13:01:13,265 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-23 13:01:13,274 - __main__ - INFO - Application exited with code 0

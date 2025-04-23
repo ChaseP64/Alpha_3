@@ -13,7 +13,7 @@ from typing import Optional, Dict, List, Tuple
 
 # PySide6 imports
 from PySide6.QtCore import Qt, QSize, Signal, Slot, QTimer # Added QTimer
-from PySide6.QtGui import QIcon, QAction, QKeySequence, QKeyEvent, QActionGroup
+from PySide6.QtGui import QIcon, QAction, QKeySequence, QKeyEvent, QActionGroup, QShortcut # Added QShortcut
 from PySide6 import QtWidgets
 from PySide6.QtWidgets import (
     QMainWindow, QDockWidget, QMenu, QToolBar,
@@ -87,7 +87,7 @@ class MainWindow(QMainWindow):
         self.pdf_service = PdfService() # Correct instantiation for Singleton
         # self.pdf_controller = PdfController(self.pdf_service, self) # Incorrect - __init__ takes only parent
         self.pdf_controller = PdfController(self) # Pass only parent
-        # --- End PDF Service --- 
+        # --- End PDF Service ---
         
         self._selected_scene_item: Optional[QGraphicsPathItem] = None
         self.pdf_dpi_setting = 300
@@ -118,6 +118,9 @@ class MainWindow(QMainWindow):
         self._create_menus()
         self._create_toolbars()
         self._create_statusbar()
+        # --- MODIFIED: Moved _create_shortcuts call here ---
+        self._create_shortcuts()
+        # --- END MODIFIED ---
         self._connect_signals()
         self._update_view_actions_state()
         
@@ -193,11 +196,17 @@ class MainWindow(QMainWindow):
             self.visualization_panel.surface_visualization_failed.connect(self._on_visualization_failed)
 
         # Connect tracing scene signals (via visualization panel)
-        if hasattr(self.visualization_panel, 'scene_2d'):
+        if hasattr(self.visualization_panel, 'scene_2d') and self.visualization_panel.scene_2d:
             self.visualization_panel.scene_2d.polyline_finalized.connect(self._on_polyline_drawn)
             self.visualization_panel.scene_2d.selectionChanged.connect(self._on_item_selected)
+            # --- NEW: Connect pageRectChanged for fitting view ---
+            if hasattr(self.visualization_panel.scene_2d, 'pageRectChanged'):
+                self.visualization_panel.scene_2d.pageRectChanged.connect(self._fit_view_to_scene)
+            else:
+                self.logger.warning("TracingScene does not have 'pageRectChanged' signal.")
+            # --- END NEW ---
         else:
-             self.logger.warning("Could not connect tracing scene signals: scene_2d not found on visualization_panel.")
+             self.logger.warning("Could not connect tracing scene signals: scene_2d not found or is None.")
 
         # Connect layer tree signal
         self.layer_tree.itemChanged.connect(self._on_layer_visibility_changed)
@@ -238,7 +247,7 @@ class MainWindow(QMainWindow):
 
         self.open_project_action = QAction("&Open Project...", self)
         self.open_project_action.setShortcut(QKeySequence.StandardKey.Open)
-        self.open_project_action.setStatusTip("Open an existing project file (.dcp).")
+        self.open_project_action.setStatusTip("Open an existing project file (.digcalc).")
 
         self.save_project_action = QAction("&Save Project", self)
         self.save_project_action.setShortcut(QKeySequence.StandardKey.Save)
@@ -250,100 +259,132 @@ class MainWindow(QMainWindow):
         self.save_project_as_action.setStatusTip("Save the current project to a new file.")
         self.save_project_as_action.setEnabled(False) # Initially disabled
 
-        # --- NEW: Trace PDF Action ---
-        self.trace_pdf_action = QAction(QIcon.fromTheme("document-import"), "&Trace from PDF...", self)
-        self.trace_pdf_action.setStatusTip("Trace layers from a PDF document")
-        self.trace_pdf_action.setEnabled(False) # Disabled until project exists
-        # --- END NEW ---
-
-        self.exit_action = QAction(QIcon.fromTheme("application-exit"), "E&xit", self)
+        self.exit_action = QAction("E&xit", self)
         self.exit_action.setShortcut(QKeySequence.StandardKey.Quit)
         self.exit_action.setStatusTip("Exit the application.")
-        # self.exit_action.triggered.connect(self.close) # Connected in _connect_signals
 
-        # Import actions
-        self.import_cad_action = QAction("Import CAD (DXF)", self)
-        # self.import_cad_action.triggered.connect(self.on_import_cad) # Obsolete
-        
-        self.import_pdf_action = QAction("Import PDF", self)
-        # self.import_pdf_action.triggered.connect(self.on_import_pdf) # Obsolete
-        
-        self.import_landxml_action = QAction("Import LandXML", self)
-        # self.import_landxml_action.triggered.connect(self.on_import_landxml) # Obsolete
-        
-        self.import_csv_action = QAction("Import CSV", self)
-        # self.import_csv_action.triggered.connect(self.on_import_csv) # Obsolete
-        
-        # --- NEW: Surface Actions ---
-        self.build_surface_action = QAction("Build Surface from Layer...", self)
-        self.build_surface_action.setStatusTip("Create a TIN surface from a layer of traced polylines with elevation.")
-        self.build_surface_action.triggered.connect(self.on_build_surface)
-        self.build_surface_action.setEnabled(True)
+        # Import menu actions
+        self.import_csv_action = QAction("Import &CSV...", self)
+        self.import_csv_action.setStatusTip("Import points from a CSV file.")
+        self.import_csv_action.triggered.connect(lambda: self._on_import_file('csv'))
+
+        self.import_dxf_action = QAction("Import &DXF...", self)
+        self.import_dxf_action.setStatusTip("Import geometry from a DXF file.")
+        self.import_dxf_action.triggered.connect(lambda: self._on_import_file('dxf'))
+
+        self.import_landxml_action = QAction("Import &LandXML...", self)
+        self.import_landxml_action.setStatusTip("Import surfaces or points from a LandXML file.")
+        self.import_landxml_action.triggered.connect(lambda: self._on_import_file('landxml'))
+
+        # --- NEW: Load Background Action ---
+        self.load_pdf_background_action = QAction("Load PDF &Background...", self)
+        self.load_pdf_background_action.setStatusTip("Load a PDF page as a background for tracing.")
+        self.load_pdf_background_action.triggered.connect(self.on_load_pdf_background)
+        self.clear_pdf_background_action = QAction("&Clear PDF Background", self)
+        self.clear_pdf_background_action.setStatusTip("Remove the current PDF background image.")
+        self.clear_pdf_background_action.triggered.connect(self.on_clear_pdf_background)
+        self.clear_pdf_background_action.setEnabled(False) # Initially disabled
         # --- END NEW ---
 
-        # Analysis actions
-        self.calculate_volume_action = QAction("Calculate Volumes...", self)
-        self.calculate_volume_action.setStatusTip("Calculate cut/fill volumes between two surfaces")
-        self.calculate_volume_action.triggered.connect(self.on_calculate_volume)
-        self.calculate_volume_action.setEnabled(False)
-        
-        # --- PDF Background Actions ---
-        self.load_pdf_background_action = QAction("Load PDF Background...", self)
-        self.load_pdf_background_action.setStatusTip("Load a PDF page as a background image for tracing")
-        self.load_pdf_background_action.triggered.connect(self.on_load_pdf_background)
-        
-        self.clear_pdf_background_action = QAction("Clear PDF Background", self)
-        self.clear_pdf_background_action.setStatusTip("Remove the current PDF background image")
-        self.clear_pdf_background_action.triggered.connect(self.on_clear_pdf_background)
-        self.clear_pdf_background_action.setEnabled(False)
-
-        self.next_pdf_page_action = QAction("Next Page", self)
-        self.next_pdf_page_action.triggered.connect(self.on_next_pdf_page)
-        self.next_pdf_page_action.setEnabled(False)
-        
-        self.prev_pdf_page_action = QAction("Previous Page", self)
+        # --- NEW: PDF Navigation Actions --- 
+        self.prev_pdf_page_action = QAction("Previous PDF Page", self)
+        self.prev_pdf_page_action.setStatusTip("Go to the previous page in the PDF background.")
         self.prev_pdf_page_action.triggered.connect(self.on_prev_pdf_page)
         self.prev_pdf_page_action.setEnabled(False)
-        
-        # --- Tracing Action ---
-        self.toggle_tracing_action = QAction("Enable Tracing", self)
-        self.toggle_tracing_action.setStatusTip("Toggle snapping and polyline drawing mode")
-        self.toggle_tracing_action.setCheckable(True)
-        self.toggle_tracing_action.setChecked(False)
-        self.toggle_tracing_action.triggered.connect(self.on_toggle_tracing_mode)
-        self.toggle_tracing_action.setEnabled(False)
-        
-        # --- NEW: View Actions --- 
-        self.view_group = QActionGroup(self)
-        self.view_group.setExclusive(True)
 
-        self.view_2d_action = QAction("Show 2D View", self, checkable=True)
-        self.view_2d_action.setStatusTip("Switch to the 2D PDF and tracing view")
-        self.view_2d_action.setShortcut("Alt+2")
-        self.view_group.addAction(self.view_2d_action)
+        self.next_pdf_page_action = QAction("Next PDF Page", self)
+        self.next_pdf_page_action.setStatusTip("Go to the next page in the PDF background.")
+        self.next_pdf_page_action.triggered.connect(self.on_next_pdf_page)
+        self.next_pdf_page_action.setEnabled(False)
+        # --- END NEW ---
 
-        self.view_3d_action = QAction("Show 3D View", self, checkable=True)
-        self.view_3d_action.setStatusTip("Switch to the 3D terrain view")
-        self.view_3d_action.setShortcut("Alt+3")
-        self.view_group.addAction(self.view_3d_action)
-        # --- END NEW --- 
+        # Analysis menu actions
+        self.calculate_volume_action = QAction("&Calculate Volume...", self)
+        self.calculate_volume_action.setStatusTip("Calculate cut/fill volumes between surfaces.")
+        self.calculate_volume_action.triggered.connect(self.on_calculate_volume)
+        self.calculate_volume_action.setEnabled(False) # Initially disabled
+
+        # --- NEW: Build Surface Action ---
+        self.build_surface_action = QAction("&Build Surface...", self)
+        self.build_surface_action.setStatusTip("Build a TIN or Grid surface from project layers.")
+        self.build_surface_action.triggered.connect(self.on_build_surface)
+        self.build_surface_action.setEnabled(False) # Initially disabled
+        # --- END NEW ---
+
+        # --- NEW: Reporting Action ---
+        self.generate_report_action = QAction("Generate &Report...", self)
+        self.generate_report_action.setStatusTip("Generate a PDF report of the project.")
+        # --- Debug Print --- 
+        print(f"DEBUG: Does 'on_generate_report' exist? {hasattr(self, 'on_generate_report')}")
+        # --- End Debug Print ---
+        self.generate_report_action.triggered.connect(self.on_generate_report) # Connect to the slot
+        self.generate_report_action.setEnabled(False) # Initially disabled
+        # --- END NEW ---
+
+        # View menu actions
+        self.view_project_panel_action = QAction("&Project Panel", self, checkable=True)
+        self.view_project_panel_action.setChecked(True)
+        self.view_project_panel_action.triggered.connect(self.project_dock.setVisible)
+        self.project_dock.visibilityChanged.connect(self.view_project_panel_action.setChecked)
+
+        self.view_layer_panel_action = QAction("&Layer Panel", self, checkable=True)
+        self.view_layer_panel_action.setChecked(True)
+        self.view_layer_panel_action.triggered.connect(self.layer_dock.setVisible)
+        self.layer_dock.visibilityChanged.connect(self.view_layer_panel_action.setChecked)
+
+        # --- NEW: Properties Dock View Action --- 
+        self.view_properties_dock_action = QAction("P&roperties Dock", self, checkable=True)
+        self.view_properties_dock_action.setChecked(False) # Start hidden
+        self.view_properties_dock_action.triggered.connect(self.prop_dock.setVisible)
+        self.prop_dock.visibilityChanged.connect(self.view_properties_dock_action.setChecked)
+        # --- END NEW ---
+
+        # --- NEW: PDF Thumbnail Dock View Action ---
+        self.view_pdf_thumbnail_dock_action = QAction("PDF T&humbnails", self, checkable=True)
+        self.view_pdf_thumbnail_dock_action.setChecked(False) # Start hidden
+        self.view_pdf_thumbnail_dock_action.triggered.connect(self.pdf_thumbnail_dock.setVisible)
+        self.pdf_thumbnail_dock.visibilityChanged.connect(self.view_pdf_thumbnail_dock_action.setChecked)
+        self.view_pdf_thumbnail_dock_action.setEnabled(False) # Disabled until PDF loaded
+        # --- END NEW ---
+
+        # --- NEW: View Mode Actions ---
+        self.view_2d_action = QAction("View &2D", self, checkable=True)
+        self.view_3d_action = QAction("View &3D", self, checkable=True)
+        self.view_action_group = QActionGroup(self)
+        self.view_action_group.addAction(self.view_2d_action)
+        self.view_action_group.addAction(self.view_3d_action)
+        self.view_action_group.setExclusive(True)
+        self.view_2d_action.setChecked(True) # Default to 2D view
+        # Connect these in _connect_signals
+        # --- END NEW ---
 
         # --- NEW: Cut/Fill Map Action ---
         self.cutfill_action = QAction("Show Cut/Fill Map", self, checkable=True)
         self.cutfill_action.setChecked(False)
-        self.cutfill_action.setEnabled(False) # Disabled until a map is generated
-        self.cutfill_action.setStatusTip("Toggle visibility of the cut/fill heatmap/mesh")
+        self.cutfill_action.setEnabled(False) # Disabled until volume calculated
         # --- END NEW ---
 
+        # Tool Actions
+        # --- NEW: Tracing Toggle Action ---
+        self.toggle_trace_mode_action = QAction("&Enable Tracing", self, checkable=True)
+        self.toggle_trace_mode_action.setStatusTip("Toggle polyline tracing mode for the 2D view.")
+        self.toggle_trace_mode_action.setChecked(False)
+        self.toggle_trace_mode_action.triggered.connect(self.on_toggle_tracing_mode)
+        self.toggle_trace_mode_action.setEnabled(False) # Disabled until background loaded
+        # --- END NEW ---
 
-        # Analysis menu
-        self.analysis_menu = self.menu_bar.addMenu("Analysis")
-        self.analysis_menu.addAction(self.calculate_volume_action)
-        
-        # Help menu
-        self.help_menu = self.menu_bar.addMenu("Help")
-        # Add help actions here
-    
+        # --- NEW: Trace from PDF Action ---
+        self.trace_pdf_action = QAction("Trace from PDF Vectors...", self)
+        self.trace_pdf_action.setStatusTip("Extract vector paths from a PDF page and create layers.")
+        # Connection in _connect_signals
+        self.trace_pdf_action.setEnabled(False) # Disabled until PDF loaded
+        # --- END NEW ---
+
+        # Help menu actions
+        self.about_action = QAction("&About DigCalc", self)
+        self.about_action.setStatusTip("Show information about the DigCalc application.")
+        self.about_action.triggered.connect(self.on_about)
+
     def _create_menus(self):
         """Create the main menu bar."""
         self.menu_bar = self.menuBar()
@@ -369,10 +410,9 @@ class MainWindow(QMainWindow):
         
         # Import menu
         self.import_menu = self.menu_bar.addMenu("Import")
-        self.import_menu.addAction(self.import_cad_action)
-        self.import_menu.addAction(self.import_pdf_action)
-        self.import_menu.addAction(self.import_landxml_action)
         self.import_menu.addAction(self.import_csv_action)
+        self.import_menu.addAction(self.import_dxf_action)
+        self.import_menu.addAction(self.import_landxml_action)
         
         # View menu - Add PDF actions here
         self.view_menu = self.menu_bar.addMenu("View")
@@ -425,7 +465,7 @@ class MainWindow(QMainWindow):
             self.logger.error("Properties dock not created, cannot add toggle action.")
         # --- End Properties Dock Toggle Action ---
         self.view_menu.addSeparator()
-        self.view_menu.addAction(self.toggle_tracing_action)
+        self.view_menu.addAction(self.toggle_trace_mode_action)
         
         # --- NEW: Surfaces Menu ---
         self.surfaces_menu = self.menu_bar.addMenu("Surfaces")
@@ -466,10 +506,9 @@ class MainWindow(QMainWindow):
         self.import_toolbar.setIconSize(QSize(24, 24))
         self.addToolBar(self.import_toolbar)
         
-        self.import_toolbar.addAction(self.import_cad_action)
-        self.import_toolbar.addAction(self.import_pdf_action)
-        self.import_toolbar.addAction(self.import_landxml_action)
         self.import_toolbar.addAction(self.import_csv_action)
+        self.import_toolbar.addAction(self.import_dxf_action)
+        self.import_toolbar.addAction(self.import_landxml_action)
         
         self.main_toolbar.addSeparator()
         self.main_toolbar.addAction(self.calculate_volume_action)
@@ -495,7 +534,7 @@ class MainWindow(QMainWindow):
         
         # --- Tracing Toolbar Action ---
         self.pdf_toolbar.addSeparator()
-        self.pdf_toolbar.addAction(self.toggle_tracing_action)
+        self.pdf_toolbar.addAction(self.toggle_trace_mode_action)
         
         # --- NEW: Optional View Toolbar --- 
         self.view_toolbar = QToolBar("View Toolbar")
@@ -798,7 +837,7 @@ class MainWindow(QMainWindow):
         if hasattr(self, 'visualization_panel'):
             self.visualization_panel.set_tracing_mode(checked)
             self.logger.info(f"Tracing mode {'enabled' if checked else 'disabled'} via MainWindow action.")
-            self.toggle_tracing_action.setText("Disable Tracing" if checked else "Enable Tracing")
+            self.toggle_trace_mode_action.setText("Disable Tracing" if checked else "Enable Tracing")
         else:
             self.logger.warning("Cannot toggle tracing mode: VisualizationPanel not found.")
 
@@ -1649,335 +1688,82 @@ class MainWindow(QMainWindow):
 
 # --- End new slot ---
 
+    # ------------------------------------------------------------------
+    # Reporting
+    # ------------------------------------------------------------------
+    @Slot()
+    def on_generate_report(self) -> None:
+        """
+        Generate a PDF report for the current project.
 
-# ... existing code ...
+        For now this is a stub: it just shows a message box so the
+        QAction connection works and avoids the AttributeError.
+        """
+        # Note: QMessageBox was imported at the top earlier
+        QMessageBox.information(
+            self,
+            "DigCalc",
+            "Report generation is not implemented yet.\n"
+            "This placeholder slot proves the QAction hookup works."
+        )
 
-class VolumeCalculationDialog(QDialog):
-    """Dialog for selecting surfaces and parameters for volume calculation."""
-    def __init__(self, surface_names: List[str], parent: Optional[QWidget] = None):
-        super().__init__(parent)
-        self.setWindowTitle("Calculate Volumes")
-        self.surface_names = surface_names
-        self.setMinimumWidth(350) # Set a minimum width
+    # ------------------------------------------------------------------
+    # Help Menu Slots
+    # ------------------------------------------------------------------
+    @Slot()
+    def on_about(self) -> None:
+        """Show the About dialog."""
+        # Note: QMessageBox was imported at the top
+        QMessageBox.about(
+            self,
+            "About DigCalc",
+            "DigCalc - Digital Calculation Tool\n\n"
+            "Version 0.1 (Placeholder)\n"
+            "Built with Python and PySide6."
+        )
 
-        layout = QVBoxLayout(self)
-        form_layout = QFormLayout()
-        form_layout.setContentsMargins(10, 10, 10, 10)
-        form_layout.setSpacing(10)
+    # ------------------------------------------------------------------
+    # Shortcut Creation
+    # ------------------------------------------------------------------
+    def _create_shortcuts(self):
+        """Create global application shortcuts (Placeholder)."""
+        self.logger.debug("Creating application shortcuts...")
+        # Example: Shortcut for Fit View (F key) - Needs QShortcut import
+        # fit_shortcut = QShortcut(QKeySequence("F"), self)
+        # fit_shortcut.activated.connect(self._fit_view_to_scene) # Requires _fit_view_to_scene slot
+        # fit_shortcut.setContext(Qt.ApplicationShortcut)
+        self.logger.debug("Shortcuts (currently placeholder) setup complete.")
 
-        # --- Surface Selection ---
-        self.combo_existing = QComboBox(self)
-        self.combo_existing.addItems(self.surface_names)
-        self.combo_existing.setToolTip("Select the surface representing the original ground or starting condition.")
-        form_layout.addRow("Existing Surface:", self.combo_existing)
+    # ------------------------------------------------------------------
+    # View/Scene Slots
+    # ------------------------------------------------------------------
+    @Slot()
+    def _fit_view_to_scene(self):
+        """Fits the 2D view to the current scene rectangle (Placeholder)."""
+        self.logger.debug("Fitting view to scene requested (Placeholder)." )
+        if hasattr(self.visualization_panel, 'view_2d') and \
+           hasattr(self.visualization_panel, 'scene_2d') and \
+           self.visualization_panel.view_2d and \
+           self.visualization_panel.scene_2d:
+            view = self.visualization_panel.view_2d
+            scene = self.visualization_panel.scene_2d
+            scene_rect = scene.sceneRect()
 
-        self.combo_proposed = QComboBox(self)
-        self.combo_proposed.addItems(self.surface_names)
-        self.combo_proposed.setToolTip("Select the surface representing the final grade or proposed design.")
-        form_layout.addRow("Proposed Surface:", self.combo_proposed)
-
-        # --- Grid Resolution ---
-        self.spin_resolution = QDoubleSpinBox(self)
-        self.spin_resolution.setRange(0.1, 1000.0) # Sensible range
-        self.spin_resolution.setValue(5.0) # Default value
-        self.spin_resolution.setDecimals(2)
-        self.spin_resolution.setSingleStep(0.5)
-        self.spin_resolution.setToolTip("Specify the size of the grid cells for volume calculation (e.g., 5.0 means 5x5 units). Smaller values increase accuracy but take longer.")
-        form_layout.addRow("Grid Resolution (units):", self.spin_resolution)
-        
-        # Align labels to the right
-        for i in range(form_layout.rowCount()):
-            label_item = form_layout.itemAt(i, QFormLayout.LabelRole)
-            if label_item and label_item.widget():
-                label_item.widget().setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-
-        layout.addLayout(form_layout)
-
-        # --- Dialog Buttons ---
-        self.button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        self.button_box.accepted.connect(self.accept)
-        self.button_box.rejected.connect(self.reject)
-        layout.addWidget(self.button_box)
-
-        # Attempt to pre-select surfaces
-        self._preselect_surfaces()
-
-        # Connect signals for validation AFTER pre-selection attempt
-        self.combo_existing.currentIndexChanged.connect(self._validate_selection)
-        self.combo_proposed.currentIndexChanged.connect(self._validate_selection)
-        self._validate_selection() # Initial validation
-        
-        self.setLayout(layout)
-        self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
-        self.adjustSize() # Adjust size to fit contents
-
-    def _preselect_surfaces(self):
-        """Attempts to pre-select likely existing and proposed surfaces based on name."""
-        existing_keywords = ["existing", "eg", "topo", "original"]
-        proposed_keywords = ["proposed", "design", "fg", "final"]
-
-        found_existing = None
-        found_proposed = None
-
-        # Find first match for existing
-        for name in self.surface_names:
-            name_lower = name.lower()
-            if any(keyword in name_lower for keyword in existing_keywords):
-                found_existing = name
-                break
-        
-        # Find first match for proposed (must be different from existing)
-        for name in self.surface_names:
-            name_lower = name.lower()
-            if any(keyword in name_lower for keyword in proposed_keywords):
-                if name != found_existing: # Ensure it's not the same surface
-                    found_proposed = name
-                    break
-
-        # Set selections if found
-        if found_existing:
-            self.combo_existing.setCurrentText(found_existing)
-            logger.debug(f"Pre-selected Existing Surface: {found_existing}")
-        
-        if found_proposed:
-            self.combo_proposed.setCurrentText(found_proposed)
-            logger.debug(f"Pre-selected Proposed Surface: {found_proposed}")
-        elif len(self.surface_names) > 1 and found_existing: 
-            # If only existing was found, try setting proposed to the first *different* surface
-            first_different = next((s for s in self.surface_names if s != found_existing), None)
-            if first_different:
-                self.combo_proposed.setCurrentText(first_different)
-                logger.debug(f"Pre-selected Proposed Surface (fallback): {first_different}")
-
-    def _validate_selection(self):
-        """Enable OK button only if different surfaces are selected."""
-        valid = (self.combo_existing.currentText() != self.combo_proposed.currentText())
-        self.button_box.button(QDialogButtonBox.Ok).setEnabled(valid)
-        # Provide visual feedback or a status tip if desired
-        if not valid and len(self.surface_names) > 1:
-            # Optional: Add a small label or status tip indicating the issue
-            # self.statusBar().showMessage("Existing and Proposed surfaces must be different.", 2000)
-            pass # Simple button disabling is usually sufficient
-
-    def get_selected_surfaces(self) -> Optional[Dict[str, str]]:
-        """Get the names of the selected existing and proposed surfaces."""
-        if self._validate_selection and self.combo_existing.currentText() and self.combo_proposed.currentText():
-             return {
-                 'existing': self.combo_existing.currentText(),
-                 'proposed': self.combo_proposed.currentText()
-             }
-        return None
-
-    def get_grid_resolution(self) -> float:
-        """Get the selected grid resolution."""
-        return self.spin_resolution.value()
-
-    def should_generate_map(self) -> bool:
-        """Get the state of the checkbox for generating a cut/fill map."""
-        return self.button_box.button(QDialogButtonBox.Ok).isEnabled()
-
-class ImportOptionsDialog(QDialog):
-    """Dialog for configuring import options for various file types."""
-    def __init__(self, parent, parser, default_name, filename: Optional[str] = None):
-        super().__init__(parent)
-        self.setWindowTitle("Import Options")
-        self.parser = parser
-        self.filename = filename # Store filename for potential use (e.g., CSV header peek)
-        self.setMinimumWidth(400) # Increase minimum width for better layout
-
-        layout = QVBoxLayout(self)
-        form_layout = QFormLayout()
-        form_layout.setContentsMargins(10, 10, 10, 10)
-        form_layout.setSpacing(10)
-
-        # --- Surface Name ---
-        self.name_edit = QLineEdit(default_name)
-        self.name_edit.setToolTip("Enter a name for the surface to be created from this file.")
-        form_layout.addRow("Surface Name:", self.name_edit)
-
-        # --- Parser-Specific Options ---
-        self._add_parser_options(form_layout)
-        
-        # Align labels to the right
-        for i in range(form_layout.rowCount()):
-            label_item = form_layout.itemAt(i, QFormLayout.LabelRole)
-            if label_item and label_item.widget():
-                label_item.widget().setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-
-        layout.addLayout(form_layout)
-
-        # --- Dialog Buttons ---
-        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        button_box.accepted.connect(self.accept)
-        button_box.rejected.connect(self.reject)
-        layout.addWidget(button_box)
-        
-        self.setLayout(layout)
-        self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
-        self.adjustSize() # Adjust size to fit contents
-
-    def get_surface_name(self) -> str:
-        """Get the desired surface name entered by the user."""
-        return self.name_edit.text().strip() or "Imported Surface" # Provide a fallback
-
-    def _add_parser_options(self, layout: QFormLayout):
-        """Dynamically add options based on the parser type."""
-        if isinstance(self.parser, CSVParser):
-            # --- CSV Specific Options ---
-            self.combo_x = QComboBox()
-            self.combo_y = QComboBox()
-            self.combo_z = QComboBox()
-            self.spin_skip_rows = QSpinBox()
-            self.spin_skip_rows.setRange(0, 100)
-            self.spin_skip_rows.setValue(0)
-            self.spin_skip_rows.setToolTip("Number of header rows to skip before data starts.")
-            self.combo_delimiter = QComboBox()
-            self.combo_delimiter.addItems([",", "\t", " ", ";"])
-            self.combo_delimiter.setEditable(True)
-            self.combo_delimiter.setToolTip("Select or enter the character separating columns.")
-
-            layout.addRow("Delimiter:", self.combo_delimiter)
-            layout.addRow("Skip Header Rows:", self.spin_skip_rows)
-            layout.addRow("X Column:", self.combo_x)
-            layout.addRow("Y Column:", self.combo_y)
-            layout.addRow("Z/Elevation Column:", self.combo_z)
-            
-            self.combo_x.setToolTip("Select the column containing X coordinates.")
-            self.combo_y.setToolTip("Select the column containing Y coordinates.")
-            self.combo_z.setToolTip("Select the column containing Z (elevation) values.")
-
-            # Populate column dropdowns if filename is available
-            if self.filename:
-                self._update_csv_column_options()
-                self.spin_skip_rows.valueChanged.connect(self._update_csv_column_options)
-                self.combo_delimiter.currentTextChanged.connect(self._update_csv_column_options)
-                
-        # Add elif blocks here for other parsers (DXFParser, PDFParser, etc.)
-        # elif isinstance(self.parser, DXFParser):
-        #     # Add DXF specific options (e.g., layer selection)
-        #     pass 
-        else:
-            # Default/Fallback message if no specific options needed
-            no_options_label = QLabel("No specific import options available for this file type.")
-            no_options_label.setStyleSheet("font-style: italic; color: gray;")
-            layout.addRow(no_options_label)
-
-    def _update_csv_column_options(self):
-        """Read CSV headers and update column selection comboboxes."""
-        if not self.filename or not isinstance(self.parser, CSVParser):
-            return
-
-        skip_rows = self.spin_skip_rows.value()
-        delimiter_text = self.combo_delimiter.currentText()
-        # Explicitly checking against correct string literals
-        if delimiter_text == "\t":
-            delimiter = '\t'
-        elif delimiter_text == " ":
-            delimiter = ' '
-        else:
-            delimiter = delimiter_text # Use the text directly (covers comma, semicolon, custom)
-            
-        if not delimiter: # Handle empty case
-            delimiter = ',' # Default to comma if empty
-
-        try:
-            headers = self.parser.peek_headers(self.filename, num_lines=skip_rows + 1, delimiter=delimiter)
-            if headers:
-                # Clear existing items before adding new ones
-                self.combo_x.clear()
-                self.combo_y.clear()
-                self.combo_z.clear()
-                # Populate with actual headers
-                self.combo_x.addItems(headers)
-                self.combo_y.addItems(headers)
-                self.combo_z.addItems(headers)
-                self._try_preselect_columns(headers) # Attempt to guess columns
+            if not scene_rect.isNull() and scene_rect.isValid():
+                self.logger.debug(f"Fitting view to scene rect: {scene_rect}")
+                view.fitInView(scene_rect, Qt.KeepAspectRatio)
             else:
-                # Handle case where no headers could be read (e.g., file error, wrong delimiter/skip)
-                 self.combo_x.clear()
-                 self.combo_y.clear()
-                 self.combo_z.clear()
-                 self.combo_x.addItem("- Error reading headers -")
-                 self.combo_y.addItem("- Error reading headers -")
-                 self.combo_z.addItem("- Error reading headers -")
-        except Exception as e:
-            # Log the error, maybe show a non-modal status? 
-            print(f"Error peeking headers: {e}") # Replace with proper logging
-            self.combo_x.clear()
-            self.combo_y.clear()
-            self.combo_z.clear()
-            self.combo_x.addItem("- Error reading headers -")
-            self.combo_y.addItem("- Error reading headers -")
-            self.combo_z.addItem("- Error reading headers -")
+                self.logger.warning("Cannot fit view: Scene rectangle is null or invalid.")
+        else:
+            self.logger.warning("Cannot fit view: 2D view or scene not available.")
 
-    def _try_preselect_columns(self, headers: List[str]):
-        """Attempt to automatically select common column names."""
-        common_x = ['x', 'easting', 'lon']
-        common_y = ['y', 'northing', 'lat']
-        common_z = ['z', 'elevation', 'elev', 'height']
+        # ------------------------------------------------------------------
+        # Undo/Redo stack
+        # ------------------------------------------------------------------
+        from PySide6.QtWidgets import QUndoStack, QShortcut
 
-        for i, header in enumerate(headers):
-            h_lower = header.lower()
-            if any(term in h_lower for term in common_x) and self.combo_x.currentIndex() == -1:
-                self.combo_x.setCurrentIndex(i)
-            if any(term in h_lower for term in common_y) and self.combo_y.currentIndex() == -1:
-                self.combo_y.setCurrentIndex(i)
-            if any(term in h_lower for term in common_z) and self.combo_z.currentIndex() == -1:
-                self.combo_z.setCurrentIndex(i)
+        self.undoStack = QUndoStack(self)
 
-    def get_options(self) -> Dict:
-        """Get the parser-specific options selected by the user."""
-        options = {}
-        if isinstance(self.parser, CSVParser):
-            options['delimiter'] = self.combo_delimiter.currentText() # Pass raw text back
-            options['skip_rows'] = self.spin_skip_rows.value()
-            options['x_col'] = self.combo_x.currentText()
-            options['y_col'] = self.combo_y.currentText()
-            options['z_col'] = self.combo_z.currentText()
-        # Add elif blocks for other parsers
-        # elif isinstance(self.parser, DXFParser):
-        #     options['layer'] = self.layer_combo.currentText()
-        return options 
-
-    # --- Restore Method for Controller to Update UI ---
-    def _update_ui_for_project(self, project: Optional[Project]):
-        """
-        Updates various UI components based on the current project state.
-        Called by ProjectController when the project changes.
-
-        Args:
-            project: The new current project (or None).
-        """
-        self.logger.debug(f"Updating UI for project: {project.name if project else 'None'}")
-        # Update UI elements
-        self.project_panel.set_project(project) # Update project panel tree
-        self._update_layer_tree() # Update layer tree
-        self.visualization_panel.set_project(project) # Update visualization
-        self._update_analysis_actions_state() # Update menu/toolbar item enabled state
-        self._update_pdf_controls() # Update PDF controls based on project state
-        self._update_window_title() # Update window title
-        self.prop_dock.clear_selection() # Clear properties dock
-        if self._selected_scene_item is None: # Don't hide if something is selected
-             self.prop_dock.hide()
-        self._clear_cutfill_state() # Clear any stale cut/fill viz
-        # --- Ensure view actions are updated after project load/change ---
-        self._update_view_actions_state()
-        # --- End ensure --- 
-        self.logger.debug("UI update complete.")
-    # --- End Restore ---
-    
-    # --- Restore Method to Update Window Title ---
-    def _update_window_title(self):
-         """Sets the main window title based on the current project name and dirty state."""
-         project = self.project_controller.get_current_project()
-         base_title = "DigCalc"
-         if project:
-             title = f"{project.name} - {base_title}"
-             if project.filepath:
-                 title += f" [{Path(project.filepath).name}]"
-             if project.is_dirty:
-                 title += " *" # Indicate unsaved changes
-             self.setWindowTitle(title)
-         else:
-             self.setWindowTitle(base_title)
-    # --- End Restore ---
+        # Global shortcuts for undo/redo
+        QShortcut(QKeySequence.StandardKey.Undo, self, self.undoStack.undo)
+        QShortcut(QKeySequence.StandardKey.Redo, self, self.undoStack.redo)

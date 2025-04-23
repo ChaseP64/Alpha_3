@@ -1,10 +1,23 @@
+from __future__ import annotations
+
 # src/ui/tracing_scene.py
 
 import logging
-from typing import List, Optional, Tuple, Dict, Sequence, Any
+import math
+from typing import List, Optional, Tuple, Dict, Sequence, Any, TypeAlias, TYPE_CHECKING
 
-from PySide6.QtCore import Qt, QPointF, Signal
-from PySide6.QtGui import QBrush, QColor, QImage, QPainterPath, QPen, QPixmap, QKeyEvent
+from PySide6.QtCore import Qt, QPointF, Signal, QLineF
+from PySide6.QtGui import (
+    QBrush,
+    QColor,
+    QImage,
+    QPainterPath,
+    QPen,
+    QPixmap,
+    QKeyEvent,
+    QMouseEvent,
+    QUndoCommand,
+)
 from PySide6.QtWidgets import (
     QGraphicsEllipseItem,
     QGraphicsItem,
@@ -17,12 +30,17 @@ from PySide6.QtWidgets import (
     QGraphicsView
 )
 
-# Import the type hint from Project model
-try:
+# --- MODIFIED: Use TYPE_CHECKING for PolylineData --- 
+if TYPE_CHECKING:
     from ..models.project import PolylineData
-except ImportError:
-    # Fallback or error if needed
-    PolylineData = dict 
+else:
+    # Provide a runtime fallback (e.g., dict or Any)
+    PolylineData = Any # Or Dict[str, Any] if it's always a dict structure
+# --- END MODIFIED ---
+
+# --- NEW: Define Type Alias --- 
+LayerPolylineDict: TypeAlias = Dict[str, List[List[Tuple[float, float]]]]
+# --- END NEW ---
 
 class TracingScene(QGraphicsScene):
     """
@@ -42,6 +60,10 @@ class TracingScene(QGraphicsScene):
     selectionChanged = Signal(QGraphicsItem)
     # --- END NEW ---
 
+    # --- NEW: Signal for page bounding rect ---
+    pageRectChanged = Signal()
+    # --- END NEW ---
+
     def __init__(self, view: QGraphicsView, parent=None):
         """Initialize the TracingScene.
 
@@ -55,7 +77,6 @@ class TracingScene(QGraphicsScene):
 
         # Allow multiple stacked background layers (one per PDF page)
         self._background_items: List[QGraphicsPixmapItem] = []
-        self._background_item = None  # legacy alias
         self._tracing_enabled: bool = False
         self._is_drawing: bool = False
         self._current_polyline_points: List[QPointF] = []
@@ -78,23 +99,22 @@ class TracingScene(QGraphicsScene):
     # Background layer helpers (multi‑page stacking)
     # ------------------------------------------------------------------
 
-    def addBackgroundLayer(self, pixmap: QPixmap, z: float | None = None) -> None:  # noqa: N802
+    def addBackgroundLayer(self, pixmap: QPixmap, z: float | None = None) -> None: # noqa: N802
         """Add a new PDF page pixmap as a background layer."""
         item = QGraphicsPixmapItem(pixmap)
         if z is None:
-            z = -(len(self._background_items) + 1)  # stack downwards
+            z = -(len(self._background_items) + 1) # stack downwards
         item.setZValue(z)
         item.setFlag(QGraphicsItem.ItemIsSelectable, False)
         item.setFlag(QGraphicsItem.ItemIsMovable, False)
         item.setOpacity(self._background_opacity)
         self.addItem(item)
         self._background_items.append(item)
-        # Keep legacy alias pointing to *last* added for backward‑compat
-        self._background_item = item
-        # Expand scene rect to fit all layers (use first item's bounds)
+        # Expand scene rect to fit all layers (use combined bounds)
         self.setSceneRect(self.itemsBoundingRect())
+        self.pageRectChanged.emit()
 
-    def removeBackgroundLayer(self, index: int) -> None:  # noqa: N802
+    def removeBackgroundLayer(self, index: int) -> None: # noqa: N802
         """Remove a background layer by its index in the stack."""
         if 0 <= index < len(self._background_items):
             item = self._background_items.pop(index)
@@ -104,30 +124,42 @@ class TracingScene(QGraphicsScene):
             for i, it in enumerate(self._background_items, start=1):
                 it.setZValue(-i)
             self.setSceneRect(self.itemsBoundingRect())
-            # Update legacy alias
-            self._background_item = self._background_items[-1] if self._background_items else None
+            self.pageRectChanged.emit()
         else:
             self.logger.warning("removeBackgroundLayer: index out of range (%s)", index)
 
-    # Legacy single‑image API retained for compatibility -----------------------------------
-    def set_background_image(self, image: Optional[QImage]):  # noqa: N802
+    # Legacy single‑image API retained for compatibility -----------------------------------\
+    def set_background_image(self, image: Optional[QImage]): # noqa: N802
         """Maintain old API: clear layers then add one."""
         # clear existing
         for item in list(self._background_items):
             if item in self.items():
                 self.removeItem(item)
         self._background_items.clear()
-        self._background_item = None
         if image and not image.isNull():
             self.addBackgroundLayer(QPixmap.fromImage(image))
+        else:
+            # If image is None, clear scene rect or set to default
+            self.setSceneRect(self.itemsBoundingRect()) # Update rect even if empty
+            self.pageRectChanged.emit() # Emit signal
 
     # ------------------------------------------------------------------
     # Backward‑compat helper – some code paths call *setBackgroundImage*.
     # ------------------------------------------------------------------
-    def setBackgroundImage(self, pixmap: QPixmap):  # camelCase alias
+    def setBackgroundImage(self, pixmap: QPixmap): # camelCase alias
         """Qt slot‑style camel‑case alias for :py:meth:`set_background_image`."""
         img = pixmap.toImage() if isinstance(pixmap, QPixmap) else None
         self.set_background_image(img)
+
+    # --- NEW: Fit View ---
+    def fit_current_page(self):
+        """
+        Emits the pageRectChanged signal, indicating the view should refit the scene contents.
+        The actual fitting is handled by the connected slot in the MainWindow/VisualizationPanel.
+        """
+        self.logger.debug("fit_current_page called, emitting pageRectChanged.")
+        self.pageRectChanged.emit()
+    # --- END NEW ---
 
     # --- Drawing Control ---
 
@@ -135,6 +167,9 @@ class TracingScene(QGraphicsScene):
         """Explicitly enables drawing mode."""
         self._tracing_enabled = True
         self.logger.debug("Drawing mode explicitly enabled.")
+        # Change cursor when tracing starts
+        if self.parent_view:
+            self.parent_view.setCursor(Qt.CrossCursor)
 
     def stop_drawing(self):
         """Explicitly disables drawing mode and cancels any current polyline."""
@@ -142,28 +177,36 @@ class TracingScene(QGraphicsScene):
         if self._is_drawing:
             self._cancel_current_polyline()
             self.logger.debug("Drawing mode explicitly disabled, current polyline cancelled.")
+        # Reset cursor when tracing stops
+        if self.parent_view:
+             # Restore appropriate cursor based on view's drag mode
+            cursor = Qt.ArrowCursor
+            if self.parent_view.dragMode() == QGraphicsView.DragMode.ScrollHandDrag:
+                cursor = Qt.OpenHandCursor
+            self.parent_view.setCursor(cursor)
 
     # --- Event Handling for Drawing ---
 
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
         """Handles mouse press events to add vertices to the polyline."""
         # Check if the parent view is currently performing manual panning
-        if self.parent_view and hasattr(self.parent_view, '_is_manual_panning') and self.parent_view._is_manual_panning:
+        if self.parent_view and hasattr(self.parent_view, '_panning') and self.parent_view._panning:
             self.logger.debug("Scene mousePress ignored: View is manually panning.")
-            event.accept() # Prevent further processing
-            return 
-
-        if not self._tracing_enabled:
-            # If tracing is disabled, do nothing and let the event propagate to the view.
-            # The view will handle panning based on its dragMode.
             return
 
-        # --- Tracing is Enabled --- 
+        if not self._tracing_enabled:
+            # If tracing is disabled, allow the base class/view to handle selection/panning etc.
+            super().mousePressEvent(event)
+            return
+
+        # --- Tracing is Enabled ---
         if event.button() == Qt.LeftButton:
-            pos = event.scenePos()
+            pos = self._constrained_pos(event.scenePos(), event.modifiers()) # Apply constraints on press
+
+            # Check if click is within any background item bounds (if backgrounds exist)
             can_draw = True
-            if self._background_item:
-                 can_draw = self._background_item.sceneBoundingRect().contains(pos)
+            if self._background_items:
+                can_draw = any(bg.sceneBoundingRect().contains(pos) for bg in self._background_items)
 
             if can_draw:
                 if not self._is_drawing:
@@ -172,25 +215,64 @@ class TracingScene(QGraphicsScene):
                     self._add_vertex_marker(pos)
                     self.logger.debug(f"Started new polyline at: {pos.x():.2f}, {pos.y():.2f}")
                 else:
+                    # Add the constrained position
                     self._current_polyline_points.append(pos)
                     self._add_vertex_marker(pos)
-                    self._update_temporary_line(pos)
+                    self._update_temporary_line(pos) # Update rubber band to this new point
                     self.logger.debug(f"Added vertex at: {pos.x():.2f}, {pos.y():.2f}")
+                event.accept() # We handled the click for drawing
             else:
-                 # If click is outside drawable area when tracing, allow view to handle (e.g., pan)
-                 super().mousePressEvent(event) # Pass to base scene, might not be needed if view handles it
+                 # If click is outside drawable area when tracing, let view handle pan/etc.
+                 super().mousePressEvent(event)
         else:
             # Pass non-left clicks (e.g., right-click for context menu) to base scene
             super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent):
-        """Handles mouse move events to update the temporary rubber-band line."""
+        """Handles mouse move events to update the temporary rubber-band line with constraints."""
         if not self._tracing_enabled or not self._is_drawing or not self._current_polyline_points:
             super().mouseMoveEvent(event)
             return
 
-        pos = event.scenePos()
-        self._update_temporary_line(pos)
+        constrained_pos = self._constrained_pos(event.scenePos(), event.modifiers())
+        self._update_temporary_line(constrained_pos)
+        event.accept() # We are handling the move for the rubber band
+
+    def _constrained_pos(self, current_pos: QPointF, modifiers: Qt.KeyboardModifiers) -> QPointF:
+        """
+        Calculates the constrained position based on the last point and modifier keys.
+
+        Args:
+            current_pos (QPointF): The current mouse position in scene coordinates.
+            modifiers (Qt.KeyboardModifiers): Keyboard modifiers (Shift, Ctrl).
+
+        Returns:
+            QPointF: The potentially constrained position.
+        """
+        if not self._current_polyline_points:
+            return current_pos # No previous point to constrain relative to
+
+        last_point = self._current_polyline_points[-1]
+        dx = current_pos.x() - last_point.x()
+        dy = current_pos.y() - last_point.y()
+
+        if modifiers == Qt.ShiftModifier:
+            # Constrain to horizontal or vertical
+            if abs(dx) > abs(dy):
+                return QPointF(current_pos.x(), last_point.y()) # Horizontal
+            else:
+                return QPointF(last_point.x(), current_pos.y()) # Vertical
+        elif modifiers == Qt.ControlModifier:
+            # Constrain to 45-degree increments
+            angle = math.atan2(dy, dx)
+            snapped_angle = round(angle / (math.pi / 4)) * (math.pi / 4)
+            dist = math.hypot(dx, dy)
+            snapped_x = last_point.x() + dist * math.cos(snapped_angle)
+            snapped_y = last_point.y() + dist * math.sin(snapped_angle)
+            return QPointF(snapped_x, snapped_y)
+        else:
+            # No constraint
+            return current_pos
 
     def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent):
         """Handles double-click events to finalize the current polyline."""
@@ -200,18 +282,19 @@ class TracingScene(QGraphicsScene):
 
         if event.button() == Qt.LeftButton:
             if len(self._current_polyline_points) >= 2:
-                # Get active layer name from parent (VisualizationPanel)
-                active_layer = "Default" # Fallback
-                try:
-                    # Assumes parent is VisualizationPanel and has active_layer_name
-                    active_layer = self.parent().active_layer_name 
-                except AttributeError:
-                     self.logger.warning("Could not get active_layer_name from parent.")
-                final_pos = event.scenePos() # Use last point added by double-click
+                # Use the position from the second click of the double-click
+                # Apply constraints to the final point as well
+                final_pos = self._constrained_pos(event.scenePos(), event.modifiers())
                 self._current_polyline_points.append(final_pos)
+                self._add_vertex_marker(final_pos) # Add marker for the final point
+
+                # Get active layer name from parent (VisualizationPanel)
+                active_layer = self._get_active_layer_name()
                 self._finalize_current_polyline(active_layer)
             else:
+                # Not enough points, cancel
                 self._cancel_current_polyline()
+            event.accept()
         else:
             super().mouseDoubleClickEvent(event)
 
@@ -223,85 +306,111 @@ class TracingScene(QGraphicsScene):
 
         if event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter:
             if len(self._current_polyline_points) >= 2:
-                # Get active layer name from parent (VisualizationPanel)
-                active_layer = "Default" # Fallback
-                try:
-                    # Assumes parent is VisualizationPanel and has active_layer_name
-                    active_layer = self.parent().active_layer_name 
-                except AttributeError:
-                     self.logger.warning("Could not get active_layer_name from parent.")
+                active_layer = self._get_active_layer_name()
                 self._finalize_current_polyline(active_layer)
             else:
                 self._cancel_current_polyline()
+            event.accept()
         elif event.key() == Qt.Key_Backspace:
             self._undo_last_vertex()
+            event.accept()
         elif event.key() == Qt.Key_Escape:
              self._cancel_current_polyline()
+             event.accept()
         else:
+            # Allow other keys (like modifiers) to pass through
             super().keyPressEvent(event)
 
+    # --- Helper to get active layer ---
+    def _get_active_layer_name(self) -> str:
+        """Safely gets the active layer name from the parent view/widget."""
+        active_layer = "Default" # Fallback
+        # Need to navigate up from scene -> view -> main_window/vis_panel
+        parent_widget = self.parent_view
+        if hasattr(parent_widget, 'parent') and callable(parent_widget.parent):
+             # Assuming parent_view's parent is VisualizationPanel or similar
+             controller_widget = parent_widget.parent()
+             if hasattr(controller_widget, 'active_layer_name'):
+                 active_layer = controller_widget.active_layer_name
+                 self.logger.debug(f"Retrieved active layer: {active_layer}")
+             else:
+                 self.logger.warning("Parent widget does not have 'active_layer_name' attribute.")
+        else:
+            self.logger.warning("Could not get active_layer_name: Parent hierarchy unexpected.")
+        return active_layer
+
     # --- NEW: Override mouseReleaseEvent to detect selection ---
-    def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent):
+    def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent | QMouseEvent): # Allow QMouseEvent from view
         """
         Overrides mouseReleaseEvent to emit selectionChanged signal
         when a selectable item (polyline) is clicked.
         """
+        # Check if the parent view handled panning
+        if self.parent_view and hasattr(self.parent_view, '_panning') and self.parent_view._panning:
+             # If view was panning, don't process release for selection in scene
+             # The view's release handler should reset state
+             return
+
         # Important: Call super implementation to handle standard selection behavior first!
         super().mouseReleaseEvent(event)
+
+        # After base class handled it, check selection and emit signal
         selected_items = self.selectedItems()
         if selected_items:
-            # Only handle single selection for now
-            self.selectionChanged.emit(selected_items[0])
-            self.logger.debug(f"Selection changed, emitted signal for item: {selected_items[0]}")
-        # else: # Optional: emit signal with None if selection is cleared
-        #     self.selectionChanged.emit(None)
-    # --- END NEW ---
+            # Emit the first selected item (assuming single selection for now)
+            # Filter for QGraphicsPathItem specifically if needed
+            selected_item = selected_items[0]
+            if isinstance(selected_item, QGraphicsPathItem): # Ensure it's a polyline
+                 self.logger.debug(f"Selection changed, emitting signal for item: {selected_item}")
+                 self.selectionChanged.emit(selected_item)
+            else:
+                 self.logger.debug(f"Selection changed, but item is not a QGraphicsPathItem: {type(selected_item)}")
+                 self.selectionChanged.emit(None) # Emit None if selection is not a polyline path
 
-    # --- Helper Methods for Drawing ---
+        elif not selected_items:
+            # Emit None if selection is cleared
+            self.logger.debug("Selection cleared, emitting None.")
+            self.selectionChanged.emit(None)
+
+    # --- Polyline Drawing Helpers ---
 
     def _add_vertex_marker(self, pos: QPointF):
-        """Adds a visual marker (ellipse) for a vertex."""
+        """Adds a visual marker for a vertex."""
         radius = self._vertex_radius
-        marker = QGraphicsEllipseItem(
-            pos.x() - radius, pos.y() - radius, radius * 2, radius * 2
-        )
-        marker.setPen(self._vertex_pen)
-        marker.setBrush(self._vertex_brush)
-        marker.setZValue(1) # Above background/finalized lines
-        self.addItem(marker)
-        self._current_vertices_items.append(marker)
+        # Adjust position to center the ellipse on the point
+        ellipse = QGraphicsEllipseItem(pos.x() - radius, pos.y() - radius, radius * 2, radius * 2)
+        ellipse.setPen(self._vertex_pen)
+        ellipse.setBrush(self._vertex_brush)
+        ellipse.setZValue(10) # Ensure vertices are drawn above lines/background
+        self.addItem(ellipse)
+        self._current_vertices_items.append(ellipse)
 
     def _update_temporary_line(self, current_pos: QPointF):
-        """Updates the position of the temporary rubber-band line."""
+        """Updates the rubber-band line from the last vertex to the current mouse position."""
         if not self._current_polyline_points:
             return
 
-        last_vertex_pos = self._current_polyline_points[-1]
+        last_point = self._current_polyline_points[-1]
+        constrained_pos = self._constrained_pos(current_pos, Qt.NoModifier) # Apply constraints for display only? No, apply in move event.
 
-        if self._temporary_line_item and self._temporary_line_item in self.items():
-            self.removeItem(self._temporary_line_item)
-            self._temporary_line_item = None
+        # Use the already constrained position from mouseMoveEvent
+        pos_to_draw_to = current_pos # Use the position passed in (already constrained)
 
-        self._temporary_line_item = QGraphicsLineItem(
-            last_vertex_pos.x(), last_vertex_pos.y(),
-            current_pos.x(), current_pos.y()
-        )
-        self._temporary_line_item.setPen(self._rubber_band_pen)
-        self._temporary_line_item.setZValue(0) # Below markers but above background
-        self.addItem(self._temporary_line_item)
+        if self._temporary_line_item:
+            # Update existing line
+            self._temporary_line_item.setLine(QLineF(last_point, pos_to_draw_to))
+        else:
+            # Create new line
+            self._temporary_line_item = QGraphicsLineItem(QLineF(last_point, pos_to_draw_to))
+            self._temporary_line_item.setPen(self._rubber_band_pen)
+            self._temporary_line_item.setZValue(5) # Draw rubber band above background but below vertices
+            self.addItem(self._temporary_line_item)
 
     def _finalize_current_polyline(self, layer_name: str):
-        """
-        Converts the current points into a permanent polyline item,
-        tags it with the given layer name, and emits the finalized signal.
-        The index will be added later by the caller (MainWindow) after updating the project model.
-        """
+        """Finalizes the current polyline, creates a QGraphicsPathItem, and resets state."""
         if len(self._current_polyline_points) < 2:
-            self.logger.warning("Cannot finalize polyline with less than 2 points.")
             self._cancel_current_polyline()
             return
-
-        self.logger.debug(f"Finalizing polyline for layer: {layer_name}")
 
         path = QPainterPath()
         path.moveTo(self._current_polyline_points[0])
@@ -310,157 +419,180 @@ class TracingScene(QGraphicsScene):
 
         polyline_item = QGraphicsPathItem(path)
         polyline_item.setPen(self._finalized_polyline_pen)
-        polyline_item.setZValue(0) # Render below vertices but above background
-        # --- MODIFIED: Store only layer name (key 0) initially ---
-        polyline_item.setData(0, layer_name) # Tag item with layer name
-        # --- END MODIFIED ---
+        polyline_item.setFlag(QGraphicsItem.ItemIsSelectable, True)
+        polyline_item.setFlag(QGraphicsItem.ItemIsMovable, True) # Allow moving later
+        polyline_item.setFlag(QGraphicsItem.ItemSendsGeometryChanges, True) # For updates if moved
+        polyline_item.setZValue(1) # Ensure finalized lines are above background
 
-        # --- NEW: Make item selectable ---
-        polyline_item.setFlags(polyline_item.flags() | QGraphicsItem.ItemIsSelectable)
-        # --- END NEW ---
+        # --- Store layer name and original points in the item ---
+        polyline_item.setData(Qt.UserRole + 1, layer_name)
+        # Store points as list of tuples for easier serialization/retrieval
+        points_data = [(p.x(), p.y()) for p in self._current_polyline_points]
+        polyline_item.setData(Qt.UserRole + 2, points_data)
+        # --- END Store ---
 
-        # --- Explicitly set visible --- 
-        polyline_item.setVisible(True)
-        # --- End Set Visible ---
+        # Push undo command to MainWindow's stack if available
+        main_win = self.parent_view.window() if self.parent_view else None
+        if main_win and hasattr(main_win, 'undoStack'):
+            cmd = AddPolylineCommand(self, polyline_item)
+            main_win.undoStack.push(cmd)
+        else:
+            # Fallback: directly add item if no undo stack
+            if polyline_item not in self.items():
+                self.addItem(polyline_item)
 
-        self.addItem(polyline_item)
+        self.logger.info(
+            f"Finalized polyline with {len(self._current_polyline_points)} points on layer '{layer_name}'."
+        )
 
-        self.logger.info(f"Finalized polyline with {len(self._current_polyline_points)} vertices for layer '{layer_name}'. Item: {polyline_item}")
-
-        # Store points before reset, as reset clears the list
-        points_to_emit = list(self._current_polyline_points)
-        # Emit signal with finalized points AND the created item
-        self.polyline_finalized.emit(points_to_emit, polyline_item)
+        # Emit finalized signal (item is already in scene via undo command redo)
+        self.polyline_finalized.emit(self._current_polyline_points, polyline_item)
 
         self._reset_drawing_state()
 
     def _cancel_current_polyline(self):
-        """Removes temporary items and resets the drawing state without finalizing."""
-        self.logger.debug("Cancelling current polyline drawing.")
+        """Cancels the current polyline drawing."""
+        self.logger.debug("Cancelling current polyline.")
         self._reset_drawing_state()
 
     def _undo_last_vertex(self):
         """Removes the last added vertex and its marker."""
-        if not self._is_drawing or not self._current_polyline_points:
-            return
+        if len(self._current_polyline_points) > 1 and self._current_vertices_items:
+            removed_point = self._current_polyline_points.pop()
+            removed_marker = self._current_vertices_items.pop()
+            if removed_marker in self.items():
+                self.removeItem(removed_marker)
+            self.logger.debug(f"Undid last vertex at: {removed_point.x():.2f}, {removed_point.y():.2f}")
+            # Update the temporary line to the new last point
+            if self._current_polyline_points:
+                 # Need current mouse pos - tricky. Get from view? Or just remove temp line?
+                 # For now, just remove it until next mouse move.
+                 if self._temporary_line_item:
+                     if self._temporary_line_item in self.items():
+                         self.removeItem(self._temporary_line_item)
+                     self._temporary_line_item = None
+            else:
+                 # If only one point was left after undo, cancel drawing
+                 self._cancel_current_polyline()
 
-        removed_point = self._current_polyline_points.pop()
-        self.logger.debug(f"Undoing last vertex: {removed_point.x():.2f}, {removed_point.y():.2f}")
-
-        if self._current_vertices_items:
-            last_marker = self._current_vertices_items.pop()
-            if last_marker in self.items():
-                self.removeItem(last_marker)
-
-        if not self._current_polyline_points:
-            self._is_drawing = False
-            if self._temporary_line_item and self._temporary_line_item in self.items():
-                self.removeItem(self._temporary_line_item)
-                self._temporary_line_item = None
-        else:
-            if self._temporary_line_item and self._temporary_line_item in self.items():
-                self.removeItem(self._temporary_line_item)
-                self._temporary_line_item = None
+        elif len(self._current_polyline_points) == 1:
+             # If only the starting point remains, cancel the whole line
+             self._cancel_current_polyline()
 
     def _reset_drawing_state(self):
-        """Clears all temporary drawing items and resets state variables."""
+        """Resets all temporary items and flags related to the current drawing operation."""
+        # Remove temporary line
         if self._temporary_line_item and self._temporary_line_item in self.items():
             self.removeItem(self._temporary_line_item)
-            self._temporary_line_item = None
+        self._temporary_line_item = None
 
-        for marker in self._current_vertices_items:
-            if marker in self.items():
-                self.removeItem(marker)
+        # Remove vertex markers
+        for item in self._current_vertices_items:
+            if item in self.items():
+                self.removeItem(item)
         self._current_vertices_items.clear()
 
-        self._current_polyline_points.clear()
+        # Reset state variables
         self._is_drawing = False
-        self.logger.debug("Drawing state reset.")
+        self._current_polyline_points = []
+        # Don't disable tracing mode here, only reset the current polyline state
 
-    # --- Methods for Loading/Clearing Finalized Lines ---
+    # --- Loading / Saving / Layer Management ---
 
     def clear_finalized_polylines(self):
-        """Removes only finalized polyline items (QGraphicsPathItem with layer data)."""
-        items_to_remove = []
-        for item in self.items():
-            # Remove only items that have layer data (i.e., finalized polylines)
-            if isinstance(item, QGraphicsPathItem) and item.data(0) is not None: # Check key 0 for layer
-                items_to_remove.append(item)
-
+        """Removes all finalized QGraphicsPathItems from the scene."""
+        items_to_remove = [item for item in self.items() if isinstance(item, QGraphicsPathItem)]
         for item in items_to_remove:
             self.removeItem(item)
-        self.logger.info(f"Cleared {len(items_to_remove)} finalized polyline(s). Layer tags preserved on other items.")
+        self.logger.info("Cleared all finalized polylines.")
 
-    def load_polylines_with_layers(self, polylines_by_layer: Dict[str, Any]):
+    def load_polylines_with_layers(self, polylines_by_layer: Dict[str, Sequence[PolylineData]]):
         """
-        Clears existing finalized polylines and loads new ones from project data,
-        tagging each created QGraphicsPathItem with its layer name and index.
+        Loads polylines from a dictionary structure, creating QGraphicsPathItems
+        and assigning layer information.
 
         Args:
-            polylines_by_layer: A dictionary where keys are layer names and values
-                                are lists of PolylineData dictionaries for that layer.
+            polylines_by_layer (Dict[str, Sequence[PolylineData]]):
+                A dictionary where keys are layer names and values are sequences of
+                polyline data (e.g., lists of point tuples or dicts).
+                Example:
+                {
+                    "Existing": [ [(10, 10), (50, 10)], [(20, 30), (60, 30)] ],
+                    "Proposed": [ [(15, 45), (55, 45), (55, 65)] ]
+                }
+                PolylineData format assumes a list/tuple of (x, y) tuples/lists.
         """
-        self.clear_finalized_polylines() # Clear previous lines first
+        self.clear_finalized_polylines() # Clear existing before loading
 
-        self.logger.info(f"Loading polylines for {len(polylines_by_layer)} layers onto the scene.")
-        total_added = 0
+        for layer_name, polylines in polylines_by_layer.items():
+            self.logger.debug(f"Loading {len(polylines)} polylines for layer '{layer_name}'")
+            for poly_data in polylines:
+                if not poly_data or len(poly_data) < 2:
+                    self.logger.warning(f"Skipping invalid polyline data for layer '{layer_name}': {poly_data}")
+                    continue
 
-        for layer_name, polylines_list in polylines_by_layer.items():
-            layer_added_count = 0
-            # Iterate getting index and PolylineData dict
-            for index, poly_data in enumerate(polylines_list):
-                # Check if poly_data is a dictionary and contains 'points'
-                if isinstance(poly_data, dict) and "points" in poly_data:
-                    poly_points = poly_data.get("points") # Extract the points list
-                    elevation = poly_data.get("elevation") # Get elevation (unused for drawing now, but available)
+                try:
+                    path = QPainterPath()
+                    start_point = QPointF(poly_data[0][0], poly_data[0][1])
+                    path.moveTo(start_point)
+                    for point_data in poly_data[1:]:
+                        path.lineTo(QPointF(point_data[0], point_data[1]))
 
-                    # Ensure points list is valid
-                    if isinstance(poly_points, list) and len(poly_points) >= 2:
-                        try:
-                            path = QPainterPath()
-                            # Convert points which might be lists/tuples [x,y] to QPointF
-                            start_point = QPointF(float(poly_points[0][0]), float(poly_points[0][1]))
-                            path.moveTo(start_point)
-                            for point_tuple in poly_points[1:]:
-                                path.lineTo(QPointF(float(point_tuple[0]), float(point_tuple[1])))
+                    polyline_item = QGraphicsPathItem(path)
+                    polyline_item.setPen(self._finalized_polyline_pen)
+                    polyline_item.setFlag(QGraphicsItem.ItemIsSelectable, True)
+                    polyline_item.setFlag(QGraphicsItem.ItemIsMovable, True)
+                    polyline_item.setFlag(QGraphicsItem.ItemSendsGeometryChanges, True)
+                    polyline_item.setZValue(1)
 
-                            path_item = QGraphicsPathItem(path)
-                            # TODO: Use elevation for styling later if needed
-                            path_item.setPen(self._finalized_polyline_pen)
-                            path_item.setZValue(0)
+                    # Store layer name and original points
+                    polyline_item.setData(Qt.UserRole + 1, layer_name)
+                    # Re-store points data as list of tuples
+                    points_data = [(p[0], p[1]) for p in poly_data]
+                    polyline_item.setData(Qt.UserRole + 2, points_data)
 
-                            # Store layer name (key 0) and index (key 1)
-                            path_item.setData(0, layer_name)
-                            path_item.setData(1, index)
-                            # Optional: Store elevation (e.g., key 2) if needed for direct access from item
-                            # path_item.setData(2, elevation)
+                    self.addItem(polyline_item)
+                except (TypeError, IndexError, ValueError) as e:
+                    self.logger.error(f"Error processing polyline data for layer '{layer_name}': {poly_data}. Error: {e}")
 
-                            # Make item selectable
-                            path_item.setFlags(path_item.flags() | QGraphicsItem.ItemIsSelectable)
+        self.logger.info(f"Finished loading polylines for {len(polylines_by_layer)} layers.")
+        # Update scene rect after loading all items
+        self.setSceneRect(self.itemsBoundingRect())
+        self.pageRectChanged.emit() # Emit signal after loading
 
-                            # --- Explicitly set visible --- 
-                            path_item.setVisible(True)
-                            # --- End Set Visible ---
-                            
-                            self.addItem(path_item)
-                            layer_added_count += 1
-                        except (ValueError, TypeError, IndexError) as e:
-                             self.logger.error(f"Error creating QGraphicsPathItem for loaded polyline in layer '{layer_name}' at index {index}: {e}. Data: {poly_data}", exc_info=True)
-                    else:
-                        # Log if the points list within the dict is invalid or too short
-                        self.logger.warning(f"Skipping loaded polyline dict in layer '{layer_name}' at index {index} due to invalid 'points' list: {poly_points}")
-                else:
-                     # Log if the data format is not the expected dictionary
-                     self.logger.warning(f"Skipping loaded item in layer '{layer_name}' at index {index}: Expected PolylineData dictionary, got {type(poly_data)}.")
+    def dump_scene_state(self) -> LayerPolylineDict:
+        """
+        Extracts finalized polylines and groups them by layer name.
 
-            if layer_added_count > 0:
-                 self.logger.debug(f"Added {layer_added_count} polylines to layer '{layer_name}'.")
-            total_added += layer_added_count
+        Returns:
+            LayerPolylineDict:
+                A dictionary where keys are layer names and values are lists of
+                polylines, each represented as a list of (x, y) tuples.
+        """
+        polylines_by_layer: LayerPolylineDict = {}
+        for item in self.items():
+            if isinstance(item, QGraphicsPathItem):
+                layer_name = item.data(Qt.UserRole + 1)
+                points_data = item.data(Qt.UserRole + 2)
+                if isinstance(layer_name, str) and isinstance(points_data, list):
+                    if layer_name not in polylines_by_layer:
+                        polylines_by_layer[layer_name] = []
+                    # Ensure points_data contains tuples (it should from load/finalize)
+                    polyline_tuples = [(float(p[0]), float(p[1])) for p in points_data if len(p) == 2]
+                    polylines_by_layer[layer_name].append(polyline_tuples)
+        self.logger.info(f"Dumped scene state: {len(polylines_by_layer)} layers found.")
+        return polylines_by_layer
 
-        self.logger.info(f"Finished loading and displayed {total_added} polylines across all layers.")
-
-    # --- View Interaction (Future) ---
-    # Zooming, panning etc. could be handled here or in the QGraphicsView
+    def setLayerVisible(self, layer_name: str, visible: bool) -> None: # noqa: N802
+        """Sets the visibility of all polyline items associated with a layer."""
+        count = 0
+        for item in self.items():
+            if isinstance(item, QGraphicsPathItem):
+                item_layer = item.data(Qt.UserRole + 1)
+                if item_layer == layer_name:
+                    item.setVisible(visible)
+                    count += 1
+        self.logger.debug(f"Set visibility for {count} items on layer '{layer_name}' to {visible}.")
 
     # --- Debugging ---
     def dump_scene_state(self):
@@ -468,22 +600,32 @@ class TracingScene(QGraphicsScene):
         self.logger.debug(f"Tracing Enabled: {self._tracing_enabled}")
         self.logger.debug(f"Is Drawing: {self._is_drawing}")
         self.logger.debug(f"Current Points: {len(self._current_polyline_points)}")
-        if self._background_item:
-            self.logger.debug(f"Background Item: {self._background_item.boundingRect()}")
+        if self._background_items:
+            self.logger.debug(f"Background Item: {self._background_items[0].boundingRect()}")
         else:
             self.logger.debug("Background Item: None")
         self.logger.debug(f"Item Count: {len(self.items())}")
 
-    # --- Layer Visibility ---
-    
-    def setLayerVisible(self, layer_name: str, visible: bool) -> None:
-        """ Show or hide every QGraphicsItem tagged with layer_name. """
-        self.logger.debug(f"Setting layer '{layer_name}' visibility to {visible}")
-        count = 0
-        for item in self.items():
-             # Check if item has data set for key 0 (layer name)
-             item_layer = item.data(0) # Use key 0 for layer name
-             if item_layer == layer_name:
-                 item.setVisible(visible)
-                 count += 1
-        self.logger.debug(f"Toggled visibility for {count} items in layer '{layer_name}'.") 
+# ------------------------------------------------------------------
+# Undo/Redo Command
+# ------------------------------------------------------------------
+
+class AddPolylineCommand(QUndoCommand):
+    """QUndoCommand to add/remove a polyline item from the scene."""
+
+    def __init__(self, scene: 'TracingScene', item: QGraphicsPathItem):  # noqa: D401
+        super().__init__("Add Polyline")
+        self._scene = scene
+        self._item = item
+
+    # ------------------------------------------------------------------
+    # QUndoCommand interface
+    # ------------------------------------------------------------------
+
+    def redo(self):  # noqa: D401
+        if self._item not in self._scene.items():
+            self._scene.addItem(self._item)
+
+    def undo(self):  # noqa: D401
+        if self._item in self._scene.items():
+            self._scene.removeItem(self._item)
