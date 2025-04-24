@@ -7112,3 +7112,196 @@ Traceback (most recent call last):
     self.project_controller.project_loaded.connect(self._update_ui_for_project)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AttributeError: 'ProjectController' object has no attribute 'project_loaded'
+2025-04-24 11:10:38,662 - __main__ - INFO - Starting DigCalc application
+2025-04-24 11:10:38,694 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-24 11:10:56,643 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-24 11:10:56,644 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Downloads/Sample file.pdf, initial page: 1, dpi: 300
+2025-04-24 11:10:56,644 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-24 11:10:56,644 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-24 11:10:56,647 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-04-24 11:10:56,647 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-04-24 11:10:56,706 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-04-24 11:10:56,706 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 4
+2025-04-24 11:10:56,712 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Sample file.pdf'
+2025-04-24 11:10:56,712 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-04-24 11:10:56,712 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Sample file.pdf' with 4 pages.
+2025-04-24 11:14:16,298 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-24 11:14:16,298 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-24 11:14:16,303 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-24 11:14:16,309 - __main__ - INFO - Application exited with code 0
+2025-04-24 11:14:55,753 - __main__ - INFO - Starting DigCalc application
+2025-04-24 11:14:55,772 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-24 11:15:04,056 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-24 11:15:04,056 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Downloads/Sample file.pdf, initial page: 1, dpi: 300
+2025-04-24 11:15:04,056 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-24 11:15:04,056 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-24 11:15:04,057 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-04-24 11:15:04,057 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-04-24 11:15:04,111 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-04-24 11:15:04,115 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 4
+2025-04-24 11:15:04,120 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Sample file.pdf'
+2025-04-24 11:15:04,120 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-04-24 11:15:04,121 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Sample file.pdf' with 4 pages.
+2025-04-24 11:15:07,315 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-04-24 11:15:07,315 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-04-24 11:15:08,430 - digcalc_project.src.ui.tracing_scene - WARNING - Parent widget does not have 'active_layer_name' attribute.
+2025-04-24 11:15:08,430 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Default'.
+2025-04-24 11:15:08,430 - digcalc_project.src.ui.main_window - ERROR - Finalized polyline item is missing layer data! Assigning to 'Default'.
+2025-04-24 11:15:11,115 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Default' (Index: 0, Points: 6, Elevation: 10.0, New Rev: 1).
+2025-04-24 11:15:11,115 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 10.0) to layer 'Default'.
+2025-04-24 11:15:11,371 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Default'}
+2025-04-24 11:15:11,371 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Default'}.
+2025-04-24 11:15:15,515 - digcalc_project.src.ui.tracing_scene - WARNING - Parent widget does not have 'active_layer_name' attribute.
+2025-04-24 11:15:15,515 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 7 points on layer 'Default'.
+2025-04-24 11:15:15,515 - digcalc_project.src.ui.main_window - ERROR - Finalized polyline item is missing layer data! Assigning to 'Default'.
+2025-04-24 11:15:17,975 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Default' (Index: 1, Points: 7, Elevation: 100.0, New Rev: 2).
+2025-04-24 11:15:17,975 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 1, Elevation: 100.0) to layer 'Default'.
+2025-04-24 11:15:18,231 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Default'}
+2025-04-24 11:15:18,231 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Default'}.
+2025-04-24 11:15:23,648 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode disabled.
+2025-04-24 11:15:23,648 - digcalc_project.src.ui.main_window - INFO - Tracing mode disabled via MainWindow action.
+2025-04-24 11:15:37,010 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-04-24 11:15:37,010 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-04-24 11:15:38,138 - digcalc_project.src.ui.tracing_scene - WARNING - Parent widget does not have 'active_layer_name' attribute.
+2025-04-24 11:15:38,138 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 7 points on layer 'Default'.
+2025-04-24 11:15:38,138 - digcalc_project.src.ui.main_window - ERROR - Finalized polyline item is missing layer data! Assigning to 'Default'.
+2025-04-24 11:15:39,402 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Default' (Index: 2, Points: 7, Elevation: 100.0, New Rev: 3).
+2025-04-24 11:15:39,402 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 2, Elevation: 100.0) to layer 'Default'.
+2025-04-24 11:15:39,656 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Default'}
+2025-04-24 11:15:39,656 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Default'}.
+2025-04-24 11:15:42,490 - digcalc_project.src.ui.tracing_scene - WARNING - Parent widget does not have 'active_layer_name' attribute.
+2025-04-24 11:15:42,490 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 8 points on layer 'Default'.
+2025-04-24 11:15:42,490 - digcalc_project.src.ui.main_window - ERROR - Finalized polyline item is missing layer data! Assigning to 'Default'.
+2025-04-24 11:15:43,810 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Default' (Index: 3, Points: 8, Elevation: 100.0, New Rev: 4).
+2025-04-24 11:15:43,810 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 3, Elevation: 100.0) to layer 'Default'.
+2025-04-24 11:15:44,074 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Default'}
+2025-04-24 11:15:44,074 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Default'}.
+2025-04-24 11:15:46,168 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode disabled.
+2025-04-24 11:15:46,168 - digcalc_project.src.ui.main_window - INFO - Tracing mode disabled via MainWindow action.
+2025-04-24 11:17:57,612 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-04-24 11:17:57,612 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-04-24 11:17:59,418 - digcalc_project.src.ui.tracing_scene - WARNING - Parent widget does not have 'active_layer_name' attribute.
+2025-04-24 11:17:59,418 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 7 points on layer 'Default'.
+2025-04-24 11:17:59,418 - digcalc_project.src.ui.main_window - ERROR - Finalized polyline item is missing layer data! Assigning to 'Default'.
+2025-04-24 11:18:01,242 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Default' (Index: 4, Points: 7, Elevation: 100.0, New Rev: 5).
+2025-04-24 11:18:01,242 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 4, Elevation: 100.0) to layer 'Default'.
+2025-04-24 11:18:01,495 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Default'}
+2025-04-24 11:18:01,496 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Default'}.
+2025-04-24 11:18:08,724 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode disabled.
+2025-04-24 11:18:08,724 - digcalc_project.src.ui.main_window - INFO - Tracing mode disabled via MainWindow action.
+2025-04-24 11:18:14,276 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-24 11:18:15,740 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-24 11:18:15,740 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-24 11:18:15,757 - __main__ - INFO - Application exited with code 0
+2025-04-24 11:35:41,109 - __main__ - INFO - Starting DigCalc application
+2025-04-24 11:35:41,130 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-24 11:35:41,130 - __main__ - ERROR - Fatal error in main application: 'MainWindow' object has no attribute '_toggle_other_layers_visibility'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 122, in __init__
+    self._create_shortcuts()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 1772, in _create_shortcuts
+    alt_v_shortcut.activated.connect(self._toggle_other_layers_visibility)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute '_toggle_other_layers_visibility'
+2025-04-24 11:41:01,433 - __main__ - INFO - Starting DigCalc application
+2025-04-24 11:41:01,470 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-24 11:41:01,503 - __main__ - ERROR - Fatal error in main application: 'MainWindow' object has no attribute '_toggle_other_layers_visibility'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 122, in __init__
+    self._create_shortcuts()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 1772, in _create_shortcuts
+    alt_v_shortcut.activated.connect(self._toggle_other_layers_visibility)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute '_toggle_other_layers_visibility'
+2025-04-24 11:58:15,238 - __main__ - INFO - Starting DigCalc application
+2025-04-24 11:58:15,268 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-24 11:58:15,270 - __main__ - ERROR - Fatal error in main application: 'MainWindow' object has no attribute '_toggle_other_layers_visibility'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 122, in __init__
+    self._create_shortcuts()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 1772, in _create_shortcuts
+    alt_v_shortcut.activated.connect(self._toggle_other_layers_visibility)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute '_toggle_other_layers_visibility'
+2025-04-24 11:59:25,133 - __main__ - INFO - Starting DigCalc application
+2025-04-24 11:59:25,153 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-24 11:59:25,153 - __main__ - ERROR - Fatal error in main application: 'MainWindow' object has no attribute '_toggle_other_layers_visibility'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 122, in __init__
+    self._create_shortcuts()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 1834, in _create_shortcuts
+    alt_v_shortcut.activated.connect(self._toggle_other_layers_visibility)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute '_toggle_other_layers_visibility'
+2025-04-24 12:07:51,513 - __main__ - INFO - Starting DigCalc application
+2025-04-24 12:07:51,537 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-24 12:10:51,898 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-24 12:10:51,899 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Downloads/Sample file.pdf, initial page: 1, dpi: 300
+2025-04-24 12:10:51,899 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-24 12:10:51,899 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-24 12:10:51,900 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-04-24 12:10:51,900 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-04-24 12:10:51,957 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-04-24 12:10:51,959 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 4
+2025-04-24 12:10:51,959 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Sample file.pdf'
+2025-04-24 12:10:51,959 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-04-24 12:10:51,959 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Sample file.pdf' with 4 pages.
+2025-04-24 12:10:55,656 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-04-24 12:10:55,656 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-04-24 12:10:57,040 - digcalc_project.src.ui.tracing_scene - WARNING - Parent widget does not have 'active_layer_name' attribute.
+2025-04-24 12:10:57,040 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Default'.
+2025-04-24 12:10:59,302 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Default' (Index: 0, Points: 6, Elevation: 10.0, New Rev: 1).
+2025-04-24 12:10:59,302 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 10.0) to layer 'Default'.
+2025-04-24 12:10:59,543 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Default'}
+2025-04-24 12:10:59,544 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Default'}.
+2025-04-24 12:11:03,144 - digcalc_project.src.ui.tracing_scene - WARNING - Parent widget does not have 'active_layer_name' attribute.
+2025-04-24 12:11:03,144 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Default'.
+2025-04-24 12:11:04,314 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Default' (Index: 1, Points: 6, Elevation: 10.0, New Rev: 2).
+2025-04-24 12:11:04,314 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 1, Elevation: 10.0) to layer 'Default'.
+2025-04-24 12:11:04,558 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Default'}
+2025-04-24 12:11:04,558 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Default'}.
+2025-04-24 12:11:19,121 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-24 12:11:20,426 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-24 12:11:20,426 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-24 12:11:20,441 - __main__ - INFO - Application exited with code 0
+2025-04-24 12:24:53,085 - __main__ - INFO - Starting DigCalc application
+2025-04-24 12:24:53,109 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-24 12:25:01,821 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-24 12:25:01,821 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Downloads/Sample file.pdf, initial page: 1, dpi: 300
+2025-04-24 12:25:01,821 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-24 12:25:01,821 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-24 12:25:01,821 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-04-24 12:25:01,821 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-04-24 12:25:01,886 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-04-24 12:25:01,886 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 4
+2025-04-24 12:25:01,886 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Sample file.pdf'
+2025-04-24 12:25:01,886 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-04-24 12:25:01,886 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Sample file.pdf' with 4 pages.
+2025-04-24 12:25:05,827 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-04-24 12:25:05,827 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-04-24 12:25:08,626 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Existing Surface'.
+2025-04-24 12:25:10,645 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 6, Elevation: 100.0, New Rev: 1).
+2025-04-24 12:25:10,645 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 100.0) to layer 'Existing Surface'.
+2025-04-24 12:25:10,890 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-04-24 12:25:10,890 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-04-24 12:25:17,815 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Proposed Surface'.
+2025-04-24 12:25:21,849 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Proposed Surface' (Index: 0, Points: 6, Elevation: 200.0, New Rev: 1).
+2025-04-24 12:25:21,849 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 200.0) to layer 'Proposed Surface'.
+2025-04-24 12:25:22,105 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Proposed Surface'}
+2025-04-24 12:25:22,105 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Proposed Surface'}.
+2025-04-24 12:26:04,091 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-24 12:26:05,872 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-24 12:26:05,872 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-24 12:26:05,886 - __main__ - INFO - Application exited with code 0

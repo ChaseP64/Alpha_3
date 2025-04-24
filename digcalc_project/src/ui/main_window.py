@@ -888,7 +888,9 @@ class MainWindow(QMainWindow):
             if item.scene(): item.scene().removeItem(item)
             return
 
-        layer_name = item.data(0)
+        # --- FIX: Use correct key to get layer name --- 
+        layer_name = item.data(Qt.UserRole + 1) # Key used in _finalize_current_polyline
+        # --- END FIX ---
         if layer_name is None:
              logger.error("Finalized polyline item is missing layer data! Assigning to 'Default'.")
              layer_name = "Default"
@@ -1226,6 +1228,16 @@ class MainWindow(QMainWindow):
         # Enable actions based on content
         self.view_2d_action.setEnabled(has_pdf)
         self.view_3d_action.setEnabled(has_surfaces)
+
+        # --- Enable Tracing Action --- 
+        # Tracing is only possible in 2D view with a PDF loaded
+        can_trace = is_2d_current and has_pdf
+        if hasattr(self, 'toggle_trace_mode_action'):
+            self.toggle_trace_mode_action.setEnabled(can_trace)
+            logger.debug(f"Set toggle_trace_mode_action enabled state: {can_trace}")
+        else:
+            logger.warning("Cannot update toggle_trace_mode_action state: action not found.")
+        # --- End Enable Tracing Action ---
 
         # Set checked state based on the current widget in the stack
         # Block signals to prevent feedback loops if setChecked triggers the slot
@@ -1746,6 +1758,61 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------
     # Shortcut Creation
     # ------------------------------------------------------------------
+    # --- NEW: Slot for Alt+V shortcut ---
+    @Slot()
+    def _toggle_other_layers_visibility(self):
+        """Toggles the visibility of all layers except the active tracing layer."""
+        if not hasattr(self, 'visualization_panel') or not hasattr(self, 'layer_tree'):
+            self.logger.warning("_toggle_other_layers_visibility called but panel or layer tree missing.")
+            return
+
+        active_layer = self.visualization_panel.layer_selector.currentText()
+        self.logger.debug(f"Toggling other layers. Active layer: '{active_layer}'")
+
+        # Determine target state: If any non-active layer is checked, uncheck all non-active.
+        # Otherwise (all non-active are unchecked), check all non-active.
+        target_state = Qt.Checked
+        found_visible_other = False
+        root = self.layer_tree.invisibleRootItem()
+        child_count = root.childCount()
+        for i in range(child_count):
+            item = root.child(i)
+            layer_name = item.text(0)
+            if layer_name != active_layer and item.checkState(0) == Qt.Checked:
+                found_visible_other = True
+                break
+        
+        if found_visible_other:
+            target_state = Qt.Unchecked
+            self.logger.debug("Found visible non-active layer, target state is Unchecked.")
+        else:
+            self.logger.debug("No visible non-active layers found, target state is Checked.")
+
+        # Apply the target state to all non-active layers
+        self.layer_tree.blockSignals(True) # Block signals during batch update
+        for i in range(child_count):
+            item = root.child(i)
+            layer_name = item.text(0)
+            if layer_name != active_layer:
+                current_state = item.checkState(0)
+                if current_state != target_state:
+                    item.setCheckState(0, target_state)
+                    # Manually trigger the visibility update since signals are blocked
+                    self._trigger_layer_visibility_update(layer_name, target_state == Qt.Checked)
+
+        self.layer_tree.blockSignals(False) # Unblock signals
+        self.logger.debug("Finished toggling other layer visibility.")
+    # --- END NEW SLOT ---
+
+    # --- Moved Helper Method --- 
+    def _trigger_layer_visibility_update(self, layer_name: str, visible: bool):
+        """Helper to explicitly call the scene's visibility function."""
+        if hasattr(self, 'visualization_panel') and hasattr(self.visualization_panel, 'scene_2d') and hasattr(self.visualization_panel.scene_2d, 'setLayerVisible'):
+            self.visualization_panel.scene_2d.setLayerVisible(layer_name, visible)
+        else:
+            self.logger.warning("Cannot trigger visibility update: Missing components.")
+    # --- End Moved Helper ---
+
     def _create_shortcuts(self):
         """Create global application shortcuts (Placeholder)."""
         self.logger.debug("Creating application shortcuts...")
@@ -1753,6 +1820,15 @@ class MainWindow(QMainWindow):
         # fit_shortcut = QShortcut(QKeySequence("F"), self)
         # fit_shortcut.activated.connect(self._fit_view_to_scene) # Requires _fit_view_to_scene slot
         # fit_shortcut.setContext(Qt.ApplicationShortcut)
+
+        # --- NEW: Alt+V Shortcut --- 
+        alt_v_shortcut = QShortcut(QKeySequence("Alt+V"), self)
+        # Connect to the newly added slot
+        alt_v_shortcut.activated.connect(self._toggle_other_layers_visibility) 
+        alt_v_shortcut.setContext(Qt.WindowShortcut) # Use Window context so it doesn't interfere globally
+        self.logger.debug("Created Alt+V shortcut to toggle other layer visibility.")
+        # --- END NEW --- 
+
         self.logger.debug("Shortcuts (currently placeholder) setup complete.")
 
     # ------------------------------------------------------------------

@@ -12,6 +12,9 @@ import os
 from pathlib import Path
 from typing import Optional, TYPE_CHECKING
 
+# --- Add QObject and Signal ---
+from PySide6.QtCore import QObject, Signal
+# --- End Add ---
 from PySide6.QtWidgets import QFileDialog, QMessageBox
 
 # Local imports (use relative paths if within the same package structure)
@@ -24,13 +27,26 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class ProjectController:
+# --- Inherit from QObject ---
+class ProjectController(QObject):
+# --- End Inherit ---
     """
     Manages the lifecycle and state of the DigCalc project.
 
     Acts as the intermediary between the UI (MainWindow) and the
     Project data model for operations like new, open, save.
+
+    Signals:
+        project_loaded (Project): Emitted when a new project is loaded or created.
+        project_closed (): Emitted before a project is closed or replaced.
+        project_modified (): Emitted when the project's dirty status changes.
     """
+    # --- Define Signals ---
+    project_loaded = Signal(Project)
+    project_closed = Signal()
+    project_modified = Signal()
+    # --- End Define ---
+
     def __init__(self, main_window: 'MainWindow'):
         """
         Initialize the ProjectController.
@@ -38,6 +54,9 @@ class ProjectController:
         Args:
             main_window: The main application window instance.
         """
+        # --- Call super().__init__() ---
+        super().__init__()
+        # --- End Call ---
         self.main_window = main_window
         self.current_project: Optional[Project] = None
         self._serializer = ProjectSerializer()
@@ -55,6 +74,7 @@ class ProjectController:
     def _update_project(self, project: Optional[Project]):
         """
         Sets the current project and updates the UI accordingly.
+        Emits project_loaded signal.
 
         Args:
             project: The project to set as current, or None.
@@ -62,7 +82,15 @@ class ProjectController:
         self.logger.info(f"Setting current project to: {project.name if project else 'None'}")
         self.current_project = project
         # Trigger UI updates in MainWindow through its methods
-        self.main_window._update_ui_for_project(self.current_project)
+        # self.main_window._update_ui_for_project(self.current_project) # Let signal handle this
+        # --- Emit project_loaded ---
+        if self.current_project is not None:
+            self.project_loaded.emit(self.current_project)
+        else:
+            # Optionally handle the case where project becomes None,
+            # though project_closed should cover this transition.
+            pass
+        # --- End Emit ---
 
 
     def get_current_project(self) -> Optional[Project]:
@@ -77,10 +105,13 @@ class ProjectController:
         """Handles the 'New Project' action."""
         self.logger.debug("New Project action triggered.")
         if self._confirm_close_project():
+            # --- Emit project_closed ---
+            self.project_closed.emit()
+            # --- End Emit ---
             # --- Re-implement default project creation here ---
             self.logger.info("Creating a new default project for New action.")
             default_project = Project(name="Untitled Project")
-            self._update_project(default_project)
+            self._update_project(default_project) # This will emit project_loaded
             # --- End Re-implement ---
 
     def on_open_project(self):
@@ -88,6 +119,10 @@ class ProjectController:
         self.logger.debug("Open Project action triggered.")
         if not self._confirm_close_project():
             return
+
+        # --- Emit project_closed ---
+        self.project_closed.emit()
+        # --- End Emit ---
 
         # Use QFileDialog to select a project file
         filename, _ = QFileDialog.getOpenFileName(
@@ -101,9 +136,9 @@ class ProjectController:
             self.logger.info(f"Attempting to open project file: {filename}")
             try:
                 project = self._serializer.load(filename)
-                self._update_project(project)
+                self._update_project(project) # This will emit project_loaded
                 self.current_project.is_dirty = False # Mark as clean after load
-                self.main_window.statusBar().showMessage(f"Project '{project.name}' loaded.", 5000)
+                # self.main_window.statusBar().showMessage(f"Project '{project.name}' loaded.", 5000) # Handled by MainWindow via signal
             except ProjectLoadError as e:
                 self.logger.error(f"Failed to load project: {e}", exc_info=True)
                 QMessageBox.critical(
@@ -117,7 +152,7 @@ Error: {e}"""
                 # --- Re-implement default project creation on error ---
                 self.logger.info("Creating default project after failed load.")
                 default_project = Project(name="Untitled Project")
-                self._update_project(default_project)
+                self._update_project(default_project) # This will emit project_loaded
                 # --- End Re-implement ---
             except Exception as e: # Catch unexpected errors during load
                  self.logger.exception(f"Unexpected error loading project {filename}: {e}")
@@ -132,12 +167,13 @@ Error: {e}"""
                  # --- Re-implement default project creation on error ---
                  self.logger.info("Creating default project after failed load.")
                  default_project = Project(name="Untitled Project")
-                 self._update_project(default_project)
+                 self._update_project(default_project) # This will emit project_loaded
                  # --- End Re-implement ---
 
     def on_save_project(self, save_as=False) -> bool:
         """
         Handles the 'Save Project' and 'Save Project As...' actions.
+        Emits project_modified if the dirty state changes to False.
 
         Args:
             save_as: If True, forces the 'Save As' dialog even if a path exists.
@@ -152,6 +188,7 @@ Error: {e}"""
             self.logger.warning("Save requested but no current project exists.")
             return True # Nothing to save
 
+        was_dirty = self.current_project.is_dirty # Check state before potential save
         project_path = self.current_project.filepath
 
         if save_as or not project_path:
@@ -170,17 +207,18 @@ Error: {e}"""
             # Update project name based on filename if it was 'Untitled'
             if self.current_project.name == "Untitled Project":
                  self.current_project.name = Path(project_path).stem
-                 self.main_window._update_window_title() # Update window title
+                 # self.main_window._update_window_title() # Let signal handle this
+                 # Emit modified because name changed (implies dirty state change needed too)
+                 if not was_dirty: # If it wasn't dirty before, name change makes it so implicitly
+                     self.current_project.is_dirty = True # Mark dirty before save
+                     self.project_modified.emit()
 
         self.logger.info(f"Attempting to save project to: {project_path}")
         try:
             self._serializer.save(self.current_project, project_path)
-            self.current_project.is_dirty = False # Mark as clean
-            self.main_window.statusBar().showMessage(f"Project '{self.current_project.name}' saved.", 5000)
-            self.logger.info("Project saved successfully.")
-            self.main_window._update_window_title() # Ensure title reflects saved state
-            return True
+            save_successful = True
         except Exception as e: # Catch-all for serialization errors
+            save_successful = False
             self.logger.exception(f"Failed to save project to {project_path}: {e}")
             QMessageBox.critical(
                 self.main_window,
@@ -190,6 +228,18 @@ Error: {e}"""
 
 Error: {e}"""
             )
+
+        if save_successful:
+            if was_dirty: # Only change state and emit if it *was* dirty
+                self.current_project.is_dirty = False # Mark as clean
+                # --- Emit project_modified ---
+                self.project_modified.emit()
+                # --- End Emit ---
+            # self.main_window.statusBar().showMessage(f"Project '{self.current_project.name}' saved.", 5000) # Let MainWindow handle status
+            self.logger.info("Project saved successfully.")
+            # self.main_window._update_window_title() # Let signal handle this
+            return True
+        else:
             return False # Save failed
 
     # --------------------------------------------------------------------------
@@ -237,9 +287,14 @@ Do you want to save them?""",
             self.logger.debug("User chose to Cancel.")
             return False # Operation cancelled, do not proceed
 
-    def mark_dirty(self):
-        """Marks the current project as having unsaved changes."""
-        if self.current_project and not self.current_project.is_dirty:
-            self.logger.debug("Marking project as dirty.")
-            self.current_project.is_dirty = True
-            self.main_window._update_window_title() # Reflect dirty state in title 
+    # --- Renamed to set_project_modified and emit signal ---
+    def set_project_modified(self, modified: bool = True):
+        """Marks the current project's dirty state and emits project_modified if it changed."""
+        if self.current_project and self.current_project.is_dirty != modified:
+            self.logger.debug(f"Setting project dirty state to: {modified}")
+            self.current_project.is_dirty = modified
+            # --- Emit project_modified ---
+            self.project_modified.emit()
+            # --- End Emit ---
+            # self.main_window._update_window_title() # Let signal handle this
+    # --- End Rename --- 

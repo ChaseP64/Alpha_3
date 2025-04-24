@@ -33,9 +33,11 @@ from PySide6.QtWidgets import (
 # --- MODIFIED: Use TYPE_CHECKING for PolylineData --- 
 if TYPE_CHECKING:
     from ..models.project import PolylineData
+    from .visualization_panel import VisualizationPanel
 else:
     # Provide a runtime fallback (e.g., dict or Any)
     PolylineData = Any # Or Dict[str, Any] if it's always a dict structure
+    VisualizationPanel = Any # <<< Add fallback for runtime
 # --- END MODIFIED ---
 
 # --- NEW: Define Type Alias --- 
@@ -64,16 +66,20 @@ class TracingScene(QGraphicsScene):
     pageRectChanged = Signal()
     # --- END NEW ---
 
-    def __init__(self, view: QGraphicsView, parent=None):
+    # --- MODIFIED: Accept and store panel reference --- 
+    def __init__(self, view: QGraphicsView, panel: VisualizationPanel, parent=None):
         """Initialize the TracingScene.
 
         Args:
             view (QGraphicsView): The view that displays this scene.
+            panel (VisualizationPanel): The parent visualization panel.
             parent (QObject, optional): Parent object. Defaults to None.
         """
         super().__init__(parent)
         self.logger = logging.getLogger(__name__)
         self.parent_view = view # Store reference to the parent view
+        self.panel = panel # Store reference to the panel
+    # --- END MODIFIED --- 
 
         # Allow multiple stacked background layers (one per PDF page)
         self._background_items: List[QGraphicsPixmapItem] = []
@@ -323,20 +329,15 @@ class TracingScene(QGraphicsScene):
 
     # --- Helper to get active layer ---
     def _get_active_layer_name(self) -> str:
-        """Safely gets the active layer name from the parent view/widget."""
+        """Safely gets the active layer name from the parent panel."""
         active_layer = "Default" # Fallback
-        # Need to navigate up from scene -> view -> main_window/vis_panel
-        parent_widget = self.parent_view
-        if hasattr(parent_widget, 'parent') and callable(parent_widget.parent):
-             # Assuming parent_view's parent is VisualizationPanel or similar
-             controller_widget = parent_widget.parent()
-             if hasattr(controller_widget, 'active_layer_name'):
-                 active_layer = controller_widget.active_layer_name
-                 self.logger.debug(f"Retrieved active layer: {active_layer}")
-             else:
-                 self.logger.warning("Parent widget does not have 'active_layer_name' attribute.")
+        # --- MODIFIED: Use stored panel reference --- 
+        if self.panel and hasattr(self.panel, 'active_layer_name'):
+            active_layer = self.panel.active_layer_name
+            self.logger.debug(f"Retrieved active layer: {active_layer}")
         else:
-            self.logger.warning("Could not get active_layer_name: Parent hierarchy unexpected.")
+            self.logger.warning("Could not get active_layer_name: Panel reference or attribute missing.")
+        # --- END MODIFIED --- 
         return active_layer
 
     # --- NEW: Override mouseReleaseEvent to detect selection ---

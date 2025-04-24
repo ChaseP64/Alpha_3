@@ -256,7 +256,7 @@ class VisualizationPanel(QWidget):
 
         # --- Legacy 2D Scene/View --- 
         self.view_2d = InteractiveGraphicsView(None, self)
-        self.scene_2d = TracingScene(self.view_2d, self)
+        self.scene_2d = TracingScene(self.view_2d, self, self)
         self.view_2d.setScene(self.scene_2d)
         # Add render hints for better quality rendering
         self.view_2d.setRenderHints(QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform)
