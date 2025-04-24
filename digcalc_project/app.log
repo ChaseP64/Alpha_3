@@ -7054,3 +7054,61 @@ AttributeError: 'MainWindow' object has no attribute '_fit_view_to_scene'
 2025-04-23 13:01:13,190 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/_OLD_Alpha3/Structural Plans - Stout Roofing 3-12-25.pdf
 2025-04-23 13:01:13,265 - digcalc_project.src.ui.main_window - INFO - Closing application.
 2025-04-23 13:01:13,274 - __main__ - INFO - Application exited with code 0
+2025-04-24 10:12:17,762 - __main__ - INFO - Starting DigCalc application
+2025-04-24 10:12:17,847 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-24 10:12:17,860 - __main__ - ERROR - Fatal error in main application: 'PropertiesDock' object has no attribute 'edited'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 124, in __init__
+    self._connect_signals()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 215, in _connect_signals
+    self.prop_dock.edited.connect(self._apply_elevation_edit)
+    ^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'PropertiesDock' object has no attribute 'edited'
+2025-04-24 10:21:02,177 - __main__ - INFO - Starting DigCalc application
+2025-04-24 10:21:02,199 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-24 10:21:02,200 - __main__ - ERROR - Fatal error in main application: 'MainWindow' object has no attribute '_create_actions'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 117, in __init__
+    self._create_actions()
+    ^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute '_create_actions'
+2025-04-24 10:24:09,499 - __main__ - INFO - Starting DigCalc application
+2025-04-24 10:24:09,523 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-24 10:24:09,523 - __main__ - ERROR - Fatal error in main application: 'MainWindow' object has no attribute '_create_actions'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 117, in __init__
+    self._create_actions()
+    ^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute '_create_actions'
+2025-04-24 10:32:57,998 - __main__ - INFO - Starting DigCalc application
+2025-04-24 10:32:58,019 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-24 10:33:10,792 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-24 10:33:10,792 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-24 10:33:10,801 - __main__ - INFO - Application exited with code 0
+2025-04-24 10:51:07,862 - __main__ - INFO - Starting DigCalc application
+2025-04-24 10:51:07,896 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-24 10:51:33,214 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-24 10:51:33,214 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-24 10:51:33,222 - __main__ - INFO - Application exited with code 0
+2025-04-24 10:54:35,038 - __main__ - INFO - Starting DigCalc application
+2025-04-24 10:54:35,060 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-24 10:54:35,097 - __main__ - ERROR - Fatal error in main application: 'ProjectController' object has no attribute 'project_loaded'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 50, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 124, in __init__
+    self._connect_signals()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window.py", line 258, in _connect_signals
+    self.project_controller.project_loaded.connect(self._update_ui_for_project)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProjectController' object has no attribute 'project_loaded'

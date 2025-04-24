@@ -212,7 +212,9 @@ class MainWindow(QMainWindow):
         self.layer_tree.itemChanged.connect(self._on_layer_visibility_changed)
 
         # --- NEW: Connect PropertiesDock signal --- 
-        self.prop_dock.edited.connect(self._apply_elevation_edit)
+        # self.prop_dock.edited.connect(self._apply_elevation_edit) # Old signal name
+        self.prop_dock.polylineEdited.connect(self._apply_elevation_edit) # Corrected signal name
+        # TODO: Connect self.prop_dock.regionUpdated to a handler method
         # --- END NEW ---
 
 
@@ -227,17 +229,47 @@ class MainWindow(QMainWindow):
              logger.error("view_3d_action not found during signal connection.")
         # --- END NEW ---
 
-        # --- NEW: Connect Cut/Fill Action ---
-        self.cutfill_action.toggled.connect(self.visualization_panel.set_cutfill_visible)
-        # --- END NEW ---
+        # --- Connect PDF Actions ---
+        if hasattr(self, 'load_pdf_background_action'):
+            self.load_pdf_background_action.triggered.connect(self.on_load_pdf_background)
+        if hasattr(self, 'clear_pdf_background_action'):
+            self.clear_pdf_background_action.triggered.connect(self.on_clear_pdf_background)
+        if hasattr(self, 'prev_pdf_page_action'):
+            self.prev_pdf_page_action.triggered.connect(self.on_prev_pdf_page)
+        if hasattr(self, 'next_pdf_page_action'):
+            self.next_pdf_page_action.triggered.connect(self.on_next_pdf_page)
+        if hasattr(self, 'toggle_trace_mode_action'):
+            self.toggle_trace_mode_action.toggled.connect(self.on_toggle_tracing_mode)
 
-        # --- NEW: Connect PDF Controller Signals ---
-        # Ensure this line connects to the MainWindow's slot
-        self.pdf_controller.pageSelected.connect(self._on_pdf_page_selected)
-        # --- END NEW ---
+        # --- Connect Analysis Actions ---
+        if hasattr(self, 'calculate_volume_action'):
+            self.calculate_volume_action.triggered.connect(self.on_calculate_volume)
+        if hasattr(self, 'build_surface_action'):
+            self.build_surface_action.triggered.connect(self.on_build_surface)
+        if hasattr(self, 'generate_report_action'):
+            self.generate_report_action.triggered.connect(self.on_generate_report)
 
-        self.logger.debug("MainWindow signals connected.")
-    
+        # --- Connect Help Actions ---
+        if hasattr(self, 'about_action'):
+            self.about_action.triggered.connect(self.on_about)
+
+        # --- Connect Project Controller signals (for UI updates) ---
+        if hasattr(self, 'project_controller'):
+            self.project_controller.project_loaded.connect(self._update_ui_for_project)
+            self.project_controller.project_closed.connect(lambda: self._update_ui_for_project(None))
+            self.project_controller.project_modified.connect(self._update_window_title)
+            # Connect import actions through controller
+            if hasattr(self, 'import_csv_action'):
+                self.import_csv_action.triggered.connect(lambda: self.project_controller.on_import_file('csv'))
+            if hasattr(self, 'import_dxf_action'):
+                self.import_dxf_action.triggered.connect(lambda: self.project_controller.on_import_file('dxf'))
+            if hasattr(self, 'import_landxml_action'):
+                self.import_landxml_action.triggered.connect(lambda: self.project_controller.on_import_file('landxml'))
+        else:
+            self.logger.error("ProjectController not found during signal connection.")
+
+        self.logger.debug("Finished connecting MainWindow signals.")
+
     def _create_actions(self):
         """Create actions for menus and toolbars."""
         # File menu actions
@@ -266,88 +298,83 @@ class MainWindow(QMainWindow):
         # Import menu actions
         self.import_csv_action = QAction("Import &CSV...", self)
         self.import_csv_action.setStatusTip("Import points from a CSV file.")
-        self.import_csv_action.triggered.connect(lambda: self._on_import_file('csv'))
+        # Connect via controller in _connect_signals or elsewhere
+        # self.import_csv_action.triggered.connect(lambda: self.project_controller.on_import_file('csv'))
 
         self.import_dxf_action = QAction("Import &DXF...", self)
         self.import_dxf_action.setStatusTip("Import geometry from a DXF file.")
-        self.import_dxf_action.triggered.connect(lambda: self._on_import_file('dxf'))
+        # self.import_dxf_action.triggered.connect(lambda: self.project_controller.on_import_file('dxf'))
 
         self.import_landxml_action = QAction("Import &LandXML...", self)
         self.import_landxml_action.setStatusTip("Import surfaces or points from a LandXML file.")
-        self.import_landxml_action.triggered.connect(lambda: self._on_import_file('landxml'))
+        # self.import_landxml_action.triggered.connect(lambda: self.project_controller.on_import_file('landxml'))
 
-        # --- NEW: Load Background Action ---
+        # Background actions (Load/Clear PDF)
         self.load_pdf_background_action = QAction("Load PDF &Background...", self)
         self.load_pdf_background_action.setStatusTip("Load a PDF page as a background for tracing.")
-        self.load_pdf_background_action.triggered.connect(self.on_load_pdf_background)
+        # Connection in _connect_signals
+
         self.clear_pdf_background_action = QAction("&Clear PDF Background", self)
         self.clear_pdf_background_action.setStatusTip("Remove the current PDF background image.")
-        self.clear_pdf_background_action.triggered.connect(self.on_clear_pdf_background)
-        self.clear_pdf_background_action.setEnabled(False) # Initially disabled
-        # --- END NEW ---
+        # Connection in _connect_signals
+        self.clear_pdf_background_action.setEnabled(False)
 
-        # --- NEW: PDF Navigation Actions --- 
+        # PDF Navigation Actions
         self.prev_pdf_page_action = QAction("Previous PDF Page", self)
         self.prev_pdf_page_action.setStatusTip("Go to the previous page in the PDF background.")
-        self.prev_pdf_page_action.triggered.connect(self.on_prev_pdf_page)
+        # Connection in _connect_signals
         self.prev_pdf_page_action.setEnabled(False)
 
         self.next_pdf_page_action = QAction("Next PDF Page", self)
         self.next_pdf_page_action.setStatusTip("Go to the next page in the PDF background.")
-        self.next_pdf_page_action.triggered.connect(self.on_next_pdf_page)
+        # Connection in _connect_signals
         self.next_pdf_page_action.setEnabled(False)
-        # --- END NEW ---
 
         # Analysis menu actions
         self.calculate_volume_action = QAction("&Calculate Volume...", self)
         self.calculate_volume_action.setStatusTip("Calculate cut/fill volumes between surfaces.")
-        self.calculate_volume_action.triggered.connect(self.on_calculate_volume)
-        self.calculate_volume_action.setEnabled(False) # Initially disabled
+        # Connection in _connect_signals
+        self.calculate_volume_action.setEnabled(False)
 
-        # --- NEW: Build Surface Action ---
         self.build_surface_action = QAction("&Build Surface...", self)
         self.build_surface_action.setStatusTip("Build a TIN or Grid surface from project layers.")
-        self.build_surface_action.triggered.connect(self.on_build_surface)
-        self.build_surface_action.setEnabled(False) # Initially disabled
-        # --- END NEW ---
+        # Connection in _connect_signals
+        self.build_surface_action.setEnabled(False)
 
-        # --- NEW: Reporting Action ---
         self.generate_report_action = QAction("Generate &Report...", self)
         self.generate_report_action.setStatusTip("Generate a PDF report of the project.")
-        # --- Debug Print --- 
-        print(f"DEBUG: Does 'on_generate_report' exist? {hasattr(self, 'on_generate_report')}")
-        # --- End Debug Print ---
-        self.generate_report_action.triggered.connect(self.on_generate_report) # Connect to the slot
-        self.generate_report_action.setEnabled(False) # Initially disabled
-        # --- END NEW ---
+        # Connection in _connect_signals
+        self.generate_report_action.setEnabled(False)
 
-        # View menu actions
-        self.view_project_panel_action = QAction("&Project Panel", self, checkable=True)
-        self.view_project_panel_action.setChecked(True)
-        self.view_project_panel_action.triggered.connect(self.project_dock.setVisible)
-        self.project_dock.visibilityChanged.connect(self.view_project_panel_action.setChecked)
+        # View menu actions (Toggles for docks - simplified creation)
+        # Ensure docks exist before creating actions that depend on them
+        if hasattr(self, 'project_dock'):
+            self.view_project_panel_action = self.project_dock.toggleViewAction()
+            self.view_project_panel_action.setText("&Project Panel")
+        else:
+             self.logger.error("Cannot create view_project_panel_action: project_dock missing")
 
-        self.view_layer_panel_action = QAction("&Layer Panel", self, checkable=True)
-        self.view_layer_panel_action.setChecked(True)
-        self.view_layer_panel_action.triggered.connect(self.layer_dock.setVisible)
-        self.layer_dock.visibilityChanged.connect(self.view_layer_panel_action.setChecked)
+        if hasattr(self, 'layer_dock'):
+            self.view_layer_panel_action = self.layer_dock.toggleViewAction()
+            self.view_layer_panel_action.setText("&Layer Panel")
+        else:
+             self.logger.error("Cannot create view_layer_panel_action: layer_dock missing")
 
-        # --- NEW: Properties Dock View Action --- 
-        self.view_properties_dock_action = QAction("P&roperties Dock", self, checkable=True)
-        self.view_properties_dock_action.setChecked(False) # Start hidden
-        self.view_properties_dock_action.triggered.connect(self.prop_dock.setVisible)
-        self.prop_dock.visibilityChanged.connect(self.view_properties_dock_action.setChecked)
-        # --- END NEW ---
+        if hasattr(self, 'prop_dock'):
+            self.view_properties_dock_action = self.prop_dock.toggleViewAction()
+            self.view_properties_dock_action.setText("P&roperties Dock")
+        else:
+             self.logger.error("Cannot create view_properties_dock_action: prop_dock missing")
 
-        # --- NEW: PDF Thumbnail Dock View Action ---
-        self.view_pdf_thumbnail_dock_action = QAction("PDF T&humbnails", self, checkable=True)
-        self.view_pdf_thumbnail_dock_action.setChecked(False) # Start hidden
-        self.view_pdf_thumbnail_dock_action.triggered.connect(self.pdf_thumbnail_dock.setVisible)
-        self.pdf_thumbnail_dock.visibilityChanged.connect(self.view_pdf_thumbnail_dock_action.setChecked)
-        self.view_pdf_thumbnail_dock_action.setEnabled(False) # Disabled until PDF loaded
-        # --- END NEW ---
+        if hasattr(self, 'pdf_thumbnail_dock'):
+            self.view_pdf_thumbnail_dock_action = self.pdf_thumbnail_dock.toggleViewAction()
+            self.view_pdf_thumbnail_dock_action.setText("PDF T&humbnails")
+            self.view_pdf_thumbnail_dock_action.setEnabled(False)
+        else:
+             self.logger.error("Cannot create view_pdf_thumbnail_dock_action: pdf_thumbnail_dock missing")
 
-        # --- NEW: View Mode Actions ---
+
+        # View mode actions (2D/3D)
         self.view_2d_action = QAction("View &2D", self, checkable=True)
         self.view_3d_action = QAction("View &3D", self, checkable=True)
         self.view_action_group = QActionGroup(self)
@@ -355,35 +382,28 @@ class MainWindow(QMainWindow):
         self.view_action_group.addAction(self.view_3d_action)
         self.view_action_group.setExclusive(True)
         self.view_2d_action.setChecked(True) # Default to 2D view
-        # Connect these in _connect_signals
-        # --- END NEW ---
 
-        # --- NEW: Cut/Fill Map Action ---
+        # Cut/Fill Map Action
         self.cutfill_action = QAction("Show Cut/Fill Map", self, checkable=True)
         self.cutfill_action.setChecked(False)
-        self.cutfill_action.setEnabled(False) # Disabled until volume calculated
-        # --- END NEW ---
+        self.cutfill_action.setEnabled(False)
 
         # Tool Actions
-        # --- NEW: Tracing Toggle Action ---
         self.toggle_trace_mode_action = QAction("&Enable Tracing", self, checkable=True)
         self.toggle_trace_mode_action.setStatusTip("Toggle polyline tracing mode for the 2D view.")
         self.toggle_trace_mode_action.setChecked(False)
-        self.toggle_trace_mode_action.triggered.connect(self.on_toggle_tracing_mode)
-        self.toggle_trace_mode_action.setEnabled(False) # Disabled until background loaded
-        # --- END NEW ---
+        # Connection in _connect_signals
+        self.toggle_trace_mode_action.setEnabled(False)
 
-        # --- NEW: Trace from PDF Action ---
         self.trace_pdf_action = QAction("Trace from PDF Vectors...", self)
         self.trace_pdf_action.setStatusTip("Extract vector paths from a PDF page and create layers.")
         # Connection in _connect_signals
-        self.trace_pdf_action.setEnabled(False) # Disabled until PDF loaded
-        # --- END NEW ---
+        self.trace_pdf_action.setEnabled(False)
 
         # Help menu actions
         self.about_action = QAction("&About DigCalc", self)
         self.about_action.setStatusTip("Show information about the DigCalc application.")
-        self.about_action.triggered.connect(self.on_about)
+        # Connection in _connect_signals
 
     def _create_menus(self):
         """Create the main menu bar."""
@@ -725,6 +745,7 @@ class MainWindow(QMainWindow):
 
     def on_load_pdf_background(self):
         """Handles loading a PDF file as a background."""
+        self.logger.debug("on_load_pdf_background slot entered.")
         filename, _ = QFileDialog.getOpenFileName(
             self,
             "Load PDF Background",
