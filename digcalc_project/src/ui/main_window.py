@@ -400,6 +400,13 @@ class MainWindow(QMainWindow):
         # Connection in _connect_signals
         self.trace_pdf_action.setEnabled(False)
 
+        # --- NEW: Daylight Offset Action ---
+        self.daylight_action = QAction(QIcon(":/icons/daylight.svg"), "Daylight Offset…", self)
+        self.daylight_action.setStatusTip("Create daylight offset breakline from selected polyline.")
+        self.daylight_action.triggered.connect(self.on_daylight_offset)
+        # Toolbar hookup occurs in _create_toolbars after toolbar is created
+        # --- END NEW ---
+
         # Help menu actions
         self.about_action = QAction("&About DigCalc", self)
         self.about_action.setStatusTip("Show information about the DigCalc application.")
@@ -496,6 +503,13 @@ class MainWindow(QMainWindow):
         self.analysis_menu = self.menu_bar.addMenu("Analysis")
         self.analysis_menu.addAction(self.calculate_volume_action)
         
+        # --- NEW: Tools Toolbar ---
+        self.tools_toolbar = QToolBar("Tools Toolbar")
+        self.tools_toolbar.setIconSize(QSize(24, 24))
+        self.addToolBar(self.tools_toolbar)
+        self.tools_toolbar.addAction(self.daylight_action)
+        # --- END NEW ---
+
         # Help menu
         self.help_menu = self.menu_bar.addMenu("Help")
         # Add help actions here
@@ -1864,3 +1878,48 @@ class MainWindow(QMainWindow):
         # Global shortcuts for undo/redo
         QShortcut(QKeySequence.StandardKey.Undo, self, self.undoStack.undo)
         QShortcut(QKeySequence.StandardKey.Redo, self, self.undoStack.redo)
+
+    # --- NEW: Daylight Offset Slot ------------------------------------------------
+    @Slot()
+    def on_daylight_offset(self):
+        """Create daylight offset breakline from the currently selected polyline."""
+        # Deferred import to avoid heavy UI cost at startup
+        try:
+            from digcalc_project.src.ui.dialogs.daylight_dialog import DaylightDialog
+        except ImportError as e:
+            self.logger.error(f"Could not import DaylightDialog: {e}")
+            QMessageBox.critical(self, "DigCalc", "Daylight dialog is unavailable.")
+            return
+
+        # Access TracingScene via VisualizationPanel
+        scene = getattr(self.visualization_panel, 'scene_2d', None)
+        if scene is None:
+            QMessageBox.warning(self, "DigCalc", "2D Tracing Scene is not active.")
+            return
+
+        # Ensure a polyline is selected
+        if not hasattr(scene, 'current_polyline') or not scene.current_polyline():
+            QMessageBox.warning(self, "DigCalc", "Select a polyline first.")
+            return
+
+        dlg = DaylightDialog(self)
+        if dlg.exec():
+            dist, slope = dlg.values()
+            if slope == 0:
+                QMessageBox.warning(self, "DigCalc", "Slope ratio cannot be zero.")
+                return
+            try:
+                poly = scene.current_polyline_points()
+                from digcalc_project.src.tools.daylight_offset_tool import offset_polygon, project_to_slope
+                off2d = offset_polygon(poly, dist)
+                off3d = project_to_slope(off2d, abs(dist), slope)
+                if hasattr(scene, 'add_offset_breakline'):
+                    scene.add_offset_breakline(off3d)
+                else:
+                    # Fallback: log error if scene lacks helper
+                    self.logger.error("TracingScene does not implement add_offset_breakline().")
+                    QMessageBox.warning(self, "DigCalc", "Offset breakline feature is not available.")
+            except Exception as e:
+                self.logger.exception("Failed to create daylight offset: %s", e)
+                QMessageBox.critical(self, "DigCalc", f"Failed to create daylight offset.\n{e}")
+    # --- END NEW ---

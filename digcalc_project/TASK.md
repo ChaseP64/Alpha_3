@@ -63,4 +63,8 @@
 - Implemented basic data import functionality with file parsers
 - Developed a clean Surface model for TIN representation
 - Resolved encoding issues in Python files
-- Fixed unit tests for FileParser class 
+- Fixed unit tests for FileParser class
+
+# Added Phase 3 helper tools
+- [x] Add daylight_offset_tool geometry helpers (offset_polygon, project_to_slope)
+- [ ] Implement TIN generation 

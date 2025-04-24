@@ -37,6 +37,8 @@ def test_page_selected_updates_scene(qtbot):
     qtbot.wait(10)
 
     # 4. Assert TracingScene background item exists and has correct size
-    bg_item = panel.scene_2d._background_item  # type: ignore[attr-defined]
+    bg_items = panel.scene_2d._background_items  # type: ignore[attr-defined]
+    assert bg_items, "No background items found in scene"
+    bg_item = bg_items[-1] # Check the last added item
     assert isinstance(bg_item, QGraphicsPixmapItem)
     assert bg_item.pixmap().size() == QSize(10, 5) 

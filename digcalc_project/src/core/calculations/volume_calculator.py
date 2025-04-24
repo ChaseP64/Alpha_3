@@ -90,6 +90,28 @@ class VolumeCalculator:
             self.logger.error(f"Error determining bounding box: {e}")
             raise
 
+        # Expand bounding box to include any project regions (for stripping calculations)
+        if self.project and hasattr(self.project, "regions") and self.project.regions:
+            try:
+                import numpy as _np  # local alias
+                xs, ys = [], []
+                for reg in self.project.regions:
+                    if reg.polygon:
+                        for x, y in reg.polygon:
+                            xs.append(float(x))
+                            ys.append(float(y))
+                if xs and ys:
+                    min_x_r, max_x_r = min(xs), max(xs)
+                    min_y_r, max_y_r = min(ys), max(ys)
+                    min_x, min_y, max_x, max_y = bbox
+                    min_x = min(min_x, min_x_r)
+                    min_y = min(min_y, min_y_r)
+                    max_x = max(max_x, max_x_r)
+                    max_y = max(max_y, max_y_r)
+                    bbox = (min_x, min_y, max_x, max_y)
+            except Exception as _e:
+                self.logger.warning(f"Could not extend bounding box with regions: {_e}")
+
         # 2. Create Calculation Grid Coordinates (gx, gy) and Points (grid_points_xy)
         # Modify _create_grid to return gx, gy as well
         gx, gy, grid_points_xy = self._create_grid(bbox, grid_resolution)

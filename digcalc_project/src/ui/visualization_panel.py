@@ -1012,17 +1012,15 @@ class VisualizationPanel(QWidget):
         # --- REMOVE: Doc managed by renderer ---
         # self._pymupdf_doc = None 
         
-        # --- FIX: Remove the background item from the scene ---
-        if self._pdf_bg_item:
-            if self.scene_2d and self._pdf_bg_item in self.scene_2d.items():
-                try:
-                    self.scene_2d.removeItem(self._pdf_bg_item)
-                    self.logger.debug("Removed PDF background item from scene.")
-                except RuntimeError as e:
-                    self.logger.warning(f"Error removing PDF background item (may already be removed): {e}")
-            else:
-                self.logger.debug("PDF background item found but not in scene.")
-        self._pdf_bg_item = None # Clear reference in any case
+        # --- FIX: Use TracingScene API --- 
+        # Clear previous layers (assuming page change replaces, not stacks)
+        # Need to access internal list as there's no public clear method yet
+        while getattr(self.scene_2d, '_background_items', []):
+            try:
+                self.scene_2d.removeBackgroundLayer(0)
+            except IndexError:
+                break # Should not happen if list check is correct
+
         # --- END FIX ---
         
         self.current_pdf_page = 1
@@ -1100,26 +1098,24 @@ class VisualizationPanel(QWidget):
             self.logger.debug(f"Retrieved rendered image for page {page_number} (Size: {qimage.width()}x{qimage.height()}).")
             # --- END FIX ---
 
-            # Remove old background item from scene
-            if self._pdf_bg_item and self._pdf_bg_item in self.scene_2d.items():
+            # --- FIX: Use TracingScene API --- 
+            # Clear previous layers (assuming page change replaces, not stacks)
+            # Need to access internal list as there's no public clear method yet
+            while getattr(self.scene_2d, '_background_items', []):
                 try:
-                    self.scene_2d.removeItem(self._pdf_bg_item)
-                except RuntimeError as e:
-                     self.logger.warning(f"Error removing PDF background item (may already be removed): {e}")
-            self._pdf_bg_item = None # Clear reference in any case
+                    self.scene_2d.removeBackgroundLayer(0)
+                except IndexError:
+                    break # Should not happen if list check is correct
 
-            # Create and add new QGraphicsPixmapItem
-            self._pdf_bg_item = QGraphicsPixmapItem(qpixmap)
-            # Scale factor should be 1 here, as scene units will be pixels
-            self._pdf_bg_item.setScale(1.0)
-            self._pdf_bg_item.setZValue(-1) # Ensure it's behind other items
-            self.scene_2d.addItem(self._pdf_bg_item)
-            self.logger.debug("Added new PDF background pixmap item to the scene.")
+            # Add the new page using the scene's method
+            self.scene_2d.addBackgroundLayer(qpixmap)
+            # self._pdf_bg_item is no longer needed here
+            self.logger.debug("Added new PDF background via TracingScene API.")
+            # --- END FIX ---
 
             # Update scene rect to match the pixel dimensions of the rendered page
-            scene_rect = QRectF(0, 0, qimage.width(), qimage.height())
-            self.scene_2d.setSceneRect(scene_rect)
-            self.logger.debug(f"Scene rect set to rendered pixmap dimensions: {scene_rect}")
+            scene_rect = self.scene_2d.sceneRect() # Get the updated rect
+            self.logger.debug(f"Scene rect updated by addBackgroundLayer: {scene_rect}")
 
             # Update current page tracker
             self.current_pdf_page = page_number
@@ -1134,12 +1130,13 @@ class VisualizationPanel(QWidget):
             self.logger.error(error_msg, exc_info=True)
             QMessageBox.warning(self, "PDF Display Error", error_msg)
             # Clear potentially corrupted background item
-            if self._pdf_bg_item and self._pdf_bg_item in self.scene_2d.items():
+            # --- FIX: Use TracingScene API --- 
+            while getattr(self.scene_2d, '_background_items', []):
                 try:
-                    self.scene_2d.removeItem(self._pdf_bg_item)
-                except RuntimeError as remove_err:
-                     self.logger.warning(f"Error removing background item during error handling: {remove_err}")
-            self._pdf_bg_item = None
+                    self.scene_2d.removeBackgroundLayer(0)
+                except IndexError:
+                    break
+            # --- END FIX ---
 
     def set_pdf_page(self, page_number: int, dpi: int = 150):
         """Renders and displays the specified page of the currently loaded PDF.

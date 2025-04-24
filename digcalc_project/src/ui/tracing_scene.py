@@ -607,6 +607,53 @@ class TracingScene(QGraphicsScene):
             self.logger.debug("Background Item: None")
         self.logger.debug(f"Item Count: {len(self.items())}")
 
+    # --- Helper to get current selected polyline ---
+    def current_polyline(self):
+        """Return the currently selected QGraphicsPathItem (polyline), if any."""
+        sel = [itm for itm in self.selectedItems() if isinstance(itm, QGraphicsPathItem)]
+        return sel[0] if sel else None
+
+    def current_polyline_points(self) -> list[tuple[float, float]]:
+        """Return the 2-D points of the currently selected polyline."""
+        item = self.current_polyline()
+        if not item:
+            return []
+        path: QPainterPath = item.path()
+        return [(path.elementAt(i).x, path.elementAt(i).y) for i in range(path.elementCount())]
+
+    def add_offset_breakline(self, pts3d: list[tuple[float, float, float]]):
+        """Add a 3-D aware offset breakline to the scene and undo stack."""
+        if not pts3d or len(pts3d) < 2:
+            self.logger.warning("add_offset_breakline called with insufficient points.")
+            return
+
+        # Create a 2-D path (ignore z for screen representation)
+        path = QPainterPath()
+        path.moveTo(QPointF(pts3d[0][0], pts3d[0][1]))
+        for x, y, _ in pts3d[1:]:
+            path.lineTo(QPointF(x, y))
+
+        item = QGraphicsPathItem(path)
+        # Use dashed magenta pen to visually distinguish offset lines
+        pen = self._finalized_polyline_pen
+        pen.setStyle(Qt.DashLine)
+        pen.setColor(Qt.magenta)
+        item.setPen(pen)
+        item.setZValue(1)
+        item.setFlag(QGraphicsItem.ItemIsSelectable, True)
+        # Store layer and both 2D & 3D pts
+        item.setData(Qt.UserRole + 1, "Offsets")
+        item.setData(Qt.UserRole + 2, [(x, y) for x, y, *_ in pts3d])
+        item.setData(Qt.UserRole + 3, pts3d)  # Full 3-D points
+
+        # Push undo command
+        main_win = self.parent_view.window() if self.parent_view else None
+        if main_win and hasattr(main_win, 'undoStack'):
+            cmd = AddPolylineCommand(self, item)
+            main_win.undoStack.push(cmd)
+        else:
+            self.addItem(item)
+
 # ------------------------------------------------------------------
 # Undo/Redo Command
 # ------------------------------------------------------------------
@@ -614,10 +661,29 @@ class TracingScene(QGraphicsScene):
 class AddPolylineCommand(QUndoCommand):
     """QUndoCommand to add/remove a polyline item from the scene."""
 
-    def __init__(self, scene: 'TracingScene', item: QGraphicsPathItem):  # noqa: D401
+    def __init__(self, scene: 'TracingScene', item_or_pts, layer: str | None = None):  # noqa: D401
         super().__init__("Add Polyline")
         self._scene = scene
-        self._item = item
+        if isinstance(item_or_pts, QGraphicsPathItem):
+            self._item = item_or_pts
+        else:
+            # Assume iterable of (x,y,?) tuples – create path (ignore z)
+            from PySide6.QtCore import QPointF
+            path = QPainterPath()
+            pts = list(item_or_pts)
+            if not pts:
+                raise ValueError("No points supplied for AddPolylineCommand")
+            path.moveTo(QPointF(pts[0][0], pts[0][1]))
+            for x, y, *_ in pts[1:]:
+                path.lineTo(QPointF(x, y))
+            self._item = QGraphicsPathItem(path)
+            pen = QPen(Qt.magenta, 1, Qt.DashLine)
+            self._item.setPen(pen)
+            self._item.setZValue(1)
+            # Store metadata
+            self._item.setData(Qt.UserRole + 1, layer or "Offsets")
+            self._item.setData(Qt.UserRole + 2, [(x, y) for x, y, *_ in pts])
+            self._item.setData(Qt.UserRole + 3, pts)
 
     # ------------------------------------------------------------------
     # QUndoCommand interface

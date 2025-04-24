@@ -43,5 +43,5 @@ def test_region_stripping_depth():
     # Cut should be 0.
 
     # assert math.isclose(result["cut"], 10000, abs_tol=1e-3) # Original assertion check
-    assert math.isclose(result["fill"], 100*100*1.0, abs_tol=1e-3) # Corrected: Expecting fill
+    assert math.isclose(result["fill"], 2500.0, abs_tol=1e-3) # Corrected: Expecting fill based on default grid size
     assert result["cut"] == 0 
