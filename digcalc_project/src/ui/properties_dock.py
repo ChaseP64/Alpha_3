@@ -1,25 +1,29 @@
 # digcalc_project/src/ui/properties_dock.py
 
 import logging
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Any
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QDockWidget, QLabel, QDoubleSpinBox, QFormLayout, QDialogButtonBox,
-    QWidget, QVBoxLayout
+    QWidget, QVBoxLayout, QTabWidget, QLineEdit, QPushButton
 )
+
+# Relative imports
+from ..models.region import Region
+from ..services.settings_service import SettingsService
 
 # Define module-level logger
 logger = logging.getLogger(__name__)
 
 class PropertiesDock(QDockWidget):
     """
-    A dock widget to display and edit properties of selected items,
-    specifically the elevation of traced polylines.
+    A dock widget to display and edit properties of selected items.
+    Uses tabs for different item types (Polyline, Region).
     """
-    # Signal emitted when the 'Apply' button is clicked.
-    # Arguments: layer_name (str), polyline_index (int), new_elevation (float)
-    edited = Signal(str, int, float)
+    # Signals emitted when the 'Apply' button is clicked for each type.
+    polylineEdited = Signal(str, int, float) # layer_name, polyline_index, new_elevation
+    regionUpdated = Signal(Region)           # Updated Region object
 
     def __init__(self, parent=None):
         """Initialize the PropertiesDock."""
@@ -28,112 +32,212 @@ class PropertiesDock(QDockWidget):
         self.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         self.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
 
-        # --- UI Elements ---
-        self._layer_label = QLabel()
-        self._layer_label.setText("<i>None selected</i>") # Initial placeholder
-
-        self._elev_spin = QDoubleSpinBox()
-        self._elev_spin.setRange(-10000, 10000)
-        self._elev_spin.setDecimals(2)
-        self._elev_spin.setSuffix(" ft") # Added unit suffix
-        self._elev_spin.setToolTip("Enter the constant elevation for this polyline.")
-        self._elev_spin.setEnabled(False) # Disabled until an item is loaded
-
-        # --- Layout ---
-        form_layout = QFormLayout()
-        form_layout.addRow("Layer:", self._layer_label)
-        form_layout.addRow("Elevation:", self._elev_spin)
-
-        form_widget = QWidget()
-        form_widget.setLayout(form_layout)
-
-        # --- Buttons ---
-        button_box = QDialogButtonBox(QDialogButtonBox.Apply | QDialogButtonBox.Cancel)
-
-        # --- FIX: Connect specific button signals --- 
-        apply_button = button_box.button(QDialogButtonBox.Apply)
-        cancel_button = button_box.button(QDialogButtonBox.Cancel)
-
-        if apply_button:
-            apply_button.setEnabled(False) # Disabled initially
-            apply_button.clicked.connect(self._apply) # Connect clicked signal
-        else:
-            logger.error("Could not find Apply button in PropertiesDock button box.")
-
-        if cancel_button:
-            cancel_button.clicked.connect(self._cancel) # Connect clicked signal
-        else:
-            logger.error("Could not find Cancel button in PropertiesDock button box.")
-        # Remove old connections if they existed
-        # try: button_box.accepted.disconnect(self._apply) 
-        # except RuntimeError: pass 
-        # try: button_box.rejected.disconnect(self._cancel) 
-        # except RuntimeError: pass 
-        # --- END FIX --- 
-
-        # --- Main Container ---
-        vbox = QVBoxLayout()
-        vbox.addWidget(form_widget)
-        vbox.addWidget(button_box)
-        vbox.addStretch() # Push content to the top
-
-        container_widget = QWidget()
-        container_widget.setLayout(vbox)
-        self.setWidget(container_widget)
+        # --- Main Tab Widget ---
+        self.tabs = QTabWidget()
+        self.setWidget(self.tabs)
 
         # --- State ---
-        self._current_item_info: Optional[Tuple[str, int]] = None # tuple(layer_name, index)
+        self._current_polyline_info: Optional[Tuple[str, int]] = None # tuple(layer_name, index)
+        self._current_region: Optional[Region] = None # Currently selected Region object
+
+        # --- Initialize Tabs ---
+        self._create_polyline_tab()
+        self._create_region_tab()
+
+        # --- Hide initially ---
+        self.tabs.setCurrentIndex(0) # Show Polyline tab by default if needed
+        self.hide()
 
         # Use module-level logger
-        logger.debug("PropertiesDock initialized.")
+        logger.debug("PropertiesDock initialized with tabs.")
+
+    def _create_polyline_tab(self):
+        """Creates the QWidget and layout for the Polyline properties tab."""
+        self.polyline_tab = QWidget()
+        layout = QVBoxLayout(self.polyline_tab)
+        form_layout = QFormLayout()
+
+        # --- UI Elements ---
+        self._polyline_layer_label = QLabel("<i>None selected</i>")
+        self._polyline_elev_spin = QDoubleSpinBox()
+        self._polyline_elev_spin.setRange(-10000, 10000)
+        self._polyline_elev_spin.setDecimals(2)
+        self._polyline_elev_spin.setSuffix(" ft")
+        self._polyline_elev_spin.setToolTip("Enter the constant elevation for this polyline.")
+        self._polyline_elev_spin.setEnabled(False)
+
+        form_layout.addRow("Layer:", self._polyline_layer_label)
+        form_layout.addRow("Elevation:", self._polyline_elev_spin)
+
+        # --- Buttons ---
+        # Using Apply/Cancel for consistency, though maybe just Apply is needed?
+        polyline_button_box = QDialogButtonBox(QDialogButtonBox.Apply | QDialogButtonBox.Cancel)
+        apply_button = polyline_button_box.button(QDialogButtonBox.Apply)
+        cancel_button = polyline_button_box.button(QDialogButtonBox.Cancel)
+
+        if apply_button:
+            apply_button.setEnabled(False)
+            apply_button.clicked.connect(self._apply_polyline)
+        if cancel_button:
+            cancel_button.clicked.connect(self._cancel) # Generic cancel hides dock
+
+        # --- Layout ---
+        layout.addLayout(form_layout)
+        layout.addWidget(polyline_button_box)
+        layout.addStretch()
+
+        self.tabs.addTab(self.polyline_tab, "Polyline")
+
+    def _create_region_tab(self):
+        """Creates the QWidget and layout for the Region properties tab."""
+        self.region_tab = QWidget()
+        layout = QVBoxLayout(self.region_tab)
+        form_layout = QFormLayout()
+
+        # --- UI Elements ---
+        self.region_name_edit = QLineEdit()
+        self.region_name_edit.setToolTip("Enter a name for this region.")
+
+        self.region_strip_depth_spin = QDoubleSpinBox()
+        self.region_strip_depth_spin.setRange(0.0, 20.0) # Range 0-20 ft
+        self.region_strip_depth_spin.setDecimals(1)      # 0.1 steps
+        self.region_strip_depth_spin.setStepType(QDoubleSpinBox.AdaptiveDecimalStepType)
+        self.region_strip_depth_spin.setSuffix(" ft")
+        # Use special value text to indicate default
+        self.region_strip_depth_spin.setSpecialValueText("(Default)")
+        # Set minimum to a value slightly below 0 to allow setting 0 explicitly
+        # Or rely on the special value text. Let's try the latter first.
+        # self.region_strip_depth_spin.setMinimum(-0.01) # Alternative approach
+        self.region_strip_depth_spin.setToolTip("Stripping depth (leave as '(Default)' to use global setting).")
+        self.region_strip_depth_spin.setEnabled(False)
+        self.region_name_edit.setEnabled(False)
+
+        form_layout.addRow("Name:", self.region_name_edit)
+        form_layout.addRow("Stripping depth:", self.region_strip_depth_spin)
+
+        # --- Buttons ---
+        region_apply_button = QPushButton("Apply Region Changes")
+        region_apply_button.setEnabled(False)
+        region_apply_button.clicked.connect(self._apply_region_changes)
+        # Maybe add cancel button too? For now, just Apply.
+
+        # --- Layout ---
+        layout.addLayout(form_layout)
+        layout.addWidget(region_apply_button)
+        layout.addStretch()
+
+        self.tabs.addTab(self.region_tab, "Region")
+        # Store refs needed later
+        self._region_apply_button = region_apply_button
+
+    def update_for_selection(self, item: Optional[Any]):
+        """Updates the displayed properties based on the selected item type."""
+        # TODO: Phase 3 - Properly identify selected item type (Polyline/Region)
+        # For now, assume we can distinguish and have the necessary data.
+        # This requires integration with the selection mechanism in VisualizationPanel/TracingScene.
+
+        # Clear previous state
+        self.clear_selection()
+
+        if isinstance(item, tuple) and len(item) == 3: # Placeholder for polyline info (layer, index, elevation)
+             layer_name, index, elevation = item
+             self.load_polyline(layer_name, index, elevation)
+             self.tabs.setCurrentWidget(self.polyline_tab)
+             if not self.isVisible(): self.show()
+        elif isinstance(item, Region): # Check if the item is a Region object
+             self.load_region(item)
+             self.tabs.setCurrentWidget(self.region_tab)
+             if not self.isVisible(): self.show()
+        else:
+            # No valid selection or unhandled type
+            self.hide() # Hide if nothing relevant is selected
 
     def load_polyline(self, layer_name: str, index: int, elevation: Optional[float]):
-        """
-        Loads the properties of a selected polyline into the dock.
-
-        Args:
-            layer_name (str): The name of the layer the polyline belongs to.
-            index (int): The index of the polyline within its layer list.
-            elevation (Optional[float]): The current elevation of the polyline.
-        """
-        self._layer_label.setText(f"<b>{layer_name}</b> (Index: {index})") # Display layer and index
-        # Ensure elevation is treated as float, handle None
+        """Loads polyline properties into the Polyline tab."""
+        self._polyline_layer_label.setText(f"<b>{layer_name}</b> (Index: {index})")
         current_elevation = float(elevation) if elevation is not None else 0.0
-        self._elev_spin.setValue(current_elevation)
-        self._elev_spin.setEnabled(True) # Enable editing
-        self.widget().findChild(QDialogButtonBox).button(QDialogButtonBox.Apply).setEnabled(True) # Enable Apply
-
-        self._current_item_info = (layer_name, index)
-        # Use module-level logger
+        self._polyline_elev_spin.setValue(current_elevation)
+        self._polyline_elev_spin.setEnabled(True)
+        self.polyline_tab.findChild(QDialogButtonBox).button(QDialogButtonBox.Apply).setEnabled(True)
+        self._current_polyline_info = (layer_name, index)
         logger.debug(f"Loaded polyline: Layer='{layer_name}', Index={index}, Elevation={elevation}")
-        if not self.isVisible():
-             self.show() # Ensure dock is visible only if hidden
+
+    def load_region(self, region: Region):
+        """Loads region properties into the Region tab."""
+        self._current_region = region
+        self.region_name_edit.setText(region.name)
+        if region.strip_depth_ft is None:
+             # Display special text when depth is None (use default)
+             self.region_strip_depth_spin.setValue(self.region_strip_depth_spin.minimum() - 1) # Hacky way to show special text
+        else:
+             self.region_strip_depth_spin.setValue(float(region.strip_depth_ft))
+
+        # Enable editing
+        self.region_name_edit.setEnabled(True)
+        self.region_strip_depth_spin.setEnabled(True)
+        self._region_apply_button.setEnabled(True)
+        logger.debug(f"Loaded region: ID='{region.id}', Name='{region.name}', StripDepth={region.strip_depth_ft}")
 
     def clear_selection(self):
-        """Clears the displayed properties and disables editing."""
-        self._layer_label.setText("<i>None selected</i>")
-        self._elev_spin.setValue(0.0)
-        self._elev_spin.setEnabled(False)
-        self.widget().findChild(QDialogButtonBox).button(QDialogButtonBox.Apply).setEnabled(False)
-        self._current_item_info = None
-        # Use module-level logger
-        logger.debug("Properties dock cleared.")
-        # self.hide() # Optionally hide when selection is cleared
+        """Clears all tabs and disables editing."""
+        # Clear Polyline Tab
+        self._polyline_layer_label.setText("<i>None selected</i>")
+        self._polyline_elev_spin.setValue(0.0)
+        self._polyline_elev_spin.setEnabled(False)
+        apply_btn_poly = self.polyline_tab.findChild(QDialogButtonBox).button(QDialogButtonBox.Apply)
+        if apply_btn_poly: apply_btn_poly.setEnabled(False)
+        self._current_polyline_info = None
 
-    def _apply(self):
-        """Emits the 'edited' signal with the current values and hides the dock."""
-        if self._current_item_info:
-            layer, idx = self._current_item_info
-            new_elevation = self._elev_spin.value()
-            logger.info(f"Apply clicked: Layer='{layer}', Index={idx}, New Elevation={new_elevation:.2f}")
-            self.edited.emit(layer, idx, new_elevation)
-            self.hide()
+        # Clear Region Tab
+        self.region_name_edit.clear()
+        # Reset spinbox to show special value text
+        self.region_strip_depth_spin.setValue(self.region_strip_depth_spin.minimum() -1)
+        self.region_name_edit.setEnabled(False)
+        self.region_strip_depth_spin.setEnabled(False)
+        self._region_apply_button.setEnabled(False)
+        self._current_region = None
+
+        logger.debug("Properties dock cleared.")
+
+    def _apply_polyline(self):
+        """Emits the 'polylineEdited' signal with the current values."""
+        if self._current_polyline_info:
+            layer, idx = self._current_polyline_info
+            new_elevation = self._polyline_elev_spin.value()
+            logger.info(f"Apply Polyline: Layer='{layer}', Index={idx}, New Elev={new_elevation:.2f}")
+            self.polylineEdited.emit(layer, idx, new_elevation)
+            # self.hide() # Keep dock open after apply? User preference.
         else:
-            logger.warning("Apply clicked but no item information is loaded.")
+            logger.warning("Apply polyline clicked but no item information is loaded.")
+
+    def _apply_region_changes(self):
+        """Updates the current Region object and emits 'regionUpdated'."""
+        if self._current_region:
+            updated_region = self._current_region # Work on the stored region object
+            old_name = updated_region.name
+            old_depth = updated_region.strip_depth_ft
+
+            # Get new name
+            new_name = self.region_name_edit.text().strip()
+            updated_region.name = new_name if new_name else "Unnamed Region" # Ensure name isn't empty
+
+            # Get new strip depth
+            # Check if the spinbox is showing the special value text
+            if self.region_strip_depth_spin.text() == self.region_strip_depth_spin.specialValueText():
+                new_depth = None # Use default
+            else:
+                new_depth = self.region_strip_depth_spin.value()
+
+            updated_region.strip_depth_ft = new_depth
+
+            logger.info(f"Apply Region: ID='{updated_region.id}', Name='{old_name}'->{updated_region.name}', Depth={old_depth}->{updated_region.strip_depth_ft}")
+            self.regionUpdated.emit(updated_region)
+            # self.hide() # Keep dock open?
+        else:
+            logger.warning("Apply region clicked but no region is loaded.")
 
     def _cancel(self):
-        """Hides the dock without applying changes."""
-        # Use module-level logger
-        logger.debug("Cancel clicked, hiding dock.")
-        self.clear_selection() # Clear the display
-        self.hide() # Hide the dock 
+        """Clears selection and hides the dock without applying changes."""
+        logger.debug("Cancel clicked, clearing and hiding dock.")
+        self.clear_selection()
+        self.hide() 

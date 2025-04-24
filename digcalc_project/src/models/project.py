@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from __future__ import annotations
 """
 Project model for the DigCalc application.
 
@@ -14,10 +15,12 @@ import datetime
 from pathlib import Path
 from typing import List, Dict, Optional, Any, Union, Tuple, TypedDict
 from collections import defaultdict
+from dataclasses import dataclass, field
 
 # Use relative imports
 from .surface import Surface
 from .calculation import VolumeCalculation
+from .region import Region
 
 # Configure logging for the module
 logger = logging.getLogger(__name__)
@@ -25,6 +28,13 @@ logger = logging.getLogger(__name__)
 # Library code shouldn't call basicConfig; configure in main app
 # if not logger.hasHandlers():
 #     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+def _migrate_v1_to_v2(data: dict) -> dict:
+    """Ensures the 'regions' key exists for loading older project versions."""
+    if "regions" not in data:
+        logger.info("Migrating project data: Adding missing 'regions' field.")
+        data["regions"] = []
+    return data
 
 # Type alias for clarity on the new polyline data structure
 class PolylineData(TypedDict):
@@ -36,6 +46,7 @@ TracedPolylinesType = Dict[str, List[PolylineData]]
 
 DEFAULT_LAYER = "Default Layer"
 
+@dataclass
 class Project:
     """
     Project model representing an excavation takeoff project.
@@ -45,45 +56,33 @@ class Project:
     add_traced_polyline() for details.
     """
     
-    def __init__(self, name: str, project_file: Optional[str] = None):
-        """
-        Initialize a new project.
-        
-        Args:
-            name: Project name
-            project_file: Optional path to project file
-        """
+    name: str
+    filepath: Optional[str] = None
+    description: str = ""
+    created_at: datetime.datetime = field(default_factory=datetime.datetime.now)
+    modified_at: datetime.datetime = field(default_factory=datetime.datetime.now)
+    author: str = field(default_factory=lambda: os.environ.get("USERNAME", "Unknown"))
+    surfaces: Dict[str, Surface] = field(default_factory=dict)
+    calculations: List[VolumeCalculation] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    regions: list[Region] = field(default_factory=list)
+    
+    # --- Tracing / PDF Background Data ---
+    pdf_background_path: Optional[str] = None
+    pdf_background_page: int = 1
+    pdf_background_dpi: int = 150
+    # Store polylines as dict mapping layer name -> list of polylines
+    # where each polyline is a list of (x, y) tuples
+    traced_polylines: TracedPolylinesType = field(default_factory=dict)
+    is_dirty: bool = False # Track if project has unsaved changes
+    # --- NEW: Layer Revisions --- 
+    # Dictionary to track revisions of layers (used for surface staleness)
+    layer_revisions: Dict[str, int] = field(default_factory=lambda: defaultdict(int))
+    # --- END NEW ---
+    
+    def __post_init__(self):
         self.logger = logging.getLogger(__name__)
-        self.name = name
-        self.filepath: Optional[str] = project_file # Keep arg for potential backward compat?
-                                                   # Or remove arg and set directly to None?
-                                                   # Let's keep the arg for now but assign to filepath.
-        
-        # Project properties
-        self.description: str = ""
-        self.created_at: datetime.datetime = datetime.datetime.now()
-        self.modified_at: datetime.datetime = self.created_at
-        self.author: str = os.environ.get("USERNAME", "Unknown")
-        
-        # Project data - Use Dict for surfaces for easier name lookup
-        self.surfaces: Dict[str, Surface] = {} # Changed from List to Dict
-        self.calculations: List[VolumeCalculation] = [] # Keep as list for now
-        self.metadata: Dict[str, Any] = {}
-        
-        # --- Tracing / PDF Background Data ---
-        self.pdf_background_path: Optional[str] = None
-        self.pdf_background_page: int = 1
-        self.pdf_background_dpi: int = 150
-        # Store polylines as dict mapping layer name -> list of polylines
-        # where each polyline is a list of (x, y) tuples
-        self.traced_polylines: TracedPolylinesType = {}
-        self.is_dirty: bool = False # Track if project has unsaved changes
-        # --- NEW: Layer Revisions --- 
-        # Dictionary to track revisions of layers (used for surface staleness)
-        self.layer_revisions: Dict[str, int] = defaultdict(int)
-        # --- END NEW ---
-        
-        self.logger.debug(f"Project '{name}' initialized")
+        self.logger.debug(f"Project '{self.name}' initialized")
     
     @property
     def legacy_traced_polylines(self) -> List[List[Tuple[float, float]]]:
@@ -295,6 +294,7 @@ class Project:
                 'author': self.author,
                 'surfaces': {name: s.to_dict() for name, s in self.surfaces.items()},
                 'calculations': [c.to_dict() for c in self.calculations],
+                'regions': [r.to_dict() for r in self.regions],
                 'metadata': self.metadata,
                 'pdf_background_path': self.pdf_background_path,
                 'pdf_background_page': self.pdf_background_page,
@@ -328,6 +328,11 @@ class Project:
         try:
             with open(filename, 'r') as f:
                 data = json.load(f)
+
+            # --- Migration --- 
+            data = _migrate_v1_to_v2(data)
+            # Add future migration calls here: data = _migrate_v2_to_v3(data) ...
+            # --- End Migration ---
 
             # Create project instance
             project = cls(name=data.get("name", "Untitled Project"))
@@ -435,6 +440,9 @@ class Project:
                 else:
                     surface.is_stale = False
             
+            # --- Load Regions --- 
+            project.regions = [Region.from_dict(r) for r in data.get("regions", [])]
+
             project.is_dirty = migrated # Mark modified if migration happened
             logger.info(f"Project loaded from {filename}")
             return project

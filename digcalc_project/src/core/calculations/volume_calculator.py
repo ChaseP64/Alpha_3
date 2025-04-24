@@ -12,14 +12,31 @@ from typing import Dict, Optional, Tuple, Any
 
 # Use relative import
 from ...models.surface import Surface
+from ...models.project import Project
+from ...models.region import Region
+from ...services.settings_service import SettingsService
+
+# External dependencies (Ensure installed)
+try:
+    from scipy.interpolate import griddata
+except ImportError:
+    griddata = None
+    logging.getLogger(__name__).warning("SciPy not found. Grid interpolation will not work.")
+try:
+    from shapely.geometry import Point, Polygon
+    from shapely.errors import GEOSException
+except ImportError:
+    Point, Polygon, GEOSException = None, None, None
+    logging.getLogger(__name__).warning("Shapely not found. Region-based stripping will not work.")
 
 
 class VolumeCalculator:
     """Calculator for volumes between surfaces."""
     
-    def __init__(self):
-        """Initialize the volume calculator."""
+    def __init__(self, project: Project):
+        """Initialize the volume calculator with the project context."""
         self.logger = logging.getLogger(__name__)
+        self.project = project
     
     def calculate_grid_method(self, surface1: Surface,
                               surface2: Surface,
@@ -91,13 +108,28 @@ class VolumeCalculator:
         self.logger.debug(f"Grid created: {num_y_cells} rows (Y), {num_x_cells} columns (X)")
 
         # 3. Interpolate Elevations onto Grid Points
-        self.logger.info(f"Interpolating surface '{surface1.name}'...")
+        self.logger.info(f"Interpolating surface '{surface1.name}' (Existing)...")
         z1_interp = self._interpolate_surface(surface1, grid_points_xy)
-        self.logger.info(f"Interpolating surface '{surface2.name}'...")
+        self.logger.info(f"Interpolating surface '{surface2.name}' (Proposed)...")
         z2_interp = self._interpolate_surface(surface2, grid_points_xy)
 
+        # --- NEW: Apply Stripping Depths to Existing Surface (z1) --- 
+        self.logger.info("Applying stripping depths based on regions...")
+        stripping_depths_flat = np.full_like(z1_interp, np.nan)
+        # Iterate through grid points to determine stripping depth
+        # This might be slow for very large grids; consider optimizations if needed.
+        for i, (x, y) in enumerate(grid_points_xy):
+            if not np.isnan(z1_interp[i]): # Only calculate for valid points
+                 stripping_depths_flat[i] = self._depth_for_xy(x, y)
+        
+        # Subtract stripping depth from original z1 where valid
+        z1_stripped = z1_interp - stripping_depths_flat # NaN propagates correctly
+        self.logger.info("Finished applying stripping depths.")
+        # --- END NEW ---
+
         # 4. Calculate Elevation Differences and Create dz_grid
-        valid_mask = ~np.isnan(z1_interp) & ~np.isnan(z2_interp)
+        # Use the *stripped* z1 for difference calculation
+        valid_mask = ~np.isnan(z1_stripped) & ~np.isnan(z2_interp)
         num_valid_points = np.sum(valid_mask)
 
         if num_valid_points == 0:
@@ -111,9 +143,9 @@ class VolumeCalculator:
 
         self.logger.info(f"Calculating differences for {num_valid_points} valid grid points.")
 
-        # Calculate difference (surface2 - surface1)
-        z_diff_flat = np.full_like(z1_interp, np.nan)
-        z_diff_flat[valid_mask] = z2_interp[valid_mask] - z1_interp[valid_mask]
+        # Calculate difference (surface2 - surface1_stripped)
+        z_diff_flat = np.full_like(z1_stripped, np.nan)
+        z_diff_flat[valid_mask] = z2_interp[valid_mask] - z1_stripped[valid_mask]
 
         # --- Reshape the difference array into the 2D dz_grid --- 
         # Reshape needs to match the grid dimensions (num_y_cells, num_x_cells)
@@ -175,7 +207,6 @@ class VolumeCalculator:
     
     # --- Helper Methods (Should already exist from previous steps) --- 
     def _get_combined_bounding_box(self, surface1: Surface, surface2: Surface) -> Tuple[float, float, float, float]:
-        # ... (Implementation from previous steps) ...
         all_points_xy = []
         if surface1.points:
             all_points_xy.append(np.array([[p.x, p.y] for p in surface1.points.values()]))
@@ -236,6 +267,39 @@ class VolumeCalculator:
         except Exception as e:
             self.logger.error(f"Linear interpolation failed for '{surface.name}': {e}", exc_info=True)
             return np.full(grid_points.shape[0], np.nan) 
+
+    # --- NEW: Stripping Depth Helper --- 
+    def _depth_for_xy(self, x: float, y: float) -> float:
+        """Determines the stripping depth for a given (x, y) coordinate based on project regions."""
+        if not self.project or not hasattr(self.project, 'regions') or not Polygon:
+            # If project/regions missing or Shapely not loaded, return default
+            if not Polygon:
+                 self.logger.warning("_depth_for_xy called but Shapely is not available. Using default depth.", once=True)
+            return SettingsService().strip_depth_default()
+        
+        point = Point(x, y)
+        for region in self.project.regions:
+            if not region.polygon or len(region.polygon) < 3:
+                 continue # Skip regions without valid polygons
+                 
+            try:
+                poly = Polygon(region.polygon)
+                if poly.is_valid and poly.contains(point):
+                    # Point is inside this region
+                    if region.strip_depth_ft is not None:
+                         # Use region-specific depth
+                         return float(region.strip_depth_ft)
+                    else:
+                         # Region depth is None, use global default
+                         return SettingsService().strip_depth_default()
+            except (TypeError, ValueError, GEOSException) as e:
+                # Log error if polygon creation or contains check fails
+                self.logger.error(f"Error processing region '{region.name}' (ID: {region.id}) for stripping depth at ({x}, {y}): {e}", exc_info=False, once=True)
+                continue # Try next region
+                
+        # Point is not in any region with a defined depth, use global default
+        return SettingsService().strip_depth_default()
+    # --- END NEW ---
 
     # Deprecate or rename calculate_surface_to_surface if calculate_grid_method is the primary one
     def calculate_surface_to_surface(self, *args, **kwargs):

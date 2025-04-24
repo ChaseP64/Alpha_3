@@ -86,4 +86,15 @@ class SettingsService(Singleton):
                 json.dump(self._data, fp, indent=2)
             logger.info("Settings saved to %s", self._path)
         except Exception as exc:  # pragma: no cover – disk full etc.
-            logger.error("Failed to save settings to %s: %s", self._path, exc) 
+            logger.error("Failed to save settings to %s: %s", self._path, exc)
+
+    # --- Convenience Accessors ---
+    def strip_depth_default(self) -> float:
+        """Get the default stripping depth in feet."""
+        # Ensure we return a float, defaulting to the class default if needed
+        return float(self.get("default_strip_depth_ft", self._defaults["default_strip_depth_ft"]))
+
+    def set_strip_depth_default(self, value: float) -> None:
+        """Set the default stripping depth in feet."""
+        self.set("default_strip_depth_ft", float(value))
+        self.save() # Persist immediately? 
