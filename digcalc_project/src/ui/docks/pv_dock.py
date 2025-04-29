@@ -4,9 +4,9 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QComboBox,
     QToolBar,
-    QAction,
     QLabel,
 )
+from PySide6.QtGui import QAction
 from PySide6.QtCore import Qt
 from functools import cached_property
 from importlib import import_module

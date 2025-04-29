@@ -1161,6 +1161,8 @@ class MainWindow(QMainWindow):
 
         self.layer_tree.blockSignals(False)
         self.logger.debug(f"Layer tree updated with layers: {layers}")
+        # --- NEW: update Build Surface button state whenever layer tree changes ---
+        self._update_build_surface_action_state()
 
     # --- NEW: Handle Delete Key Press --- 
     def keyPressEvent(self, event: QKeyEvent):
@@ -1340,6 +1342,9 @@ class MainWindow(QMainWindow):
         # --- Ensure view actions are updated after project load/change ---
         self._update_view_actions_state()
         # --- End ensure ---
+        # --- NEW: Update Build-Surface enabled state once project UI is set up ---
+        self._update_build_surface_action_state()
+        # --- END NEW ---
         self.logger.debug("UI update complete.")
     # --- End Restore ---
 
@@ -2208,3 +2213,33 @@ class MainWindow(QMainWindow):
         else:
             self._pv_dock.show()
             self._pv_dock.raise_()
+
+    def _update_build_surface_action_state(self):
+        """Enable or disable the Build-Surface action based on project data."""
+        # Guard: ensure the action attribute exists
+        if not hasattr(self, 'build_surface_action'):
+            self.logger.warning("build_surface_action attribute not found – cannot update state.")
+            return
+
+        enabled = False  # pessimistic default
+
+        # Safely obtain the current project (controller may not be initialised yet)
+        project = None
+        if hasattr(self, 'project_controller'):
+            project = self.project_controller.get_current_project()
+
+        if project and getattr(project, 'traced_polylines', None):
+            # Iterate over layers and look for at least one polyline with elevation
+            for polys in project.traced_polylines.values():
+                if not isinstance(polys, list):
+                    continue  # skip invalid format
+                for pdata in polys:
+                    if isinstance(pdata, dict) and pdata.get('elevation') is not None:
+                        enabled = True
+                        break
+                if enabled:
+                    break
+
+        # Finally, apply the state
+        self.build_surface_action.setEnabled(enabled)
+        self.logger.debug(f"Set build_surface_action enabled state: {enabled}")

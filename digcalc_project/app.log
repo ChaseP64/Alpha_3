@@ -7471,3 +7471,172 @@ AttributeError: 'MainWindow' object has no attribute '_toggle_other_layers_visib
 2025-04-29 11:11:21,736 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Downloads/Sample file.pdf
 2025-04-29 11:11:21,736 - digcalc_project.src.ui.main_window - INFO - Closing application.
 2025-04-29 11:11:21,753 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-29 14:07:41,721 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-29 14:07:41,744 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-29 14:07:51,001 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-29 14:07:51,001 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Downloads/Sample file.pdf, initial page: 1, dpi: 300
+2025-04-29 14:07:51,001 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-29 14:07:51,001 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-29 14:07:51,001 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-04-29 14:07:51,001 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-04-29 14:07:51,050 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-04-29 14:07:51,050 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 4
+2025-04-29 14:07:51,064 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Sample file.pdf'
+2025-04-29 14:07:51,064 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-04-29 14:07:51,064 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Sample file.pdf' with 4 pages.
+2025-04-29 14:07:58,649 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-04-29 14:07:58,649 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-04-29 14:08:08,531 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Existing Surface'.
+2025-04-29 14:08:13,812 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 6, Elevation: 10.0, New Rev: 1).
+2025-04-29 14:08:13,812 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 10.0) to layer 'Existing Surface'.
+2025-04-29 14:08:14,058 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-04-29 14:08:14,058 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-04-29 14:08:28,388 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 7 points on layer 'Proposed Surface'.
+2025-04-29 14:08:33,404 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Proposed Surface' (Index: 0, Points: 7, Elevation: 25.0, New Rev: 1).
+2025-04-29 14:08:33,404 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 25.0) to layer 'Proposed Surface'.
+2025-04-29 14:08:33,655 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Proposed Surface'}
+2025-04-29 14:08:33,655 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Proposed Surface'}.
+2025-04-29 14:08:39,045 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 7 points on layer 'Proposed Surface'.
+2025-04-29 14:08:42,249 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Proposed Surface' (Index: 1, Points: 7, Elevation: 0.0, New Rev: 2).
+2025-04-29 14:08:42,249 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 1, Elevation: 0.0) to layer 'Proposed Surface'.
+2025-04-29 14:08:42,501 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Proposed Surface'}
+2025-04-29 14:08:42,501 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Proposed Surface'}.
+2025-04-29 14:23:15,330 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-29 14:23:15,349 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-29 14:23:34,085 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-29 14:23:34,085 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Downloads/Sample file.pdf, initial page: 1, dpi: 300
+2025-04-29 14:23:34,085 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-29 14:23:34,085 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-29 14:23:34,085 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-04-29 14:23:34,085 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-04-29 14:23:34,138 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-04-29 14:23:34,151 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 4
+2025-04-29 14:23:34,151 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Sample file.pdf'
+2025-04-29 14:23:34,151 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-04-29 14:23:34,151 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Sample file.pdf' with 4 pages.
+2025-04-29 14:23:38,245 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-04-29 14:23:38,245 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-04-29 14:23:40,581 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 5 points on layer 'Existing Surface'.
+2025-04-29 14:23:42,883 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 5, Elevation: 10.0, New Rev: 1).
+2025-04-29 14:23:42,883 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 10.0) to layer 'Existing Surface'.
+2025-04-29 14:23:43,147 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-04-29 14:23:43,147 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-04-29 14:23:49,750 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (1 polylines).
+2025-04-29 14:23:49,750 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 5 unique 3D points with elevation from layer 'Existing Surface'.
+2025-04-29 14:23:49,766 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-04-29 14:23:49,766 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface' (Rev: 1).
+2025-04-29 14:23:49,766 - digcalc_project.src.models.project - INFO - Surface 'Existing Surface_Surface' added to project
+2025-04-29 14:23:49,766 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to update/create mesh for surface: Existing Surface_Surface
+2025-04-29 14:23:55,321 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 4 points on layer 'Existing Surface'.
+2025-04-29 14:23:56,446 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 1, Points: 4, Elevation: None, New Rev: 2).
+2025-04-29 14:23:56,446 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 1, Elevation: None) to layer 'Existing Surface'.
+2025-04-29 14:23:56,705 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-04-29 14:23:56,705 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (1 polylines).
+2025-04-29 14:23:56,705 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 5 unique 3D points with elevation from layer 'Existing Surface'.
+2025-04-29 14:23:56,705 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-04-29 14:23:56,705 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface' (Rev: 2).
+2025-04-29 14:23:56,705 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to update/create mesh for surface: Existing Surface_Surface
+2025-04-29 14:23:56,705 - digcalc_project.src.ui.project_panel - WARNING - Could not find 'Surfaces' category node in tree.
+2025-04-29 14:23:56,705 - digcalc_project.src.ui.main_window - INFO - Successfully rebuilt surface 'Existing Surface_Surface' from layer 'Existing Surface' (New Rev: 2).
+2025-04-29 14:23:56,705 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 1 surfaces derived from {'Existing Surface'}.
+2025-04-29 14:31:23,894 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-29 14:31:25,045 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-29 14:31:25,045 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-29 14:31:25,059 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-29 14:34:34,146 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-29 14:34:35,389 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-29 14:34:35,389 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-29 14:34:35,412 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-29 14:55:25,886 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-29 14:55:25,911 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-29 14:55:34,282 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-29 14:55:34,282 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Downloads/Sample file.pdf, initial page: 1, dpi: 300
+2025-04-29 14:55:34,282 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-29 14:55:34,282 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-29 14:55:34,282 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-04-29 14:55:34,282 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-04-29 14:55:34,352 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-04-29 14:55:34,352 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 4
+2025-04-29 14:55:34,352 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Sample file.pdf'
+2025-04-29 14:55:34,352 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-04-29 14:55:34,352 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Sample file.pdf' with 4 pages.
+2025-04-29 14:55:41,166 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-04-29 14:55:41,166 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-04-29 14:55:44,627 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Existing Surface'.
+2025-04-29 14:55:48,050 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 6, Elevation: 0.0, New Rev: 1).
+2025-04-29 14:55:48,050 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 0.0) to layer 'Existing Surface'.
+2025-04-29 14:55:48,290 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-04-29 14:55:48,290 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-04-29 14:56:01,247 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Proposed Surface'.
+2025-04-29 14:56:05,528 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Proposed Surface' (Index: 0, Points: 6, Elevation: 10.0, New Rev: 1).
+2025-04-29 14:56:05,528 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 10.0) to layer 'Proposed Surface'.
+2025-04-29 14:56:05,783 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Proposed Surface'}
+2025-04-29 14:56:05,783 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Proposed Surface'}.
+2025-04-29 14:56:15,122 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Proposed Surface'.
+2025-04-29 14:56:18,350 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Proposed Surface' (Index: 1, Points: 6, Elevation: 20.0, New Rev: 2).
+2025-04-29 14:56:18,350 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 1, Elevation: 20.0) to layer 'Proposed Surface'.
+2025-04-29 14:56:18,620 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Proposed Surface'}
+2025-04-29 14:56:18,620 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Proposed Surface'}.
+2025-04-29 14:56:26,195 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Proposed Surface'.
+2025-04-29 14:56:28,896 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Proposed Surface' (Index: 2, Points: 6, Elevation: 50.0, New Rev: 3).
+2025-04-29 14:56:28,896 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 2, Elevation: 50.0) to layer 'Proposed Surface'.
+2025-04-29 14:56:29,135 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Proposed Surface'}
+2025-04-29 14:56:29,135 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Proposed Surface'}.
+2025-04-29 14:56:38,168 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Proposed Surface'.
+2025-04-29 14:56:40,165 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Proposed Surface' (Index: 3, Points: 6, Elevation: 100.0, New Rev: 4).
+2025-04-29 14:56:40,165 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 3, Elevation: 100.0) to layer 'Proposed Surface'.
+2025-04-29 14:56:40,421 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Proposed Surface'}
+2025-04-29 14:56:40,421 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Proposed Surface'}.
+2025-04-29 14:57:03,294 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (1 polylines).
+2025-04-29 14:57:03,294 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 6 unique 3D points with elevation from layer 'Existing Surface'.
+2025-04-29 14:57:03,294 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-04-29 14:57:03,308 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface' (Rev: 1).
+2025-04-29 14:57:03,308 - digcalc_project.src.models.project - INFO - Surface 'Existing Surface_Surface' added to project
+2025-04-29 14:57:03,308 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to update/create mesh for surface: Existing Surface_Surface
+2025-04-29 14:57:11,002 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Proposed Surface' (4 polylines).
+2025-04-29 14:57:11,002 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 20 unique 3D points with elevation from layer 'Proposed Surface'.
+2025-04-29 14:57:11,002 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Proposed Surface_Surface'...
+2025-04-29 14:57:11,002 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Proposed Surface_Surface' from layer 'Proposed Surface' (Rev: 4).
+2025-04-29 14:57:11,002 - digcalc_project.src.models.project - INFO - Surface 'Proposed Surface_Surface' added to project
+2025-04-29 14:57:11,002 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to update/create mesh for surface: Proposed Surface_Surface
+2025-04-29 14:58:12,054 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-29 14:58:13,454 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-29 14:58:13,470 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-29 14:58:13,494 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-29 14:58:13,549 - root - ERROR - wglMakeCurrent failed in Clean(), error: 6
+2025-04-29 14:58:13,576 - root - ERROR - wglMakeCurrent failed in Clean(), error: 2004
+2025-04-29 15:04:25,230 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-29 15:04:25,260 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-29 15:08:14,516 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-29 15:08:14,516 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Downloads/Sample file.pdf, initial page: 1, dpi: 300
+2025-04-29 15:08:14,516 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-29 15:08:14,516 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-29 15:08:14,516 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-04-29 15:08:14,516 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-04-29 15:08:14,569 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-04-29 15:08:14,569 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 4
+2025-04-29 15:08:14,583 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Sample file.pdf'
+2025-04-29 15:08:14,584 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-04-29 15:08:14,584 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Sample file.pdf' with 4 pages.
+2025-04-29 15:08:19,433 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-04-29 15:08:19,433 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-04-29 15:08:23,117 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Existing Surface'.
+2025-04-29 15:08:25,685 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 6, Elevation: 10.0, New Rev: 1).
+2025-04-29 15:08:25,685 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 10.0) to layer 'Existing Surface'.
+2025-04-29 15:08:25,939 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-04-29 15:08:25,939 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-04-29 15:08:31,878 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (1 polylines).
+2025-04-29 15:08:31,878 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 5 unique 3D points with elevation from layer 'Existing Surface'.
+2025-04-29 15:08:31,878 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-04-29 15:08:31,878 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface' (Rev: 1).
+2025-04-29 15:08:31,878 - digcalc_project.src.models.project - INFO - Surface 'Existing Surface_Surface' added to project
+2025-04-29 15:08:31,878 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to update/create mesh for surface: Existing Surface_Surface
+2025-04-29 15:08:40,472 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode disabled.
+2025-04-29 15:08:40,472 - digcalc_project.src.ui.main_window - INFO - Tracing mode disabled via MainWindow action.
+2025-04-29 15:09:01,222 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-29 15:09:02,604 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-04-29 15:09:02,620 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-29 15:09:02,646 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-29 15:09:02,666 - root - ERROR - wglMakeCurrent failed in Clean(), error: 6
+2025-04-29 15:09:02,694 - root - ERROR - wglMakeCurrent failed in Clean(), error: 6
+2025-04-29 15:09:02,709 - root - ERROR - wglMakeCurrent failed in Clean(), error: 2004

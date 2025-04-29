@@ -1,21 +1,27 @@
 # DigCalc - Excavation Takeoff Tool
 
+![CI](https://github.com/ChaseP64/Alpha_3/actions/workflows/ci.yml/badge.svg)
+
 DigCalc is a desktop application for calculating earthwork volumes from digital elevation models. It allows engineers and construction professionals to import various data formats, create surfaces, and calculate cut and fill volumes between surfaces.
 
 ## Features
 
-- **Surface Import**: Import surfaces from various file formats:
-  - DXF files (AutoCAD)
-  - LandXML files
-  - CSV point data
-  - PDF drawings (with optical recognition)
-- **Surface Creation and Editing**: Create, modify, and analyze terrain surfaces
-- **TIN Generation**: Generate Triangulated Irregular Networks from point data
-- **Volume Calculation**: Calculate cut and fill volumes between surfaces using a grid-based method.
-- **Basic Reporting**: View a summary report of volume calculations (surfaces used, grid size, cut/fill/net volumes).
-- **Grid Generation**: Generate regular grids for volume calculations (internal to volume calc)
-- **3D Visualization**: Visualize surfaces and volume calculations in 3D using VTK.
-- **Report Generation**: Generate PDF reports with volume calculations (Future Feature)
+- **PDF tracing** with angle-lock, region creation, and numeric daylight offset  
+- **Region stripping** & per-region volumes  
+- **Auto-pad elevation** with live surface rebuild  
+- **Lowest-surface** analysis  
+- **Slice-volume** tables + bar-chart  
+- **Mass-haul diagram** with free-haul / over-haul  
+- **Premium 3-D viewer** (PyVista) – cut/fill shading, compass, wire-frame  
+- One-click **Export Report** (PDF + CSV bundle)
+
+### Screenshots
+
+| Feature | Preview |
+|---------|---------|
+| PDF Tracing | ![PDF Tracing](docs/img/pdf_tracing.png) |
+| Slice-Volume Table | ![Slice Volume](docs/img/slice_volume.png) |
+| Mass-Haul Diagram | ![Mass Haul](docs/img/mass_haul.png) |
 
 ## Installation
 
@@ -110,32 +116,4 @@ DigCalc supports importing data from several file formats:
     - `importers/` - File import modules
     - `exporters/` - File export modules
     - `calculators/` - Volume calculation logic
-    - `generators/` - Grid and TIN generation
-  - `models/` - Data models
-  - `ui/` - User interface components
-  - `utils/` - Utility functions
-- `tests/` - Unit tests
-- `docs/` - Documentation
-
-### Testing
-
-Run the test suite:
-
-```
-pytest tests/
-```
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
-
-## Acknowledgments
-
-- Thanks to all the open-source libraries that made this project possible 
+    - `
