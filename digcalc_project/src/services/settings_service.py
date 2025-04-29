@@ -35,6 +35,7 @@ class SettingsService(Singleton):
         "slice_thickness_ft": 0.5,
         "default_strip_depth_ft": 0.0,
         "free_haul_distance_ft": 500.0,
+        "default_slice_thickness_ft": 0.5,
     }
 
     # ------------------------------------------------------------------
@@ -97,4 +98,13 @@ class SettingsService(Singleton):
     def set_strip_depth_default(self, value: float) -> None:
         """Set the default stripping depth in feet."""
         self.set("default_strip_depth_ft", float(value))
-        self.save() # Persist immediately? 
+        self.save() # Persist immediately?
+
+    def slice_thickness_default(self) -> float:
+        """Get the default slice thickness in feet."""
+        return float(self.get("default_slice_thickness_ft", self._defaults["default_slice_thickness_ft"]))
+
+    def set_slice_thickness_default(self, val: float) -> None:
+        """Set the default slice thickness in feet."""
+        self.set("default_slice_thickness_ft", float(val))
+        self.save() 

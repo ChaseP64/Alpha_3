@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (
     QDialogButtonBox, QWidget, QSizePolicy, QCheckBox
 )
 import numpy as np
+from ...services.settings_service import SettingsService
 
 class VolumeCalculationDialog(QDialog):
     """Dialog for selecting surfaces and parameters for volume calculation."""
@@ -62,6 +63,19 @@ class VolumeCalculationDialog(QDialog):
         self.check_generate_map.setChecked(True) # Default to checked
         self.check_generate_map.setToolTip("Generate a visual representation of cut (red) and fill (blue) areas.")
         form_layout.addRow(self.check_generate_map) # Add checkbox to layout
+
+        # --- Slice Volumes Option ---
+        settings_service = SettingsService()
+        self.slice_cb = QCheckBox("Slice volumes", self)
+        self.slice_spin = QDoubleSpinBox(self)
+        self.slice_spin.setDecimals(2)
+        self.slice_spin.setRange(0.1, 10.0)
+        self.slice_spin.setSingleStep(0.1)
+        self.slice_spin.setSuffix(" ft")
+        self.slice_spin.setValue(settings_service.slice_thickness_default())
+        form_layout.addRow(self.slice_cb, self.slice_spin)
+        self.slice_spin.setEnabled(False)
+        self.slice_cb.toggled.connect(self.slice_spin.setEnabled)
 
         # Align labels to the right
         for i in range(form_layout.rowCount()):
@@ -125,13 +139,11 @@ class VolumeCalculationDialog(QDialog):
     # Accept override – ensure *Lowest* resolves to actual Surface object
     # ------------------------------------------------------------------
     def accept(self):  # noqa: D401
-        """Re-implement accept to resolve the *Lowest* placeholder.
-
-        The MainWindow currently queries :py:meth:`get_selected_surfaces` after
-        ``exec()``.  We'll therefore stash a mapping of selected combo-box
-        names to actual :class:`~digcalc_project.models.surface.Surface`
-        instances so external code can fetch them.
-        """
+        """Handle OK press and persist slice thickness preference."""
+        # Persist slice thickness if slice volumes enabled
+        if hasattr(self, "slice_cb") and self.slice_cb.isChecked():
+            SettingsService().set_slice_thickness_default(self.slice_spin.value())
+        # Continue with default behaviour
         super().accept()
 
     # Convenience for callers -------------------------------------------------

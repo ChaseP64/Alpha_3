@@ -11,10 +11,18 @@ import logging
 import uuid
 import datetime
 from typing import Dict, List, Optional, Any
+from dataclasses import dataclass
 
 # Use relative import
 from .surface import Surface
 
+@dataclass(slots=True)
+class SliceResult:
+    """Result of a single elevation slice volume calculation."""
+    z_bottom: float
+    z_top: float
+    cut: float
+    fill: float
 
 class VolumeCalculation:
     """

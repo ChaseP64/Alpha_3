@@ -20,7 +20,7 @@ from typing import Dict, Any, Optional, List
 
 # Use relative imports
 from ...models.surface import Surface
-from ...models.calculation import VolumeCalculation
+from ...models.calculation import VolumeCalculation, SliceResult
 
 
 class PDFReportGenerator:
@@ -178,4 +178,40 @@ class PDFReportGenerator:
             f.write("BOUNDS:\n")
             f.write(f"X Range: {surface.x_min:.2f} to {surface.x_max:.2f}\n")
             f.write(f"Y Range: {surface.y_min:.2f} to {surface.y_max:.2f}\n")
-            f.write(f"Z Range: {surface.z_min:.2f} to {surface.z_max:.2f}\n") 
+            f.write(f"Z Range: {surface.z_min:.2f} to {surface.z_max:.2f}\n")
+
+    def insert_slice_table(self, slices: list[SliceResult], title: str = "Slice Volumes") -> None:  # noqa: D401
+        """Append a cut/fill *slice table* to the PDF story.
+
+        This helper adds a heading followed by a simple table of slice volume
+        data.  It requires ReportLab – if not available the method logs a
+        warning and does nothing (so the rest of the report can still be
+        generated).
+        """
+        # Lazy import so we only require ReportLab if this method is used
+        try:
+            from reportlab.platypus import Table, Paragraph, Spacer
+            from reportlab.lib.styles import getSampleStyleSheet
+        except ImportError:  # pragma: no cover – optional dependency
+            self.logger.warning("ReportLab not available – cannot insert slice table.")
+            return
+
+        # Ensure *self.story* exists (skeleton uses a list to collect Flowables)
+        if not hasattr(self, "story"):
+            self.story: list = []  # type: ignore[attribute-defined-outside-init]
+
+        styles = getSampleStyleSheet()
+        self.story.append(Paragraph(title, styles["Heading2"]))
+
+        data = [["Bottom", "Top", "Cut", "Fill"]]
+        for s in slices:
+            data.append([
+                f"{s.z_bottom:.2f}",
+                f"{s.z_top:.2f}",
+                f"{s.cut:.1f}",
+                f"{s.fill:.1f}",
+            ])
+
+        table = Table(data, hAlign="LEFT")
+        self.story.append(table)
+        self.story.append(Spacer(1, 12)) 

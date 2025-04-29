@@ -7357,3 +7357,13 @@ AttributeError: 'MainWindow' object has no attribute '_toggle_other_layers_visib
 2025-04-28 18:05:03,374 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
 2025-04-28 18:05:03,521 - digcalc_project.src.ui.main_window - INFO - Closing application.
 2025-04-28 18:05:03,537 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-28 19:15:32,812 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-28 19:15:32,841 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-28 19:15:41,913 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-28 19:15:41,913 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-28 19:15:41,930 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-04-28 20:27:51,014 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-28 20:27:51,045 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-28 20:27:58,326 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-28 20:27:58,326 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-28 20:27:58,342 - digcalc_project.src.main - INFO - Application exited with code 0

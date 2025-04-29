@@ -378,6 +378,19 @@ class Surface:
         
         return (zmin, zmax)
     
+    # --- Convenience elevation properties ---------------------------------
+    @property
+    def min_z(self) -> float:
+        """Return minimum elevation of the surface or 0.0 if no points."""
+        rng = self.get_elevation_range()
+        return rng[0] if rng else 0.0
+
+    @property
+    def max_z(self) -> float:
+        """Return maximum elevation of the surface or 0.0 if no points."""
+        rng = self.get_elevation_range()
+        return rng[1] if rng else 0.0
+    
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the surface to a dictionary."""
         surface_dict = {

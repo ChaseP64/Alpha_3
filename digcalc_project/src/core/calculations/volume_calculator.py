@@ -15,6 +15,7 @@ from ...models.surface import Surface
 from ...models.project import Project
 from ...models.region import Region
 from ...services.settings_service import SettingsService
+from ...models.calculation import SliceResult
 
 # External dependencies (Ensure installed)
 try:
@@ -334,3 +335,39 @@ class VolumeCalculator:
              'fill_volume': results['fill'],
              'net_volume': results['net']
          } 
+
+    def compute_slice_volumes(self, surface_ref, surface_diff, slice_thickness_ft: float):
+        """
+        Returns list[SliceResult] from min-Z to max-Z (exclusive top slice).
+        Positive diff = fill, negative = cut.
+        """
+        z_min = min(surface_ref.min_z, surface_diff.min_z)
+        z_max = max(surface_ref.max_z, surface_diff.max_z)
+
+        slices = []
+        z = z_min
+        while z < z_max:
+            z_top = z + slice_thickness_ft
+            cut = fill = 0.0
+            # Sort by XY so points line up
+            ref_pts = sorted(surface_ref.points.values(), key=lambda p: (p.x, p.y))
+            diff_pts = sorted(surface_diff.points.values(), key=lambda p: (p.x, p.y))
+
+            for pr, pd in zip(ref_pts, diff_pts):
+                zr = pr.z
+                zd = pd.z
+                dz = zd - zr
+                if dz > 0:    # fill
+                    slice_fill = min(dz, z_top - zr) if zr < z_top else 0
+                    if zr < z and zd > z:
+                        slice_fill -= (z - zr)
+                    fill += slice_fill
+                elif dz < 0:  # cut
+                    dz = abs(dz)
+                    slice_cut = min(dz, z_top - zd) if zd < z_top else 0
+                    if zd < z and zr > z:
+                        slice_cut -= (z - zd)
+                    cut += slice_cut
+            slices.append(SliceResult(z, z_top, cut, fill))
+            z = z_top
+        return slices 
