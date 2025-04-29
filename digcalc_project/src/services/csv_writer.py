@@ -17,34 +17,24 @@ from ..models.calculation import SliceResult
 if TYPE_CHECKING:  # pragma: no cover
     from ..core.calculations.mass_haul import HaulStation
 
-__all__ = ["write_slice_table", "write_mass_haul"]
+__all__ = ["write_slice_table", "write_mass_haul", "write_region_table"]
 
 
 def write_slice_table(slices: Iterable[SliceResult], path: Union[str, Path]) -> None:
-    """Write a table of *slice* cut/fill volumes to **CSV**.
+    """Write *slice* volume results to **CSV** with minimal formatting.
 
-    Args:
-        slices: Iterable of :class:`~digcalc_project.models.calculation.SliceResult`.
-        path:   Output file location (``str`` or :class:`~pathlib.Path``).
-
-    The CSV will contain the following headers:
-    ``Slice Bottom``, ``Slice Top``, ``Cut (ft³)``, ``Fill (ft³)``.
-    Each numeric value is formatted to two decimal places for readability.
+    This helper adheres to the Phase-8 prompt specification – headers are
+    exactly ``Bottom, Top, Cut, Fill`` and numeric values are written as raw
+    floats (no formatting) so downstream tools can parse without string
+    parsing.
     """
 
-    # Ensure *path* is Path-like then open in text mode with newline="" for
-    # correct CSV output on all platforms.
     dest = Path(path)
     with dest.expanduser().resolve().open("w", newline="", encoding="utf-8") as fh:
         writer = csv.writer(fh)
-        writer.writerow(["Slice Bottom", "Slice Top", "Cut (ft³)", "Fill (ft³)"])
-        for slc in slices:
-            writer.writerow([
-                f"{slc.z_bottom:.3f}",
-                f"{slc.z_top:.3f}",
-                f"{slc.cut:.2f}",
-                f"{slc.fill:.2f}",
-            ])
+        writer.writerow(["Bottom", "Top", "Cut", "Fill"])
+        for s in slices:
+            writer.writerow([s.z_bottom, s.z_top, s.cut, s.fill])
 
 
 def write_mass_haul(stations: Iterable["HaulStation"], path: Union[str, Path]) -> None:
@@ -70,4 +60,20 @@ def write_mass_haul(stations: Iterable["HaulStation"], path: Union[str, Path]) -
                 f"{s.cut:.1f}",
                 f"{s.fill:.1f}",
                 f"{s.cumulative:.1f}",
-            ]) 
+            ])
+
+
+def write_region_table(rows, path):  # type: ignore[typing-arg-name]
+    """Write *region* volume rows to **CSV**.
+
+    The *rows* objects are expected to expose the following attributes:
+    ``name``, ``area``, ``depth``, ``cut``, ``fill``.
+    Net volume (``fill - cut``) is computed on the fly per prompt.
+    """
+
+    dest = Path(path)
+    with dest.expanduser().resolve().open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(["Region", "Area", "Depth", "Cut", "Fill", "Net"])
+        for r in rows:
+            writer.writerow([r.name, r.area, r.depth or "Def", r.cut, r.fill, r.fill - r.cut]) 

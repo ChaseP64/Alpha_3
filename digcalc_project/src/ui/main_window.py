@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
     QComboBox, QLabel, QGridLayout, QPushButton, QLineEdit, QSpinBox,
     QDoubleSpinBox, QCheckBox, QFormLayout, QHBoxLayout, QDialogButtonBox,
     QSplitter, QMenuBar, QStatusBar, QSizePolicy, QTreeWidget, QTreeWidgetItem,
-    QGraphicsItem, QGraphicsPathItem
+    QGraphicsItem, QGraphicsPathItem, QStyle
 )
 
 # Local imports - Use relative paths
@@ -361,6 +361,12 @@ class MainWindow(QMainWindow):
         # Connection in _connect_signals
         self.generate_report_action.setEnabled(False)
 
+        # --- NEW: Export Report Action ---
+        self.export_action = QAction(self.style().standardIcon(QStyle.SP_DialogSaveButton),
+                                    "Export Report…", self)
+        self.export_action.setStatusTip("Export PDF report with CSV tables.")
+        self.export_action.triggered.connect(self.on_export_report)
+
         # View menu actions (Toggles for docks - simplified creation)
         # Ensure docks exist before creating actions that depend on them
         if hasattr(self, 'project_dock'):
@@ -397,6 +403,11 @@ class MainWindow(QMainWindow):
         self.view_action_group.addAction(self.view_3d_action)
         self.view_action_group.setExclusive(True)
         self.view_2d_action.setChecked(True) # Default to 2D view
+
+        # 3-D Viewer Dock action
+        self.view3d_action = QAction("3-D Viewer", self)
+        self.view3d_action.setStatusTip("Open the 3-D viewer dock.")
+        self.view3d_action.triggered.connect(self.on_open_3d)
 
         # Cut/Fill Map Action
         self.cutfill_action = QAction("Show Cut/Fill Map", self, checkable=True)
@@ -473,6 +484,8 @@ class MainWindow(QMainWindow):
         self.view_menu.addSeparator()
         self.view_menu.addAction(self.view_2d_action)
         self.view_menu.addAction(self.view_3d_action)
+        # 3-D viewer dock action
+        self.view_menu.addAction(self.view3d_action)
         self.view_menu.addSeparator()
         # Ensure project_dock exists before adding its action
         if hasattr(self, 'project_dock'):
@@ -601,6 +614,7 @@ class MainWindow(QMainWindow):
         # Add actions (use icons later if desired)
         self.view_toolbar.addAction(self.view_2d_action)
         self.view_toolbar.addAction(self.view_3d_action)
+        self.view_toolbar.addAction(self.view3d_action)
         # --- END NEW --- 
     
     def _create_statusbar(self):
@@ -2108,3 +2122,89 @@ class MainWindow(QMainWindow):
             "DigCalc",
             f"Mass-haul diagram generated.\nPNG: {png_path}\nCSV: {csv_path}",
         )
+
+    # ------------------------------------------------------------------
+    #   Export Report
+    # ------------------------------------------------------------------
+
+    @Slot()
+    def on_export_report(self):
+        """Export a PDF report (and companion CSVs) via file dialog."""
+
+        path, _ = QFileDialog.getSaveFileName(self, "Save PDF", "", "PDF files (*.pdf)")
+        if not path:
+            return
+
+        # Gather data from project controller
+        proj = getattr(self.project_controller, "project", None)
+        calc = getattr(self.project_controller, "last_volume_calc", None)
+        slices = getattr(self.project_controller, "last_slice_results", None)
+        haul = getattr(self.project_controller, "last_mass_haul", None)
+
+        # Build the PDF story using helpers
+        try:
+            from digcalc_project.src.core.reporting.pdf_report import (
+                add_job_summary,
+                add_region_table,
+                add_slice_table,
+                add_mass_haul,
+            )
+            from reportlab.platypus import SimpleDocTemplate
+            from digcalc_project.src.services.settings_service import SettingsService
+        except Exception as exc:  # pragma: no cover – missing optional deps
+            QMessageBox.critical(self, "Export Error", f"Required libraries missing: {exc}")
+            self.logger.exception("Failed to import reporting dependencies")
+            return
+
+        story: list = []
+        add_job_summary(story, proj, SettingsService())
+
+        if calc and getattr(calc, "region_results", None):
+            add_region_table(story, calc.region_results)
+
+        if slices:
+            add_slice_table(story, slices)
+
+        if haul:
+            add_mass_haul(story, haul.png_path, haul.free_distance)
+
+        SimpleDocTemplate(path).build(story)
+
+        # Companion CSV exports
+        try:
+            from digcalc_project.src.services.csv_writer import (
+                write_region_table,
+                write_slice_table,
+                write_mass_haul,
+            )
+            from pathlib import Path as _Path
+        except Exception:
+            self.logger.warning("CSV writer helpers not available – skipping CSV companions.")
+            write_region_table = write_slice_table = write_mass_haul = None  # type: ignore
+            _Path = Path  # fallback
+
+        stem = _Path(path).with_suffix("")
+        if calc and getattr(calc, "region_results", None) and write_region_table:
+            write_region_table(calc.region_results, f"{stem}_regions.csv")
+
+        if slices and write_slice_table:
+            write_slice_table(slices, f"{stem}_slices.csv")
+
+        if haul and write_mass_haul:
+            write_mass_haul(haul.stations, f"{stem}_masshaul.csv")
+
+        QMessageBox.information(self, "DigCalc", "Report exported.")
+
+    @Slot()
+    def on_open_3d(self):
+        """Open or raise the 3-D viewer dock widget."""
+        from PySide6.QtCore import Qt
+        # Local import of PvDock to avoid heavy PyVista import at module load.
+        from digcalc_project.src.ui.docks.pv_dock import PvDock
+
+        if not hasattr(self, "_pv_dock") or self._pv_dock is None:
+            self._pv_dock = PvDock(self)
+            self.addDockWidget(Qt.RightDockWidgetArea, self._pv_dock)
+        else:
+            self._pv_dock.show()
+            self._pv_dock.raise_()

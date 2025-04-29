@@ -11,6 +11,11 @@ import logging
 import os
 from datetime import datetime
 from typing import Dict, Any, Optional, List
+from io import BytesIO
+from reportlab.platypus import Paragraph, Spacer, Table, Image
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
+import matplotlib.pyplot as plt
 
 # In a real implementation, we would use:
 # from reportlab.pdfgen import canvas
@@ -258,3 +263,64 @@ class PDFReportGenerator:
         self.story.append(Image(png_path, width=target_width, height=target_height))
         self.story.append(Paragraph(f"Free-haul distance: {free_ft:.1f} ft", styles["Normal"]))
         self.story.append(Spacer(1, 12)) 
+
+styles = getSampleStyleSheet()
+
+def h2(txt, story):
+    story.append(Paragraph(txt, styles["Heading2"]))
+
+def sp(story, h=12):
+    story.append(Spacer(1, h))
+
+def add_job_summary(story, project, settings):
+    h2("Job summary", story)
+    data=[["Project",project.name],
+          ["Date",datetime.now().strftime("%Y-%m-%d %H:%M")],
+          ["Default strip depth (ft)",settings.strip_depth_default()],
+          ["Slice thickness (ft)",settings.slice_thickness_default()],
+          ["Free-haul distance (ft)",settings.slice_thickness_default()]]
+    story.append(Table(data,colWidths=[200,200])); sp(story)
+
+
+def add_region_table(story, region_rows):
+    if not region_rows: return
+    h2("Region volumes", story)
+    data=[["Region","Area","Depth","Cut","Fill","Net"]]
+    for r in region_rows:
+        data.append([r.name,f"{r.area:.0f}",r.depth or "Def",
+                     f"{r.cut:.1f}",f"{r.fill:.1f}",
+                     f"{r.fill-r.cut:+.1f}"])
+    tbl=Table(data,hAlign="LEFT")
+    tbl.setStyle([('BACKGROUND',(0,0),(-1,0),colors.lightgrey)])
+    story.append(tbl); sp(story)
+
+
+def add_slice_table(story, slices):
+    if not slices: return
+    h2("Slice volumes", story)
+    data=[["Bottom","Top","Cut","Fill"]]
+    for s in slices:
+        data.append([f"{s.z_bottom:.2f}",f"{s.z_top:.2f}",
+                     f"{s.cut:.1f}",f"{s.fill:.1f}"])
+    tbl=Table(data,hAlign="LEFT")
+    tbl.setStyle([('BACKGROUND',(0,0),(-1,0),colors.lightgrey)])
+    story.append(tbl)
+
+    # bar-chart
+    fig,ax=plt.subplots(figsize=(4,2))
+    y=[s.z_bottom for s in slices]
+    cut=[s.cut for s in slices]
+    fill=[s.fill for s in slices]
+    ax.barh(y,cut,color="red",label="Cut")
+    ax.barh(y,fill,color="green",label="Fill",left=cut)
+    ax.invert_yaxis(); ax.set_xlabel("ft³"); ax.legend()
+    buf=BytesIO(); fig.savefig(buf,format="png",dpi=150); plt.close(fig)
+    buf.seek(0); story.append(Image(buf,width=300,height=150)); sp(story)
+
+
+def add_mass_haul(story, png_path, free_ft):
+    if not png_path: return
+    h2("Mass-Haul diagram", story)
+    story.append(Image(png_path, width=400, height=200))
+    story.append(Paragraph(f"Free-haul distance: {free_ft} ft", styles["Normal"]))
+    sp(story) 

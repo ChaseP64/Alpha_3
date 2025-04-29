@@ -65,3 +65,4 @@ class DaylightDialog(QDialog):
         """Return the (distance, slope_ratio) entered by the user."""
         return self._dist.value(), self._slope.value()
 
+

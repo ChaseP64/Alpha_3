@@ -26,10 +26,11 @@ dependencies = [
 
 [project.optional-dependencies]
 # Dependencies for 3D visualization
-3d  = [
-    "pyvista>=0.44",
-    "vtk>=9.3"
-    ]
+3d = [
+    "pyvista>=0.45",
+    "pyvistaqt>=0.4",
+    "vtk>=9.2",
+]
 # Development and testing dependencies
 dev = [
     "pytest",
