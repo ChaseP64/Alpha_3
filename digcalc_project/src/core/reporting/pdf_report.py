@@ -214,4 +214,47 @@ class PDFReportGenerator:
 
         table = Table(data, hAlign="LEFT")
         self.story.append(table)
+        self.story.append(Spacer(1, 12))
+
+    def insert_mass_haul(self, png_path: str, stations: list, free_ft: float) -> None:  # noqa: D401
+        """Insert a mass-haul diagram section into the PDF story.
+
+        Args:
+            png_path: Path to the previously generated PNG of the mass-haul chart.
+            stations: List of :class:`core.calculations.mass_haul.HaulStation` objects
+                (or duck-typed equivalents). Only used for potential future
+                table generation; currently ignored to keep the section
+                lightweight.
+            free_ft:  Free-haul distance (ft) displayed in the caption.
+        """
+
+        # Lazy import – ReportLab is optional at runtime.
+        try:
+            from reportlab.platypus import Paragraph, Spacer, Image
+            from reportlab.lib.styles import getSampleStyleSheet
+        except ImportError:  # pragma: no cover
+            self.logger.warning("ReportLab not available – cannot insert mass-haul diagram.")
+            return
+
+        if not hasattr(self, "story"):
+            self.story: list = []  # type: ignore[attribute-defined-outside-init]
+
+        styles = getSampleStyleSheet()
+        self.story.append(Paragraph("Mass-Haul Diagram", styles["Heading2"]))
+
+        # Embed the PNG. ReportLab uses points; we keep aspect ratio by fixing
+        # a width and letting the height auto-scale if PIL is available.
+        try:
+            # If Pillow is installed we can query the actual image size to scale proportionally.
+            from PIL import Image as PILImage  # noqa: WPS433 – optional import
+
+            with PILImage.open(png_path) as img:
+                w, h = img.size  # pixels
+            target_width = 400  # points (~5.55in) – matches prompt
+            target_height = target_width * (h / w)
+        except Exception:
+            target_width, target_height = 400, 200  # Fallback values
+
+        self.story.append(Image(png_path, width=target_width, height=target_height))
+        self.story.append(Paragraph(f"Free-haul distance: {free_ft:.1f} ft", styles["Normal"]))
         self.story.append(Spacer(1, 12)) 

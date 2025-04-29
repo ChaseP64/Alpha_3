@@ -422,6 +422,13 @@ class MainWindow(QMainWindow):
         # Toolbar hookup occurs in _create_toolbars after toolbar is created
         # --- END NEW ---
 
+        # --- NEW: Mass-Haul Action ---
+        self.masshaul_action = QAction(QIcon(":/icons/masshaul.svg"), "Mass-Haul…", self)
+        self.masshaul_action.setStatusTip("Generate mass-haul diagram from Existing and Design surfaces.")
+        self.masshaul_action.triggered.connect(self.on_mass_haul)
+        self.masshaul_action.setEnabled(False)  # enable when conditions met later
+        # --- END NEW ---
+
         # Help menu actions
         self.about_action = QAction("&About DigCalc", self)
         self.about_action.setStatusTip("Show information about the DigCalc application.")
@@ -523,6 +530,8 @@ class MainWindow(QMainWindow):
         self.tools_toolbar.setIconSize(QSize(24, 24))
         self.addToolBar(self.tools_toolbar)
         self.tools_toolbar.addAction(self.daylight_action)
+        # --- NEW: Add mass-haul action to tools toolbar ---
+        self.tools_toolbar.addAction(self.masshaul_action)
         # --- END NEW ---
 
         # Help menu
@@ -610,6 +619,15 @@ class MainWindow(QMainWindow):
         project = self.project_controller.get_current_project()
         can_calculate = bool(project and len(project.surfaces) >= 2)
         self.calculate_volume_action.setEnabled(can_calculate)
+        # --- NEW: Enable mass-haul button when Existing & Design surfaces present
+        has_req_surfaces = False
+        if project:
+            has_req_surfaces = (
+                getattr(project, "existing_surface", None) is not None
+                and getattr(project, "design_surface", None) is not None
+            )
+        self.masshaul_action.setEnabled(can_calculate and has_req_surfaces)
+        # --- END NEW ---
         self.logger.debug(f"Calculate Volume action enabled state: {can_calculate}")
     
     def _update_pdf_controls(self):
@@ -1995,3 +2013,98 @@ class MainWindow(QMainWindow):
                 except Exception:
                     pass
         self._update_analysis_actions_state()
+
+    # ------------------------------------------------------------------
+    # Mass-Haul Slot
+    # ------------------------------------------------------------------
+    @Slot()
+    def on_mass_haul(self):
+        """Generate mass-haul curve, chart, and CSV report section."""
+        from PySide6.QtWidgets import QMessageBox, QDialog
+        from digcalc_project.src.ui.dialogs.haul_alignment_dialog import HaulAlignmentDialog
+        from digcalc_project.src.core.calculations.mass_haul import build_mass_haul
+        from digcalc_project.src.core.reporting.haul_chart import make_mass_haul_chart
+        from digcalc_project.src.services.csv_writer import write_mass_haul
+
+        # Ensure tracing scene and alignment polyline
+        if not hasattr(self.visualization_panel, "scene_2d"):
+            QMessageBox.warning(self, "DigCalc", "2D scene not available.")
+            return
+
+        scene = self.visualization_panel.scene_2d
+        if not hasattr(scene, "current_polyline"):
+            QMessageBox.warning(self, "DigCalc", "Tracing scene missing polyline helpers.")
+            return
+
+        align_item = scene.current_polyline()
+        if not align_item:
+            QMessageBox.warning(self, "DigCalc", "Select an alignment polyline first.")
+            return
+
+        # Fetch the list of QPointF points from the current polyline
+        if not hasattr(scene, "current_polyline_points"):
+            QMessageBox.warning(self, "DigCalc", "Scene does not expose current_polyline_points().")
+            return
+
+        qpts = scene.current_polyline_points()
+        pts = [(p.x(), p.y()) for p in qpts]
+
+        # Build shapely LineString
+        try:
+            from shapely.geometry import LineString  # local import to avoid heavy cost if not used
+            alignment = LineString(pts)
+        except Exception as exc:  # pragma: no cover
+            QMessageBox.warning(self, "DigCalc", f"Failed to create alignment: {exc}")
+            return
+
+        # Ask user for parameters
+        dlg = HaulAlignmentDialog(parent=self)
+        if dlg.exec() != QDialog.Accepted:
+            return
+        interval, free = dlg.values()
+
+        # Surfaces – expect Existing and Design set on project
+        project = self.project_controller.get_current_project()
+        if not project:
+            QMessageBox.warning(self, "DigCalc", "No active project loaded.")
+            return
+        ref = getattr(project, "existing_surface", None)
+        diff = getattr(project, "design_surface", None)
+        if not (ref and diff):
+            QMessageBox.warning(self, "DigCalc", "Need Existing and Design surfaces in the project.")
+            return
+
+        # Perform calculation
+        stations = build_mass_haul(ref, diff, alignment, interval, free)
+
+        # Prepare output files
+        if hasattr(self.project_controller, "make_temp_path"):
+            png_path = self.project_controller.make_temp_path("masshaul.png")
+        else:
+            # Fallback – store in project folder's reports dir
+            report_dir = Path(project.file_path or Path.cwd()).with_suffix("") / "reports"
+            report_dir.mkdir(parents=True, exist_ok=True)
+            png_path = str(report_dir / "masshaul.png")
+
+        make_mass_haul_chart(
+            [s.station for s in stations],
+            [s.cumulative for s in stations],
+            free,
+            png_path,
+        )
+
+        csv_path = png_path.replace(".png", ".csv")
+        write_mass_haul(stations, csv_path)
+
+        # Inject into report if available
+        if hasattr(self.project_controller, "current_report") and self.project_controller.current_report:
+            try:
+                self.project_controller.current_report.insert_mass_haul(stations, free)
+            except Exception as exc:  # pragma: no cover
+                self.logger.error("Failed to insert mass haul into report: %s", exc)
+
+        QMessageBox.information(
+            self,
+            "DigCalc",
+            f"Mass-haul diagram generated.\nPNG: {png_path}\nCSV: {csv_path}",
+        )
