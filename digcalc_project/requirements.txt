@@ -30,4 +30,7 @@ pytest # Testing framework (No specific version requested)
 pytest-qt>=4.0.0 # Qt testing support - Keep existing pin
 
 # Development Dependencies (Optional)
-# mypy # Static typing (Added, commented out) 
+# mypy # Static typing (Added, commented out)
+# loguru # Optional enhanced logging
+# scons # Build system, might be needed for specific C extensions
+# python-dotenv # For handling .env files

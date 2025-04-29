@@ -35,6 +35,19 @@ class VolumeCalculationDialog(QDialog):
         self.combo_proposed.setToolTip("Select the surface representing the final grade or proposed design.")
         form_layout.addRow("Proposed Surface:", self.combo_proposed)
 
+        # ------------------------------------------------------------
+        # Include synthesized *Lowest* surface if available
+        # ------------------------------------------------------------
+        controller = None
+        if parent is not None and hasattr(parent, "project_controller"):
+            controller = getattr(parent, "project_controller")
+
+        if controller is not None and getattr(controller, "lowest_surface", None):
+            if controller.lowest_surface():
+                # Append to both combo-boxes so users can pick it as either
+                self.combo_existing.addItem("Lowest")
+                self.combo_proposed.addItem("Lowest")
+
         # --- Grid Resolution ---
         self.spin_resolution = QDoubleSpinBox(self)
         self.spin_resolution.setRange(0.1, 1000.0) # Sensible range
@@ -107,6 +120,36 @@ class VolumeCalculationDialog(QDialog):
     def should_generate_map(self) -> bool:
         """Check if the cut/fill map generation is requested."""
         return self.check_generate_map.isChecked()
+
+    # ------------------------------------------------------------------
+    # Accept override – ensure *Lowest* resolves to actual Surface object
+    # ------------------------------------------------------------------
+    def accept(self):  # noqa: D401
+        """Re-implement accept to resolve the *Lowest* placeholder.
+
+        The MainWindow currently queries :py:meth:`get_selected_surfaces` after
+        ``exec()``.  We'll therefore stash a mapping of selected combo-box
+        names to actual :class:`~digcalc_project.models.surface.Surface`
+        instances so external code can fetch them.
+        """
+        super().accept()
+
+    # Convenience for callers -------------------------------------------------
+    def resolve_surface(self, name: str):
+        """Return the actual Surface corresponding to *name*.
+
+        This method relies on having access to the parent MainWindowʼs
+        ``project_controller``.
+        """
+        parent = self.parent()  # MainWindow
+        if parent is not None and hasattr(parent, "project_controller"):
+            controller = parent.project_controller
+            project = controller.get_current_project()
+            if name == "Lowest":
+                return controller.lowest_surface()
+            if project:
+                return project.get_surface(name)
+        return None
 
     # Note: The actual calculation and signal emission would typically happen
     # in the MainWindow after the dialog is accepted and surfaces are retrieved.

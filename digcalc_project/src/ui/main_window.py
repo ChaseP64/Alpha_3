@@ -93,6 +93,7 @@ class MainWindow(QMainWindow):
         self.pdf_dpi_setting = 300
         self._last_volume_calculation_params: Optional[dict] = None # Cache params
         self._last_dz_cache: Optional[Tuple[np.ndarray, np.ndarray, np.ndarray]] = None # Cache dz grid
+        self._last_pad_elev: float | None = None  # Remember last pad elevation
         
         # --- Rebuild Engine Members --- 
         self._rebuild_needed_layers: set[str] = set()
@@ -204,6 +205,11 @@ class MainWindow(QMainWindow):
                 self.visualization_panel.scene_2d.pageRectChanged.connect(self._fit_view_to_scene)
             else:
                 self.logger.warning("TracingScene does not have 'pageRectChanged' signal.")
+            # --- NEW: Connect padDrawn signal ---
+            if hasattr(self.visualization_panel.scene_2d, 'padDrawn'):
+                self.visualization_panel.scene_2d.padDrawn.connect(self._on_pad_drawn)
+            else:
+                self.logger.warning("TracingScene does not have 'padDrawn' signal.")
             # --- END NEW ---
         else:
              self.logger.warning("Could not connect tracing scene signals: scene_2d not found or is None.")
@@ -258,6 +264,7 @@ class MainWindow(QMainWindow):
             self.project_controller.project_loaded.connect(self._update_ui_for_project)
             self.project_controller.project_closed.connect(lambda: self._update_ui_for_project(None))
             self.project_controller.project_modified.connect(self._update_window_title)
+            self.project_controller.surfaces_rebuilt.connect(self._on_surfaces_rebuilt)
             # Connect import actions through controller
             if hasattr(self, 'import_csv_action'):
                 self.import_csv_action.triggered.connect(lambda: self.project_controller.on_import_file('csv'))
@@ -267,6 +274,14 @@ class MainWindow(QMainWindow):
                 self.import_landxml_action.triggered.connect(lambda: self.project_controller.on_import_file('landxml'))
         else:
             self.logger.error("ProjectController not found during signal connection.")
+
+        # --- Connect PDF Controller Signal ---
+        if hasattr(self, 'pdf_controller') and self.pdf_controller:
+            self.pdf_controller.pageSelected.connect(self._on_pdf_page_selected)
+            self.logger.debug("Connected pdf_controller.pageSelected signal.")
+        else:
+            self.logger.error("PdfController not found during signal connection.")
+        # --- End Connect PDF Controller Signal ---
 
         self.logger.debug("Finished connecting MainWindow signals.")
 
@@ -1871,7 +1886,7 @@ class MainWindow(QMainWindow):
         # ------------------------------------------------------------------
         # Undo/Redo stack
         # ------------------------------------------------------------------
-        from PySide6.QtWidgets import QUndoStack, QShortcut
+        from PySide6.QtGui import QUndoStack, QShortcut  # Import both from QtGui
 
         self.undoStack = QUndoStack(self)
 
@@ -1923,3 +1938,60 @@ class MainWindow(QMainWindow):
                 self.logger.exception("Failed to create daylight offset: %s", e)
                 QMessageBox.critical(self, "DigCalc", f"Failed to create daylight offset.\n{e}")
     # --- END NEW ---
+
+    # ------------------------------------------------------------------
+    # Pad elevation handling
+    # ------------------------------------------------------------------
+    @Slot(list)
+    def _on_pad_drawn(self, points2d):
+        """Handle closed pad polyline creation, prompting for elevation and adding to scene."""
+        from PySide6.QtWidgets import QDialog, QUndoStack  # Local import
+        from digcalc_project.src.ui.dialogs.pad_elevation_dialog import PadElevationDialog
+        from digcalc_project.src.ui.commands.set_pad_elevation_command import SetPadElevationCommand
+        # Ensure we have undoStack
+        if not hasattr(self, 'undoStack'):
+            from PySide6.QtWidgets import QUndoStack
+            self.undoStack = QUndoStack(self)
+        # Dialog handling
+        dlg = PadElevationDialog(self._last_pad_elev, self)
+        # If user previously chose apply all and we have last elev, auto-apply
+        if dlg.apply_to_all() and self._last_pad_elev is not None:
+            elev = self._last_pad_elev
+        else:
+            if dlg.exec() != QDialog.Accepted:
+                return
+            elev = dlg.value()
+            if dlg.apply_to_all():
+                self._last_pad_elev = elev
+
+        # Build 3-D vertices list (drop duplicate last point)
+        if len(points2d) < 3:
+            return  # safety
+        pts3d = [(x, y, elev) for x, y in points2d[:-1]]
+        scene = getattr(self.visualization_panel, 'scene_2d', None)
+        if scene is None:
+            return
+        cmd = SetPadElevationCommand(scene, pts3d)
+        self.undoStack.push(cmd)
+        # Trigger surface rebuilds or other updates as needed
+        if hasattr(self, 'project_controller'):
+            try:
+                self.project_controller.rebuild_surfaces()
+            except AttributeError:
+                # If method not yet implemented, fallback to generic update
+                self.logger.debug("ProjectController lacks rebuild_surfaces(); skipping.")
+
+    # ------------------------------------------------------------------
+    # Surface rebuild listener
+    # ------------------------------------------------------------------
+    @Slot()
+    def _on_surfaces_rebuilt(self):
+        """Refresh visualizations after surfaces are rebuilt."""
+        if hasattr(self, 'visualization_panel'):
+            # For now, just force re-display of any surfaces already visible
+            for surf in self.project_controller.get_current_project().surfaces.values():
+                try:
+                    self.visualization_panel.update_surface_mesh(surf)
+                except Exception:
+                    pass
+        self._update_analysis_actions_state()

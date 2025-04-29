@@ -66,6 +66,10 @@ class TracingScene(QGraphicsScene):
     pageRectChanged = Signal()
     # --- END NEW ---
 
+    # --- NEW: Signal when a closed pad polyline is drawn ---
+    padDrawn = Signal(list)  # Emits list[tuple[float, float]] representing 2-D vertices
+    # --- END NEW ---
+
     # --- MODIFIED: Accept and store panel reference --- 
     def __init__(self, view: QGraphicsView, panel: VisualizationPanel, parent=None):
         """Initialize the TracingScene.
@@ -449,6 +453,17 @@ class TracingScene(QGraphicsScene):
         # Emit finalized signal (item is already in scene via undo command redo)
         self.polyline_finalized.emit(self._current_polyline_points, polyline_item)
 
+        # --- NEW: Emit padDrawn if polyline belongs to "pads" layer and is closed ---
+        try:
+            # Convert QPointF list to plain tuples for emission
+            points_2d = [(p.x(), p.y()) for p in self._current_polyline_points]
+            if layer_name.lower() == "pads" and self._path_is_closed(points_2d):
+                self.logger.debug("padDrawn emitted for closed pad on 'pads' layer with %d vertices", len(points_2d))
+                self.padDrawn.emit(points_2d)
+        except Exception as e:
+            self.logger.error("Failed to evaluate/emit padDrawn: %s", e, exc_info=True)
+        # --- END NEW ---
+
         self._reset_drawing_state()
 
     def _cancel_current_polyline(self):
@@ -621,8 +636,14 @@ class TracingScene(QGraphicsScene):
         path: QPainterPath = item.path()
         return [(path.elementAt(i).x, path.elementAt(i).y) for i in range(path.elementCount())]
 
-    def add_offset_breakline(self, pts3d: list[tuple[float, float, float]]):
-        """Add a 3-D aware offset breakline to the scene and undo stack."""
+    def add_offset_breakline(self, pts3d: list[tuple[float, float, float]], *, push_to_undo: bool = True):
+        """Add a 3-D aware offset breakline to the scene.
+
+        If *push_to_undo* is True (default), an AddPolylineCommand is pushed onto the
+        application's undo stack.  When False, the caller is responsible for
+        managing undo/redo behaviour.  The created QGraphicsPathItem is returned
+        in all cases.
+        """
         if not pts3d or len(pts3d) < 2:
             self.logger.warning("add_offset_breakline called with insufficient points.")
             return
@@ -646,13 +667,15 @@ class TracingScene(QGraphicsScene):
         item.setData(Qt.UserRole + 2, [(x, y) for x, y, *_ in pts3d])
         item.setData(Qt.UserRole + 3, pts3d)  # Full 3-D points
 
-        # Push undo command
         main_win = self.parent_view.window() if self.parent_view else None
-        if main_win and hasattr(main_win, 'undoStack'):
+        if push_to_undo and main_win and hasattr(main_win, 'undoStack'):
             cmd = AddPolylineCommand(self, item)
             main_win.undoStack.push(cmd)
         else:
-            self.addItem(item)
+            if item not in self.items():
+                self.addItem(item)
+
+        return item
 
 # ------------------------------------------------------------------
 # Undo/Redo Command
@@ -695,4 +718,54 @@ class AddPolylineCommand(QUndoCommand):
 
     def undo(self):  # noqa: D401
         if self._item in self._scene.items():
+            self._scene.removeItem(self._item)
+
+    # ------------------------------------------------------------------
+    # Helper utilities
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _path_is_closed(pts: list[tuple[float, float]], tol: float = 1e-6) -> bool:
+        """Return True if path is closed (first & last vertices coincide within *tol*)."""
+        return len(pts) > 2 and abs(pts[0][0] - pts[-1][0]) < tol and abs(pts[0][1] - pts[-1][1]) < tol
+
+class SetPadElevationCommand(QUndoCommand):
+    """QUndoCommand to add/remove a *pad* polyline (closed polygon) with constant elevation."""
+
+    def __init__(self, scene: 'TracingScene', pts3d: list[tuple[float, float, float]]):  # noqa: D401
+        super().__init__("Add Pad")
+        if not pts3d or len(pts3d) < 3:
+            raise ValueError("Pad requires at least 3 vertices.")
+        self._scene = scene
+        self._pts3d = pts3d
+        self._item: Optional[QGraphicsPathItem] = None
+
+    # ------------------------------------------------------------------
+    # QUndoCommand interface
+    # ------------------------------------------------------------------
+    def redo(self):  # noqa: D401
+        # Build the graphics item on first redo
+        if self._item is None:
+            path = QPainterPath()
+            path.moveTo(QPointF(self._pts3d[0][0], self._pts3d[0][1]))
+            for x, y, *_ in self._pts3d[1:]:
+                path.lineTo(QPointF(x, y))
+            # Close the path visually
+            path.closeSubpath()
+
+            self._item = QGraphicsPathItem(path)
+            pen = QPen(QColor("orange"), 3)
+            self._item.setPen(pen)
+            self._item.setZValue(1)
+            self._item.setFlag(QGraphicsItem.ItemIsSelectable, True)
+
+            # Store metadata
+            self._item.setData(Qt.UserRole + 1, "Pads")
+            self._item.setData(Qt.UserRole + 2, [(x, y) for x, y, *_ in self._pts3d])
+            self._item.setData(Qt.UserRole + 3, self._pts3d)  # 3-D vertices
+
+        if self._item not in self._scene.items():
+            self._scene.addItem(self._item)
+
+    def undo(self):  # noqa: D401
+        if self._item and self._item in self._scene.items():
             self._scene.removeItem(self._item)

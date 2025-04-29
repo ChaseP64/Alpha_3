@@ -7305,3 +7305,55 @@ AttributeError: 'MainWindow' object has no attribute '_toggle_other_layers_visib
 2025-04-24 12:26:05,872 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Downloads/Sample file.pdf
 2025-04-24 12:26:05,872 - digcalc_project.src.ui.main_window - INFO - Closing application.
 2025-04-24 12:26:05,886 - __main__ - INFO - Application exited with code 0
+2025-04-28 17:57:34,652 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-04-28 17:57:34,681 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-04-28 17:57:48,960 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-28 17:57:48,960 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-04-28 17:57:48,961 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-04-28 17:57:48,961 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-28 17:57:48,965 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-04-28 17:57:48,966 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-04-28 17:57:54,114 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-04-28 17:57:54,137 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-04-28 17:57:54,200 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-04-28 17:57:54,200 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-04-28 17:57:54,201 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-04-28 17:57:59,913 - digcalc_project.src.ui.main_window - WARNING - Cannot fit view: Scene rectangle is null or invalid.
+2025-04-28 17:58:17,541 - digcalc_project.src.ui.main_window - WARNING - Cannot fit view: Scene rectangle is null or invalid.
+2025-04-28 17:58:17,952 - digcalc_project.src.ui.main_window - WARNING - Cannot fit view: Scene rectangle is null or invalid.
+2025-04-28 17:58:18,324 - digcalc_project.src.ui.main_window - WARNING - Cannot fit view: Scene rectangle is null or invalid.
+2025-04-28 17:58:19,403 - digcalc_project.src.ui.main_window - WARNING - Cannot fit view: Scene rectangle is null or invalid.
+2025-04-28 17:58:19,542 - digcalc_project.src.ui.main_window - WARNING - Cannot fit view: Scene rectangle is null or invalid.
+2025-04-28 17:58:19,672 - digcalc_project.src.ui.main_window - WARNING - Cannot fit view: Scene rectangle is null or invalid.
+2025-04-28 17:58:19,804 - digcalc_project.src.ui.main_window - WARNING - Cannot fit view: Scene rectangle is null or invalid.
+2025-04-28 17:58:23,692 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-04-28 17:58:23,692 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-04-28 17:58:26,662 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 5 points on layer 'Existing Surface'.
+2025-04-28 17:58:29,016 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 5, Elevation: 10.0, New Rev: 1).
+2025-04-28 17:58:29,016 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 10.0) to layer 'Existing Surface'.
+2025-04-28 17:58:29,275 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-04-28 17:58:29,275 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-04-28 17:58:34,499 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Proposed Surface'.
+2025-04-28 17:58:37,012 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Proposed Surface' (Index: 0, Points: 6, Elevation: 20.0, New Rev: 1).
+2025-04-28 17:58:37,012 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 20.0) to layer 'Proposed Surface'.
+2025-04-28 17:58:37,276 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Proposed Surface'}
+2025-04-28 17:58:37,276 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Proposed Surface'}.
+2025-04-28 17:58:41,416 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 8 points on layer 'Subgrade'.
+2025-04-28 17:58:43,451 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Subgrade' (Index: 0, Points: 8, Elevation: 30.0, New Rev: 1).
+2025-04-28 17:58:43,452 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 30.0) to layer 'Subgrade'.
+2025-04-28 17:58:43,707 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Subgrade'}
+2025-04-28 17:58:43,707 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Subgrade'}.
+2025-04-28 17:58:47,194 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 7 points on layer 'Annotations'.
+2025-04-28 17:58:50,644 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Annotations' (Index: 0, Points: 7, Elevation: 35.0, New Rev: 1).
+2025-04-28 17:58:50,644 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 35.0) to layer 'Annotations'.
+2025-04-28 17:58:50,886 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Annotations'}
+2025-04-28 17:58:50,886 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Annotations'}.
+2025-04-28 17:58:55,454 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Report Regions'.
+2025-04-28 17:58:57,557 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Report Regions' (Index: 0, Points: 6, Elevation: 40.0, New Rev: 1).
+2025-04-28 17:58:57,557 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 40.0) to layer 'Report Regions'.
+2025-04-28 17:58:57,813 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Report Regions'}
+2025-04-28 17:58:57,813 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Report Regions'}.
+2025-04-28 18:05:02,085 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-04-28 18:05:03,374 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/Project Alpha/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-04-28 18:05:03,521 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-04-28 18:05:03,537 - digcalc_project.src.main - INFO - Application exited with code 0

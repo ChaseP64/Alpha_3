@@ -20,6 +20,8 @@ from PySide6.QtWidgets import QFileDialog, QMessageBox
 # Local imports (use relative paths if within the same package structure)
 from ..models.project import Project
 from ..models.serializers import ProjectSerializer, ProjectLoadError
+from ..models.surface import Surface
+from ..core.geometry.surface_builder import lowest_surface
 
 # Use TYPE_CHECKING to avoid circular imports with MainWindow
 if TYPE_CHECKING:
@@ -40,11 +42,14 @@ class ProjectController(QObject):
         project_loaded (Project): Emitted when a new project is loaded or created.
         project_closed (): Emitted before a project is closed or replaced.
         project_modified (): Emitted when the project's dirty status changes.
+        surfaces_rebuilt (): Emitted after surfaces are rebuilt so views can refresh
     """
     # --- Define Signals ---
     project_loaded = Signal(Project)
     project_closed = Signal()
     project_modified = Signal()
+    surfaces_rebuilt = Signal()  # Emitted after surfaces are rebuilt so views can refresh
+    surfacesChanged = Signal()   # Emitted when lowest/composite surfaces refresh
     # --- End Define ---
 
     def __init__(self, main_window: 'MainWindow'):
@@ -66,6 +71,8 @@ class ProjectController(QObject):
         self.current_project = default_project
         self.logger.info("ProjectController initialized with default project object.")
         # self._create_default_project() # Moved logic here, removed method call
+        # --- Lowest composite surface holder ---
+        self._lowest_surface: Surface | None = None
 
     # --------------------------------------------------------------------------
     # Project State Management
@@ -297,4 +304,100 @@ Do you want to save them?""",
             self.project_modified.emit()
             # --- End Emit ---
             # self.main_window._update_window_title() # Let signal handle this
-    # --- End Rename --- 
+    # --- End Rename ---
+
+    # --------------------------------------------------------------------------
+    # Surface Rebuild Helpers
+    # --------------------------------------------------------------------------
+    def rebuild_surfaces(self):
+        """Rebuild all derived surfaces based on current traced polylines.
+
+        This method is called when tracing data changes (e.g., pad elevations
+        added).  It will:
+
+        1. Clear the MainWindow's cached cut/fill grids.
+        2. Iterate over existing surfaces and rebuild them using SurfaceBuilder
+           if their source layer still has valid polylines with elevation.
+        3. Emit the *surfaces_rebuilt* signal so that views (2-D/3-D) can refresh.
+        """
+        from digcalc_project.src.core.geometry.surface_builder import SurfaceBuilder, SurfaceBuilderError
+
+        if not self.current_project:
+            self.logger.warning("rebuild_surfaces called but there is no active project.")
+            return
+
+        project = self.current_project
+
+        # 1. Clear cached dz/cut-fill state in the MainWindow (if attribute exists)
+        if hasattr(self.main_window, '_clear_cutfill_state'):
+            self.main_window._clear_cutfill_state()
+
+        rebuilt_count = 0
+        for surf_name, surf in list(project.surfaces.items()):
+            src_layer = getattr(surf, 'source_layer_name', None)
+            if not src_layer:
+                continue  # Skip surfaces without a source layer
+
+            polylines = project.traced_polylines.get(src_layer, [])
+            valid_polys = [p for p in polylines if isinstance(p, dict) and p.get('elevation') is not None]
+            if not valid_polys:
+                self.logger.info("Layer '%s' has no valid polylines with elevation for rebuilding '%s'.", src_layer, surf_name)
+                continue
+
+            try:
+                new_surf = SurfaceBuilder.build_from_polylines(src_layer, valid_polys, project.layer_revisions.get(src_layer, 0))
+                new_surf.name = surf_name  # Keep original name
+                new_surf.source_layer_name = src_layer
+                project.surfaces[surf_name] = new_surf
+                rebuilt_count += 1
+
+                # Update visualization if possible
+                if hasattr(self.main_window, 'visualization_panel') and \
+                   hasattr(self.main_window.visualization_panel, 'update_surface_mesh'):
+                    self.main_window.visualization_panel.update_surface_mesh(new_surf)
+            except SurfaceBuilderError as e:
+                self.logger.error("Failed to rebuild surface '%s': %s", surf_name, e)
+            except Exception as e:  # Catch-all to avoid crashing the UI loop
+                self.logger.exception("Unexpected error rebuilding surface '%s': %s", surf_name, e)
+
+        if rebuilt_count:
+            self.logger.info("Rebuilt %d surface(s) successfully.", rebuilt_count)
+
+            # --- Ensure lowest composite surface stays in sync ---
+            self._rebuild_lowest()
+
+            # Mark project modified and emit events
+            self.set_project_modified(True)
+
+            # Emit signal for external listeners (views/UI) to refresh
+            self.surfaces_rebuilt.emit()
+        else:
+            self.logger.info("No surfaces required rebuilding.")
+
+    # ----------------------------------------------------------------------
+    # Lowest composite surface helpers
+    # ----------------------------------------------------------------------
+    def lowest_surface(self) -> Optional[Surface]:
+        """Return the current lowest-elevation composite surface if available."""
+        return self._lowest_surface
+
+    def _rebuild_lowest(self):
+        """(Re)compute the *Lowest* composite surface.
+
+        This function requires both a *design* and *existing* surface to be
+        present on the current project.  When generated, the surface is added
+        to ``project.surfaces`` using the key ``"Lowest"`` so downstream UI
+        elements can find it by name.
+        """
+        if (self.current_project
+                and self.current_project.get_surface("Design Surface")
+                and self.current_project.get_surface("Existing Surface")):
+            design = self.current_project.get_surface("Design Surface")
+            existing = self.current_project.get_surface("Existing Surface")
+            try:
+                self._lowest_surface = lowest_surface(design, existing)  # type: ignore[arg-type]
+                # Store/update on project for persistence/visualisation
+                self.current_project.surfaces[self._lowest_surface.name] = self._lowest_surface
+                self.surfacesChanged.emit()
+            except Exception as err:
+                self.logger.error("Failed to build lowest surface: %s", err, exc_info=True) 

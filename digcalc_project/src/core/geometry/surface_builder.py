@@ -149,3 +149,66 @@ class SurfaceBuilder:
 
         logger.info(f"Successfully built surface '{surface.name}' from layer '{layer_name}' (Rev: {revision}).")
         return surface 
+
+def lowest_surface(design: Surface, existing: Surface) -> Surface:
+    """Return a Surface whose Z at each (x,y) is the lower of *design* or
+    *existing*.
+
+    This helper assumes both Surfaces originate from the **same raster or point
+    cloud** so they share identical X/Y coordinates *and* the same
+    ``grid_spacing`` value.  That means we can simply iterate over the points
+    in parallel and pick the minimum Z without any spatial searching.
+
+    Args:
+        design:   The proposed/design surface.
+        existing: The existing‐ground surface.
+
+    Returns:
+        A new :class:`~digcalc_project.models.surface.Surface` instance called
+        "Lowest" coloured yellow for UI visibility.
+    """
+
+    assert design.grid_spacing == existing.grid_spacing, "mismatch spacing"
+
+    # Points are stored in dictionaries keyed by UUIDs so the ordering is not
+    # guaranteed.  We'll therefore sort them deterministically by coordinate so
+    # that *zip()* pairs matching locations together.
+    def _sorted(surface: Surface):
+        return sorted(
+            [(p.x, p.y, p.z) for p in surface.points.values()], key=lambda t: (t[0], t[1])
+        )
+
+    design_pts = _sorted(design)
+    existing_pts = _sorted(existing)
+
+    assert len(design_pts) == len(existing_pts), "point count mismatch"
+
+    new_pts = []
+    for (x, y, z_d), (_, _, z_e) in zip(design_pts, existing_pts):
+        new_pts.append((x, y, min(z_d, z_e)))
+
+    return Surface.from_point_list(
+        name="Lowest",
+        points=new_pts,
+        spacing=design.grid_spacing,
+        color="yellow",
+    ) 
+
+# ------------------------------------------------------------------
+# Utility helpers for testing / quick-build surfaces
+# ------------------------------------------------------------------
+
+def flat_surface(z: float, size: int = 10, name: str = "Flat", spacing: float = 1.0) -> Surface:
+    """Generate a simple flat grid :class:`Surface` for tests.
+
+    A square grid of *size* × *size* points (inclusive) is created at the given
+    elevation *z*.  The grid spacing defaults to ``1.0`` unit.
+    """
+    pts = []
+    for i in range(size + 1):
+        for j in range(size + 1):
+            x = i * spacing
+            y = j * spacing
+            pts.append((x, y, z))
+
+    return Surface.from_point_list(name=name, points=pts, spacing=spacing) 

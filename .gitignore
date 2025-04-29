@@ -7,6 +7,25 @@ __pycache__/
 build/
 dist/
 
+# Virtual Environments
+/venv/
+/env/
+/.venv/
+/.env/
+
+# Testing
+/.pytest_cache/
+/.coverage
+/htmlcov/
+
+# IDE Configuration
+/.vscode/
+/.idea/
+
+# OS Generated files
+.DS_Store
+Thumbs.db
+
 # Logs
 app.log
 

@@ -10,6 +10,7 @@ including points, triangles, and surfaces.
 import uuid
 from typing import Dict, List, Optional, Tuple, Set, Union, Any
 import logging
+import numpy as np
 
 # Define logger at module level
 logger = logging.getLogger(__name__)
@@ -261,6 +262,86 @@ class Surface:
                 self.add_point(point)
         
         self.triangles[triangle.id] = triangle
+
+    # ------------------------------------------------------------------
+    # Grid-surface helpers
+    # ------------------------------------------------------------------
+    
+    grid_data: Optional['np.ndarray'] = None  # lazily imported type hint – see methods
+    grid_spacing: Optional[float] = None
+    grid_origin: Optional[Tuple[float, float]] = None  # (x0, y0)
+
+    def set_grid_data(self, grid_data: 'np.ndarray', spacing: float, origin: Tuple[float, float]) -> None:
+        """Attach a numpy *grid_data* array to this Surface.
+
+        The grid is assumed to be regularly spaced at *spacing* in both the X and
+        Y directions, with the *origin* tuple giving the lower-left (x, y)
+        coordinate of the [0, 0] grid cell.
+
+        The method populates ``self.points`` so that grid-based Surfaces can be
+        used interchangeably with TIN-based ones elsewhere in the application.
+
+        Args:
+            grid_data: 2-D ``numpy.ndarray`` of elevations. ``np.nan`` values are
+                ignored (no Point3D generated).
+            spacing:  Grid spacing in same X/Y units as the coordinates.
+            origin:   Tuple ``(x0, y0)`` for the gridʼs south-west corner.
+        """
+        # Import here to avoid mandatory numpy dependency for all modules.
+        # import numpy as np # Removed import from here
+
+        self.grid_data = grid_data
+        self.grid_spacing = float(spacing)
+        self.grid_origin = origin
+
+        # Rebuild the points dict so that existing algorithms that iterate over
+        # :pyattr:`points` continue to function.
+        self.points.clear()
+        rows, cols = grid_data.shape
+        x0, y0 = origin
+        for r in range(rows):
+            for c in range(cols):
+                z = grid_data[r, c]
+                if np.isnan(z):
+                    continue  # Skip empty cells
+                x = x0 + c * spacing
+                y = y0 + r * spacing
+                p = Point3D(x=x, y=y, z=float(z))
+                self.points[p.id] = p
+
+    # ------------------------------------------------------------------
+    # Alternate constructors
+    # ------------------------------------------------------------------
+    @classmethod
+    def from_point_list(
+        cls,
+        name: str,
+        points: List[Tuple[float, float, float]],
+        spacing: Optional[float] = None,
+        color: Optional[str] = None,
+    ) -> 'Surface':
+        """Convenience constructor for grid or scatter point collections.
+
+        Args:
+            name:    Name for the new surface.
+            points:  Iterable of ``(x, y, z)`` tuples.
+            spacing: Optional grid spacing.  If provided the attribute
+                     ``grid_spacing`` will be set so that downstream code can
+                     treat this Surface as grid-based.
+            color:   Arbitrary colour name stored in :pyattr:`metadata` for UI
+                     hinting.
+        """
+        pts_dict: Dict[str, Point3D] = {}
+        for x, y, z in points:
+            p = Point3D(x=float(x), y=float(y), z=float(z))
+            pts_dict[p.id] = p
+
+        surf = cls(name=name, points=pts_dict)
+        if spacing is not None:
+            surf.grid_spacing = float(spacing)
+        if color is not None:
+            surf.metadata['color'] = color
+        return surf
     
     def get_bounds(self) -> Optional[Tuple[float, float, float, float]]:
         """
