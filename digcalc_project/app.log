@@ -8638,3 +8638,22 @@ TypeError: VolumeCalculator.__init__() missing 1 required positional argument: '
 2025-05-01 14:04:51,771 - digcalc_project.src.ui.main_window - INFO - Closing application.
 2025-05-01 14:04:51,786 - digcalc_project.src.main - INFO - Application exited with code 0
 2025-05-01 14:04:52,037 - root - ERROR - wglMakeCurrent failed in Clean(), error: 6
+2025-05-01 15:08:23,431 - __main__ - INFO - Starting DigCalc application
+2025-05-01 15:08:23,467 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-01 15:08:28,103 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-05-01 15:08:28,103 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Downloads/Sample file.pdf, initial page: 1, dpi: 300
+2025-05-01 15:08:28,103 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-01 15:08:28,103 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-05-01 15:08:28,103 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-05-01 15:08:28,103 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-05-01 15:08:28,160 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-05-01 15:08:28,160 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 4
+2025-05-01 15:08:28,172 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Sample file.pdf'
+2025-05-01 15:08:28,173 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-01 15:08:28,173 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Sample file.pdf' with 4 pages.
+2025-05-01 15:08:31,264 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-05-01 15:08:31,264 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-01 15:08:47,691 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-01 15:08:47,691 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-05-01 15:08:47,702 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-01 15:08:47,708 - __main__ - INFO - Application exited with code 0

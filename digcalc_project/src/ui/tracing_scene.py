@@ -29,6 +29,7 @@ from PySide6.QtWidgets import (
     QGraphicsItemGroup,
     QGraphicsView
 )
+from digcalc_project.src.ui.items.polyline_item import PolylineItem
 
 # --- MODIFIED: Use TYPE_CHECKING for PolylineData --- 
 if TYPE_CHECKING:
@@ -92,6 +93,7 @@ class TracingScene(QGraphicsScene):
         self._current_polyline_points: List[QPointF] = []
         self._current_vertices_items: List[QGraphicsEllipseItem] = []
         self._temporary_line_item: Optional[QGraphicsLineItem] = None
+        self._selected_polyline: PolylineItem | None = None
 
         # --- Styling ---
         # TODO: Consider layer-specific styling later
@@ -365,12 +367,14 @@ class TracingScene(QGraphicsScene):
             # Emit the first selected item (assuming single selection for now)
             # Filter for QGraphicsPathItem specifically if needed
             selected_item = selected_items[0]
-            if isinstance(selected_item, QGraphicsPathItem): # Ensure it's a polyline
+            if isinstance(selected_item, PolylineItem):  # Ensure it's a traced polyline
+                 # Store reference for convenience
+                 self._selected_polyline = selected_item
                  self.logger.debug(f"Selection changed, emitting signal for item: {selected_item}")
                  self.selectionChanged.emit(selected_item)
             else:
                  self.logger.debug(f"Selection changed, but item is not a QGraphicsPathItem: {type(selected_item)}")
-                 self.selectionChanged.emit(None) # Emit None if selection is not a polyline path
+                 self.selectionChanged.emit(None)
 
         elif not selected_items:
             # Emit None if selection is cleared
@@ -422,36 +426,40 @@ class TracingScene(QGraphicsScene):
         for point in self._current_polyline_points[1:]:
             path.lineTo(point)
 
-        polyline_item = QGraphicsPathItem(path)
-        polyline_item.setPen(self._finalized_polyline_pen)
-        polyline_item.setFlag(QGraphicsItem.ItemIsSelectable, True)
-        polyline_item.setFlag(QGraphicsItem.ItemIsMovable, True) # Allow moving later
-        polyline_item.setFlag(QGraphicsItem.ItemSendsGeometryChanges, True) # For updates if moved
-        polyline_item.setZValue(1) # Ensure finalized lines are above background
+        # Build PolylineItem using captured points
+        pen = QPen(Qt.green, 0)  # TODO: Use layer-specific colour
+        poly_item = PolylineItem(self._current_polyline_points, pen)
 
-        # --- Store layer name and original points in the item ---
-        polyline_item.setData(Qt.UserRole + 1, layer_name)
-        # Store points as list of tuples for easier serialization/retrieval
+        # Make selectable & movable similar to previous behaviour
+        poly_item.setFlag(QGraphicsItem.ItemIsSelectable, True)
+        poly_item.setFlag(QGraphicsItem.ItemIsMovable, True)
+        poly_item.setFlag(QGraphicsItem.ItemSendsGeometryChanges, True)
+        poly_item.setZValue(1)
+
+        # --- Store metadata on the item ---
+        poly_item.setData(Qt.UserRole + 1, layer_name)
         points_data = [(p.x(), p.y()) for p in self._current_polyline_points]
-        polyline_item.setData(Qt.UserRole + 2, points_data)
+        poly_item.setData(Qt.UserRole + 2, points_data)
         # --- END Store ---
 
-        # Push undo command to MainWindow's stack if available
+        # Push undo command through stack if available
         main_win = self.parent_view.window() if self.parent_view else None
         if main_win and hasattr(main_win, 'undoStack'):
-            cmd = AddPolylineCommand(self, polyline_item)
+            cmd = AddPolylineCommand(self, poly_item)
             main_win.undoStack.push(cmd)
         else:
-            # Fallback: directly add item if no undo stack
-            if polyline_item not in self.items():
-                self.addItem(polyline_item)
+            if poly_item not in self.items():
+                self.addItem(poly_item)
+
+        # Track as the currently selected polyline
+        self._selected_polyline = poly_item
 
         self.logger.info(
             f"Finalized polyline with {len(self._current_polyline_points)} points on layer '{layer_name}'."
         )
 
-        # Emit finalized signal (item is already in scene via undo command redo)
-        self.polyline_finalized.emit(self._current_polyline_points, polyline_item)
+        # Emit finalized signal
+        self.polyline_finalized.emit(self._current_polyline_points, poly_item)
 
         # --- NEW: Emit padDrawn if polyline belongs to "pads" layer and is closed ---
         try:
