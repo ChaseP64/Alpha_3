@@ -49,6 +49,11 @@ class VolumeCalculationDialog(QDialog):
                 self.combo_existing.addItem("Lowest")
                 self.combo_proposed.addItem("Lowest")
 
+        # ------------------------------------------------------------
+        # Heuristic default selections
+        # ------------------------------------------------------------
+        self._auto_select_proposed_surface()
+
         # --- Grid Resolution ---
         self.spin_resolution = QDoubleSpinBox(self)
         self.spin_resolution.setRange(0.1, 1000.0) # Sensible range
@@ -80,13 +85,15 @@ class VolumeCalculationDialog(QDialog):
         # Align labels to the right
         for i in range(form_layout.rowCount()):
             label_item = form_layout.itemAt(i, QFormLayout.LabelRole)
-            if label_item and label_item.widget():
+            # Only QLabel supports ``setAlignment`` – guard to avoid AttributeError
+            if label_item is not None and isinstance(label_item.widget(), QLabel):
                 label_item.widget().setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-            # Handle checkbox alignment if it spans both columns
-            widget_item = form_layout.itemAt(i, QFormLayout.FieldRole)
-            if isinstance(widget_item.widget(), QCheckBox):
-                 # Reset alignment or specific handling if needed, currently adds to FieldRole
-                 pass
+
+            # If the row is a single QCheckBox spanning both columns, there is no
+            # LabelRole item. We leave its default styling untouched. For rows
+            # where the *label* itself is a QCheckBox (e.g., *slice_cb*), we
+            # likewise skip alignment because ``QCheckBox`` lacks that API.
+            # Future styling tweaks can be added here if needed.
 
         layout.addLayout(form_layout)
 
@@ -181,3 +188,48 @@ class VolumeCalculationDialog(QDialog):
     #     else:
     #          # Emit without dz data if map not generated or calculation failed
     #          self.volumeComputed.emit(cut, fill, net, np.array([]), np.array([]), np.array([]), False) 
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def _auto_select_proposed_surface(self) -> None:
+        """Attempt to choose a sensible default for *proposed* surface.
+
+        Typical naming conventions include words such as *proposed*, *design*,
+        *final*, etc.  We scan the combo-box items and pick the first match.
+        If the chosen index collides with the *existing* selection we move the
+        existing combo to a different index so that the two selections differ
+        (required for the *OK* button to enable).
+        """
+
+        keywords = {
+            "proposed", "design", "final", "finished", "target", "new",
+            "plan", "top"
+        }
+
+        chosen_idx = None
+        for idx in range(self.combo_proposed.count()):
+            text = self.combo_proposed.itemText(idx).lower()
+            if any(kw in text for kw in keywords):
+                chosen_idx = idx
+                break
+
+        # Apply selection if a candidate found
+        if chosen_idx is not None:
+            self.combo_proposed.setCurrentIndex(chosen_idx)
+
+        # Ensure existing and proposed differ so validation passes
+        if (
+            self.combo_existing.currentIndex()
+            == self.combo_proposed.currentIndex()
+            and self.combo_existing.count() > 1
+        ):
+            # Pick the first index different from proposed
+            for idx in range(self.combo_existing.count()):
+                if idx != self.combo_proposed.currentIndex():
+                    self.combo_existing.setCurrentIndex(idx)
+                    break
+
+        # No need to call _validate_selection here – it will be invoked once
+        # signal connections are established later in __init__. 

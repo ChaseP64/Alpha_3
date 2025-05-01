@@ -744,7 +744,9 @@ class MainWindow(QMainWindow):
                     if not existing_surface.points or not proposed_surface.points:
                          raise ValueError("Selected surface(s) have no data points for calculation.")
 
-                    calculator = VolumeCalculator()
+                    # VolumeCalculator expects the active Project so it can
+                    # extend bounding boxes with regions and log context.
+                    calculator = VolumeCalculator(project)
                     results = calculator.calculate_surface_to_surface(
                         surface1=existing_surface, 
                         surface2=proposed_surface, 
@@ -1459,6 +1461,14 @@ class MainWindow(QMainWindow):
                 self.statusBar().showMessage(f"Surface '{surface_name}' created from layer '{selected_layer}'.", 5000)
                 # Update the view action states now that content has changed
                 self._update_view_actions_state()
+
+                # Notify any listeners (e.g., 3-D viewer) that surfaces list changed
+                if hasattr(self.project_controller, "surfaces_rebuilt"):
+                    self.project_controller.surfaces_rebuilt.emit()
+
+                # Update visualization - Use update_surface_mesh (defined in Part 4)
+                if hasattr(self.visualization_panel, 'update_surface_mesh'):
+                    self.visualization_panel.update_surface_mesh(surface)
 
             except SurfaceBuilderError as e:
                  logger.error(f"Surface build failed: {e}", exc_info=True)

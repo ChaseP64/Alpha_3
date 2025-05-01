@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (
     QToolBar,
     QLabel,
 )
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtCore import Qt
 from functools import cached_property
 from importlib import import_module
@@ -39,6 +39,18 @@ class PvDock(QDockWidget):
         self.wire_act = QAction("Wireframe", self, checkable=True)
         self.wire_act.toggled.connect(self._toggle_wire)
         tb.addAction(self.wire_act)
+
+        # Refresh action ---------------------------------------------------
+        self.refresh_act = QAction("Refresh (F5)", self)
+        self.refresh_act.setShortcut(QKeySequence.Refresh)  # F5 on most OSes
+        # Ensure the shortcut works even when toolbar is not focused
+        self.refresh_act.setShortcutContext(Qt.WidgetWithChildrenShortcut)
+        self.refresh_act.triggered.connect(
+            lambda: self._load_surface(self.surf_cb.currentText())
+        )
+        tb.addAction(self.refresh_act)
+
+        # Add toolbar to layout after actions are set up
         v.addWidget(tb)
 
         # Surface selector ----------------------------------------------------
@@ -70,7 +82,8 @@ class PvDock(QDockWidget):
             if hasattr(pc, "surfaces_rebuilt"):
                 pc.surfaces_rebuilt.connect(self._on_surfaces_rebuilt)  # type: ignore[arg-type]
             if hasattr(pc, "project_modified"):
-                pc.project_modified.connect(self._populate_combo)  # type: ignore[arg-type]
+                # Reload combo *and* mesh whenever project changes (new surfaces added)
+                pc.project_modified.connect(self._on_surfaces_rebuilt)  # type: ignore[arg-type]
             # Lowest/composite surfaces update
             if hasattr(pc, "surfacesChanged"):
                 pc.surfacesChanged.connect(self._on_surfaces_rebuilt)  # type: ignore[arg-type]
@@ -119,8 +132,11 @@ class PvDock(QDockWidget):
                 if getattr(proj, f"{legacy.lower()}_surface", None):
                     self.surf_cb.addItem(legacy)
 
-        # Auto-select first surface if nothing selected
-        if self.surf_cb.count() > 0 and not self.surf_cb.currentText():
+        # When the combo has entries but no active selection "currentIndex" is -1.
+        # Selecting the first item guarantees that a mesh is always loaded the
+        # first time the dock is opened – this will emit *currentTextChanged*
+        # and therefore call :py:meth:`_load_surface` automatically.
+        if self.surf_cb.count() and self.surf_cb.currentIndex() < 0:
             self.surf_cb.setCurrentIndex(0)
 
     def _load_surface(self, name: str) -> None:
@@ -198,11 +214,26 @@ class PvDock(QDockWidget):
     #   Project-signal handlers
     # ------------------------------------------------------------------
     def _on_surfaces_rebuilt(self):
-        """Refresh combo-box list and reload current surface mesh."""
-        current = self.surf_cb.currentText()
-        self._populate_combo()
-        # If the previously selected surface still exists, stay on it;
-        # otherwise pick the first available.
-        if current and self.surf_cb.findText(current) >= 0:
-            self.surf_cb.setCurrentText(current)
-        self._load_surface(self.surf_cb.currentText())
+        """Refresh combo and ensure a visible mesh afterwards."""
+        old = self.surf_cb.currentText()
+        self._populate_combo()  # may auto-select first item & trigger _load_surface
+
+        if not old:
+            # There was *no* previous selection (viewer opened empty).  If the
+            # combo now has entries ensure we show the first surface.
+            if self.surf_cb.count():
+                self.surf_cb.setCurrentIndex(0)  # Signal loads the mesh.
+            return  # Nothing else to do – mesh already loading.
+
+        # There *was* a previous selection – keep it if still present, else
+        # fall back to the first surface.
+        if self.surf_cb.findText(old) >= 0:
+            # If the selection didn't actually change Qt will NOT emit
+            # *currentTextChanged* – call _load_surface() explicitly.
+            if self.surf_cb.currentText() == old:
+                self._load_surface(old)
+            else:
+                # Setting the text changed the selection → signal will fire.
+                self.surf_cb.setCurrentText(old)
+        elif self.surf_cb.count():
+            self.surf_cb.setCurrentIndex(0)  # First available – loads mesh.
