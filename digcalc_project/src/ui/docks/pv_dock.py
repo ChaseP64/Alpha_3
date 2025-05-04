@@ -71,6 +71,10 @@ class PvDock(QDockWidget):
             )
             return
 
+        if self._qtint is None:
+            v.addWidget(QLabel("PyVistaQt not available.\nInstall with  pip install pyvistaqt"))
+            return
+
         v.addWidget(self._qtint)
         self._populate_combo()
         self._load_surface(self.surf_cb.currentText())
@@ -106,8 +110,11 @@ class PvDock(QDockWidget):
 
     @cached_property
     def _qtint(self):
-        """Create and cache a :class:`pyvistaqt.QtInteractor`."""
-        from pyvistaqt import QtInteractor
+        """Create and cache a :class:`pyvistaqt.QtInteractor`, or *None* if package missing."""
+        try:
+            from pyvistaqt import QtInteractor  # Heavy import – inside try
+        except ImportError:
+            return None
 
         return QtInteractor(self, auto_update=True)
 
