@@ -13,6 +13,9 @@ from PySide6.QtWidgets import (
 from ..models.region import Region
 from ..services.settings_service import SettingsService
 
+# New import for vertex items
+from digcalc_project.src.ui.items.vertex_item import VertexItem
+
 # Define module-level logger
 logger = logging.getLogger(__name__)
 
@@ -43,6 +46,7 @@ class PropertiesDock(QDockWidget):
         # --- Initialize Tabs ---
         self._create_polyline_tab()
         self._create_region_tab()
+        self._create_vertex_tab()
 
         # --- Hide initially ---
         self.tabs.setCurrentIndex(0) # Show Polyline tab by default if needed
@@ -130,27 +134,64 @@ class PropertiesDock(QDockWidget):
         # Store refs needed later
         self._region_apply_button = region_apply_button
 
+    def _create_vertex_tab(self):
+        """Creates the tab for editing VertexItem elevation."""
+        from PySide6.QtWidgets import QFormLayout, QDoubleSpinBox, QPushButton
+
+        self.vertex_tab = QWidget()
+        vlay = QFormLayout(self.vertex_tab)
+
+        self.vertex_z_spin = QDoubleSpinBox()
+        self.vertex_z_spin.setDecimals(3)
+        self.vertex_z_spin.setRange(-9999, 9999)
+        self.vertex_z_spin.setSingleStep(0.1)
+        self.vertex_z_spin.setSuffix(" ft")
+
+        self.vertex_apply_btn = QPushButton("Apply")
+        self.vertex_apply_btn.clicked.connect(self._apply_vertex_z)
+
+        vlay.addRow("Elevation (ft):", self.vertex_z_spin)
+        vlay.addRow(self.vertex_apply_btn)
+
+        self.tabs.addTab(self.vertex_tab, "Vertex")
+
+        # Internal state holder
+        self._current_vertex: VertexItem | None = None
+
     def update_for_selection(self, item: Optional[Any]):
         """Updates the displayed properties based on the selected item type."""
-        # TODO: Phase 3 - Properly identify selected item type (Polyline/Region)
-        # For now, assume we can distinguish and have the necessary data.
-        # This requires integration with the selection mechanism in VisualizationPanel/TracingScene.
-
         # Clear previous state
         self.clear_selection()
 
-        if isinstance(item, tuple) and len(item) == 3: # Placeholder for polyline info (layer, index, elevation)
-             layer_name, index, elevation = item
-             self.load_polyline(layer_name, index, elevation)
-             self.tabs.setCurrentWidget(self.polyline_tab)
-             if not self.isVisible(): self.show()
-        elif isinstance(item, Region): # Check if the item is a Region object
-             self.load_region(item)
-             self.tabs.setCurrentWidget(self.region_tab)
-             if not self.isVisible(): self.show()
-        else:
-            # No valid selection or unhandled type
-            self.hide() # Hide if nothing relevant is selected
+        # --- Handle VertexItem selection ---
+        if isinstance(item, list) and len(item) == 1:
+            itm0 = item[0]
+            if isinstance(itm0, VertexItem):
+                self.load_vertex(itm0)
+                return
+
+        if isinstance(item, VertexItem):
+            self.load_vertex(item)
+            return
+
+        # Existing polyline / region logic
+        if isinstance(item, tuple) and len(item) == 3:
+            layer_name, index, elevation = item
+            self.load_polyline(layer_name, index, elevation)
+            self.tabs.setCurrentWidget(self.polyline_tab)
+            if not self.isVisible():
+                self.show()
+            return
+
+        if isinstance(item, Region):
+            self.load_region(item)
+            self.tabs.setCurrentWidget(self.region_tab)
+            if not self.isVisible():
+                self.show()
+            return
+
+        # Nothing handled
+        self.hide()
 
     def load_polyline(self, layer_name: str, index: int, elevation: Optional[float]):
         """Loads polyline properties into the Polyline tab."""
@@ -240,4 +281,25 @@ class PropertiesDock(QDockWidget):
         """Clears selection and hides the dock without applying changes."""
         logger.debug("Cancel clicked, clearing and hiding dock.")
         self.clear_selection()
-        self.hide() 
+        self.hide()
+
+    def load_vertex(self, v: VertexItem):
+        """Load a single :class:`VertexItem` into the Vertex tab for editing."""
+        self._current_vertex = v
+        self.vertex_z_spin.setValue(v.z())
+        self.tabs.setCurrentWidget(self.vertex_tab)
+        if not self.isVisible():
+            self.show()
+
+    def _apply_vertex_z(self):
+        """Apply the elevation change for the currently loaded vertex."""
+        if getattr(self, "_current_vertex", None):
+            z = self.vertex_z_spin.value()
+            from digcalc_project.src.ui.commands.edit_vertex_z_command import EditVertexZCommand
+            # Access undoStack via main window
+            main_win = self.parent()
+            if main_win and hasattr(main_win, 'undoStack'):
+                main_win.undoStack.push(EditVertexZCommand(self._current_vertex, z))
+            else:
+                self._current_vertex.set_z(z)
+            logger.info("Vertex elevation applied: %.3f", z) 

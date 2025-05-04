@@ -14,12 +14,12 @@ from typing import List
 
 from PySide6.QtWidgets import QGraphicsPathItem
 from PySide6.QtGui import QPainterPath, QPen
-from PySide6.QtCore import QPointF, Qt
+from PySide6.QtCore import QPointF, Qt, Signal, QObject
 
 from .vertex_item import VertexItem
 
 
-class PolylineItem(QGraphicsPathItem):
+class PolylineItem(QObject, QGraphicsPathItem):
     """Graphical polyline composed of draggable :class:`VertexItem` handles.
 
     Args:
@@ -30,8 +30,12 @@ class PolylineItem(QGraphicsPathItem):
 
     # Future: Could add a signal "geometryChanged" to inform external listeners.
 
+    # Signal forwarded when a child vertex is double-clicked
+    vertexDoubleClicked = Signal(object, object)  # (self, vertex)
+
     def __init__(self, points: List[QPointF], layer_pen: QPen, mode: str = "entered"):
-        super().__init__()
+        QObject.__init__(self)
+        QGraphicsPathItem.__init__(self)
 
         self.mode: str = mode  # straight-line vs interpolated ‑ stored for later phases
         self._vertex_items: List[VertexItem] = []
@@ -41,6 +45,7 @@ class PolylineItem(QGraphicsPathItem):
         for pt in points:
             vertex = VertexItem(pt, parent=self)
             vertex.moved.connect(self._rebuild_path)
+            vertex.doubleClicked.connect(lambda v=vertex: self.vertexDoubleClicked.emit(self, v))
             self._vertex_items.append(vertex)
 
         # Build initial path

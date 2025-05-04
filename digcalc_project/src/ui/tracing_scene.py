@@ -6,7 +6,7 @@ import logging
 import math
 from typing import List, Optional, Tuple, Dict, Sequence, Any, TypeAlias, TYPE_CHECKING
 
-from PySide6.QtCore import Qt, QPointF, Signal, QLineF
+from PySide6.QtCore import Qt, QPointF, Signal, QLineF, QEvent
 from PySide6.QtGui import (
     QBrush,
     QColor,
@@ -32,6 +32,8 @@ from PySide6.QtWidgets import (
     QGraphicsView
 )
 from digcalc_project.src.ui.items.polyline_item import PolylineItem
+from digcalc_project.src.ui.commands.edit_vertex_z_command import EditVertexZCommand
+from digcalc_project.src.ui.dialogs.elevation_dialog import ElevationDialog
 
 # --- MODIFIED: Use TYPE_CHECKING for PolylineData --- 
 if TYPE_CHECKING:
@@ -124,6 +126,8 @@ class TracingScene(QGraphicsScene):
             sc.activated.connect(_local_backspace)
 
             self._undo_shortcut = sc
+
+        # VertexItem double-clicks will be routed via PolylineItem.signal; no event filter needed.
 
     # --- Background Image ---
 
@@ -474,6 +478,9 @@ class TracingScene(QGraphicsScene):
         poly_item.setData(Qt.UserRole + 2, points_data)
         # --- END Store ---
 
+        # Connect vertex double-clicks to elevation editor
+        poly_item.vertexDoubleClicked.connect(lambda _poly, vtx: self._edit_vertex_elevation(vtx))
+
         # Directly add the item – do NOT push onto the global undo stack so that
         # Ctrl+Z does not remove an entire newly-drawn polyline.  Full-line
         # deletion remains available via the Delete key / context menu.
@@ -714,6 +721,23 @@ class TracingScene(QGraphicsScene):
 
         return item
 
+    # ------------------------------------------------------------------
+    def _edit_vertex_elevation(self, vertex):
+        """Prompt the user to edit *vertex* elevation and push undo command."""
+        parent_widget = self.views()[0] if self.views() else None
+        dlg = ElevationDialog(parent_widget, initial_value=vertex.z())
+        if dlg.exec():
+            new_z = dlg.value()
+            if abs(new_z - vertex.z()) < 1e-6:
+                return  # No effective change
+            main_win = parent_widget.window() if parent_widget else None
+            if main_win and hasattr(main_win, "undoStack"):
+                main_win.undoStack.push(EditVertexZCommand(vertex, new_z))
+            else:
+                vertex.set_z(new_z)
+            # Future: trigger surface rebuild if necessary
+        # Dialog cancelled – nothing to do
+
 # ------------------------------------------------------------------
 # Undo/Redo Command
 # ------------------------------------------------------------------
@@ -806,3 +830,15 @@ class SetPadElevationCommand(QUndoCommand):
     def undo(self):  # noqa: D401
         if self._item and self._item in self._scene.items():
             self._scene.removeItem(self._item)
+
+    # --------------------------------------------------------------
+    # Generic event filter to intercept vertex-item double-clicks
+    # --------------------------------------------------------------
+
+# <<<CUT START - remove wrongly indented methods inside SetPadElevationCommand>>> 
+
+# --------------------------------------------------------------
+#  (Removed nested eventFilter and _edit_vertex_elevation definitions)
+# --------------------------------------------------------------
+
+# <<<CUT END>>> 
