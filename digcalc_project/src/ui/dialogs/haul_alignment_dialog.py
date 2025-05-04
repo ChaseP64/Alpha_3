@@ -79,3 +79,4 @@ class HaulAlignmentDialog(QDialog):
         """Return *(station_interval, free_haul_distance)* in feet."""
 
         return self.interval.value(), self.free.value()
+

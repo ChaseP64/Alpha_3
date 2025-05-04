@@ -17,6 +17,8 @@ from PySide6.QtGui import (
     QKeyEvent,
     QMouseEvent,
     QUndoCommand,
+    QKeySequence,
+    QShortcut,
 )
 from PySide6.QtWidgets import (
     QGraphicsEllipseItem,
@@ -95,6 +97,9 @@ class TracingScene(QGraphicsScene):
         self._temporary_line_item: Optional[QGraphicsLineItem] = None
         self._selected_polyline: PolylineItem | None = None
 
+        # Placeholder for Backspace-local undo shortcut (created when tracing starts)
+        self._undo_shortcut = None
+
         # --- Styling ---
         # TODO: Consider layer-specific styling later
         self._background_opacity = 0.7
@@ -104,6 +109,21 @@ class TracingScene(QGraphicsScene):
         self._rubber_band_pen = QPen(QColor("yellow"), 1, Qt.DashLine)
         self._finalized_polyline_pen = QPen(QColor("lime"), 4)
         self._selected_polyline_pen = QPen(QColor("yellow"), 5, Qt.DotLine)
+
+        # --- Local "Backspace" shortcut to undo last vertex ---
+        if self.parent_view and self._undo_shortcut is None:
+            target_widget = self.parent_view.viewport()
+
+            sc = QShortcut(QKeySequence(Qt.Key_Backspace), target_widget)
+            sc.setContext(Qt.WidgetWithChildrenShortcut)
+
+            def _local_backspace():
+                self.logger.debug("Local Backspace activated (vertex undo)")
+                if self._is_drawing:
+                    self._undo_last_vertex()
+            sc.activated.connect(_local_backspace)
+
+            self._undo_shortcut = sc
 
     # --- Background Image ---
 
@@ -323,6 +343,10 @@ class TracingScene(QGraphicsScene):
             else:
                 self._cancel_current_polyline()
             event.accept()
+        elif event.key() == Qt.Key_Z and (event.modifiers() & Qt.ControlModifier):
+            # Ctrl+Z during drawing should undo the last vertex (similar to backspace)
+            self._undo_last_vertex()
+            event.accept()
         elif event.key() == Qt.Key_Backspace:
             self._undo_last_vertex()
             event.accept()
@@ -390,6 +414,14 @@ class TracingScene(QGraphicsScene):
         ellipse = QGraphicsEllipseItem(pos.x() - radius, pos.y() - radius, radius * 2, radius * 2)
         ellipse.setPen(self._vertex_pen)
         ellipse.setBrush(self._vertex_brush)
+        # Ensure the marker **does not** intercept mouse events – otherwise the
+        # 2nd click of a double-click lands on the marker and the scene never
+        # receives the `mouseDoubleClickEvent`, leaving drawing stuck in
+        # "add-vertex" mode.  Disabling mouse buttons on the marker lets the
+        # event propagate to the scene where the polyline is finalized.
+        ellipse.setAcceptedMouseButtons(Qt.NoButton)
+        ellipse.setFlag(QGraphicsItem.ItemIsSelectable, False)
+        ellipse.setFlag(QGraphicsItem.ItemIsMovable, False)
         ellipse.setZValue(10) # Ensure vertices are drawn above lines/background
         self.addItem(ellipse)
         self._current_vertices_items.append(ellipse)
@@ -442,14 +474,11 @@ class TracingScene(QGraphicsScene):
         poly_item.setData(Qt.UserRole + 2, points_data)
         # --- END Store ---
 
-        # Push undo command through stack if available
-        main_win = self.parent_view.window() if self.parent_view else None
-        if main_win and hasattr(main_win, 'undoStack'):
-            cmd = AddPolylineCommand(self, poly_item)
-            main_win.undoStack.push(cmd)
-        else:
-            if poly_item not in self.items():
-                self.addItem(poly_item)
+        # Directly add the item – do NOT push onto the global undo stack so that
+        # Ctrl+Z does not remove an entire newly-drawn polyline.  Full-line
+        # deletion remains available via the Delete key / context menu.
+        if poly_item not in self.items():
+            self.addItem(poly_item)
 
         # Track as the currently selected polyline
         self._selected_polyline = poly_item

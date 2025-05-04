@@ -571,6 +571,8 @@ class VisualizationPanel(QWidget):
               self.logger.info("Tracing mode enabled.")
               # Disable view dragging and set cross cursor
               self.view_2d.setDragMode(QGraphicsView.DragMode.NoDrag)
+              # Ensure viewport can receive key events (for Ctrl+Z local undo).
+              self.view_2d.viewport().setFocusPolicy(Qt.StrongFocus)
               self.view_2d.viewport().setCursor(Qt.CrossCursor)
               # Ensure 2D view is visible
               if not self.view_2d.isVisible():
@@ -770,6 +772,8 @@ class VisualizationPanel(QWidget):
               self.logger.info("Tracing mode enabled.")
               # Disable view dragging and set cross cursor
               self.view_2d.setDragMode(QGraphicsView.DragMode.NoDrag)
+              # Ensure viewport can receive key events (for Ctrl+Z local undo).
+              self.view_2d.viewport().setFocusPolicy(Qt.StrongFocus)
               self.view_2d.viewport().setCursor(Qt.CrossCursor)
               # Ensure 2D view is visible
               if not self.view_2d.isVisible():

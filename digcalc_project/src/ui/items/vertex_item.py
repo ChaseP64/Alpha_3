@@ -7,7 +7,7 @@ scene position changes, and highlights on hover.
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import QGraphicsPathItem, QStyleOptionGraphicsItem
+from PySide6.QtWidgets import QGraphicsPathItem, QStyleOptionGraphicsItem, QGraphicsItem
 from PySide6.QtGui import QPainterPath, QPen, QPainter
 from PySide6.QtCore import Qt, Signal, QPointF, QObject
 
@@ -31,9 +31,12 @@ class VertexItem(QObject, QGraphicsPathItem):
         QObject.__init__(self)
         QGraphicsPathItem.__init__(self, parent)
 
-        # Item flags – make the item movable and notify on geometry changes
-        self.setFlag(self.ItemIsMovable, True)
-        self.setFlag(self.ItemSendsGeometryChanges, True)
+        # Item flags – make the item movable and notify on geometry changes.
+        # Use the enum values from QGraphicsItem directly – accessing them via
+        # ``self`` is unreliable because the attributes are defined on the
+        # C++ base class, not on the Python wrapper instance.
+        self.setFlag(QGraphicsItem.ItemIsMovable, True)
+        self.setFlag(QGraphicsItem.ItemSendsGeometryChanges, True)
         self.setAcceptHoverEvents(True)
 
         # Create the cross-hair path and apply it
@@ -73,7 +76,7 @@ class VertexItem(QObject, QGraphicsPathItem):
 
     def itemChange(self, change: QGraphicsPathItem.GraphicsItemChange, value):  # type: ignore[name-defined]
         """Emit *moved* whenever the position has changed."""
-        if change == self.ItemPositionChange:
+        if change == QGraphicsItem.ItemPositionChange:
             # *value* holds the new position in item coordinates – convert to scene coords
             if isinstance(value, QPointF):
                 self.moved.emit(value)
