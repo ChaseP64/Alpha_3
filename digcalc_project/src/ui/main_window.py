@@ -221,6 +221,8 @@ class MainWindow(QMainWindow):
         # self.prop_dock.edited.connect(self._apply_elevation_edit) # Old signal name
         self.prop_dock.polylineEdited.connect(self._apply_elevation_edit) # Corrected signal name
         # TODO: Connect self.prop_dock.regionUpdated to a handler method
+        # Connect the new settingsChanged signal
+        self.prop_dock.settingsChanged.connect(self.project_controller.trigger_rebuild_if_needed)
         # --- END NEW ---
 
 

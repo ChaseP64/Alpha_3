@@ -31,6 +31,10 @@ dependencies = [
     "pyvistaqt>=0.4",
     "vtk>=9.2",
 ]
+# Optional: spline sampling functionality – SciPy only when needed
+spline = [
+    "scipy>=1.10",
+]
 # Development and testing dependencies
 dev = [
     "pytest",

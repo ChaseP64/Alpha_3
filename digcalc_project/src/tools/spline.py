@@ -8,12 +8,152 @@ straight poly-line so that callers do not need to special-case their input size.
 """
 from __future__ import annotations
 
-from typing import List
+from typing import List, Tuple
 
 from PySide6.QtCore import QPointF
 from PySide6.QtGui import QPainterPath
 
-__all__ = ["catmull_rom"]
+# ----------------------------------------------------------------------
+# Extras needed for sampling helper
+# ----------------------------------------------------------------------
+import hashlib
+import math
+
+# Internal cache keyed by density + vertex hash so repeated requests are cheap
+_sample_cache: dict[str, List[Tuple[float, float, float]]] = {}
+
+
+# ----------------------------------------------------------------------
+# Utilities
+# ----------------------------------------------------------------------
+
+
+def _points_to_xyz(pts: List[QPointF]) -> List[Tuple[float, float, float]]:
+    """Convert ``QPointF`` list → sequence of (x, y, z) tuples.
+
+    A ``QPointF`` does not expose *z* out-of-the-box.  If callers provide a
+    subclass or monkey-patched attribute/property ``z``/``z()`` we happily
+    consume it, otherwise we default to zero for compatibility.
+    """
+
+    out: List[Tuple[float, float, float]] = []
+    for pt in pts:
+        # Be tolerant – support .z attribute *or* .z() method if supplied.
+        z_val = 0.0
+        if hasattr(pt, "z"):
+            z_attr = getattr(pt, "z")  # could be value or callable
+            z_val = z_attr() if callable(z_attr) else float(z_attr)
+        out.append((float(pt.x()), float(pt.y()), float(z_val)))
+    return out
+
+
+def _vertex_hash(pts: List[QPointF]) -> str:
+    """Return SHA-1 hash for the *x,y* coordinates – cache key helper."""
+
+    h = hashlib.sha1()
+    for pt in pts:
+        h.update(float(pt.x()).hex().encode())
+        h.update(float(pt.y()).hex().encode())
+    return h.hexdigest()
+
+
+# ----------------------------------------------------------------------
+# Public API
+# ----------------------------------------------------------------------
+
+
+def sample(pts: List[QPointF], density_ft: float = 1.0) -> List[Tuple[float, float, float]]:  # noqa: D401,E501
+    """Return evenly spaced (≈ *density_ft*) points along a smoothed spline.
+
+    Behaviour
+    ---------
+    1. **SciPy available** – Use *cubic B-spline* (clamped ends, \(k=3\), \(s=0\))
+       constructed in chord-length parameter space for robustness.
+    2. **SciPy missing/fails** – Gracefully fall back to *linear* densify so
+       callers *always* get a usable result.
+
+    The routine internally caches results by ``(density, SHA-1(vertices))`` so
+    repeated calls are *O(1)* after the first computation.
+    """
+
+    # Degenerate cases – nothing or singleton list – just echo back.
+    if len(pts) < 2:
+        return _points_to_xyz(pts)
+
+    # Compose cache key
+    key = f"{density_ft:.3f}-{_vertex_hash(pts)}"
+    if key in _sample_cache:
+        return _sample_cache[key]
+
+    xyz = _points_to_xyz(pts)
+
+    # ------------------------------------------------------------------
+    # Attempt SciPy-powered resample first
+    # ------------------------------------------------------------------
+    try:
+        import numpy as np
+        from scipy import interpolate
+
+        arr = np.asarray(xyz, dtype=float)
+
+        # Chord-length parameterisation – robust with non-uniform spacing.
+        dists = np.linalg.norm(np.diff(arr[:, :2], axis=0), axis=1)
+        if np.allclose(dists, 0):
+            # All points coincident – nothing to interpolate.
+            _sample_cache[key] = xyz
+            return xyz
+
+        t = np.insert(np.cumsum(dists), 0, 0.0)
+        t /= t[-1]  # normalise to [0,1]
+
+        # Build *clamped* cubic splines for each component.
+        spl_x = interpolate.CubicSpline(t, arr[:, 0], bc_type="clamped")
+        spl_y = interpolate.CubicSpline(t, arr[:, 1], bc_type="clamped")
+        spl_z = interpolate.CubicSpline(t, arr[:, 2], bc_type="clamped")
+
+        length_ft = float(np.sum(dists))
+        n_samples: int = max(2, int(math.ceil(length_ft / density_ft)))
+        ts = np.linspace(0.0, 1.0, n_samples)
+
+        out: List[Tuple[float, float, float]] = list(zip(spl_x(ts), spl_y(ts), spl_z(ts)))
+
+    except Exception:  # pragma: no cover – SciPy absent or failed numerical issue
+        # Fallback – linear densify so API still returns useful data.
+        out = _linear_resample(xyz, density_ft)
+
+    _sample_cache[key] = out
+    return out
+
+
+# ----------------------------------------------------------------------
+# Helper – linear densify (fallback)
+# ----------------------------------------------------------------------
+
+
+def _linear_resample(xyz: List[Tuple[float, float, float]], density: float) -> List[Tuple[float, float, float]]:
+    """Return linearly densified points along *xyz* polyline."""
+
+    import numpy as np
+
+    arr = np.asarray(xyz, dtype=float)
+    seglens = np.linalg.norm(np.diff(arr[:, :2], axis=0), axis=1)
+
+    pts: List[Tuple[float, float, float]] = [tuple(arr[0])]
+    for p0, p1, seg_len in zip(arr[:-1], arr[1:], seglens):
+        if seg_len == 0:
+            continue  # coincident
+        n = max(1, int(math.ceil(seg_len / density)))
+        for k in range(1, n + 1):
+            t = k / n
+            pts.append(tuple(p0 + (p1 - p0) * t))
+    return pts
+
+
+# ----------------------------------------------------------------------
+# Update public symbols
+# ----------------------------------------------------------------------
+
+__all__ = ["catmull_rom", "sample"]
 
 
 def catmull_rom(pts: List[QPointF], samples_per_seg: int = 8) -> QPainterPath:  # noqa: D401,E501

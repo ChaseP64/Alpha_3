@@ -9761,3 +9761,45 @@ AttributeError: 'TracingScene' object has no attribute '_apply_elevation_workflo
 2025-05-04 21:43:14,072 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
 2025-05-04 21:43:14,075 - digcalc_project.src.ui.main_window - INFO - Closing application.
 2025-05-04 21:43:14,091 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-05 11:31:47,323 - __main__ - INFO - Starting DigCalc application
+2025-05-05 11:31:47,350 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-05 11:31:58,900 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-05 11:31:58,900 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-05 11:31:58,900 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-05 11:31:58,900 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-05 11:31:58,927 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-05 11:31:58,927 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-05 11:32:02,324 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-05 11:32:02,345 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-05 11:32:02,392 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-05 11:32:02,392 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-05 11:32:02,392 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-05-05 11:32:05,756 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-05-05 11:32:05,756 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-05 11:32:22,190 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 5 points on layer 'Existing Surface'.
+2025-05-05 11:32:22,190 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 5, Elevation: None, New Rev: 1).
+2025-05-05 11:32:22,190 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: None) to layer 'Existing Surface'.
+2025-05-05 11:32:22,440 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-05 11:32:22,440 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-05 11:34:05,200 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-05 11:34:06,274 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-05 11:34:06,351 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-05 11:34:06,373 - __main__ - INFO - Application exited with code 0
+2025-05-05 14:00:39,977 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-05 14:00:40,041 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-05 14:00:46,242 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-05 14:00:46,242 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-05 14:00:46,242 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-05 14:00:46,242 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-05 14:00:46,242 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-05 14:00:46,242 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-05 14:00:49,717 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-05 14:00:49,727 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-05 14:00:49,759 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-05 14:00:49,759 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-05 14:00:49,759 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-05-05 14:01:11,690 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-05 14:01:11,690 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-05 14:01:11,767 - digcalc_project.src.ui.main_window - WARNING - Cannot fit view: Scene rectangle is null or invalid.
+2025-05-05 14:01:11,774 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-05 14:01:11,779 - digcalc_project.src.main - INFO - Application exited with code 0

@@ -111,6 +111,15 @@ class VertexItem(QObject, QGraphicsPathItem):
         self.setToolTip(f"Z = {self._z:,.3f} ft")
 
     # ------------------------------------------------------------------
+    # Convenience helpers
+    # ------------------------------------------------------------------
+    def to_tuple(self) -> tuple[float, float, float]:  # noqa: D401
+        """Return the vertex position as an *(x, y, z)* tuple in scene units."""
+
+        pos: QPointF = self.pos()
+        return (pos.x(), pos.y(), self._z)
+
+    # ------------------------------------------------------------------
     # Mouse interaction overrides
     # ------------------------------------------------------------------
     def mouseDoubleClickEvent(self, ev):  # noqa: D401

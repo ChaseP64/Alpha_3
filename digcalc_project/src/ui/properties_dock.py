@@ -6,7 +6,8 @@ from typing import Optional, Tuple, Any
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QDockWidget, QLabel, QDoubleSpinBox, QFormLayout, QDialogButtonBox,
-    QWidget, QVBoxLayout, QTabWidget, QLineEdit, QPushButton, QCheckBox, QGraphicsPathItem
+    QWidget, QVBoxLayout, QTabWidget, QLineEdit, QPushButton, QCheckBox, QGraphicsPathItem,
+    QComboBox
 )
 
 # Relative imports
@@ -30,6 +31,8 @@ class PropertiesDock(QDockWidget):
     # Signals emitted when the 'Apply' button is clicked for each type.
     polylineEdited = Signal(str, int, float) # layer_name, polyline_index, new_elevation
     regionUpdated = Signal(Region)           # Updated Region object
+    # Signal emitted when a setting affecting rebuilds is changed
+    settingsChanged = Signal()
 
     def __init__(self, parent=None):
         """Initialize the PropertiesDock."""
@@ -50,6 +53,7 @@ class PropertiesDock(QDockWidget):
         self._create_polyline_tab()
         self._create_region_tab()
         self._create_vertex_tab()
+        self._create_tracing_tab()
 
         # --- Hide initially ---
         self.tabs.setCurrentIndex(0) # Show Polyline tab by default if needed
@@ -166,6 +170,54 @@ class PropertiesDock(QDockWidget):
         # Internal state holder
         self._current_vertex: VertexItem | None = None
 
+    def _create_tracing_tab(self):
+        """Creates the QWidget and layout for the Tracing settings tab."""
+        self.tracing_tab = QWidget()
+        layout = QVBoxLayout(self.tracing_tab)
+        form_layout = QFormLayout()
+
+        settings = SettingsService()
+
+        # --- UI Elements ---
+        # Spline sample spacing
+        self._spline_sampling_spin = QDoubleSpinBox()
+        self._spline_sampling_spin.setRange(0.1, 10.0)
+        self._spline_sampling_spin.setDecimals(1) # Match range step
+        self._spline_sampling_spin.setSingleStep(0.1)
+        self._spline_sampling_spin.setSuffix(" ft")
+        self._spline_sampling_spin.setToolTip("Distance between samples along smoothed polylines (splines).")
+        self._spline_sampling_spin.setValue(settings.smooth_sampling_ft())
+        self._spline_sampling_spin.valueChanged.connect(self._update_smooth_sampling)
+
+        # Elevation prompt mode
+        self._elev_mode_combo = QComboBox()
+        self._elev_mode_combo.setToolTip("How elevation is prompted for during polyline tracing.")
+        # Add items with user data
+        self._elev_mode_combo.addItem("Point-by-point", userData="point")
+        self._elev_mode_combo.addItem("First/last (interpolate)", userData="interpolate")
+        self._elev_mode_combo.addItem("Whole line", userData="line")
+
+        # Set initial value
+        current_mode = settings.tracing_elev_mode()
+        index = self._elev_mode_combo.findData(current_mode)
+        if index != -1:
+            self._elev_mode_combo.setCurrentIndex(index)
+        else: # Default to point-by-point if setting is somehow invalid
+             logger.warning(f"Invalid tracing_elev_mode '{current_mode}' in settings, defaulting.")
+             self._elev_mode_combo.setCurrentIndex(self._elev_mode_combo.findData("point"))
+
+        self._elev_mode_combo.currentIndexChanged.connect(self._update_tracing_mode)
+
+        form_layout.addRow("Spline sample spacing:", self._spline_sampling_spin)
+        form_layout.addRow("Elevation prompt mode:", self._elev_mode_combo)
+
+        # --- Layout ---
+        layout.addLayout(form_layout)
+        layout.addStretch()
+
+        self.tabs.addTab(self.tracing_tab, "Tracing")
+        logger.debug("Tracing settings tab created.")
+
     def update_for_selection(self, item: Optional[Any]):
         """Updates the displayed properties based on the selected item type."""
         # Clear previous state
@@ -198,7 +250,16 @@ class PropertiesDock(QDockWidget):
                 self.show()
             return
 
-        # Nothing handled
+        # If no specific item is selected, maybe show the tracing tab?
+        # Or just hide as before.
+        # Let's stick to hiding for now unless explicitly told otherwise.
+        if not self.isVisible(): # Keep hidden if already hidden
+             pass # self.hide()
+        elif self.tabs.currentWidget() not in [self.polyline_tab, self.region_tab, self.vertex_tab]:
+             # If some other tab was visible (e.g. Tracing), maybe keep it?
+             # Let's reconsider this - standard behaviour is probably to hide if nothing relevant selected.
+             self.hide()
+        # Previous logic: self.hide() if no item matched. Let's restore that simplicity.
         self.hide()
 
     def load_polyline(self, layer_name: str, index: int, elevation: Optional[float]):
@@ -254,6 +315,8 @@ class PropertiesDock(QDockWidget):
         self.region_strip_depth_spin.setEnabled(False)
         self._region_apply_button.setEnabled(False)
         self._current_region = None
+
+        # Do NOT clear tracing tab widgets, they reflect global settings
 
         logger.debug("Properties dock cleared.")
 
@@ -346,3 +409,21 @@ class PropertiesDock(QDockWidget):
                 main_win.undoStack.push(ToggleSmoothCommand(polyline_item))
             else:
                 polyline_item.toggle_mode() 
+
+    # --- Handlers for Tracing Tab ---
+
+    def _update_smooth_sampling(self, value: float):
+        """Update smooth sampling setting and emit signal."""
+        logger.debug(f"Updating smooth_sampling_ft to: {value}")
+        SettingsService().set_smooth_sampling_ft(value)
+        self.settingsChanged.emit()
+
+    def _update_tracing_mode(self, index: int):
+        """Update tracing elevation mode setting and emit signal."""
+        mode = self._elev_mode_combo.itemData(index)
+        if mode:
+            logger.debug(f"Updating tracing_elev_mode to: {mode}")
+            SettingsService().set_tracing_elev_mode(mode)
+            self.settingsChanged.emit()
+        else:
+             logger.error(f"Could not get user data for combo box index {index}") 

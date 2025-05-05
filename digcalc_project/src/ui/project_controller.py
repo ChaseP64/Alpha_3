@@ -401,3 +401,19 @@ Do you want to save them?""",
                 self.surfacesChanged.emit()
             except Exception as err:
                 self.logger.error("Failed to build lowest surface: %s", err, exc_info=True) 
+
+    # --------------------------------------------------------------------------
+    # Rebuild debounce trigger (called by Settings changes etc.)
+    # --------------------------------------------------------------------------
+    def trigger_rebuild_if_needed(self):
+        """Slot placeholder for live-settings updates which may require surface rebuilds.
+
+        Currently this simply calls :pymeth:`rebuild_surfaces` which performs
+        an immediate check/rebuild for any surfaces that are now stale due to
+        layer revision changes or global settings (e.g., spline density).
+        It can be extended in the future to implement true debounce if needed.
+        """
+        try:
+            self.rebuild_surfaces()
+        except Exception as exc:  # pragma: no cover – defensive
+            logger.error("trigger_rebuild_if_needed failed: %s", exc, exc_info=True) 

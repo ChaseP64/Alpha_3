@@ -17,7 +17,7 @@ from PySide6.QtGui import QPainterPath, QPen
 from PySide6.QtCore import QPointF, Qt, Signal, QObject
 
 from .vertex_item import VertexItem
-from digcalc_project.src.tools.spline import catmull_rom
+from digcalc_project.src.tools.spline import catmull_rom, sample as spline_sample
 
 
 class PolylineItem(QObject, QGraphicsPathItem):
@@ -77,6 +77,23 @@ class PolylineItem(QObject, QGraphicsPathItem):
         coordinates.
         """
         return self._vertex_items
+
+    # ------------------------------------------------------------------
+    # Evaluation helpers
+    # ------------------------------------------------------------------
+    def sample(self, density_ft: float):  # noqa: D401
+        """Return list of (x, y, z) tuples sampled at ≈ ``density_ft`` spacing.
+
+        For *interpolated* mode we call the shared ``spline.sample`` helper; for
+        *entered* mode we simply return the raw vertex coordinates.
+        """
+
+        if self.mode == "interpolated":
+            # Helper accepts *any* iterable exposing .x(), .y(), .z()/z attr
+            return spline_sample(self.vertices(), density_ft)
+
+        # Straight-line polyline – just spit back the original vertices
+        return [v.to_tuple() for v in self.vertices()]
 
     # ------------------------------------------------------------------
     # Internal logic

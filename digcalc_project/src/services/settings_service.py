@@ -42,6 +42,8 @@ class SettingsService(Singleton):
         "tracing_elev_mode": "point",
         # Whether tracing is enabled by default (Ctrl-T toggles)
         "tracing_enabled": True,
+        # Catmull / B-spline resampling density in feet
+        "smooth_sampling_ft": 1.0,
     }
 
     # ------------------------------------------------------------------
@@ -153,4 +155,18 @@ class SettingsService(Singleton):
         """Set global tracing enable flag and persist."""
 
         self.set("tracing_enabled", bool(flag))
-        self.save() 
+        self.save()
+
+    # ------------------------------------------------------------------
+    # Spline density (smooth sampling) preference
+    # ------------------------------------------------------------------
+    def smooth_sampling_ft(self) -> float:  # noqa: D401
+        """Return current resample spacing in feet for spline sampling."""
+
+        return float(self.get("smooth_sampling_ft", self._defaults["smooth_sampling_ft"]))
+
+    def set_smooth_sampling_ft(self, val: float) -> None:  # noqa: D401
+        """Persist spline resample spacing in feet."""
+
+        self.set("smooth_sampling_ft", float(val))
+        self.save()
