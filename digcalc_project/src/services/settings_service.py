@@ -36,6 +36,12 @@ class SettingsService(Singleton):
         "default_strip_depth_ft": 0.0,
         "free_haul_distance_ft": 500.0,
         "default_slice_thickness_ft": 0.5,
+        # Whether newly drawn polylines default to *smooth* (spline) mode.
+        "smooth_default": False,
+        # Tracing elevation prompt mode: "point", "interpolate", "line"
+        "tracing_elev_mode": "point",
+        # Whether tracing is enabled by default (Ctrl-T toggles)
+        "tracing_enabled": True,
     }
 
     # ------------------------------------------------------------------
@@ -107,4 +113,44 @@ class SettingsService(Singleton):
     def set_slice_thickness_default(self, val: float) -> None:
         """Set the default slice thickness in feet."""
         self.set("default_slice_thickness_ft", float(val))
+        self.save()
+
+    # ------------------------------------------------------------------
+    # Spline smoothing preference
+    # ------------------------------------------------------------------
+    def smooth_default(self) -> bool:  # noqa: D401
+        """Return the user's default preference for *smooth* polyline tracing."""
+
+        return bool(self.get("smooth_default", self._defaults["smooth_default"]))
+
+    def set_smooth_default(self, val: bool) -> None:  # noqa: D401
+        """Persist the default polyline smoothing preference."""
+
+        self.set("smooth_default", bool(val))
+        self.save()
+
+    # ------------------------------------------------------------------
+    # Tracing elevation workflow preferences
+    # ------------------------------------------------------------------
+    def tracing_elev_mode(self) -> str:  # noqa: D401
+        """Return current elevation prompt mode (``"point"``, ``"interpolate"``, or ``"line"``)."""
+
+        return str(self.get("tracing_elev_mode", self._defaults["tracing_elev_mode"]))
+
+    def set_tracing_elev_mode(self, mode: str) -> None:  # noqa: D401
+        """Persist the elevation prompt mode preference."""
+
+        assert mode in ("point", "interpolate", "line"), "Invalid tracing elevation mode"
+        self.set("tracing_elev_mode", mode)
+        self.save()
+
+    def tracing_enabled(self) -> bool:  # noqa: D401
+        """Return whether tracing is globally enabled."""
+
+        return bool(self.get("tracing_enabled", self._defaults["tracing_enabled"]))
+
+    def set_tracing_enabled(self, flag: bool) -> None:  # noqa: D401
+        """Set global tracing enable flag and persist."""
+
+        self.set("tracing_enabled", bool(flag))
         self.save() 

@@ -29,11 +29,21 @@ from PySide6.QtWidgets import (
     QGraphicsScene,
     QGraphicsSceneMouseEvent,
     QGraphicsItemGroup,
-    QGraphicsView
+    QGraphicsView,
+    QMenu,
 )
 from digcalc_project.src.ui.items.polyline_item import PolylineItem
 from digcalc_project.src.ui.commands.edit_vertex_z_command import EditVertexZCommand
 from digcalc_project.src.ui.dialogs.elevation_dialog import ElevationDialog
+from digcalc_project.src.ui.commands.toggle_smooth_command import ToggleSmoothCommand
+from digcalc_project.src.services.settings_service import SettingsService
+# --- Elevation workflow commands ---
+from digcalc_project.src.ui.commands.set_polyline_uniform_z_command import (
+    SetPolylineUniformZCommand,
+)
+from digcalc_project.src.ui.commands.interpolate_segment_z_command import (
+    InterpolateSegmentZCommand,
+)
 
 # --- MODIFIED: Use TYPE_CHECKING for PolylineData --- 
 if TYPE_CHECKING:
@@ -88,7 +98,11 @@ class TracingScene(QGraphicsScene):
         self.logger = logging.getLogger(__name__)
         self.parent_view = view # Store reference to the parent view
         self.panel = panel # Store reference to the panel
-    # --- END MODIFIED --- 
+        # Settings access – used for tracing enable flag and elevation mode
+        self._settings = SettingsService()
+
+        # Cache elevation mode for current drawing session (updated in start_drawing)
+        self._elev_mode: str = self._settings.tracing_elev_mode()
 
         # Allow multiple stacked background layers (one per PDF page)
         self._background_items: List[QGraphicsPixmapItem] = []
@@ -128,6 +142,18 @@ class TracingScene(QGraphicsScene):
             self._undo_shortcut = sc
 
         # VertexItem double-clicks will be routed via PolylineItem.signal; no event filter needed.
+
+        # --- Spline smoothing state ---
+        # Stores *True* when the in-progress polyline should display as a smooth
+        # spline, *False* for straight segments.  Default obtained from user
+        # settings.
+        self._current_mode: bool = SettingsService().smooth_default()
+
+        # Live preview polyline (spline or straight) while tracing – optional
+        self._preview_poly: PolylineItem | None = None
+
+        # Elevations collected during *point* mode drawing (aligned to _current_polyline_points)
+        self._current_z_values: List[float] = []
 
     # --- Background Image ---
 
@@ -201,11 +227,32 @@ class TracingScene(QGraphicsScene):
 
     def start_drawing(self):
         """Explicitly enables drawing mode."""
+        # Honour global enable flag from SettingsService
+        if not self._settings.tracing_enabled():
+            self.logger.debug("start_drawing aborted – tracing globally disabled in settings.")
+            return
+
         self._tracing_enabled = True
+        # Snapshot current elevation prompt mode for this drawing session
+        self._elev_mode = self._settings.tracing_elev_mode()
         self.logger.debug("Drawing mode explicitly enabled.")
         # Change cursor when tracing starts
         if self.parent_view:
             self.parent_view.setCursor(Qt.CrossCursor)
+
+        # Ensure viewport has focus so key events (Space/Enter) reach scene
+        if self.parent_view:
+            self.parent_view.viewport().setFocus()
+        # Reset smoothing mode for new polyline according to user default
+        self._current_mode = SettingsService().smooth_default()
+
+        # Reset per-vertex Z cache
+        self._current_z_values = []
+
+        # Drop any stale preview item from previous operation
+        if self._preview_poly and self._preview_poly in self.items():
+            self.removeItem(self._preview_poly)
+        self._preview_poly = None
 
     def stop_drawing(self):
         """Explicitly disables drawing mode and cancels any current polyline."""
@@ -248,11 +295,34 @@ class TracingScene(QGraphicsScene):
                 if not self._is_drawing:
                     self._is_drawing = True
                     self._current_polyline_points = [pos]
+                    # ----------------------------------------------
+                    # Point-prompt elevation input (first vertex)
+                    # ----------------------------------------------
+                    if self._elev_mode == "point":
+                        z_val, ok = self._ask_vertex_z()
+                        if not ok:
+                            # Abort creation entirely if user cancels on first point
+                            self._is_drawing = False
+                            self._current_polyline_points.clear()
+                            return
+                        self._current_z_values = [z_val]
+                    else:
+                        self._current_z_values = [0.0]
                     self._add_vertex_marker(pos)
                     self.logger.debug(f"Started new polyline at: {pos.x():.2f}, {pos.y():.2f}")
                 else:
                     # Add the constrained position
                     self._current_polyline_points.append(pos)
+                    # Prompt elevation for this vertex if in point mode
+                    if self._elev_mode == "point":
+                        z_val, ok = self._ask_vertex_z()
+                        if not ok:
+                            # Cancel adding this vertex; revert lists
+                            self._current_polyline_points.pop()
+                            return
+                        self._current_z_values.append(z_val)
+                    else:
+                        self._current_z_values.append(0.0)
                     self._add_vertex_marker(pos)
                     self._update_temporary_line(pos) # Update rubber band to this new point
                     self.logger.debug(f"Added vertex at: {pos.x():.2f}, {pos.y():.2f}")
@@ -261,7 +331,17 @@ class TracingScene(QGraphicsScene):
                  # If click is outside drawable area when tracing, let view handle pan/etc.
                  super().mousePressEvent(event)
         else:
-            # Pass non-left clicks (e.g., right-click for context menu) to base scene
+            # --- New: Right-click finalises polyline when drawing ---
+            if event.button() == Qt.RightButton and self._is_drawing and self._tracing_enabled:
+                if len(self._current_polyline_points) >= 2:
+                    active_layer = self._get_active_layer_name()
+                    self._finalize_current_polyline(active_layer)
+                else:
+                    self._cancel_current_polyline()
+                event.accept()
+                return
+
+            # Pass other non-left clicks to base class
             super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent):
@@ -318,13 +398,13 @@ class TracingScene(QGraphicsScene):
 
         if event.button() == Qt.LeftButton:
             if len(self._current_polyline_points) >= 2:
-                # Use the position from the second click of the double-click
-                # Apply constraints to the final point as well
-                final_pos = self._constrained_pos(event.scenePos(), event.modifiers())
-                self._current_polyline_points.append(final_pos)
-                self._add_vertex_marker(final_pos) # Add marker for the final point
+                if self._elev_mode != "point":
+                    # For interpolate/line modes we still add the last vertex
+                    final_pos = self._constrained_pos(event.scenePos(), event.modifiers())
+                    self._current_polyline_points.append(final_pos)
+                    self._add_vertex_marker(final_pos)
 
-                # Get active layer name from parent (VisualizationPanel)
+                # Finalise without adding an extra prompt for point-mode
                 active_layer = self._get_active_layer_name()
                 self._finalize_current_polyline(active_layer)
             else:
@@ -340,7 +420,17 @@ class TracingScene(QGraphicsScene):
             super().keyPressEvent(event)
             return
 
-        if event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter:
+        # --- Hot-key: toggle spline smoothing while drawing (Key 'S') ---
+        if self._is_drawing and event.key() == Qt.Key_S:
+            self._current_mode = not self._current_mode
+            if self._preview_poly:
+                self._preview_poly.mode = "interpolated" if self._current_mode else "entered"
+                self._preview_poly._rebuild_path()
+            event.accept()
+            return
+
+        # --- Spacebar or Enter/Return finalises polyline now ---
+        if event.key() in (Qt.Key_Return, Qt.Key_Enter, Qt.Key_Space):
             if len(self._current_polyline_points) >= 2:
                 active_layer = self._get_active_layer_name()
                 self._finalize_current_polyline(active_layer)
@@ -464,7 +554,11 @@ class TracingScene(QGraphicsScene):
 
         # Build PolylineItem using captured points
         pen = QPen(Qt.green, 0)  # TODO: Use layer-specific colour
-        poly_item = PolylineItem(self._current_polyline_points, pen)
+        poly_item = PolylineItem(
+            self._current_polyline_points,
+            pen,
+            mode="interpolated" if getattr(self, "_current_mode", False) else "entered",
+        )
 
         # Make selectable & movable similar to previous behaviour
         poly_item.setFlag(QGraphicsItem.ItemIsSelectable, True)
@@ -496,6 +590,26 @@ class TracingScene(QGraphicsScene):
 
         # Emit finalized signal
         self.polyline_finalized.emit(self._current_polyline_points, poly_item)
+
+        # ------------------------------------------------------------------
+        # Apply per-vertex Z values collected (point mode)
+        # ------------------------------------------------------------------
+        if self._elev_mode == "point" and self._current_z_values:
+            main_win = self.parent_view.window() if self.parent_view else None
+            undo_stack = getattr(main_win, "undoStack", None) if main_win else None
+            for v, z in zip(poly_item.vertices(), self._current_z_values):
+                if undo_stack:
+                    undo_stack.push(EditVertexZCommand(v, z))
+                else:
+                    v.set_z(z)
+
+        # Elevation workflow for modes other than *point* (handled above)
+        # --------------------------------------------------------------
+        if self._elev_mode != "point":
+            try:
+                self._apply_elevation_workflow(poly_item)
+            except Exception as exc:
+                self.logger.error("Elevation workflow failed: %s", exc, exc_info=True)
 
         # --- NEW: Emit padDrawn if polyline belongs to "pads" layer and is closed ---
         try:
@@ -556,6 +670,94 @@ class TracingScene(QGraphicsScene):
         self._is_drawing = False
         self._current_polyline_points = []
         # Don't disable tracing mode here, only reset the current polyline state
+
+        # Also clear cached elevations list
+        self._current_z_values = []
+
+        # ------------------------------------------------------------------
+        # End of _reset_drawing_state
+        # ------------------------------------------------------------------
+
+# ------------------------------------------------------------------
+# Elevation-prompt workflow helpers (point/interpolate/line) – class-level
+# ------------------------------------------------------------------
+
+    def _apply_elevation_workflow(self, poly_item: PolylineItem) -> None:
+        """Run the elevation-prompt workflow for *poly_item* based on *self._elev_mode*."""
+        vertices = poly_item.vertices()
+        if not vertices:
+            return
+
+        mode = self._elev_mode
+        main_win = self.parent_view.window() if self.parent_view else None
+        undo_stack = getattr(main_win, "undoStack", None) if main_win else None
+
+        # ---------------- Point mode ----------------
+        if mode == "point":
+            if not undo_stack:
+                self.logger.warning("Undo stack unavailable – point-mode elevations will be applied directly.")
+            for v in vertices:
+                z, ok = self._ask_vertex_z(v.z())
+                if not ok:
+                    continue
+                if undo_stack:
+                    undo_stack.push(EditVertexZCommand(v, z))
+                else:
+                    v.set_z(z)
+
+        # -------------- Interpolate mode -------------
+        elif mode == "interpolate":
+            # Prompt first vertex
+            z0, ok0 = self._ask_vertex_z(vertices[0].z())
+            if not ok0:
+                return
+            # Prompt last vertex
+            z1, ok1 = self._ask_vertex_z(vertices[-1].z())
+            if not ok1:
+                return
+
+            if undo_stack:
+                undo_stack.push(EditVertexZCommand(vertices[0], z0))
+                undo_stack.push(EditVertexZCommand(vertices[-1], z1))
+                undo_stack.push(InterpolateSegmentZCommand(vertices))
+            else:
+                vertices[0].set_z(z0)
+                vertices[-1].set_z(z1)
+                InterpolateSegmentZCommand(vertices).redo()
+
+        # ---------------- Line mode ------------------
+        elif mode == "line":
+            z, ok = self._ask_uniform_z()
+            if not ok:
+                return
+            if undo_stack:
+                undo_stack.push(SetPolylineUniformZCommand(poly_item, z))
+            else:
+                SetPolylineUniformZCommand(poly_item, z).redo()
+
+    def _ask_vertex_z(self, initial_z: float = 0.0) -> tuple[float, bool]:
+        """Prompt the user for a single-vertex elevation and return (value, accepted)."""
+        parent_widget = self.views()[0] if self.views() else None
+        dlg = ElevationDialog(parent_widget, initial_value=initial_z)
+        if dlg.exec():
+            return dlg.value(), True
+        return initial_z, False
+
+    def _ask_uniform_z(self) -> tuple[float, bool]:
+        """Prompt the user for a uniform elevation for the entire line."""
+        parent_widget = self.views()[0] if self.views() else None
+        dlg = ElevationDialog(parent_widget)
+        if dlg.exec():
+            return dlg.value(), True
+        return 0.0, False
+
+    def set_elevation_mode(self, mode: str) -> None:
+        """Public setter used by MainWindow to update elevation-prompt mode live."""
+        if mode not in ("point", "interpolate", "line"):
+            self.logger.warning("Attempted to set invalid elevation mode: %s", mode)
+            return
+        self._elev_mode = mode
+        self.logger.debug("TracingScene elevation mode set to '%s'", mode)
 
     # --- Loading / Saving / Layer Management ---
 
@@ -738,6 +940,34 @@ class TracingScene(QGraphicsScene):
             # Future: trigger surface rebuild if necessary
         # Dialog cancelled – nothing to do
 
+    # ------------------------------------------------------------------
+    # Qt context-menu override – add Toggle Smooth action
+    # ------------------------------------------------------------------
+    def contextMenuEvent(self, ev):  # noqa: D401
+        """Show context menu with a *Toggle Smooth* action for polylines."""
+        item = self.itemAt(ev.scenePos(), self.views()[0].transform()) if self.views() else None
+        if not item:
+            return super().contextMenuEvent(ev)
+
+        menu = QMenu()
+        selected_action = None
+        if isinstance(item, PolylineItem):
+            selected_action = menu.addAction("Toggle Smooth")
+
+        chosen = menu.exec(ev.screenPos())
+        if chosen and chosen == selected_action and isinstance(item, PolylineItem):
+            main_win = self.parent_view.window() if self.parent_view else None
+            if main_win and hasattr(main_win, "undoStack"):
+                main_win.undoStack.push(ToggleSmoothCommand(item))
+            else:
+                # Fallback – direct toggle without undo stack (shouldn't occur in production)
+                item.toggle_mode()
+            ev.accept()
+            return
+
+        # Default handling for other cases
+        super().contextMenuEvent(ev)
+
 # ------------------------------------------------------------------
 # Undo/Redo Command
 # ------------------------------------------------------------------
@@ -842,3 +1072,84 @@ class SetPadElevationCommand(QUndoCommand):
 # --------------------------------------------------------------
 
 # <<<CUT END>>> 
+
+# ------------------------------------------------------------------
+# Helper methods for new elevation workflow (inside TracingScene)
+# ------------------------------------------------------------------
+
+    def _apply_elevation_workflow(self, poly_item: PolylineItem) -> None:
+        """Run the elevation-prompt workflow for *poly_item* based on *self._elev_mode*."""
+        vertices = poly_item.vertices()
+        if not vertices:
+            return
+
+        mode = self._elev_mode
+        main_win = self.parent_view.window() if self.parent_view else None
+        undo_stack = getattr(main_win, "undoStack", None) if main_win else None
+
+        # ---------------- Point mode ----------------
+        if mode == "point":
+            if not undo_stack:
+                self.logger.warning("Undo stack unavailable – point-mode elevations will be applied directly.")
+            for v in vertices:
+                z, ok = self._ask_vertex_z(v.z())
+                if not ok:
+                    continue
+                if undo_stack:
+                    undo_stack.push(EditVertexZCommand(v, z))
+                else:
+                    v.set_z(z)
+
+        # -------------- Interpolate mode -------------
+        elif mode == "interpolate":
+            # Prompt first vertex
+            z0, ok0 = self._ask_vertex_z(vertices[0].z())
+            if not ok0:
+                return
+            # Prompt last vertex
+            z1, ok1 = self._ask_vertex_z(vertices[-1].z())
+            if not ok1:
+                return
+
+            if undo_stack:
+                undo_stack.push(EditVertexZCommand(vertices[0], z0))
+                undo_stack.push(EditVertexZCommand(vertices[-1], z1))
+                undo_stack.push(InterpolateSegmentZCommand(vertices))
+            else:
+                vertices[0].set_z(z0)
+                vertices[-1].set_z(z1)
+                InterpolateSegmentZCommand(vertices).redo()
+
+        # ---------------- Line mode ------------------
+        elif mode == "line":
+            z, ok = self._ask_uniform_z()
+            if not ok:
+                return
+            if undo_stack:
+                undo_stack.push(SetPolylineUniformZCommand(poly_item, z))
+            else:
+                SetPolylineUniformZCommand(poly_item, z).redo()
+
+    def _ask_vertex_z(self, initial_z: float = 0.0) -> tuple[float, bool]:
+        """Prompt the user for a single-vertex elevation and return (value, accepted)."""
+        parent_widget = self.views()[0] if self.views() else None
+        dlg = ElevationDialog(parent_widget, initial_value=initial_z)
+        if dlg.exec():
+            return dlg.value(), True
+        return initial_z, False
+
+    def _ask_uniform_z(self) -> tuple[float, bool]:
+        """Prompt the user for a uniform elevation for the entire line."""
+        parent_widget = self.views()[0] if self.views() else None
+        dlg = ElevationDialog(parent_widget)
+        if dlg.exec():
+            return dlg.value(), True
+        return 0.0, False
+
+    def set_elevation_mode(self, mode: str) -> None:
+        """Public setter used by MainWindow to update elevation-prompt mode live."""
+        if mode not in ("point", "interpolate", "line"):
+            self.logger.warning("Attempted to set invalid elevation mode: %s", mode)
+            return
+        self._elev_mode = mode
+        self.logger.debug("TracingScene elevation mode set to '%s'", mode)

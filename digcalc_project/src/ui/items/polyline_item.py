@@ -17,6 +17,7 @@ from PySide6.QtGui import QPainterPath, QPen
 from PySide6.QtCore import QPointF, Qt, Signal, QObject
 
 from .vertex_item import VertexItem
+from digcalc_project.src.tools.spline import catmull_rom
 
 
 class PolylineItem(QObject, QGraphicsPathItem):
@@ -33,11 +34,18 @@ class PolylineItem(QObject, QGraphicsPathItem):
     # Signal forwarded when a child vertex is double-clicked
     vertexDoubleClicked = Signal(object, object)  # (self, vertex)
 
+    # ------------------------------------------------------------------
+    # Modes constant
+    # ------------------------------------------------------------------
+    MODES = ("entered", "interpolated")
+
     def __init__(self, points: List[QPointF], layer_pen: QPen, mode: str = "entered"):
+        # Ensure a valid mode is provided
+        assert mode in self.MODES, f"Mode must be one of {self.MODES}, got {mode!r}"
         QObject.__init__(self)
         QGraphicsPathItem.__init__(self)
 
-        self.mode: str = mode  # straight-line vs interpolated ‑ stored for later phases
+        self.mode: str = mode  # stored for later path rebuilds
         self._vertex_items: List[VertexItem] = []
         self.setPen(layer_pen)
 
@@ -59,6 +67,18 @@ class PolylineItem(QObject, QGraphicsPathItem):
         return [v.pos() for v in self._vertex_items]
 
     # ------------------------------------------------------------------
+    # Accessors
+    # ------------------------------------------------------------------
+    def vertices(self) -> List[VertexItem]:
+        """Return the list of :class:`VertexItem` handles.
+
+        This accessor is primarily used by undo / redo commands that need direct
+        access to the vertex objects themselves rather than just their
+        coordinates.
+        """
+        return self._vertex_items
+
+    # ------------------------------------------------------------------
     # Internal logic
     # ------------------------------------------------------------------
     def _rebuild_path(self, *_):  # slot connected to vertex ``moved`` signals – accepts extra args
@@ -69,17 +89,18 @@ class PolylineItem(QObject, QGraphicsPathItem):
         do not need that value here.
         """
         pts = self.points()
-        path = QPainterPath()
 
+        if self.mode == "interpolated":
+            # Use Catmull-Rom spline helper for smooth interpolation
+            self.setPath(catmull_rom(pts))
+            return
+
+        # Fallback: straight lines between entered vertices
+        path = QPainterPath()
         if pts:
             path.moveTo(pts[0])
-            if self.mode == "interpolated":
-                # Placeholder – straight segments for now (future: spline interpolation)
-                for pt in pts[1:]:
-                    path.lineTo(pt)
-            else:  # "entered" or fallback
-                for pt in pts[1:]:
-                    path.lineTo(pt)
+            for pt in pts[1:]:
+                path.lineTo(pt)
 
         self.setPath(path)
 
@@ -94,6 +115,15 @@ class PolylineItem(QObject, QGraphicsPathItem):
         not available on QPainterPath in PySide 6.
         """
         return self.path()
+
+    # ------------------------------------------------------------------
+    # Public actions
+    # ------------------------------------------------------------------
+    def toggle_mode(self):
+        """Toggle between *entered* and *interpolated* display modes."""
+
+        self.mode = "interpolated" if self.mode == "entered" else "entered"
+        self._rebuild_path()
 
 
 __all__ = ["PolylineItem"] 

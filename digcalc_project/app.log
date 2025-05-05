@@ -9283,3 +9283,481 @@ AttributeError: 'TracingScene' object has no attribute '_undo_shortcut'
 2025-05-04 12:59:40,514 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
 2025-05-04 12:59:40,514 - digcalc_project.src.ui.main_window - INFO - Closing application.
 2025-05-04 12:59:40,527 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-04 17:16:38,795 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-04 17:16:38,828 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-04 17:16:47,423 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 17:16:47,423 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Downloads/sample_grading_plan_.pdf, initial page: 1, dpi: 300
+2025-05-04 17:16:47,424 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-04 17:16:47,424 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 17:16:47,426 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-05-04 17:16:47,426 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-05-04 17:16:47,547 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-05-04 17:16:47,549 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 1
+2025-05-04 17:16:47,555 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'sample_grading_plan_.pdf'
+2025-05-04 17:16:47,555 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-04 17:16:47,555 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'sample_grading_plan_.pdf' with 1 pages.
+2025-05-04 17:16:54,319 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-05-04 17:16:54,320 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-04 17:17:03,649 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 10 points on layer 'Existing Surface'.
+2025-05-04 17:17:14,542 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 10, Elevation: 222.12, New Rev: 1).
+2025-05-04 17:17:14,543 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 222.12) to layer 'Existing Surface'.
+2025-05-04 17:17:14,793 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 17:17:14,794 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-04 17:17:46,816 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 11 points on layer 'Existing Surface'.
+2025-05-04 17:17:50,474 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 1, Points: 11, Elevation: 222.12, New Rev: 2).
+2025-05-04 17:17:50,474 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 1, Elevation: 222.12) to layer 'Existing Surface'.
+2025-05-04 17:17:50,723 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 17:17:50,723 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-04 17:17:56,593 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode disabled.
+2025-05-04 17:17:56,593 - digcalc_project.src.ui.main_window - INFO - Tracing mode disabled via MainWindow action.
+2025-05-04 17:17:57,213 - digcalc_project.src.ui.main_window - WARNING -   Selected QGraphicsPathItem missing layer (None) or index (1) data.
+2025-05-04 17:18:00,811 - digcalc_project.src.ui.main_window - WARNING -   Selected QGraphicsPathItem missing layer (None) or index (1) data.
+2025-05-04 17:18:01,643 - digcalc_project.src.ui.main_window - WARNING -   Selected QGraphicsPathItem missing layer (None) or index (1) data.
+2025-05-04 17:18:51,357 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (2 polylines).
+2025-05-04 17:18:51,358 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 19 unique 3D points with elevation from layer 'Existing Surface'.
+2025-05-04 17:18:51,360 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-05-04 17:18:51,360 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface' (Rev: 2).
+2025-05-04 17:18:51,360 - digcalc_project.src.models.project - INFO - Surface 'Existing Surface_Surface' added to project
+2025-05-04 17:18:51,360 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to update/create mesh for surface: Existing Surface_Surface
+2025-05-04 17:18:51,361 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to update/create mesh for surface: Existing Surface_Surface
+2025-05-04 17:18:51,361 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to update/create mesh for surface: Existing Surface_Surface
+2025-05-04 17:19:48,921 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-05-04 17:19:48,921 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-04 17:20:01,448 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 8 points on layer 'Existing Surface'.
+2025-05-04 17:20:05,296 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 2, Points: 8, Elevation: 350.12, New Rev: 3).
+2025-05-04 17:20:05,296 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 2, Elevation: 350.12) to layer 'Existing Surface'.
+2025-05-04 17:20:05,532 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 17:20:05,532 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (3 polylines).
+2025-05-04 17:20:05,532 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 26 unique 3D points with elevation from layer 'Existing Surface'.
+2025-05-04 17:20:05,533 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-05-04 17:20:05,534 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface' (Rev: 3).
+2025-05-04 17:20:05,534 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to update/create mesh for surface: Existing Surface_Surface
+2025-05-04 17:20:05,534 - digcalc_project.src.ui.project_panel - WARNING - Could not find 'Surfaces' category node in tree.
+2025-05-04 17:20:05,535 - digcalc_project.src.ui.main_window - INFO - Successfully rebuilt surface 'Existing Surface_Surface' from layer 'Existing Surface' (New Rev: 3).
+2025-05-04 17:20:05,535 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 1 surfaces derived from {'Existing Surface'}.
+2025-05-04 17:20:24,895 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 10 points on layer 'Existing Surface'.
+2025-05-04 17:20:27,535 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 3, Points: 10, Elevation: 350.12, New Rev: 4).
+2025-05-04 17:20:27,536 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 3, Elevation: 350.12) to layer 'Existing Surface'.
+2025-05-04 17:20:27,799 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 17:20:27,800 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (4 polylines).
+2025-05-04 17:20:27,800 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 34 unique 3D points with elevation from layer 'Existing Surface'.
+2025-05-04 17:20:27,801 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-05-04 17:20:27,801 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface' (Rev: 4).
+2025-05-04 17:20:27,801 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to update/create mesh for surface: Existing Surface_Surface
+2025-05-04 17:20:27,802 - digcalc_project.src.ui.project_panel - WARNING - Could not find 'Surfaces' category node in tree.
+2025-05-04 17:20:27,802 - digcalc_project.src.ui.main_window - INFO - Successfully rebuilt surface 'Existing Surface_Surface' from layer 'Existing Surface' (New Rev: 4).
+2025-05-04 17:20:27,803 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 1 surfaces derived from {'Existing Surface'}.
+2025-05-04 17:20:34,548 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 10 points on layer 'Existing Surface'.
+2025-05-04 17:20:46,983 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 4, Points: 10, Elevation: 350.12, New Rev: 5).
+2025-05-04 17:20:46,983 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 4, Elevation: 350.12) to layer 'Existing Surface'.
+2025-05-04 17:20:47,219 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 17:20:47,219 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (5 polylines).
+2025-05-04 17:20:47,219 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 43 unique 3D points with elevation from layer 'Existing Surface'.
+2025-05-04 17:20:47,220 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-05-04 17:20:47,221 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface' (Rev: 5).
+2025-05-04 17:20:47,221 - digcalc_project.src.ui.visualization_panel - INFO - Attempting to update/create mesh for surface: Existing Surface_Surface
+2025-05-04 17:20:47,221 - digcalc_project.src.ui.project_panel - WARNING - Could not find 'Surfaces' category node in tree.
+2025-05-04 17:20:47,221 - digcalc_project.src.ui.main_window - INFO - Successfully rebuilt surface 'Existing Surface_Surface' from layer 'Existing Surface' (New Rev: 5).
+2025-05-04 17:20:47,222 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 1 surfaces derived from {'Existing Surface'}.
+2025-05-04 17:20:51,212 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode disabled.
+2025-05-04 17:20:51,212 - digcalc_project.src.ui.main_window - INFO - Tracing mode disabled via MainWindow action.
+2025-05-04 17:23:24,386 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-04 17:23:26,050 - digcalc_project.src.ui.main_window - INFO - Close cancelled by user.
+2025-05-04 17:39:02,238 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-04 17:39:03,748 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 17:39:03,751 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-04 17:39:03,768 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-04 18:53:33,851 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-04 18:53:33,884 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-04 18:53:41,770 - digcalc_project.src.ui.main_window - INFO - Load PDF background cancelled by user.
+2025-05-04 18:53:51,538 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 18:53:51,539 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Downloads/sample_grading_plan_.pdf, initial page: 1, dpi: 300
+2025-05-04 18:53:51,539 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-04 18:53:51,539 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 18:53:51,540 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-05-04 18:53:51,540 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-05-04 18:53:51,658 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-05-04 18:53:51,660 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 1
+2025-05-04 18:53:51,666 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'sample_grading_plan_.pdf'
+2025-05-04 18:53:51,666 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-04 18:53:51,666 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'sample_grading_plan_.pdf' with 1 pages.
+2025-05-04 18:53:53,749 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-05-04 18:53:53,750 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-04 18:54:05,686 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Existing Surface'.
+2025-05-04 18:54:07,790 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 6, Elevation: 0.0, New Rev: 1).
+2025-05-04 18:54:07,791 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 0.0) to layer 'Existing Surface'.
+2025-05-04 18:54:07,791 - digcalc_project.src.ui.tracing_scene - ERROR - Elevation workflow failed: 'TracingScene' object has no attribute '_apply_elevation_workflow'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\DigCalc\alpha_3\digcalc_project\src\ui\tracing_scene.py", line 555, in _finalize_current_polyline
+    self._apply_elevation_workflow(poly_item)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'TracingScene' object has no attribute '_apply_elevation_workflow'
+2025-05-04 18:54:08,032 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 18:54:08,032 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-04 18:54:12,265 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode disabled.
+2025-05-04 18:54:12,265 - digcalc_project.src.ui.main_window - INFO - Tracing mode disabled via MainWindow action.
+2025-05-04 18:54:22,362 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-04 18:54:23,858 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 18:54:23,862 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-04 18:54:23,878 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-04 19:45:12,166 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-04 19:45:12,197 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-04 19:45:19,787 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Downloads/sample-local-pdf.pdf
+2025-05-04 19:45:19,787 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Downloads/sample-local-pdf.pdf, initial page: 1, dpi: 300
+2025-05-04 19:45:19,788 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-04 19:45:19,788 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample-local-pdf.pdf
+2025-05-04 19:45:19,789 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 3
+2025-05-04 19:45:19,789 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 3 pages at 300 DPI...
+2025-05-04 19:45:19,858 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 3 page images.
+2025-05-04 19:45:19,861 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 3
+2025-05-04 19:45:19,867 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'sample-local-pdf.pdf'
+2025-05-04 19:45:19,867 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-04 19:45:19,867 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'sample-local-pdf.pdf' with 3 pages.
+2025-05-04 19:45:23,428 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-05-04 19:45:23,430 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-04 19:45:26,771 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Existing Surface'.
+2025-05-04 19:45:27,633 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 6, Elevation: 0.0, New Rev: 1).
+2025-05-04 19:45:27,634 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 0.0) to layer 'Existing Surface'.
+2025-05-04 19:45:27,634 - digcalc_project.src.ui.tracing_scene - ERROR - Elevation workflow failed: 'TracingScene' object has no attribute '_apply_elevation_workflow'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\DigCalc\alpha_3\digcalc_project\src\ui\tracing_scene.py", line 555, in _finalize_current_polyline
+    self._apply_elevation_workflow(poly_item)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'TracingScene' object has no attribute '_apply_elevation_workflow'
+2025-05-04 19:45:27,877 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 19:45:27,878 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-04 19:45:30,389 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode disabled.
+2025-05-04 19:45:30,389 - digcalc_project.src.ui.main_window - INFO - Tracing mode disabled via MainWindow action.
+2025-05-04 19:45:39,836 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-04 19:45:41,051 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample-local-pdf.pdf
+2025-05-04 19:45:41,060 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-04 19:45:41,077 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-04 19:53:20,849 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-04 19:53:20,883 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-04 19:53:25,303 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Downloads/sample-local-pdf.pdf
+2025-05-04 19:53:25,303 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Downloads/sample-local-pdf.pdf, initial page: 1, dpi: 300
+2025-05-04 19:53:25,303 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-04 19:53:25,303 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample-local-pdf.pdf
+2025-05-04 19:53:25,304 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 3
+2025-05-04 19:53:25,304 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 3 pages at 300 DPI...
+2025-05-04 19:53:25,363 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 3 page images.
+2025-05-04 19:53:25,367 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 3
+2025-05-04 19:53:25,376 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'sample-local-pdf.pdf'
+2025-05-04 19:53:25,376 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-04 19:53:25,377 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'sample-local-pdf.pdf' with 3 pages.
+2025-05-04 19:53:34,117 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-05-04 19:53:34,117 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-04 19:53:35,834 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Existing Surface'.
+2025-05-04 19:53:36,528 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 6, Elevation: 0.0, New Rev: 1).
+2025-05-04 19:53:36,528 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 0.0) to layer 'Existing Surface'.
+2025-05-04 19:53:36,529 - digcalc_project.src.ui.tracing_scene - ERROR - Elevation workflow failed: 'TracingScene' object has no attribute '_apply_elevation_workflow'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\DigCalc\alpha_3\digcalc_project\src\ui\tracing_scene.py", line 555, in _finalize_current_polyline
+    self._apply_elevation_workflow(poly_item)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'TracingScene' object has no attribute '_apply_elevation_workflow'
+2025-05-04 19:53:36,767 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 19:53:36,767 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-04 19:53:40,567 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-04 19:53:41,532 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample-local-pdf.pdf
+2025-05-04 19:53:41,538 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-04 19:53:41,553 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-04 20:17:03,027 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-04 20:17:03,057 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-04 20:17:13,518 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 20:17:13,518 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Downloads/sample_grading_plan_.pdf, initial page: 1, dpi: 300
+2025-05-04 20:17:13,518 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-04 20:17:13,518 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 20:17:13,519 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-05-04 20:17:13,519 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-05-04 20:17:13,647 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-05-04 20:17:13,650 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 1
+2025-05-04 20:17:13,658 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'sample_grading_plan_.pdf'
+2025-05-04 20:17:13,658 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-04 20:17:13,658 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'sample_grading_plan_.pdf' with 1 pages.
+2025-05-04 20:17:15,779 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-05-04 20:17:15,779 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-04 20:17:19,683 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Existing Surface'.
+2025-05-04 20:17:20,638 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 6, Elevation: 0.0, New Rev: 1).
+2025-05-04 20:17:20,639 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 0.0) to layer 'Existing Surface'.
+2025-05-04 20:17:20,876 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 20:17:20,876 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-04 20:17:26,247 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-04 20:17:28,842 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 3 points on layer 'Existing Surface'.
+2025-05-04 20:17:30,774 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 1, Points: 3, Elevation: 0.0, New Rev: 2).
+2025-05-04 20:17:30,774 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 1, Elevation: 0.0) to layer 'Existing Surface'.
+2025-05-04 20:17:31,016 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 20:17:31,016 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-04 20:17:34,248 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-04 20:17:35,838 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 3 points on layer 'Existing Surface'.
+2025-05-04 20:17:36,950 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 2, Points: 3, Elevation: 0.0, New Rev: 3).
+2025-05-04 20:17:36,950 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 2, Elevation: 0.0) to layer 'Existing Surface'.
+2025-05-04 20:17:37,189 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 20:17:37,190 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-04 20:17:38,583 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-04 20:17:39,606 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 20:17:39,610 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-04 20:17:39,628 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-04 21:03:49,605 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-04 21:03:49,636 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-04 21:03:57,330 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 21:03:57,330 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Downloads/sample_grading_plan_.pdf, initial page: 1, dpi: 300
+2025-05-04 21:03:57,330 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-04 21:03:57,331 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 21:03:57,331 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-05-04 21:03:57,332 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-05-04 21:03:57,458 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-05-04 21:03:57,461 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 1
+2025-05-04 21:03:57,470 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'sample_grading_plan_.pdf'
+2025-05-04 21:03:57,470 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-04 21:03:57,470 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'sample_grading_plan_.pdf' with 1 pages.
+2025-05-04 21:04:04,118 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-05-04 21:04:04,118 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-04 21:04:06,785 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Existing Surface'.
+2025-05-04 21:04:08,799 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 6, Elevation: None, New Rev: 1).
+2025-05-04 21:04:08,799 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: None) to layer 'Existing Surface'.
+2025-05-04 21:04:08,800 - digcalc_project.src.ui.tracing_scene - ERROR - Elevation workflow failed: 'TracingScene' object has no attribute '_apply_elevation_workflow'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\DigCalc\alpha_3\digcalc_project\src\ui\tracing_scene.py", line 596, in _finalize_current_polyline
+    self._apply_elevation_workflow(poly_item)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'TracingScene' object has no attribute '_apply_elevation_workflow'
+2025-05-04 21:04:09,048 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 21:04:09,048 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-04 21:04:11,150 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-04 21:04:13,593 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 4 points on layer 'Existing Surface'.
+2025-05-04 21:04:15,221 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 1, Points: 4, Elevation: 0.0, New Rev: 2).
+2025-05-04 21:04:15,221 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 1, Elevation: 0.0) to layer 'Existing Surface'.
+2025-05-04 21:04:15,222 - digcalc_project.src.ui.tracing_scene - ERROR - Elevation workflow failed: 'TracingScene' object has no attribute '_apply_elevation_workflow'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\DigCalc\alpha_3\digcalc_project\src\ui\tracing_scene.py", line 596, in _finalize_current_polyline
+    self._apply_elevation_workflow(poly_item)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'TracingScene' object has no attribute '_apply_elevation_workflow'
+2025-05-04 21:04:15,469 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 21:04:15,469 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-04 21:04:18,458 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-04 21:04:22,604 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 8 points on layer 'Existing Surface'.
+2025-05-04 21:04:23,499 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 2, Points: 8, Elevation: 0.0, New Rev: 3).
+2025-05-04 21:04:23,499 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 2, Elevation: 0.0) to layer 'Existing Surface'.
+2025-05-04 21:04:23,500 - digcalc_project.src.ui.tracing_scene - ERROR - Elevation workflow failed: 'TracingScene' object has no attribute '_apply_elevation_workflow'
+Traceback (most recent call last):
+  File "C:\Users\chase\Desktop\DigCalc\alpha_3\digcalc_project\src\ui\tracing_scene.py", line 596, in _finalize_current_polyline
+    self._apply_elevation_workflow(poly_item)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'TracingScene' object has no attribute '_apply_elevation_workflow'
+2025-05-04 21:04:23,736 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 21:04:23,736 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-04 21:04:25,531 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-04 21:04:28,502 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-04 21:04:30,003 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 21:04:30,007 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-04 21:04:30,025 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-04 21:10:49,147 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-04 21:10:49,176 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-04 21:11:02,312 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 21:11:02,312 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Downloads/sample_grading_plan_.pdf, initial page: 1, dpi: 300
+2025-05-04 21:11:02,312 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-04 21:11:02,313 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 21:11:02,313 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-05-04 21:11:02,313 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-05-04 21:11:02,441 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-05-04 21:11:02,445 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 1
+2025-05-04 21:11:02,453 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'sample_grading_plan_.pdf'
+2025-05-04 21:11:02,453 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-04 21:11:02,454 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'sample_grading_plan_.pdf' with 1 pages.
+2025-05-04 21:11:15,850 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-05-04 21:11:15,851 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-04 21:11:24,762 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 5 points on layer 'Existing Surface'.
+2025-05-04 21:11:25,641 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 5, Elevation: 0.0, New Rev: 1).
+2025-05-04 21:11:25,641 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 0.0) to layer 'Existing Surface'.
+2025-05-04 21:11:25,910 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 21:11:25,911 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-04 21:11:28,247 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-04 21:11:29,871 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 3 points on layer 'Existing Surface'.
+2025-05-04 21:11:31,344 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 1, Points: 3, Elevation: 0.0, New Rev: 2).
+2025-05-04 21:11:31,344 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 1, Elevation: 0.0) to layer 'Existing Surface'.
+2025-05-04 21:11:31,595 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 21:11:31,596 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-04 21:11:33,130 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-04 21:11:34,390 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 3 points on layer 'Existing Surface'.
+2025-05-04 21:11:35,182 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 2, Points: 3, Elevation: 0.0, New Rev: 3).
+2025-05-04 21:11:35,182 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 2, Elevation: 0.0) to layer 'Existing Surface'.
+2025-05-04 21:11:35,445 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 21:11:35,446 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-04 21:11:37,511 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-04 21:11:49,929 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 21:11:49,933 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-04 21:11:49,950 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-04 21:19:26,506 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-04 21:19:26,536 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-04 21:19:36,996 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 21:19:36,996 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Downloads/sample_grading_plan_.pdf, initial page: 1, dpi: 300
+2025-05-04 21:19:36,996 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-04 21:19:36,996 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 21:19:36,997 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-05-04 21:19:36,997 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-05-04 21:19:37,118 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-05-04 21:19:37,120 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 1
+2025-05-04 21:19:37,126 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'sample_grading_plan_.pdf'
+2025-05-04 21:19:37,126 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-04 21:19:37,126 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'sample_grading_plan_.pdf' with 1 pages.
+2025-05-04 21:19:39,202 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-05-04 21:19:39,202 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-04 21:19:42,044 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Existing Surface'.
+2025-05-04 21:19:43,052 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 6, Elevation: 0.0, New Rev: 1).
+2025-05-04 21:19:43,053 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 0.0) to layer 'Existing Surface'.
+2025-05-04 21:19:43,325 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 21:19:43,325 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-04 21:19:48,226 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-04 21:20:06,761 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode disabled.
+2025-05-04 21:20:06,761 - digcalc_project.src.ui.main_window - INFO - Tracing mode disabled via MainWindow action.
+2025-05-04 21:20:08,912 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-04 21:20:10,589 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 21:20:10,592 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-04 21:20:10,607 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-04 21:24:46,572 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-04 21:24:46,602 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-04 21:24:53,248 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 21:24:53,249 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Downloads/sample_grading_plan_.pdf, initial page: 1, dpi: 300
+2025-05-04 21:24:53,249 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-04 21:24:53,249 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 21:24:53,250 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-05-04 21:24:53,250 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-05-04 21:24:53,376 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-05-04 21:24:53,379 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 1
+2025-05-04 21:24:53,386 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'sample_grading_plan_.pdf'
+2025-05-04 21:24:53,387 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-04 21:24:53,387 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'sample_grading_plan_.pdf' with 1 pages.
+2025-05-04 21:24:58,150 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-05-04 21:24:58,150 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-04 21:25:04,763 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 4 points on layer 'Existing Surface'.
+2025-05-04 21:25:06,325 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 4, Elevation: 0.0, New Rev: 1).
+2025-05-04 21:25:06,326 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 0.0) to layer 'Existing Surface'.
+2025-05-04 21:25:06,564 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 21:25:06,564 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-04 21:25:20,224 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 2 points on layer 'Existing Surface'.
+2025-05-04 21:25:22,839 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 1, Points: 2, Elevation: 0.0, New Rev: 2).
+2025-05-04 21:25:22,839 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 1, Elevation: 0.0) to layer 'Existing Surface'.
+2025-05-04 21:25:23,079 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 21:25:23,079 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-04 21:25:27,657 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 2 points on layer 'Existing Surface'.
+2025-05-04 21:25:28,864 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 2, Points: 2, Elevation: 0.0, New Rev: 3).
+2025-05-04 21:25:28,864 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 2, Elevation: 0.0) to layer 'Existing Surface'.
+2025-05-04 21:25:29,110 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 21:25:29,111 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-04 21:25:29,941 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-04 21:25:30,999 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 21:25:31,004 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-04 21:25:31,018 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-04 21:31:24,040 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-04 21:31:24,070 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-04 21:31:31,969 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 21:31:31,970 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Downloads/sample_grading_plan_.pdf, initial page: 1, dpi: 300
+2025-05-04 21:31:31,970 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-04 21:31:31,970 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 21:31:31,971 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-05-04 21:31:31,971 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-05-04 21:31:32,101 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-05-04 21:31:32,104 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 1
+2025-05-04 21:31:32,111 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'sample_grading_plan_.pdf'
+2025-05-04 21:31:32,111 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-04 21:31:32,112 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'sample_grading_plan_.pdf' with 1 pages.
+2025-05-04 21:31:36,433 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-05-04 21:31:36,434 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-04 21:31:47,427 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 2 points on layer 'Existing Surface'.
+2025-05-04 21:31:48,432 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 2, Elevation: None, New Rev: 1).
+2025-05-04 21:31:48,433 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: None) to layer 'Existing Surface'.
+2025-05-04 21:31:48,674 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 21:31:48,674 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-04 21:31:53,582 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 2 points on layer 'Existing Surface'.
+2025-05-04 21:31:54,594 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 1, Points: 2, Elevation: None, New Rev: 2).
+2025-05-04 21:31:54,594 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 1, Elevation: None) to layer 'Existing Surface'.
+2025-05-04 21:31:54,829 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 21:31:54,830 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-04 21:31:55,762 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-04 21:31:56,642 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 21:31:56,646 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-04 21:31:56,663 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-04 21:35:50,559 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-04 21:35:50,590 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-04 21:35:57,424 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 21:35:57,425 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Downloads/sample_grading_plan_.pdf, initial page: 1, dpi: 300
+2025-05-04 21:35:57,425 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-04 21:35:57,425 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 21:35:57,426 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-05-04 21:35:57,426 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-05-04 21:35:57,544 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-05-04 21:35:57,546 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 1
+2025-05-04 21:35:57,552 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'sample_grading_plan_.pdf'
+2025-05-04 21:35:57,552 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-04 21:35:57,553 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'sample_grading_plan_.pdf' with 1 pages.
+2025-05-04 21:36:00,847 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-05-04 21:36:00,847 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-04 21:36:03,810 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 2 points on layer 'Existing Surface'.
+2025-05-04 21:36:05,534 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 2, Elevation: 0.0, New Rev: 1).
+2025-05-04 21:36:05,534 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: 0.0) to layer 'Existing Surface'.
+2025-05-04 21:36:05,785 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 21:36:05,785 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-04 21:36:09,530 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 2 points on layer 'Existing Surface'.
+2025-05-04 21:36:11,168 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 1, Points: 2, Elevation: 0.0, New Rev: 2).
+2025-05-04 21:36:11,169 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 1, Elevation: 0.0) to layer 'Existing Surface'.
+2025-05-04 21:36:11,408 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 21:36:11,408 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-04 21:36:12,483 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-04 21:36:13,343 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 21:36:13,345 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-04 21:36:13,360 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-04 21:37:01,279 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-04 21:37:01,308 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-04 21:37:08,946 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-04 21:37:08,946 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-04 21:37:08,960 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-04 21:40:23,678 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-04 21:40:23,711 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-04 21:40:31,874 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 21:40:31,874 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Downloads/sample_grading_plan_.pdf, initial page: 1, dpi: 300
+2025-05-04 21:40:31,874 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-04 21:40:31,874 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 21:40:31,875 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-05-04 21:40:31,875 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-05-04 21:40:31,993 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-05-04 21:40:31,995 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 1
+2025-05-04 21:40:32,001 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'sample_grading_plan_.pdf'
+2025-05-04 21:40:32,001 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-04 21:40:32,002 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'sample_grading_plan_.pdf' with 1 pages.
+2025-05-04 21:40:32,961 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-05-04 21:40:32,961 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-04 21:40:37,265 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 2 points on layer 'Existing Surface'.
+2025-05-04 21:40:38,278 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 2, Elevation: None, New Rev: 1).
+2025-05-04 21:40:38,279 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: None) to layer 'Existing Surface'.
+2025-05-04 21:40:38,517 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 21:40:38,518 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-04 21:40:39,106 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-04 21:40:39,890 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 21:40:39,892 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-04 21:40:39,907 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-04 21:42:56,898 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-04 21:42:56,929 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-04 21:43:04,272 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 21:43:04,272 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Downloads/sample_grading_plan_.pdf, initial page: 1, dpi: 300
+2025-05-04 21:43:04,272 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-04 21:43:04,272 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 21:43:04,273 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 1
+2025-05-04 21:43:04,273 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 1 pages at 300 DPI...
+2025-05-04 21:43:04,389 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 1 page images.
+2025-05-04 21:43:04,391 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 1
+2025-05-04 21:43:04,396 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'sample_grading_plan_.pdf'
+2025-05-04 21:43:04,396 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-04 21:43:04,397 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'sample_grading_plan_.pdf' with 1 pages.
+2025-05-04 21:43:06,994 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-05-04 21:43:06,994 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-04 21:43:09,745 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 2 points on layer 'Existing Surface'.
+2025-05-04 21:43:09,745 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 2, Elevation: None, New Rev: 1).
+2025-05-04 21:43:09,746 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: None) to layer 'Existing Surface'.
+2025-05-04 21:43:09,993 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-04 21:43:09,993 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-04 21:43:12,783 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-04 21:43:14,072 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Downloads/sample_grading_plan_.pdf
+2025-05-04 21:43:14,075 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-04 21:43:14,091 - digcalc_project.src.main - INFO - Application exited with code 0

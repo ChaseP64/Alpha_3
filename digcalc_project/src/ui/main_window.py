@@ -55,8 +55,8 @@ from digcalc_project.src.services.pdf_service import PdfService # NEW
 from digcalc_project.src.controllers.pdf_controller import PdfController # NEW
 # from src.ui.docks.pdf_thumbnail_dock import PdfThumbnailDock # OLD
 from digcalc_project.src.ui.docks.pdf_thumbnail_dock import PdfThumbnailDock # NEW
-# --- End PDF Imports ---
-
+# --- End PDF Imports ---# existing imports …
+from digcalc_project.src.services.settings_service import SettingsService   # <-- add this
 # --- Ensure ProjectController is Imported --- 
 # from src.ui.project_controller import ProjectController # OLD
 from digcalc_project.src.ui.project_controller import ProjectController # NEW
@@ -282,6 +282,16 @@ class MainWindow(QMainWindow):
         else:
             self.logger.error("PdfController not found during signal connection.")
         # --- End Connect PDF Controller Signal ---
+
+        # ------------------------------------------------------------------
+        # Tracing menu – elevation mode radio actions (update SettingsService)
+        # ------------------------------------------------------------------
+        if hasattr(self, 'trace_point_action'):
+            self.trace_point_action.triggered.connect(lambda _checked=False: self._set_tracing_elev_mode("point"))
+        if hasattr(self, 'trace_interpolate_action'):
+            self.trace_interpolate_action.triggered.connect(lambda _checked=False: self._set_tracing_elev_mode("interpolate"))
+        if hasattr(self, 'trace_line_action'):
+            self.trace_line_action.triggered.connect(lambda _checked=False: self._set_tracing_elev_mode("line"))
 
         self.logger.debug("Finished connecting MainWindow signals.")
 
@@ -538,6 +548,39 @@ class MainWindow(QMainWindow):
         self.analysis_menu = self.menu_bar.addMenu("Analysis")
         self.analysis_menu.addAction(self.calculate_volume_action)
         
+        # ------------------------------------------------------------------
+        # Tracing menu (new)
+        # ------------------------------------------------------------------
+        self.tracing_menu = self.menu_bar.addMenu("Tracing")
+
+        # Re-use the existing enable-tracing toggle action
+        self.tracing_menu.addAction(self.toggle_trace_mode_action)
+        self.tracing_menu.addSeparator()
+
+        # Elevation-prompt mode radio actions
+        self.trace_point_action = QAction("Point Prompt", self, checkable=True)
+        self.trace_interpolate_action = QAction("First/Last Prompt (Interpolate)", self, checkable=True)
+        self.trace_line_action = QAction("Line Elevation", self, checkable=True)
+
+        self.trace_mode_group = QActionGroup(self)
+        self.trace_mode_group.setExclusive(True)
+        for act in (self.trace_point_action, self.trace_interpolate_action, self.trace_line_action):
+            self.trace_mode_group.addAction(act)
+            self.tracing_menu.addAction(act)
+
+        # Initial checked state from SettingsService
+        mode_pref = SettingsService().tracing_elev_mode()
+        if mode_pref == "interpolate":
+            self.trace_interpolate_action.setChecked(True)
+        elif mode_pref == "line":
+            self.trace_line_action.setChecked(True)
+        else:  # fallback to point
+            self.trace_point_action.setChecked(True)
+
+        # ------------------------------------------------------------------
+        # Connect mode actions to handler – done in _connect_signals
+        # ------------------------------------------------------------------
+
         # --- NEW: Tools Toolbar ---
         self.tools_toolbar = QToolBar("Tools Toolbar")
         self.tools_toolbar.setIconSize(QSize(24, 24))
@@ -965,10 +1008,18 @@ class MainWindow(QMainWindow):
              if item.scene(): item.scene().removeItem(item)
              return
 
-        dlg = ElevationDialog(self)
-        dialog_result = dlg.exec()
-        elevation = dlg.value() if dialog_result == QtWidgets.QDialog.Accepted else None
-        logger.debug(f"Elevation dialog result: Accepted={dialog_result == QtWidgets.QDialog.Accepted}, Elevation={elevation}")
+        # Only prompt for a single elevation if the current tracing mode is *line*
+        elev_mode = SettingsService().tracing_elev_mode()
+        if elev_mode == "line":
+            dlg = ElevationDialog(self)
+            if dlg.exec() == QtWidgets.QDialog.Accepted:
+                elevation = dlg.value()
+            else:
+                elevation = None
+        else:
+            # For point / interpolate modes we already set per-vertex Zs — no extra prompt.
+            elevation = None
+        logger.debug("Polyline elevation recorded as %s (mode=%s)", elevation, elev_mode)
 
         polyline_data: PolylineData = {"points": point_tuples, "elevation": elevation}
 
@@ -2253,3 +2304,18 @@ class MainWindow(QMainWindow):
         # Finally, apply the state
         self.build_surface_action.setEnabled(enabled)
         self.logger.debug(f"Set build_surface_action enabled state: {enabled}")
+
+    # ------------------------------------------------------------------
+    # Helper: update elevation mode preference + live scene
+    # ------------------------------------------------------------------
+    def _set_tracing_elev_mode(self, mode: str) -> None:
+        """Persist *mode* to settings and propagate to the active TracingScene."""
+        SettingsService().set_tracing_elev_mode(mode)
+
+        # Propagate to the live TracingScene, if available
+        try:
+            scene = getattr(self.visualization_panel, 'scene_2d', None)
+            if scene and hasattr(scene, 'set_elevation_mode'):
+                scene.set_elevation_mode(mode)
+        except Exception as exc:  # pragma: no cover – defensive
+            self.logger.error("Failed to propagate elevation mode '%s' to scene: %s", mode, exc, exc_info=True)

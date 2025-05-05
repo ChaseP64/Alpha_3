@@ -6,7 +6,7 @@ from typing import Optional, Tuple, Any
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QDockWidget, QLabel, QDoubleSpinBox, QFormLayout, QDialogButtonBox,
-    QWidget, QVBoxLayout, QTabWidget, QLineEdit, QPushButton
+    QWidget, QVBoxLayout, QTabWidget, QLineEdit, QPushButton, QCheckBox, QGraphicsPathItem
 )
 
 # Relative imports
@@ -15,6 +15,9 @@ from ..services.settings_service import SettingsService
 
 # New import for vertex items
 from digcalc_project.src.ui.items.vertex_item import VertexItem
+
+# New import for ToggleSmoothCommand
+from digcalc_project.src.ui.commands.toggle_smooth_command import ToggleSmoothCommand
 
 # Define module-level logger
 logger = logging.getLogger(__name__)
@@ -69,6 +72,11 @@ class PropertiesDock(QDockWidget):
         self._polyline_elev_spin.setSuffix(" ft")
         self._polyline_elev_spin.setToolTip("Enter the constant elevation for this polyline.")
         self._polyline_elev_spin.setEnabled(False)
+
+        # --- Smooth checkbox ---
+        self.smooth_chk = QCheckBox("Smooth (Spline)")
+        form_layout.addRow(self.smooth_chk)
+        self.smooth_chk.stateChanged.connect(self._apply_polyline_smooth)
 
         form_layout.addRow("Layer:", self._polyline_layer_label)
         form_layout.addRow("Elevation:", self._polyline_elev_spin)
@@ -201,6 +209,15 @@ class PropertiesDock(QDockWidget):
         self._polyline_elev_spin.setEnabled(True)
         self.polyline_tab.findChild(QDialogButtonBox).button(QDialogButtonBox.Apply).setEnabled(True)
         self._current_polyline_info = (layer_name, index)
+        # sync checkbox state
+        # Attempt to find the polyline item in the scene via main window reference
+        main_win = self.parent()
+        while main_win and not hasattr(main_win, 'undoStack'):
+            main_win = main_win.parent()
+        polyline_item = None
+        if main_win and hasattr(main_win, '_selected_scene_item'):
+            polyline_item = getattr(main_win, '_selected_scene_item')
+        self.smooth_chk.setChecked(bool(polyline_item and getattr(polyline_item, 'mode', 'entered') == 'interpolated'))
         logger.debug(f"Loaded polyline: Layer='{layer_name}', Index={index}, Elevation={elevation}")
 
     def load_region(self, region: Region):
@@ -303,3 +320,29 @@ class PropertiesDock(QDockWidget):
             else:
                 self._current_vertex.set_z(z)
             logger.info("Vertex elevation applied: %.3f", z) 
+
+    # ------------------------------------------------------------------
+    # Smooth checkbox handlers
+    # ------------------------------------------------------------------
+    def _apply_polyline_smooth(self):
+        """Push ToggleSmoothCommand when user toggles checkbox."""
+        if not getattr(self, '_current_polyline_info', None):
+            return
+        main_win = self.parent()
+        while main_win and not hasattr(main_win, 'undoStack'):
+            main_win = main_win.parent()
+
+        polyline_item = None
+        if main_win and hasattr(main_win, '_selected_scene_item'):
+            polyline_item = getattr(main_win, '_selected_scene_item')
+
+        if not polyline_item or not isinstance(polyline_item, QGraphicsPathItem):
+            return
+
+        # Only push when states differ
+        should_be_interp = self.smooth_chk.isChecked()
+        if (polyline_item.mode == 'interpolated') != should_be_interp:
+            if main_win and hasattr(main_win, 'undoStack'):
+                main_win.undoStack.push(ToggleSmoothCommand(polyline_item))
+            else:
+                polyline_item.toggle_mode() 
