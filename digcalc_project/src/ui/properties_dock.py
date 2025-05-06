@@ -7,7 +7,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QDockWidget, QLabel, QDoubleSpinBox, QFormLayout, QDialogButtonBox,
     QWidget, QVBoxLayout, QTabWidget, QLineEdit, QPushButton, QCheckBox, QGraphicsPathItem,
-    QComboBox
+    QComboBox, QSpinBox
 )
 
 # Relative imports
@@ -170,6 +170,9 @@ class PropertiesDock(QDockWidget):
         # Internal state holder
         self._current_vertex: VertexItem | None = None
 
+        # Start disabled – becomes active only when a single vertex is selected
+        self.vertex_tab.setEnabled(False)
+
     def _create_tracing_tab(self):
         """Creates the QWidget and layout for the Tracing settings tab."""
         self.tracing_tab = QWidget()
@@ -208,8 +211,27 @@ class PropertiesDock(QDockWidget):
 
         self._elev_mode_combo.currentIndexChanged.connect(self._update_tracing_mode)
 
-        form_layout.addRow("Spline sample spacing:", self._spline_sampling_spin)
-        form_layout.addRow("Elevation prompt mode:", self._elev_mode_combo)
+        # --- Vertex cross size (px) ---
+        self._vertex_size_spin = QSpinBox()
+        self._vertex_size_spin.setRange(2, 20)
+        self._vertex_size_spin.setSuffix(" px")
+        self._vertex_size_spin.setValue(settings.vertex_cross_px())
+        self._vertex_size_spin.valueChanged.connect(self._update_vertex_size)
+        form_layout.addRow("Vertex cross half-px:", self._vertex_size_spin)
+
+        # --- Vertex line thickness ---
+        self._vertex_line_spin = QSpinBox()
+        self._vertex_line_spin.setRange(0, 5)
+        self._vertex_line_spin.setValue(settings.vertex_line_thickness())
+        self._vertex_line_spin.valueChanged.connect(self._update_vertex_line)
+        form_layout.addRow("Vertex line width:", self._vertex_line_spin)
+
+        # --- Hover colour (hex) ---
+        self._hover_colour_edit = QLineEdit(settings.vertex_hover_colour())
+        self._hover_colour_edit.setMaxLength(7)
+        self._hover_colour_edit.setToolTip("Hover colour as #RRGGBB")
+        self._hover_colour_edit.editingFinished.connect(self._update_hover_colour)
+        form_layout.addRow("Hover colour:", self._hover_colour_edit)
 
         # --- Layout ---
         layout.addLayout(form_layout)
@@ -427,3 +449,25 @@ class PropertiesDock(QDockWidget):
             self.settingsChanged.emit()
         else:
              logger.error(f"Could not get user data for combo box index {index}") 
+
+    def _update_vertex_size(self, value: int):
+        """Update vertex cross size setting and emit signal."""
+        logger.debug(f"Updating vertex_cross_px to: {value}")
+        SettingsService().set_vertex_cross_px(value)
+        self.settingsChanged.emit()
+
+    def _update_vertex_line(self, value: int):
+        """Update vertex line thickness setting and emit signal."""
+        logger.debug(f"Updating vertex_line_thickness to: {value}")
+        SettingsService().set_vertex_line_thickness(value)
+        self.settingsChanged.emit()
+
+    def _update_hover_colour(self):
+        """Update vertex hover colour setting and emit signal."""
+        colour = self._hover_colour_edit.text()
+        if colour:
+            logger.debug(f"Updating vertex_hover_colour to: {colour}")
+            SettingsService().set_vertex_hover_colour(colour)
+            self.settingsChanged.emit()
+        else:
+            logger.warning("Hover colour is empty, not updating.") 

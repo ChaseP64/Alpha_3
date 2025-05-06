@@ -8,8 +8,10 @@ scene position changes, and highlights on hover.
 from __future__ import annotations
 
 from PySide6.QtWidgets import QGraphicsPathItem, QStyleOptionGraphicsItem, QGraphicsItem
-from PySide6.QtGui import QPainterPath, QPen, QPainter
+from PySide6.QtGui import QPainterPath, QPen, QPainter, QColor
 from PySide6.QtCore import Qt, Signal, QPointF, QObject, QEvent
+
+from digcalc_project.src.services.settings_service import SettingsService
 
 
 class VertexItem(QObject, QGraphicsPathItem):
@@ -25,7 +27,7 @@ class VertexItem(QObject, QGraphicsPathItem):
     # Signal emitted when the vertex is double-clicked
     doubleClicked = Signal(object)  # emits self
 
-    CROSS_HALF: int = 3  # Half-length of the cross arms in px (later from settings)
+    CROSS_HALF: float = float(SettingsService().vertex_cross_px())
 
     # ---------------------------------------------------------------------
     # Construction helpers
@@ -47,14 +49,25 @@ class VertexItem(QObject, QGraphicsPathItem):
         self.setPos(pos)
 
         # Pens for normal and hover states (0 px width == hairline pen in Qt)
-        self._normal_pen: QPen = QPen(Qt.darkMagenta, 0)
-        self._hover_pen: QPen = QPen(Qt.yellow, 0)
+        c_base = self._layer_pen_colour()
+        width_px = SettingsService().vertex_line_thickness()
+        self._normal_pen = QPen(c_base.darker(130), width_px)
+        hover_col = QColor(SettingsService().vertex_hover_colour())
+        self._hover_pen = QPen(hover_col, width_px)
         self.setPen(self._normal_pen)
 
         # --- Z (elevation) ------------------------------------------
         self._z: float = 0.0  # elevation value in feet
-        # Initialise tooltip with Z value
+        # Initialise tooltip
         self.set_z(0.0)
+        self.setToolTip("(unset)")
+        self._update_tooltip()
+
+        self._drag_start_pos: QPointF | None = None  # Track position at drag start
+        # Flags for modifier-drag behaviour
+        self._dup_requested: bool = False  # Ctrl-drag duplicates on release
+        self._constrain: bool = False  # Alt constrains to axis
+        self._start_pos: QPointF = QPointF()
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -77,6 +90,7 @@ class VertexItem(QObject, QGraphicsPathItem):
     def hoverEnterEvent(self, _event):  # noqa: D401 – Qt override signature
         """Highlight the item when hovered."""
         self.setPen(self._hover_pen)
+        self._update_tooltip()
 
     def hoverLeaveEvent(self, _event):  # noqa: D401 – Qt override signature
         """Restore normal appearance when the cursor leaves."""
@@ -88,6 +102,8 @@ class VertexItem(QObject, QGraphicsPathItem):
             # *value* holds the new position in item coordinates – convert to scene coords
             if isinstance(value, QPointF):
                 self.moved.emit(value)
+                # Update tooltip with new coordinates
+                self._update_tooltip()
         # Call the implementation from QGraphicsPathItem directly to bypass QObject in MRO
         return QGraphicsPathItem.itemChange(self, change, value)
 
@@ -99,6 +115,12 @@ class VertexItem(QObject, QGraphicsPathItem):
         painter.setPen(self.pen())
         QGraphicsPathItem.paint(self, painter, option, widget)
 
+        view_scale = painter.worldTransform().m11()
+        px_half = SettingsService().vertex_cross_px() / max(view_scale, 1e-3)
+        if abs(px_half - self.CROSS_HALF) > 1e-2:
+            self.CROSS_HALF = px_half
+            self._make_path()
+
     # --- Z value -------------------------------------------------------
     def z(self) -> float:
         """Return the stored elevation (Z) value for this vertex in feet."""
@@ -107,8 +129,7 @@ class VertexItem(QObject, QGraphicsPathItem):
     def set_z(self, value: float):
         """Set the vertex elevation and update its tooltip accordingly."""
         self._z = float(value)
-        # Update tooltip to show elevation formatted to 3 decimals
-        self.setToolTip(f"Z = {self._z:,.3f} ft")
+        self._update_tooltip()
 
     # ------------------------------------------------------------------
     # Convenience helpers
@@ -122,12 +143,144 @@ class VertexItem(QObject, QGraphicsPathItem):
     # ------------------------------------------------------------------
     # Mouse interaction overrides
     # ------------------------------------------------------------------
+    def mousePressEvent(self, ev):  # noqa: D401
+        """Record starting position before a potential drag."""
+        # Capture starting position *before* the built-in movable logic updates it.
+        self._drag_start_pos = QPointF(self.pos())
+
+        # Modifier checks for duplicate / constrain
+        self._dup_requested = bool(ev.modifiers() & Qt.ControlModifier)
+        self._constrain = bool(ev.modifiers() & Qt.AltModifier)
+        self._start_pos = QPointF(self.scenePos())
+        super().mousePressEvent(ev)
+
+    def mouseMoveEvent(self, ev):  # noqa: D401
+        if self._constrain:
+            delta = ev.scenePos() - self._start_pos
+            if abs(delta.x()) >= abs(delta.y()):
+                # Constrain horizontally: keep Y fixed
+                new_scene = QPointF(ev.scenePos().x(), self._start_pos.y())
+            else:
+                # Constrain vertically: keep X fixed
+                new_scene = QPointF(self._start_pos.x(), ev.scenePos().y())
+
+            # Update the item's position directly, bypass default move
+            self.setPos(self.mapFromScene(new_scene))
+            # Mark event as handled; do not propagate to default
+            ev.accept()
+            return
+
+        super().mouseMoveEvent(ev)
+
+    def mouseReleaseEvent(self, ev):  # noqa: D401
+        """Push a :class:`MoveVertexCommand` if the vertex has moved."""
+        super().mouseReleaseEvent(ev)
+        # Handle Ctrl-drag duplication
+        if self._dup_requested:
+            try:
+                parent = self.parentItem()
+                if parent and hasattr(parent, "_vertex_items"):
+                    from digcalc_project.src.ui.items.vertex_item import VertexItem  # self-import safe
+
+                    new_v = VertexItem(self.pos(), parent=parent)
+                    vertices = parent._vertex_items  # type: ignore[attr-defined]
+                    idx = vertices.index(self) + 1
+                    vertices.insert(idx, new_v)
+                    new_v.moved.connect(parent._rebuild_path)  # type: ignore[attr-defined]
+                    parent._rebuild_path()  # type: ignore[attr-defined]
+            except Exception:
+                pass
+
+        # Ensure we had a recorded start pos and that the position really changed.
+        if self._drag_start_pos is None:
+            return
+        new_pos: QPointF = QPointF(self.pos())
+        if new_pos == self._drag_start_pos:
+            return  # No movement – nothing to undo.
+
+        try:
+            # Only push when tracing globally enabled.
+            if not SettingsService().tracing_enabled():
+                return
+
+            # Retrieve main window via the scene -> view -> window chain.
+            scene = self.scene()
+            main_win = None
+            if scene is not None:
+                view = getattr(scene, "parent_view", None)
+                if view is not None:
+                    main_win = view.window()
+            # Fallback: try window() directly in case vertex is under a view.
+            if main_win is None and self.scene() and self.scene().views():
+                main_win = self.scene().views()[0].window()
+
+            if main_win is None or not hasattr(main_win, "undoStack"):
+                return
+
+            from digcalc_project.src.ui.commands.move_vertex_command import MoveVertexCommand
+
+            main_win.undoStack.push(MoveVertexCommand(self, self._drag_start_pos, new_pos))
+        finally:
+            # Reset the start position marker
+            self._drag_start_pos = None
+
     def mouseDoubleClickEvent(self, ev):  # noqa: D401
         """Emit :pyattr:`doubleClicked` when the item is double-clicked."""
         # Emit signal with self reference so listeners can access properties
         self.doubleClicked.emit(self)
         # Call base implementation (keeps default accepted state)
         super().mouseDoubleClickEvent(ev)
+
+    # ------------------------------------------------------------------
+    # Colour helper – inherit layer pen colour if possible
+    # ------------------------------------------------------------------
+    def _layer_pen_colour(self):
+        """Return colour based on parent polyline pen or fallback."""
+
+        p = self.parentItem()
+        if p and hasattr(p, "pen"):
+            try:
+                return p.pen().color()
+            except Exception:
+                pass
+        return QColor(Qt.darkMagenta)
+
+    # --------------------------------------------------------------
+    # Tooltip helper
+    # --------------------------------------------------------------
+    def _update_tooltip(self):
+        """Update tooltip with XYZ coordinates, Δ to previous vertex, and station."""
+
+        try:
+            parent = self.parentItem()
+            if parent is None or not hasattr(parent, "_vertex_items"):
+                return
+
+            vertices = parent._vertex_items  # type: ignore[attr-defined]
+            if not vertices:
+                return
+
+            idx = vertices.index(self)
+            this = self.pos()
+
+            # Δ to previous vertex (Euclidean via manhattanLength for speed)
+            prev_dist = 0.0
+            if idx > 0:
+                prev_dist = (this - vertices[idx - 1].pos()).manhattanLength()
+
+            # Running station from start to this vertex
+            station = 0.0
+            for i in range(1, idx + 1):
+                station += (vertices[i].pos() - vertices[i - 1].pos()).manhattanLength()
+
+            # Tooltip string
+            self.setToolTip(
+                f"X:{this.x():.2f}  Y:{this.y():.2f}  Z:{self._z:.2f}\n"
+                f"ΔPrev:{prev_dist:.2f}  Station:{station:.2f}"
+            )
+        except Exception:
+            # Fail quietly – tooltip is non-critical.
+            pass
 
 
 __all__ = ["VertexItem"] 

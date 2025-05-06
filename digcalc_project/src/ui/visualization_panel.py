@@ -300,11 +300,18 @@ class VisualizationPanel(QWidget):
         Args:
             project: The Project object to visualize, or None to clear.
         """
-        self.logger.info(f"Setting project in VisualizationPanel: {project.name if project else 'None'}")
-        self.current_project = project
+        self.logger.info(
+            "Setting project in VisualizationPanel: %s",
+            project.name if project else "None",
+        )
 
-        # Clear existing visuals first
-        self.clear_all() # This now closes pymupdf doc
+        # Clear existing visuals *before* assigning so that clear_all() does not
+        # immediately overwrite `self.current_project`.  clear_all() resets
+        # various visuals but should not dictate which project is active.
+        self.clear_all()
+
+        # Now store the reference to the selected project (may be None).
+        self.current_project = project
 
         if project:
             # Load PDF Background if available

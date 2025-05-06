@@ -2,6 +2,16 @@
 import importlib
 import types
 import pytest
+import sys
+from pathlib import Path
+
+# ---------------------------------------------------------------------------
+# Ensure the repository root is on sys.path so that `import digcalc_project` is
+# always resolvable when tests are run from any working directory (e.g., CI).
+# ---------------------------------------------------------------------------
+_repo_root = Path(__file__).resolve().parent.parent
+if str(_repo_root) not in sys.path:
+    sys.path.insert(0, str(_repo_root))
 
 
 @pytest.fixture

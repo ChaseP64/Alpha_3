@@ -21,6 +21,7 @@ from dataclasses import dataclass, field
 from .surface import Surface
 from .calculation import VolumeCalculation
 from .region import Region
+from .project_scale import ProjectScale  # NEW
 
 # Configure logging for the module
 logger = logging.getLogger(__name__)
@@ -66,6 +67,7 @@ class Project:
     calculations: List[VolumeCalculation] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
     regions: list[Region] = field(default_factory=list)
+    scale: ProjectScale | None = None  # NEW field for printed-scale calibration
     
     # --- Tracing / PDF Background Data ---
     pdf_background_path: Optional[str] = None
@@ -296,6 +298,7 @@ class Project:
                 'calculations': [c.to_dict() for c in self.calculations],
                 'regions': [r.to_dict() for r in self.regions],
                 'metadata': self.metadata,
+                'scale': self.scale.to_dict() if self.scale else None,  # NEW
                 'pdf_background_path': self.pdf_background_path,
                 'pdf_background_page': self.pdf_background_page,
                 'pdf_background_dpi': self.pdf_background_dpi,
@@ -330,6 +333,7 @@ class Project:
                 data = json.load(f)
 
             # --- Migration --- 
+            data = _migrate_v2_add_scale(data)  # v2: ensure 'scale' key exists before other migrations
             data = _migrate_v1_to_v2(data)
             # Add future migration calls here: data = _migrate_v2_to_v3(data) ...
             # --- End Migration ---
@@ -348,6 +352,10 @@ class Project:
                 project.modified_at = project.created_at
             project.author = data.get("author", "Unknown")
             project.metadata = data.get("metadata", {})
+
+            # --- Load Project Scale (optional) ---  # NEW
+            scale_data = data.get("scale")
+            project.scale = ProjectScale.from_dict(scale_data) if scale_data else None
 
             # --- Load Surfaces --- 
             surfaces_data = data.get("surfaces", {})
@@ -478,3 +486,10 @@ class Project:
         logger.debug(f"Bumped layer '{layer_name}' revision to {new_revision}")
         return new_revision
     # --- END NEW --- 
+
+# --- NEW: Migration helper for v2 (scale) ---
+
+def _migrate_v2_add_scale(st: dict) -> dict:
+    """v2 – ensure "scale" key exists (None if legacy file)."""
+    st.setdefault("scale", None)
+    return st

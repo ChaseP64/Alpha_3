@@ -9803,3 +9803,95 @@ AttributeError: 'TracingScene' object has no attribute '_apply_elevation_workflo
 2025-05-05 14:01:11,767 - digcalc_project.src.ui.main_window - WARNING - Cannot fit view: Scene rectangle is null or invalid.
 2025-05-05 14:01:11,774 - digcalc_project.src.ui.main_window - INFO - Closing application.
 2025-05-05 14:01:11,779 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-06 10:47:59,066 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-06 10:47:59,107 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-06 11:16:05,316 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-06 11:16:05,316 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-06 11:16:05,316 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-06 11:16:09,805 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-06 11:16:09,834 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-06 11:16:12,684 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-06 11:16:12,684 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-06 11:16:12,693 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-06 11:16:27,490 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-06 11:16:27,553 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-06 11:16:35,342 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-05-06 11:16:35,343 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Downloads/Sample file.pdf, initial page: 1, dpi: 300
+2025-05-06 11:16:35,343 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-06 11:16:35,343 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-05-06 11:16:35,351 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 4
+2025-05-06 11:16:35,351 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 4 pages at 300 DPI...
+2025-05-06 11:16:35,411 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 4 page images.
+2025-05-06 11:16:35,412 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 4
+2025-05-06 11:16:35,418 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Sample file.pdf'
+2025-05-06 11:16:35,418 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-06 11:16:35,419 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Sample file.pdf' with 4 pages.
+2025-05-06 11:16:38,566 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-05-06 11:16:38,566 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-06 11:16:40,660 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Existing Surface'.
+2025-05-06 11:16:40,660 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 6, Elevation: None, New Rev: 1).
+2025-05-06 11:16:40,660 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: None) to layer 'Existing Surface'.
+2025-05-06 11:16:40,913 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-06 11:16:40,913 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-06 11:16:51,076 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode disabled.
+2025-05-06 11:16:51,076 - digcalc_project.src.ui.main_window - INFO - Tracing mode disabled via MainWindow action.
+2025-05-06 11:16:52,453 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-05-06 11:16:52,453 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-06 11:16:53,998 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode disabled.
+2025-05-06 11:16:53,998 - digcalc_project.src.ui.main_window - INFO - Tracing mode disabled via MainWindow action.
+2025-05-06 11:16:58,000 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-05-06 11:16:59,733 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-05-06 11:16:59,733 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-06 11:17:10,464 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 5 points on layer 'Existing Surface'.
+2025-05-06 11:17:10,464 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 1, Points: 5, Elevation: None, New Rev: 2).
+2025-05-06 11:17:10,464 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 1, Elevation: None) to layer 'Existing Surface'.
+2025-05-06 11:17:10,737 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-06 11:17:10,737 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-06 11:17:13,524 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-05-06 11:17:18,487 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Existing Surface'.
+2025-05-06 11:17:18,487 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 2, Points: 6, Elevation: None, New Rev: 3).
+2025-05-06 11:17:18,487 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 2, Elevation: None) to layer 'Existing Surface'.
+2025-05-06 11:17:18,741 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-06 11:17:18,741 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-06 11:17:26,916 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-06 11:17:28,051 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Downloads/Sample file.pdf
+2025-05-06 11:17:28,051 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-06 11:17:28,066 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-06 12:30:27,451 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-06 12:30:27,533 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-06 12:30:30,158 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-06 12:30:30,158 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-06 12:30:30,178 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-06 12:48:20,968 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-06 12:48:21,006 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-06 12:48:29,768 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-06 12:48:29,768 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-06 12:48:29,768 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-06 12:48:29,768 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-06 12:48:29,768 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-06 12:48:29,768 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-06 12:48:33,239 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-06 12:48:33,240 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-06 12:48:33,293 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-06 12:48:33,293 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-06 12:48:33,293 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-05-06 12:48:40,603 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-06 12:48:40,603 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-06 12:48:40,668 - digcalc_project.src.ui.main_window - WARNING - Cannot fit view: Scene rectangle is null or invalid.
+2025-05-06 12:48:40,682 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-06 12:48:40,700 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-06 13:39:59,894 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-06 13:39:59,915 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-06 13:40:02,089 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-06 13:40:02,089 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-06 13:40:02,110 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-06 14:06:20,903 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-06 14:06:20,926 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-06 14:07:04,088 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-06 14:07:04,088 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-06 14:07:04,107 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-06 15:02:58,950 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-06 15:02:58,982 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-06 15:03:00,685 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-06 15:03:00,685 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-06 15:03:00,696 - digcalc_project.src.main - INFO - Application exited with code 0

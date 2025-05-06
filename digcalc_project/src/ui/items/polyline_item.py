@@ -82,18 +82,62 @@ class PolylineItem(QObject, QGraphicsPathItem):
     # Evaluation helpers
     # ------------------------------------------------------------------
     def sample(self, density_ft: float):  # noqa: D401
-        """Return list of (x, y, z) tuples sampled at ≈ ``density_ft`` spacing.
+        """Return simplified list of (x, y, z) tuples at ≈ ``density_ft`` spacing.
 
-        For *interpolated* mode we call the shared ``spline.sample`` helper; for
-        *entered* mode we simply return the raw vertex coordinates.
+        First generate *pts3d* either via spline resampling (for *interpolated*
+        mode) or by taking the raw vertices (for *entered* mode).  Then apply
+        *compression* based on user settings (T-6 optimisation):
+
+        • Drop consecutive points that lie closer than
+          :pyattr:`SettingsService.smooth_min_spacing_ft`.
+        • Stop once :pyattr:`SettingsService.smooth_max_points` have been
+          emitted, guarding against pathological polylines producing millions
+          of samples.
         """
 
+        # ------------------------------------------------------------------
+        # 1) Generate the full point list (may be long for splines)
+        # ------------------------------------------------------------------
         if self.mode == "interpolated":
             # Helper accepts *any* iterable exposing .x(), .y(), .z()/z attr
-            return spline_sample(self.vertices(), density_ft)
+            pts3d = spline_sample(self.vertices(), density_ft)
+        else:
+            # Straight-line polyline – just spit back the original vertices
+            pts3d = [v.to_tuple() for v in self.vertices()]
 
-        # Straight-line polyline – just spit back the original vertices
-        return [v.to_tuple() for v in self.vertices()]
+        # ------------------------------------------------------------------
+        # 2) Compression – distance filter + global cap
+        # ------------------------------------------------------------------
+        from digcalc_project.src.services.settings_service import SettingsService
+
+        ss = SettingsService()
+        min_d = ss.smooth_min_spacing_ft()
+        max_n = ss.smooth_max_points()
+
+        # Fast exit when nothing to compress.
+        if len(pts3d) <= 1:
+            return pts3d
+
+        compressed: list[tuple[float, float, float]] = []
+        last_pt = None
+        for pt in pts3d:
+            if last_pt is None:
+                compressed.append(pt)
+                last_pt = pt
+                # Do *not* continue here – allow first-point duplication guard below.
+                continue
+
+            dx = pt[0] - last_pt[0]
+            dy = pt[1] - last_pt[1]
+            dz = pt[2] - last_pt[2]
+            if (dx * dx + dy * dy + dz * dz) ** 0.5 >= min_d * 0.9999:
+                compressed.append(pt)
+                last_pt = pt
+
+            if len(compressed) >= max_n:
+                break
+
+        return compressed
 
     # ------------------------------------------------------------------
     # Internal logic

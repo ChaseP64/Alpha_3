@@ -6,7 +6,7 @@ import logging
 import math
 from typing import List, Optional, Tuple, Dict, Sequence, Any, TypeAlias, TYPE_CHECKING
 
-from PySide6.QtCore import Qt, QPointF, Signal, QLineF, QEvent
+from PySide6.QtCore import Qt, QPointF, Signal, QLineF, QEvent, QPoint, QSize, QRectF
 from PySide6.QtGui import (
     QBrush,
     QColor,
@@ -19,6 +19,8 @@ from PySide6.QtGui import (
     QUndoCommand,
     QKeySequence,
     QShortcut,
+    QAction,
+    QFont,
 )
 from PySide6.QtWidgets import (
     QGraphicsEllipseItem,
@@ -31,6 +33,10 @@ from PySide6.QtWidgets import (
     QGraphicsItemGroup,
     QGraphicsView,
     QMenu,
+    QInputDialog,
+    QRubberBand,
+    QMessageBox,
+    QGraphicsSimpleTextItem,
 )
 from digcalc_project.src.ui.items.polyline_item import PolylineItem
 from digcalc_project.src.ui.commands.edit_vertex_z_command import EditVertexZCommand
@@ -44,6 +50,7 @@ from digcalc_project.src.ui.commands.set_polyline_uniform_z_command import (
 from digcalc_project.src.ui.commands.interpolate_segment_z_command import (
     InterpolateSegmentZCommand,
 )
+from digcalc_project.src.ui.items.vertex_item import VertexItem
 
 # --- MODIFIED: Use TYPE_CHECKING for PolylineData --- 
 if TYPE_CHECKING:
@@ -101,12 +108,14 @@ class TracingScene(QGraphicsScene):
         # Settings access – used for tracing enable flag and elevation mode
         self._settings = SettingsService()
 
-        # Cache elevation mode for current drawing session (updated in start_drawing)
+        # Cache global tracing-enabled flag & elevation prompt mode
+        self._tracing_enabled: bool = self._settings.tracing_enabled()
         self._elev_mode: str = self._settings.tracing_elev_mode()
+        # Alias for clarity with new API
+        self._prompt_mode: str = self._elev_mode
 
         # Allow multiple stacked background layers (one per PDF page)
         self._background_items: List[QGraphicsPixmapItem] = []
-        self._tracing_enabled: bool = False
         self._is_drawing: bool = False
         self._current_polyline_points: List[QPointF] = []
         self._current_vertices_items: List[QGraphicsEllipseItem] = []
@@ -154,6 +163,16 @@ class TracingScene(QGraphicsScene):
 
         # Elevations collected during *point* mode drawing (aligned to _current_polyline_points)
         self._current_z_values: List[float] = []
+
+        self._rubber_band: QRubberBand | None = None
+        self._marquee_origin: QPointF | None = None
+        self._marquee_selection: list[VertexItem] = []
+
+        # ------------------------------------------------------------
+        # scale-calibration hint helpers
+        # ------------------------------------------------------------
+        self._scale_warn_shown: bool = False  # one-shot QMessageBox flag
+        self._scale_overlay: QGraphicsSimpleTextItem | None = None
 
     # --- Background Image ---
 
@@ -227,14 +246,40 @@ class TracingScene(QGraphicsScene):
 
     def start_drawing(self):
         """Explicitly enables drawing mode."""
-        # Honour global enable flag from SettingsService
-        if not self._settings.tracing_enabled():
-            self.logger.debug("start_drawing aborted – tracing globally disabled in settings.")
+        # Honour global enable flag controlled via SettingsService and runtime flag
+        if not (self._tracing_enabled and self._settings.tracing_enabled()):
+            self.logger.debug("start_drawing aborted – tracing globally disabled in settings or by runtime flag.")
             return
 
-        self._tracing_enabled = True
+        # ------------------------------------------------------------------
+        # No-scale warning (only once per session) + overlay
+        # ------------------------------------------------------------------
+        project = getattr(self, "project", None)
+        if project is None and hasattr(self.panel, "current_project"):
+            project = self.panel.current_project
+
+        if project is not None and project.scale is None:
+            if not self._scale_warn_shown:
+                parent_widget = (
+                    self.parent_view
+                    if self.parent_view
+                    else (self.views()[0] if self.views() else None)
+                )
+                QMessageBox.information(
+                    parent_widget,
+                    "DigCalc – No scale calibrated",
+                    "No PDF scale is calibrated for this project.\n"
+                    "Coordinates will be stored in raw pixels until you run\n"
+                    "Tracing ▸ Calibrate Scale…",
+                )
+                self._scale_warn_shown = True  # one-shot pop-up
+
+            # Always (re)draw passive overlay if scale missing
+            self._add_scale_overlay()
+
+        # Do not mutate _tracing_enabled here; it reflects global toggle state
         # Snapshot current elevation prompt mode for this drawing session
-        self._elev_mode = self._settings.tracing_elev_mode()
+        self._elev_mode = self._prompt_mode = self._settings.tracing_elev_mode()
         self.logger.debug("Drawing mode explicitly enabled.")
         # Change cursor when tracing starts
         if self.parent_view:
@@ -254,9 +299,11 @@ class TracingScene(QGraphicsScene):
             self.removeItem(self._preview_poly)
         self._preview_poly = None
 
+        self._add_scale_overlay()
+
     def stop_drawing(self):
         """Explicitly disables drawing mode and cancels any current polyline."""
-        self._tracing_enabled = False
+        # Keep global flag intact; simply stop current drawing session
         if self._is_drawing:
             self._cancel_current_polyline()
             self.logger.debug("Drawing mode explicitly disabled, current polyline cancelled.")
@@ -344,6 +391,15 @@ class TracingScene(QGraphicsScene):
             # Pass other non-left clicks to base class
             super().mousePressEvent(event)
 
+        if event.button() == Qt.LeftButton and not self.itemAt(event.scenePos(), self.views()[0].transform()):
+            # Start marquee selection
+            self._marquee_origin = event.scenePos()
+            if self._rubber_band is None:
+                self._rubber_band = QRubberBand(QRubberBand.Rectangle, self.views()[0])
+            self._rubber_band.setGeometry(QRectF(self._marquee_origin, QSize()).toRect())
+            self._rubber_band.show()
+            return
+
     def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent):
         """Handles mouse move events to update the temporary rubber-band line with constraints."""
         if not self._tracing_enabled or not self._is_drawing or not self._current_polyline_points:
@@ -353,6 +409,11 @@ class TracingScene(QGraphicsScene):
         constrained_pos = self._constrained_pos(event.scenePos(), event.modifiers())
         self._update_temporary_line(constrained_pos)
         event.accept() # We are handling the move for the rubber band
+
+        if self._rubber_band and self._marquee_origin is not None:
+            rect = QRectF(self._marquee_origin, event.scenePos()).normalized()
+            self._rubber_band.setGeometry(rect.toRect())
+            return
 
     def _constrained_pos(self, current_pos: QPointF, modifiers: Qt.KeyboardModifiers) -> QPointF:
         """
@@ -389,6 +450,33 @@ class TracingScene(QGraphicsScene):
         else:
             # No constraint
             return current_pos
+
+    # --- NEW: Scene → World conversion helper -----------------------------------------
+    def _scene_to_world(self, scene_pos: QPointF) -> Tuple[float, float]:
+        """
+        Convert a Qt scene-pixel position to model (world) coordinates based on the
+        currently calibrated PDF scale stored on the :pyattr:`project` instance.
+
+        Args:
+            scene_pos (QPointF): Position in scene (pixel) coordinates.
+
+        Returns:
+            tuple[float, float]: (x_world, y_world) in project units (ft or m).
+        """
+        # Attempt to fetch the Project reference.  If this scene owns a direct
+        # handle, prefer it; otherwise fall back to the panel's current project.
+        project = getattr(self, "project", None)
+        if project is None and hasattr(self.panel, "current_project"):
+            project = self.panel.current_project
+
+        scale = getattr(project, "scale", None) if project else None
+        if not scale:
+            # No calibration → return raw pixel values (1 px == 1 world-unit)
+            return scene_pos.x(), scene_pos.y()
+
+        # Convert: (world length / inch) ÷ (pixels / inch) ⇒ world length / px
+        factor = scale.world_per_in / scale.px_per_in
+        return scene_pos.x() * factor, scene_pos.y() * factor
 
     def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent):
         """Handles double-click events to finalize the current polyline."""
@@ -499,6 +587,16 @@ class TracingScene(QGraphicsScene):
             self.logger.debug("Selection cleared, emitting None.")
             self.selectionChanged.emit(None)
 
+        if self._rubber_band and self._rubber_band.isVisible():
+            self._rubber_band.hide()
+            band_rect = self._rubber_band.geometry()
+            # Map band rect from view coords to scene
+            scene_rect = self.views()[0].mapToScene(band_rect).boundingRect()
+            self._marquee_selection = [item for item in self.items(scene_rect) if isinstance(item, VertexItem)]
+            for v in self._marquee_selection:
+                v.setPen(v.pen().color().lighter())
+            return
+
     # --- Polyline Drawing Helpers ---
 
     def _add_vertex_marker(self, pos: QPointF):
@@ -552,10 +650,14 @@ class TracingScene(QGraphicsScene):
         for point in self._current_polyline_points[1:]:
             path.lineTo(point)
 
-        # Build PolylineItem using captured points
+        # Build PolylineItem using captured points (convert to world-units first)
+        # ------------------------------------------------------------------
+        # Map scene-pixel coordinates → calibrated world coordinates.
+        world_points: list[QPointF] = [QPointF(*self._scene_to_world(p)) for p in self._current_polyline_points]
+
         pen = QPen(Qt.green, 0)  # TODO: Use layer-specific colour
         poly_item = PolylineItem(
-            self._current_polyline_points,
+            world_points,
             pen,
             mode="interpolated" if getattr(self, "_current_mode", False) else "entered",
         )
@@ -568,7 +670,8 @@ class TracingScene(QGraphicsScene):
 
         # --- Store metadata on the item ---
         poly_item.setData(Qt.UserRole + 1, layer_name)
-        points_data = [(p.x(), p.y()) for p in self._current_polyline_points]
+        # Store *world* coordinates for downstream processing
+        points_data = [(p.x(), p.y()) for p in world_points]
         poly_item.setData(Qt.UserRole + 2, points_data)
         # --- END Store ---
 
@@ -588,8 +691,8 @@ class TracingScene(QGraphicsScene):
             f"Finalized polyline with {len(self._current_polyline_points)} points on layer '{layer_name}'."
         )
 
-        # Emit finalized signal
-        self.polyline_finalized.emit(self._current_polyline_points, poly_item)
+        # Emit finalized signal with *world* coordinates
+        self.polyline_finalized.emit(world_points, poly_item)
 
         # ------------------------------------------------------------------
         # Apply per-vertex Z values collected (point mode)
@@ -613,8 +716,8 @@ class TracingScene(QGraphicsScene):
 
         # --- NEW: Emit padDrawn if polyline belongs to "pads" layer and is closed ---
         try:
-            # Convert QPointF list to plain tuples for emission
-            points_2d = [(p.x(), p.y()) for p in self._current_polyline_points]
+            # Convert QPointF list to plain tuples for emission (world units)
+            points_2d = [(p.x(), p.y()) for p in world_points]
             if layer_name.lower() == "pads" and self._path_is_closed(points_2d):
                 self.logger.debug("padDrawn emitted for closed pad on 'pads' layer with %d vertices", len(points_2d))
                 self.padDrawn.emit(points_2d)
@@ -678,9 +781,53 @@ class TracingScene(QGraphicsScene):
         # End of _reset_drawing_state
         # ------------------------------------------------------------------
 
-# ------------------------------------------------------------------
-# Elevation-prompt workflow helpers (point/interpolate/line) – class-level
-# ------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # Scale-calibration overlay helpers (inside TracingScene)
+    # ------------------------------------------------------------------
+    def _add_scale_overlay(self) -> None:
+        """Create or refresh the faint "⚠ No scale calibrated" overlay.
+
+        The overlay is shown only while ``project.scale`` is ``None``.
+        Once the user calibrates scale it is removed and never recreated
+        during the same session.
+        """
+        # If we now have a calibrated scale – remove any existing overlay
+        proj = getattr(self, "project", None) or getattr(self.panel, "current_project", None)
+        if proj and proj.scale is not None:
+            if self._scale_overlay is not None:
+                try:
+                    self.removeItem(self._scale_overlay)
+                except RuntimeError:
+                    pass  # Item already deleted
+                self._scale_overlay = None
+            return
+
+        # Ensure overlay item exists
+        if self._scale_overlay is None:
+            self._scale_overlay = QGraphicsSimpleTextItem("⚠  No scale calibrated")
+            self._scale_overlay.setBrush(QColor(255, 0, 0, 100))  # Semi-transparent red
+            font = QFont()
+            font.setPointSize(10)
+            self._scale_overlay.setFont(font)
+            self._scale_overlay.setZValue(10_000)  # Keep on top of everything
+            self.addItem(self._scale_overlay)
+
+        # Re-position overlay in the top-left corner of the first view
+        if self.views():
+            view = self.views()[0]
+            margin = 8
+            scene_pos = view.mapToScene(margin, margin)
+            self._scale_overlay.setPos(scene_pos)
+
+    # ------------------------------------------------------------------
+    def on_scale_calibrated(self) -> None:
+        """Slot called by MainWindow after successful scale calibration."""
+        # Simply refresh; _add_scale_overlay will remove the item if needed
+        self._add_scale_overlay()
+
+    # ------------------------------------------------------------------
+    # Elevation-prompt workflow helpers (point/interpolate/line) – class-level
+    # ------------------------------------------------------------------
 
     def _apply_elevation_workflow(self, poly_item: PolylineItem) -> None:
         """Run the elevation-prompt workflow for *poly_item* based on *self._elev_mode*."""
@@ -757,7 +904,19 @@ class TracingScene(QGraphicsScene):
             self.logger.warning("Attempted to set invalid elevation mode: %s", mode)
             return
         self._elev_mode = mode
+        self._prompt_mode = mode
         self.logger.debug("TracingScene elevation mode set to '%s'", mode)
+
+    # ------------------------------------------------------------------
+    # Compatibility aliases for new API expected by MainWindow
+    # ------------------------------------------------------------------
+    def set_tracing_enabled(self, flag: bool):  # noqa: D401 – simple setter
+        """Enable/disable tracing globally at runtime (no persistence)."""
+        self._tracing_enabled = bool(flag)
+
+    def set_prompt_mode(self, mode: str):  # noqa: D401 – delegate to existing setter
+        """Alias to :py:meth:`set_elevation_mode` for API compatibility."""
+        self.set_elevation_mode(mode)
 
     # --- Loading / Saving / Layer Management ---
 
@@ -944,7 +1103,25 @@ class TracingScene(QGraphicsScene):
     # Qt context-menu override – add Toggle Smooth action
     # ------------------------------------------------------------------
     def contextMenuEvent(self, ev):  # noqa: D401
-        """Show context menu with a *Toggle Smooth* action for polylines."""
+        """Custom context menu for polylines and vertices."""
+        if self._marquee_selection:
+            menu = QMenu()
+            bulk = QAction("Bulk Z offset…", menu)
+
+            def _bulk():
+                dz, ok = QInputDialog.getDouble(self.views()[0], "Bulk Z offset", "Δ feet:", 0.0, decimals=3)
+                if ok and abs(dz) > 1e-9:
+                    from digcalc_project.src.ui.commands.bulk_offset_z_command import BulkOffsetZCommand
+                    main_win = self.views()[0].window()
+                    if hasattr(main_win, "undoStack"):
+                        main_win.undoStack.push(BulkOffsetZCommand(self._marquee_selection, dz))
+                    self._marquee_selection = []
+
+            bulk.triggered.connect(_bulk)
+            menu.addAction(bulk)
+            menu.exec(ev.screenPos())
+            return
+
         item = self.itemAt(ev.scenePos(), self.views()[0].transform()) if self.views() else None
         if not item:
             return super().contextMenuEvent(ev)
@@ -1076,80 +1253,3 @@ class SetPadElevationCommand(QUndoCommand):
 # ------------------------------------------------------------------
 # Helper methods for new elevation workflow (inside TracingScene)
 # ------------------------------------------------------------------
-
-    def _apply_elevation_workflow(self, poly_item: PolylineItem) -> None:
-        """Run the elevation-prompt workflow for *poly_item* based on *self._elev_mode*."""
-        vertices = poly_item.vertices()
-        if not vertices:
-            return
-
-        mode = self._elev_mode
-        main_win = self.parent_view.window() if self.parent_view else None
-        undo_stack = getattr(main_win, "undoStack", None) if main_win else None
-
-        # ---------------- Point mode ----------------
-        if mode == "point":
-            if not undo_stack:
-                self.logger.warning("Undo stack unavailable – point-mode elevations will be applied directly.")
-            for v in vertices:
-                z, ok = self._ask_vertex_z(v.z())
-                if not ok:
-                    continue
-                if undo_stack:
-                    undo_stack.push(EditVertexZCommand(v, z))
-                else:
-                    v.set_z(z)
-
-        # -------------- Interpolate mode -------------
-        elif mode == "interpolate":
-            # Prompt first vertex
-            z0, ok0 = self._ask_vertex_z(vertices[0].z())
-            if not ok0:
-                return
-            # Prompt last vertex
-            z1, ok1 = self._ask_vertex_z(vertices[-1].z())
-            if not ok1:
-                return
-
-            if undo_stack:
-                undo_stack.push(EditVertexZCommand(vertices[0], z0))
-                undo_stack.push(EditVertexZCommand(vertices[-1], z1))
-                undo_stack.push(InterpolateSegmentZCommand(vertices))
-            else:
-                vertices[0].set_z(z0)
-                vertices[-1].set_z(z1)
-                InterpolateSegmentZCommand(vertices).redo()
-
-        # ---------------- Line mode ------------------
-        elif mode == "line":
-            z, ok = self._ask_uniform_z()
-            if not ok:
-                return
-            if undo_stack:
-                undo_stack.push(SetPolylineUniformZCommand(poly_item, z))
-            else:
-                SetPolylineUniformZCommand(poly_item, z).redo()
-
-    def _ask_vertex_z(self, initial_z: float = 0.0) -> tuple[float, bool]:
-        """Prompt the user for a single-vertex elevation and return (value, accepted)."""
-        parent_widget = self.views()[0] if self.views() else None
-        dlg = ElevationDialog(parent_widget, initial_value=initial_z)
-        if dlg.exec():
-            return dlg.value(), True
-        return initial_z, False
-
-    def _ask_uniform_z(self) -> tuple[float, bool]:
-        """Prompt the user for a uniform elevation for the entire line."""
-        parent_widget = self.views()[0] if self.views() else None
-        dlg = ElevationDialog(parent_widget)
-        if dlg.exec():
-            return dlg.value(), True
-        return 0.0, False
-
-    def set_elevation_mode(self, mode: str) -> None:
-        """Public setter used by MainWindow to update elevation-prompt mode live."""
-        if mode not in ("point", "interpolate", "line"):
-            self.logger.warning("Attempted to set invalid elevation mode: %s", mode)
-            return
-        self._elev_mode = mode
-        self.logger.debug("TracingScene elevation mode set to '%s'", mode)

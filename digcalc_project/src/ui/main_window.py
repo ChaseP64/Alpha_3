@@ -61,6 +61,7 @@ from digcalc_project.src.services.settings_service import SettingsService   # <-
 # from src.ui.project_controller import ProjectController # OLD
 from digcalc_project.src.ui.project_controller import ProjectController # NEW
 # --- End Import Check ---
+from digcalc_project.src.ui.dialogs.scale_calibration_dialog import ScaleCalibrationDialog  # NEW
 
 logger = logging.getLogger(__name__)
 
@@ -557,6 +558,12 @@ class MainWindow(QMainWindow):
 
         # Re-use the existing enable-tracing toggle action
         self.tracing_menu.addAction(self.toggle_trace_mode_action)
+        self.tracing_menu.addSeparator()
+
+        # NEW: Scale calibration action
+        self.scale_calib_act = QAction("Scale Calibration…", self)
+        self.scale_calib_act.triggered.connect(self.on_scale_calibration)
+        self.tracing_menu.addAction(self.scale_calib_act)
         self.tracing_menu.addSeparator()
 
         # Elevation-prompt mode radio actions
@@ -2321,3 +2328,44 @@ class MainWindow(QMainWindow):
                 scene.set_elevation_mode(mode)
         except Exception as exc:  # pragma: no cover – defensive
             self.logger.error("Failed to propagate elevation mode '%s' to scene: %s", mode, exc, exc_info=True)
+
+    # 3. Slot at end of class
+    @Slot()
+    def on_scale_calibration(self):
+        """Open the scale-calibration dialog and store result on project/settings."""
+        # Obtain active 2-D tracing scene if available
+        scene = getattr(self.visualization_panel, "scene_2d", None)
+
+        dlg = ScaleCalibrationDialog(parent=self, scene=scene)
+        if dlg.exec() == QDialog.Accepted:
+            proj_scale = dlg.result_scale()  # ProjectScale instance
+            current_project = self.project_controller.get_current_project()
+            if current_project is not None:
+                try:
+                    current_project.scale = proj_scale
+                    current_project.is_dirty = True
+                except Exception as exc:
+                    self.logger.error("Failed to set project scale: %s", exc)
+            # Persist last used scale to settings
+            SettingsService().set_last_scale(proj_scale.world_units, proj_scale.world_per_in)
+            # Feedback in status bar
+            try:
+                self.statusBar().showMessage(
+                    (
+                        f"Scale set: 1 in = {proj_scale.world_per_in:.2f} {proj_scale.world_units}  "
+                        f"(px = {proj_scale.world_per_px:.4f} {proj_scale.world_units})"
+                    ),
+                    6000,
+                )
+                # Notify TracingScene so overlay can disappear
+                try:
+                    if scene and hasattr(scene, "on_scale_calibrated"):
+                        scene.on_scale_calibrated()
+                except Exception as exc_inner:
+                    self.logger.warning("Failed to notify scene of calibration: %s", exc_inner)
+            except Exception:
+                 # Fallback if properties missing
+                 self.statusBar().showMessage(
+                     f"Scale set: 1 in = {proj_scale.world_per_in:.2f} {proj_scale.world_units}",
+                     6000,
+                 )
