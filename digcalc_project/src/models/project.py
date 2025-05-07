@@ -67,7 +67,7 @@ class Project:
     calculations: List[VolumeCalculation] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
     regions: list[Region] = field(default_factory=list)
-    scale: ProjectScale | None = None  # NEW field for printed-scale calibration
+    scale: Optional[ProjectScale] = None  # NEW field for printed-scale calibration
     
     # --- Tracing / PDF Background Data ---
     pdf_background_path: Optional[str] = None

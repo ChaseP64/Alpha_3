@@ -9,7 +9,9 @@ import pickle
 from typing import Optional
 import json
 
-from .project import Project # Use relative import
+from .project import Project  # Use relative import
+from .project_scale import ProjectScale
+from .surface import Surface
 
 logger = logging.getLogger(__name__)
 
@@ -78,4 +80,91 @@ class ProjectSerializer:
             raise ProjectLoadError(f"Failed to load project from {filepath}. Invalid JSON format. Error: {e}")
         except Exception as e:
             logger.error(f"Unexpected error during Project.load for {filepath}: {e}", exc_info=True)
-            raise ProjectLoadError(f"An unexpected error occurred loading {filepath}. Error: {e}") 
+            raise ProjectLoadError(f"An unexpected error occurred loading {filepath}. Error: {e}")
+
+# ---------------------------------------------------------------------------
+# Convenience in-memory (de)serialisers used by unit-tests and API layer.
+# They are intentionally *schema-stable* and ignore extraneous keys.
+# ---------------------------------------------------------------------------
+
+def _load_surfaces(data: dict | None) -> dict[str, Surface]:
+    """Helper to reconstruct *Surface* objects from a mapping."""
+
+    surfaces_dict: dict[str, Surface] = {}
+    if not isinstance(data, dict):
+        return surfaces_dict
+
+    for name, surf_data in data.items():
+        try:
+            surfaces_dict[name] = Surface.from_dict(surf_data)
+        except Exception as exc:  # pragma: no cover – defensive
+            logger.warning("Failed to load surface '%s': %s", name, exc)
+    return surfaces_dict
+
+# NOTE: Polyline model is still evolving – keep loader simple / future-proof.
+def _load_polylines(data):  # type: ignore[override]
+    """Return the raw polylines structure exactly as stored (dict or list).
+
+    The *Project* class owns the heavy lifting of validating and migrating the
+    traced-polyline schema, so at this stage we just pass things through.
+    """
+
+    return data if data is not None else {}
+
+def to_dict(project: Project) -> dict:
+    """Serialise *Project* → `dict` (no file I/O).
+
+    Only a subset of fields is currently required by the API layer and unit
+    tests.  This helper deliberately mirrors the schema produced by
+    :py:meth:`Project.save`, but it lives here so it can evolve independently
+    from on-disk persistence.
+    """
+
+    return {
+        "name": project.name,
+        # ------------------------------------------------------------------
+        # Scale (new) – include sub-keys explicitly for clarity
+        # ------------------------------------------------------------------
+        "scale": (
+            {
+                "px_per_in": project.scale.px_per_in,
+                "world_units": project.scale.world_units,
+                "world_per_in": project.scale.world_per_in,
+            }
+            if project.scale is not None
+            else None
+        ),
+        # Keep other sections minimal for now – can be expanded later.
+        "surfaces": {n: s.to_dict() for n, s in project.surfaces.items()},
+        "polylines": project._serialisable_polylines(),
+    }
+
+def from_dict(data: dict) -> Project:
+    """Hydrate a :class:`Project` from an in-memory mapping."""
+
+    # ---------------- Scale (legacy-safe) ------------------------------
+    scale_data = data.get("scale")
+    scale_obj: ProjectScale | None
+    if scale_data is not None:
+        try:
+            scale_obj = ProjectScale(
+                px_per_in=float(scale_data["px_per_in"]),
+                world_units=str(scale_data["world_units"]),
+                world_per_in=float(scale_data["world_per_in"]),
+            )
+        except (KeyError, ValueError, TypeError) as exc:
+            logger.warning("Failed to parse scale data – defaulting to None: %s", exc)
+            scale_obj = None
+    else:
+        scale_obj = None
+
+    proj = Project(
+        name=data.get("name", "Untitled"),
+        scale=scale_obj,
+    )
+
+    # Attach surfaces / polylines using the Project API to maintain invariants
+    proj.surfaces = _load_surfaces(data.get("surfaces"))
+    proj.traced_polylines = _load_polylines(data.get("polylines"))
+
+    return proj 

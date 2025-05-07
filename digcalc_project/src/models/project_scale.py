@@ -33,6 +33,24 @@ class ProjectScale:
         return self.world_per_in / self.px_per_in
 
     # ------------------------------------------------------------------ #
+    # Backwards-compat / semantic alias
+    # ------------------------------------------------------------------ #
+    @property
+    def ft_per_px(self) -> float:  # noqa: D401  (imperial naming kept for brevity)
+        """Alias of :pyattr:`world_per_px`.
+
+        Historically our UI copy referred to the conversion factor as
+        *ft per px* (even when the drawing used metres).  To avoid a noisy
+        rename across the code-base we expose this convenience alias that
+        simply delegates to :pyattr:`world_per_px`.
+
+        Returns:
+            float: Identical value to :pyattr:`world_per_px` (units per pixel).
+        """
+
+        return self.world_per_px
+
+    # ------------------------------------------------------------------ #
     # Convenience aliases for other representations
     # ------------------------------------------------------------------ #
     @property
