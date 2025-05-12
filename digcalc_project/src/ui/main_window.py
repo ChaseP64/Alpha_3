@@ -2333,37 +2333,56 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_scale_calibration(self):
         """Open the scale-calibration dialog and store result on project/settings."""
+        # Ensure the 2-D PDF view is visible so global point-picking works
+        # (prevents hidden-viewport dead-click issues when user is on 3-D tab)
+        if hasattr(self, "visualization_panel"):
+            try:
+                self.visualization_panel.show_2d_view()
+            except Exception as exc:
+                # Defensive – don't block calibration if switching fails
+                self.logger.warning("Failed to switch to 2-D view before scale calibration: %s", exc)
+
         # Obtain active 2-D tracing scene if available
         scene = getattr(self.visualization_panel, "scene_2d", None)
 
         dlg = ScaleCalibrationDialog(parent=self, scene=scene)
-        if dlg.exec():  # OK pressed (non-zero result means Accepted)
-            proj_scale = dlg.result_scale()  # ProjectScale instance returned by dialog
-            if proj_scale is None:
-                return  # Safety: should not happen but guards against None
-            current_project = self.project_controller.get_current_project()
-            if current_project is not None:
-                try:
-                    current_project.scale = proj_scale
-                    current_project.is_dirty = True
-                except Exception as exc:
-                    self.logger.error("Failed to set project scale: %s", exc)
-            # Settings have already been persisted by the dialog itself.
-            # Feedback in status bar
+        # Launch modeless so clicks on the main view are not blocked
+        dlg.setWindowModality(Qt.NonModal)
+        dlg.open()
+        # Handle result asynchronously when the dialog finishes
+        dlg.finished.connect(lambda res, d=dlg: self._on_scale_dialog_done(d, res))
+        return  # Exit early – further processing occurs in callback
+
+    # ------------------------------------------------------------------
+    # Scale-calibration dialog callback (modeless)
+    # ------------------------------------------------------------------
+    def _on_scale_dialog_done(self, dlg: 'ScaleCalibrationDialog', result: int):
+        """Handle completion of ScaleCalibrationDialog launched modelessly."""
+        from PySide6.QtWidgets import QDialog
+        if result != QDialog.DialogCode.Accepted:  # User cancelled
+            return
+
+        proj_scale = dlg.result_scale()
+        if proj_scale is None:
+            return
+
+        current_project = self.project_controller.get_current_project()
+        if current_project is not None:
             try:
-                self.statusBar().showMessage(
-                    f"Scale set: 1 in = {proj_scale.world_per_in:.2f} {proj_scale.world_units}",
-                    6000,
-                )
-                # Notify TracingScene so overlay can disappear
-                try:
-                    if scene and hasattr(scene, "on_scale_calibrated"):
-                        scene.on_scale_calibrated()
-                except Exception as exc_inner:
-                    self.logger.warning("Failed to notify scene of calibration: %s", exc_inner)
-            except Exception:
-                 # Fallback if properties missing
-                 self.statusBar().showMessage(
-                     f"Scale set: 1 in = {proj_scale.world_per_in:.2f} {proj_scale.world_units}",
-                     6000,
-                 )
+                current_project.scale = proj_scale
+                current_project.is_dirty = True
+            except Exception as exc:
+                self.logger.error("Failed to set project scale: %s", exc)
+
+        # Settings already persisted by dialog
+        try:
+            self.statusBar().showMessage(
+                f"Scale set: 1 in = {proj_scale.world_per_in:.2f} {proj_scale.world_units}",
+                6000,
+            )
+            # Notify tracing scene so overlay disappears
+            scene = getattr(self.visualization_panel, "scene_2d", None)
+            if scene and hasattr(scene, "on_scale_calibrated"):
+                scene.on_scale_calibrated()
+        except Exception as exc:
+            self.logger.warning("Status/scene update failed after scale calibration: %s", exc)

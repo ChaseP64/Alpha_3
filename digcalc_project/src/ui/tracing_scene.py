@@ -246,13 +246,10 @@ class TracingScene(QGraphicsScene):
 
     def start_drawing(self):
         """Explicitly enables drawing mode."""
-        # Honour global enable flag controlled via SettingsService and runtime flag
-        if not (self._tracing_enabled and self._settings.tracing_enabled()):
-            self.logger.debug("start_drawing aborted – tracing globally disabled in settings or by runtime flag.")
-            return
-
         # ------------------------------------------------------------------
-        # No-scale warning (only once per session) + overlay
+        # Always handle missing-scale warning/overlay *before* tracing-enabled check
+        # so the user is reminded even if tracing is disabled. This matches the
+        # behaviour expected by unit-tests (scale_warning_shown_once).
         # ------------------------------------------------------------------
         project = getattr(self, "project", None)
         if project is None and hasattr(self.panel, "current_project"):
@@ -276,6 +273,18 @@ class TracingScene(QGraphicsScene):
 
             # Always (re)draw passive overlay if scale missing
             self._add_scale_overlay()
+
+        # ------------------------------------------------------------------
+        # Respect tracing-enabled flags – abort drawing operations if disabled.
+        # (Warning/overlay code above has already run.)
+        # ------------------------------------------------------------------
+        if not (self._tracing_enabled and self._settings.tracing_enabled()):
+            self.logger.debug(
+                "start_drawing aborted – tracing disabled (runtime flag %s, user setting %s).",
+                self._tracing_enabled,
+                self._settings.tracing_enabled(),
+            )
+            return
 
         # Do not mutate _tracing_enabled here; it reflects global toggle state
         # Snapshot current elevation prompt mode for this drawing session

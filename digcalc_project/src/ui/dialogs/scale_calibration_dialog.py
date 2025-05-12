@@ -64,11 +64,19 @@ class _PointPicker(QObject):
         self._view = view
         self._p1: Optional[QPointF] = None
         view.viewport().installEventFilter(self)
+        # Auto-delete if the view goes away to avoid dangling eventFilter callbacks
+        # Connect to the QWidget.destroyed() signal so we can detach safely.
+        try:
+            view.destroyed.connect(lambda *_: self._cleanup())  # type: ignore[attr-defined]
+        except Exception:
+            pass  # Defensive – ignore if signal not available
 
     # ----------------------------------------------
     def eventFilter(self, obj: QObject, ev: QEvent):  # noqa: D401 – Qt API
         """Capture first two mouse clicks on *viewport* and emit scene coords."""
-        # Ensure we are monitoring the viewport specifically
+        # Guard against the QGraphicsView being deleted between events
+        if self._view is None:
+            return False
         if obj is self._view.viewport() and ev.type() == QEvent.Type.MouseButtonPress:
             if isinstance(ev, QMouseEvent):
                 # Map the click position (in viewport coords) to *scene* coords
@@ -87,7 +95,13 @@ class _PointPicker(QObject):
 
     # ----------------------------------------------
     def _cleanup(self):
-        self._view.viewport().removeEventFilter(self)
+        try:
+            if self._view and self._view.viewport():
+                self._view.viewport().removeEventFilter(self)
+        except RuntimeError:
+            # View already deleted – ignore
+            pass
+        self._view = None  # Drop reference
         self.deleteLater()
 
 # ---------------------------------------------------------------------------
@@ -113,9 +127,16 @@ class _GlobalPointPicker(QObject):
         self._orig_cursor = target_view.viewport().cursor()
         target_view.viewport().setCursor(Qt.CursorShape.CrossCursor)
         target_view.viewport().installEventFilter(self)
+        # Ensure we clean up if the view is destroyed unexpectedly (e.g., during unit tests)
+        try:
+            target_view.destroyed.connect(lambda *_: self._cleanup())  # type: ignore[attr-defined]
+        except Exception:
+            pass
 
     # -----------------------------------------------------
     def eventFilter(self, obj: QObject, ev: QEvent):  # noqa: D401
+        if self._view is None:
+            return False
         if obj is self._view.viewport() and ev.type() == QEvent.Type.MouseButtonPress:
             if isinstance(ev, QMouseEvent):
                 scene_pt = self._view.mapToScene(ev.position().toPoint())
@@ -131,10 +152,12 @@ class _GlobalPointPicker(QObject):
     def _cleanup(self):
         # Restore cursor and remove filter
         try:
-            self._view.viewport().setCursor(self._orig_cursor)
-            self._view.viewport().removeEventFilter(self)
+            if self._view and self._view.viewport():
+                self._view.viewport().setCursor(self._orig_cursor)
+                self._view.viewport().removeEventFilter(self)
         except Exception:
             pass  # Defensive – ignore if already detached
+        self._view = None
         self.deleteLater()
 
 # ---------------------------------------------------------------------------
@@ -291,13 +314,16 @@ class ScaleCalibrationDialog(QDialog):
                 main_view = mv
                 break
 
-        if main_view is None:
-            # Fallback: use embedded preview
+        # Fallback to embedded preview if no pdf_view or if it's currently hidden
+        if main_view is None or not main_view.isVisible():
+            # Either no PDF view available or it is not visible (e.g., hidden behind 3-D tab / in tests)
             self._start_embedded_picker()
             return
 
-        # Hide/disable dialog while picking to allow unobstructed view
-        self.setEnabled(False)
+        # Temporarily hide dialog to let user click on main view unobstructed
+        self._was_visible = self.isVisible()
+        if self._was_visible:
+            self.hide()
 
         # Start global picker and connect
         self._global_picker = _GlobalPointPicker(main_view)  # type: ignore[attr-defined]
@@ -315,14 +341,18 @@ class ScaleCalibrationDialog(QDialog):
     # --------------------------------------------------
     def _on_points_selected_from_main(self, p1: QPointF, p2: QPointF):
         """Handle points picked via the main PDF view."""
-        # Re-enable dialog
-        self.setEnabled(True)
-        self.raise_()
-        self.activateWindow()
+        # Restore dialog visibility after picking
+        if hasattr(self, "_was_visible") and self._was_visible:
+            self.show()
+            self.raise_()
         # Reuse existing processing logic – draws overlay in preview too
         self._on_points_selected(p1, p2)
 
     def _on_points_selected(self, p1: QPointF, p2: QPointF):  # noqa: D401 – Qt slot
+        # Restore dialog visibility after picking
+        if hasattr(self, "_was_visible") and self._was_visible:
+            self.show()
+            self.raise_()
         self._p1, self._p2 = p1, p2
         # Draw overlay
         for pt in (p1, p2):

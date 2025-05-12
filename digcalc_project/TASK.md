@@ -64,6 +64,7 @@
 - Developed a clean Surface model for TIN representation
 - Resolved encoding issues in Python files
 - Fixed unit tests for FileParser class
+- 2025-05-12 Fixed "Pick Points" dead-click issue in Scale Calibration by auto-switching to 2-D view and visibility fallback
 
 # Added Phase 3 helper tools
 - [x] Add daylight_offset_tool geometry helpers (offset_polygon, project_to_slope)
