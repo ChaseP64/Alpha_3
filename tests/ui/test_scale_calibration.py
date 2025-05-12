@@ -10,7 +10,7 @@ def test_scale_calibration_dialog_simple(qtbot):
     dlg = ScaleCalibrationDialog(parent=None, scene=None, page_pixmap=None)
 
     # Inject picked span (10 px) and set real-world distance (20 ft)
-    dlg._picked_span_px = 10.0
+    dlg._span_px = 10.0
     dlg.dist_spin.setValue(20.0)
 
     # Call accept routine directly (bypasses UI interactions)

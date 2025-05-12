@@ -227,17 +227,43 @@ class SettingsService(Singleton):
         self.set("vertex_line_thickness", int(width))
         self.save()
 
-    # -------------------- scale presets ---------------------------- #
-    def last_scale(self) -> tuple[str, float]:
-        """Return the last used PDF scale calibration (units, world_per_in)."""
-        return (
-            str(self.get("last_scale_world_units", self._defaults["last_scale_world_units"])),
-            float(self.get("last_scale_world_per_in", self._defaults["last_scale_world_per_in"])),
-        )
+    # ------------------------------------------------------------------
+    # Spline / smoothing preference helpers …
+    # ------------------------------------------------------------------
 
-    def set_last_scale(self, units: str, world_per_in: float) -> None:
-        """Persist the most recently used PDF scale calibration."""
+    # ==================================================================
+    #  Plan-Scale - remember the most-recent calibration
+    # ==================================================================
+    def last_scale(self) -> tuple[str, float]:            # noqa: D401
+        """
+        Return the last scale the user confirmed in *Calibrate Scale…*.
+
+        Returns
+        -------
+        (units, world_per_in)
+            ``units``  – ``"ft"`` or ``"m"``  
+            ``world_per_in`` – numeric (e.g. 20.0 ⇒ "20 ft per inch")
+        """
+
+        units = self.get("last_scale_world_units",
+                         self._defaults["last_scale_world_units"])
+        val   = float(self.get("last_scale_world_per_in",
+                               self._defaults["last_scale_world_per_in"]))
+        return units, val
+
+    def set_last_scale(self, units: str, val: float) -> None:  # noqa: D401
+        """
+        Persist the *most recently confirmed* plan scale.
+
+        Parameters
+        ----------
+        units
+            ``"ft"`` or ``"m"``
+        val
+            Real-world length per inch on paper (e.g. 20 → "1" = 20 ft")
+        """
+
         assert units in ("ft", "m"), "units must be 'ft' or 'm'"
         self.set("last_scale_world_units", units)
-        self.set("last_scale_world_per_in", float(world_per_in))
+        self.set("last_scale_world_per_in", float(val))
         self.save()

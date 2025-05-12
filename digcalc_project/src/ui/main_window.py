@@ -2337,8 +2337,10 @@ class MainWindow(QMainWindow):
         scene = getattr(self.visualization_panel, "scene_2d", None)
 
         dlg = ScaleCalibrationDialog(parent=self, scene=scene)
-        if dlg.exec() == QDialog.Accepted:
-            proj_scale = dlg.result_scale()  # ProjectScale instance
+        if dlg.exec():  # OK pressed (non-zero result means Accepted)
+            proj_scale = dlg.result_scale()  # ProjectScale instance returned by dialog
+            if proj_scale is None:
+                return  # Safety: should not happen but guards against None
             current_project = self.project_controller.get_current_project()
             if current_project is not None:
                 try:
@@ -2346,15 +2348,11 @@ class MainWindow(QMainWindow):
                     current_project.is_dirty = True
                 except Exception as exc:
                     self.logger.error("Failed to set project scale: %s", exc)
-            # Persist last used scale to settings
-            SettingsService().set_last_scale(proj_scale.world_units, proj_scale.world_per_in)
+            # Settings have already been persisted by the dialog itself.
             # Feedback in status bar
             try:
                 self.statusBar().showMessage(
-                    (
-                        f"Scale set: 1 in = {proj_scale.world_per_in:.2f} {proj_scale.world_units}  "
-                        f"(px = {proj_scale.world_per_px:.4f} {proj_scale.world_units})"
-                    ),
+                    f"Scale set: 1 in = {proj_scale.world_per_in:.2f} {proj_scale.world_units}",
                     6000,
                 )
                 # Notify TracingScene so overlay can disappear

@@ -9895,3 +9895,162 @@ AttributeError: 'TracingScene' object has no attribute '_apply_elevation_workflo
 2025-05-06 15:03:00,685 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
 2025-05-06 15:03:00,685 - digcalc_project.src.ui.main_window - INFO - Closing application.
 2025-05-06 15:03:00,696 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-08 16:37:29,695 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-08 16:37:29,877 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-08 16:37:42,367 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/metty/Desktop/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-08 16:37:42,368 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/metty/Desktop/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-08 16:37:42,369 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-08 16:37:42,369 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/metty/Desktop/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-08 16:37:42,393 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-08 16:37:42,394 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-08 16:37:56,484 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-08 16:37:56,549 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-08 16:37:57,307 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-08 16:37:57,314 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-08 16:37:57,319 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-05-08 16:38:08,439 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-05-08 16:38:08,441 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-08 16:38:27,512 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 4 points on layer 'Existing Surface'.
+2025-05-08 16:38:27,518 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 4, Elevation: None, New Rev: 1).
+2025-05-08 16:38:27,519 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: None) to layer 'Existing Surface'.
+2025-05-08 16:38:27,772 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-08 16:38:27,773 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-08 16:38:44,490 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode disabled.
+2025-05-08 16:38:44,491 - digcalc_project.src.ui.main_window - INFO - Tracing mode disabled via MainWindow action.
+2025-05-08 16:39:01,741 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-08 16:39:03,460 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/metty/Desktop/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-08 16:39:03,643 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-08 16:39:03,662 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-09 18:55:59,077 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-09 18:55:59,357 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-09 18:56:34,765 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/metty/Desktop/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-09 18:56:34,767 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/metty/Desktop/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-09 18:56:34,770 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-09 18:56:34,771 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/metty/Desktop/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-09 18:56:34,797 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-09 18:56:34,799 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-09 18:56:50,021 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-09 18:56:50,071 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-09 18:56:50,682 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-09 18:56:50,688 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-09 18:56:50,692 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-05-09 18:58:17,986 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-05-09 18:58:17,998 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-09 18:58:19,099 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode disabled.
+2025-05-09 18:58:19,101 - digcalc_project.src.ui.main_window - INFO - Tracing mode disabled via MainWindow action.
+2025-05-09 19:08:53,761 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-09 19:08:53,791 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/metty/Desktop/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-09 19:08:54,113 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-09 19:08:54,182 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-09 19:09:19,759 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-09 19:09:19,955 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-09 19:09:38,541 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/metty/Desktop/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-09 19:09:38,542 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/metty/Desktop/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-09 19:09:38,544 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-09 19:09:38,544 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/metty/Desktop/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-09 19:09:38,565 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-09 19:09:38,566 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-09 19:09:51,149 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-09 19:09:51,205 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-09 19:09:52,160 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-09 19:09:52,172 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-09 19:09:52,179 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-05-09 19:11:03,254 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\metty\.digcalc\settings.json
+2025-05-09 19:11:09,267 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Existing Surface'.
+2025-05-09 19:11:09,273 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 6, Elevation: None, New Rev: 1).
+2025-05-09 19:11:09,274 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: None) to layer 'Existing Surface'.
+2025-05-09 19:11:09,539 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-09 19:11:09,540 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-09 19:11:12,500 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-05-09 19:11:12,502 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-09 19:11:16,614 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 5 points on layer 'Existing Surface'.
+2025-05-09 19:11:16,615 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 1, Points: 5, Elevation: None, New Rev: 2).
+2025-05-09 19:11:16,616 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 1, Elevation: None) to layer 'Existing Surface'.
+2025-05-09 19:11:16,864 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-09 19:11:16,865 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-09 19:11:22,959 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-09 19:11:24,410 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/metty/Desktop/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-09 19:11:24,773 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-09 19:11:24,841 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-09 19:29:48,134 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-09 19:29:48,243 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-09 19:30:01,797 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/metty/Desktop/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-09 19:30:01,798 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/metty/Desktop/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-09 19:30:01,799 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-09 19:30:01,800 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/metty/Desktop/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-09 19:30:01,836 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-09 19:30:01,837 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-09 19:30:13,303 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-09 19:30:13,391 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-09 19:30:14,747 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-09 19:30:14,759 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-09 19:30:14,764 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-05-09 19:30:20,380 - digcalc_project.src.ui.main_window - WARNING - Cannot fit view: Scene rectangle is null or invalid.
+2025-05-09 19:30:34,027 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Existing Surface'.
+2025-05-09 19:30:34,036 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 6, Elevation: None, New Rev: 1).
+2025-05-09 19:30:34,037 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: None) to layer 'Existing Surface'.
+2025-05-09 19:30:34,309 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-09 19:30:34,310 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-09 19:30:49,258 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 5 points on layer 'Existing Surface'.
+2025-05-09 19:30:49,259 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 1, Points: 5, Elevation: None, New Rev: 2).
+2025-05-09 19:30:49,260 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 1, Elevation: None) to layer 'Existing Surface'.
+2025-05-09 19:30:49,513 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-09 19:30:49,514 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-09 19:32:37,220 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-05-09 19:32:37,222 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-09 19:32:39,087 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 5 points on layer 'Existing Surface'.
+2025-05-09 19:32:39,088 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 2, Points: 5, Elevation: None, New Rev: 3).
+2025-05-09 19:32:39,089 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 2, Elevation: None) to layer 'Existing Surface'.
+2025-05-09 19:32:39,336 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-09 19:32:39,337 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-09 19:34:06,695 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-09 19:34:08,956 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/metty/Desktop/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-09 19:34:09,353 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-09 19:34:09,380 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-09 19:53:09,621 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-09 19:53:09,897 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-09 19:53:25,615 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/metty/Desktop/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-09 19:53:25,617 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/metty/Desktop/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-09 19:53:25,618 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-09 19:53:25,619 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/metty/Desktop/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-09 19:53:25,651 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-09 19:53:25,652 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-09 19:53:38,113 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-09 19:53:38,192 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-09 19:53:39,377 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-09 19:53:39,391 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-09 19:53:39,399 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-05-09 19:53:42,546 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 3 points on layer 'Existing Surface'.
+2025-05-09 19:53:42,553 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 3, Elevation: None, New Rev: 1).
+2025-05-09 19:53:42,555 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: None) to layer 'Existing Surface'.
+2025-05-09 19:53:42,816 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-09 19:53:42,817 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-09 19:53:49,404 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-05-09 19:53:49,407 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-09 19:53:50,627 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 3 points on layer 'Existing Surface'.
+2025-05-09 19:53:50,628 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 1, Points: 3, Elevation: None, New Rev: 2).
+2025-05-09 19:53:50,629 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 1, Elevation: None) to layer 'Existing Surface'.
+2025-05-09 19:53:50,881 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-09 19:53:50,882 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-09 19:53:54,877 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-09 19:53:56,782 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/metty/Desktop/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-09 19:53:57,190 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-09 19:53:57,235 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-09 19:57:52,052 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-09 19:57:52,187 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-09 20:02:59,078 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/metty/Desktop/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-09 20:02:59,079 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/metty/Desktop/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-09 20:02:59,080 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-09 20:02:59,080 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/metty/Desktop/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-09 20:02:59,097 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-09 20:02:59,097 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-09 20:03:09,956 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-09 20:03:10,039 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-09 20:03:10,908 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-09 20:03:10,914 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-09 20:03:10,922 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-05-09 20:03:27,892 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-09 20:03:27,895 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/metty/Desktop/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-09 20:03:28,233 - digcalc_project.src.ui.main_window - WARNING - Cannot fit view: Scene rectangle is null or invalid.
+2025-05-09 20:03:28,276 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-09 20:03:28,324 - digcalc_project.src.main - INFO - Application exited with code 0

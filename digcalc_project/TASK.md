@@ -34,7 +34,7 @@
 - [x] Add SURFACE_TYPE_TIN constant to Surface class
 - [ ] Update Surface model implementation to match test assumptions
 - [ ] Fix issues with LandXML parser tests
-- [ ] Fix issues with PDF parser tests
+- [x] 2025-05-10 Disable tracing at startup to prevent accidental tracing before user enables mode
 
 ## Next Steps
 1. **Fix Remaining Test Issues**:

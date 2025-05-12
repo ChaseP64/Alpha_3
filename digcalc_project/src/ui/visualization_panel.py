@@ -256,7 +256,13 @@ class VisualizationPanel(QWidget):
 
         # --- Legacy 2D Scene/View --- 
         self.view_2d = InteractiveGraphicsView(None, self)
+        self.view_2d.setObjectName("pdf_view")  # Allows ScaleCalibrationDialog global picking
         self.scene_2d = TracingScene(self.view_2d, self, self)
+        # Ensure tracing starts DISABLED to match the unchecked toolbar action.
+        # It can be enabled later via set_tracing_mode(True) when the user
+        # actively toggles the action.  This prevents accidental drawing when
+        # the application first opens a PDF.
+        self.scene_2d.set_tracing_enabled(False)
         self.view_2d.setScene(self.scene_2d)
         # Add render hints for better quality rendering
         self.view_2d.setRenderHints(QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform)
@@ -564,9 +570,16 @@ class VisualizationPanel(QWidget):
          Enables or disables the interactive tracing mode on the scene.
          Also changes the view's drag mode and cursor accordingly.
          """
+         # First, ensure the TracingScene knows whether tracing should be active.
+         # This flag gates mousePressEvent logic inside TracingScene, so we must
+         # update it BEFORE any start/stop-drawing calls.
+         self.scene_2d.set_tracing_enabled(enabled)
+
          # Only allow enabling tracing if a PDF is loaded
          if enabled and not self.pdf_renderer:
              self.logger.warning("Cannot enable tracing: No PDF background is loaded.")
+             # Revert the tracing flag just set above – keep scene disabled.
+             self.scene_2d.set_tracing_enabled(False)
              # Optionally force the action back to unchecked if called directly
              # main_window = self.parent() # Need a way to access MainWindow if needed
              # if main_window and hasattr(main_window, 'toggle_tracing_action'):
@@ -765,9 +778,16 @@ class VisualizationPanel(QWidget):
          Enables or disables the interactive tracing mode on the scene.
          Also changes the view's drag mode and cursor accordingly.
          """
+         # First, ensure the TracingScene knows whether tracing should be active.
+         # This flag gates mousePressEvent logic inside TracingScene, so we must
+         # update it BEFORE any start/stop-drawing calls.
+         self.scene_2d.set_tracing_enabled(enabled)
+
          # Only allow enabling tracing if a PDF is loaded
          if enabled and not self.pdf_renderer:
              self.logger.warning("Cannot enable tracing: No PDF background is loaded.")
+             # Revert the tracing flag just set above – keep scene disabled.
+             self.scene_2d.set_tracing_enabled(False)
              # Optionally force the action back to unchecked if called directly
              # main_window = self.parent() # Need a way to access MainWindow if needed
              # if main_window and hasattr(main_window, 'toggle_tracing_action'):
