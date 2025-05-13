@@ -72,6 +72,13 @@ class TracingScene(QGraphicsScene):
     with support for basic layer management.
     """
 
+    # ------------------------------------------------------------
+    #  Constants – translucent in-scene banner when no PDF scale
+    # ------------------------------------------------------------
+    _NOSCALE_TEXT: str = "⚠  No scale calibrated"
+    _NOSCALE_Z: int = 99  # Draw above everything
+    _NOSCALE_COLOR: QColor = QColor(255, 0, 0, 160)  # Semi-transparent red
+
     # --- MODIFIED: Update signal definition ---
     # Signal emitted when a polyline is finalized (e.g., by double-click or Enter)
     # Sends the list of QPointF vertices AND the created QGraphicsPathItem.
@@ -172,7 +179,11 @@ class TracingScene(QGraphicsScene):
         # scale-calibration hint helpers
         # ------------------------------------------------------------
         self._scale_warn_shown: bool = False  # one-shot QMessageBox flag
-        self._scale_overlay: QGraphicsSimpleTextItem | None = None
+        # Legacy name kept for backward-compat but no longer used directly.
+        self._scale_overlay: QGraphicsSimpleTextItem | None = None  # DEPRECATED
+
+        # New overlay item reference
+        self._noscale_item: QGraphicsSimpleTextItem | None = None
 
     # --- Background Image ---
 
@@ -271,8 +282,8 @@ class TracingScene(QGraphicsScene):
                 )
                 self._scale_warn_shown = True  # one-shot pop-up
 
-            # Always (re)draw passive overlay if scale missing
-            self._add_scale_overlay()
+            # Always refresh/hide the passive overlay based on current scale
+            self._update_noscale_overlay()
 
         # ------------------------------------------------------------------
         # Respect tracing-enabled flags – abort drawing operations if disabled.
@@ -308,7 +319,8 @@ class TracingScene(QGraphicsScene):
             self.removeItem(self._preview_poly)
         self._preview_poly = None
 
-        self._add_scale_overlay()
+        # Ensure overlay visibility is updated once drawing actually starts
+        self._update_noscale_overlay()
 
     def stop_drawing(self):
         """Explicitly disables drawing mode and cancels any current polyline."""
@@ -793,46 +805,41 @@ class TracingScene(QGraphicsScene):
     # ------------------------------------------------------------------
     # Scale-calibration overlay helpers (inside TracingScene)
     # ------------------------------------------------------------------
-    def _add_scale_overlay(self) -> None:
-        """Create or refresh the faint "⚠ No scale calibrated" overlay.
+    def _update_noscale_overlay(self) -> None:
+        """Create, remove, or reposition the translucent banner as needed."""
+        project_scale = getattr(self.panel, "current_project", None)
+        project_scale = getattr(project_scale, "scale", None) if project_scale else None
 
-        The overlay is shown only while ``project.scale`` is ``None``.
-        Once the user calibrates scale it is removed and never recreated
-        during the same session.
-        """
-        # If we now have a calibrated scale – remove any existing overlay
-        proj = getattr(self, "project", None) or getattr(self.panel, "current_project", None)
-        if proj and proj.scale is not None:
-            if self._scale_overlay is not None:
+        have_scale = project_scale is not None
+
+        # Show banner when *no* scale is set
+        if not have_scale:
+            if self._noscale_item is None:
+                txt = QGraphicsSimpleTextItem(self._NOSCALE_TEXT)
+                txt.setBrush(self._NOSCALE_COLOR)
+                txt.setZValue(self._NOSCALE_Z)
+                txt.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+                self.addItem(txt)
+                self._noscale_item = txt
+
+            # Anchor top-left with margin inside current scene rect
+            self._noscale_item.setPos(self.sceneRect().topLeft() + QPointF(6, 6))
+        else:
+            # Remove if exists
+            if self._noscale_item and self._noscale_item.scene() is self:
                 try:
-                    self.removeItem(self._scale_overlay)
+                    self.removeItem(self._noscale_item)
                 except RuntimeError:
-                    pass  # Item already deleted
-                self._scale_overlay = None
-            return
+                    pass
+            self._noscale_item = None
 
-        # Ensure overlay item exists
-        if self._scale_overlay is None:
-            self._scale_overlay = QGraphicsSimpleTextItem("⚠  No scale calibrated")
-            self._scale_overlay.setBrush(QColor(255, 0, 0, 100))  # Semi-transparent red
-            font = QFont()
-            font.setPointSize(10)
-            self._scale_overlay.setFont(font)
-            self._scale_overlay.setZValue(10_000)  # Keep on top of everything
-            self.addItem(self._scale_overlay)
-
-        # Re-position overlay in the top-left corner of the first view
-        if self.views():
-            view = self.views()[0]
-            margin = 8
-            scene_pos = view.mapToScene(margin, margin)
-            self._scale_overlay.setPos(scene_pos)
+        # Maintain legacy attribute for tests referencing _scale_overlay
+        self._scale_overlay = self._noscale_item  # type: ignore[assignment]
 
     # ------------------------------------------------------------------
     def on_scale_calibrated(self) -> None:
-        """Slot called by MainWindow after successful scale calibration."""
-        # Simply refresh; _add_scale_overlay will remove the item if needed
-        self._add_scale_overlay()
+        """Called by MainWindow when the user finishes scale calibration."""
+        self._update_noscale_overlay()
 
     # ------------------------------------------------------------------
     # Elevation-prompt workflow helpers (point/interpolate/line) – class-level

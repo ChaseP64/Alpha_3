@@ -127,6 +127,13 @@ class MainWindow(QMainWindow):
         self._update_view_actions_state()
         
         self.logger.debug("MainWindow initialized")
+        # Ensure Scale-Calibration menu action reflects current PDF state at startup
+        self._update_scale_action_enabled(False)
+        # --- Connect PdfService signal to update scale action ---
+        if hasattr(self, 'pdf_service') and self.pdf_service:
+            self.pdf_service.documentLoaded.connect(
+                lambda page_count: self._update_scale_action_enabled(page_count > 0)
+            )
     
     def _init_ui(self):
         """Initialize the UI components, including docked panels."""
@@ -563,6 +570,7 @@ class MainWindow(QMainWindow):
         # NEW: Scale calibration action
         self.scale_calib_act = QAction("Scale Calibration…", self)
         self.scale_calib_act.triggered.connect(self.on_scale_calibration)
+        self.scale_calib_act.setEnabled(False)  # Disabled until a PDF is loaded
         self.tracing_menu.addAction(self.scale_calib_act)
         self.tracing_menu.addSeparator()
 
@@ -746,6 +754,13 @@ class MainWindow(QMainWindow):
         else:
             self.logger.warning("Cannot set PDF toolbar visibility: pdf_toolbar attribute not found.")
         # --- END FIX ---
+
+        self.logger.debug(f"PDF controls updated: has_pdf={has_pdf}, page_count={page_count}, current_page={current_page_1_based}")
+
+        # ------------------------------------------------------------------
+        # Update Scale-Calibration action enabled/disabled state
+        # ------------------------------------------------------------------
+        self._update_scale_action_enabled(has_pdf)
 
     # Event handlers
     
@@ -2386,3 +2401,11 @@ class MainWindow(QMainWindow):
                 scene.on_scale_calibrated()
         except Exception as exc:
             self.logger.warning("Status/scene update failed after scale calibration: %s", exc)
+
+    # ------------------------------------------------------------------
+    # Scale-calibration action enable/disable helper
+    # ------------------------------------------------------------------
+    def _update_scale_action_enabled(self, loaded: bool):
+        """Enable the Tracing ▸ Calibrate Scale… action based on *loaded*."""
+        if hasattr(self, "scale_calib_act") and self.scale_calib_act:
+            self.scale_calib_act.setEnabled(bool(loaded))

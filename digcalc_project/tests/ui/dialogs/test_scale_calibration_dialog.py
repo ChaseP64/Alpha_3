@@ -2,6 +2,9 @@ import pytest
 from PySide6 import QtCore
 from PySide6.QtWidgets import QWidget, QGraphicsView, QGraphicsScene
 from pytestqt.qt_compat import qt_api
+import math
+from PySide6.QtCore import QPoint, Qt
+from PySide6.QtGui import QPixmap
 
 try:
     from digcalc_project.src.ui.dialogs.scale_calibration_dialog import ScaleCalibrationDialog
@@ -60,3 +63,31 @@ def test_pick_uses_global_when_pdf_view_visible(qtbot, pdf_view_widget):
     assert getattr(dlg, "_global_picker", None) is not None
     # Embedded picker should not exist in this branch
     assert getattr(dlg, "_point_picker_instance", None) is None 
+
+
+# ---------------------------------------------------------------------------
+# Happy-path scale-calibration round-trip (ID 6-b / 6-c)
+# ---------------------------------------------------------------------------
+@pytest.mark.parametrize(
+    "units,val", [("ft", 20.0), ("yd", 6.667), ("m", 6.096)])
+def test_scale_calibration_dialog_roundtrip(qtbot, units, val):
+    """Simulate user picking two points 96 px apart and entering *val* in *units*."""
+
+    pix = QPixmap(200, 200)  # Dummy blank pixmap
+    dlg = ScaleCalibrationDialog(None, scene=None, page_pixmap=pix)
+    qtbot.addWidget(dlg)
+
+    # Directly inject two picked points (0,0) and (96,0) to bypass the UI clicks
+    dlg._on_points_selected(QtCore.QPointF(0, 0), QtCore.QPointF(96, 0))
+
+    # Set units & distance
+    dlg._units_combo.setCurrentText(units)
+    dlg._dist_spin.setValue(val)
+
+    # Accept dialog programmatically
+    dlg._on_accept()
+
+    scale = dlg.result_scale()
+    assert scale is not None, "Dialog should return a ProjectScale on accept"
+    assert scale.world_units == units
+    assert math.isclose(scale.world_per_in, val, rel_tol=1e-5) 

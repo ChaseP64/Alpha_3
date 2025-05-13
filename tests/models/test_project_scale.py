@@ -1,5 +1,6 @@
 from digcalc_project.src.models.project_scale import ProjectScale
 import pytest
+import math
 
 
 def test_roundtrip() -> None:
@@ -54,4 +55,28 @@ def test_scale_roundtrip() -> None:
     clone = from_dict(data)
 
     assert clone.scale is not None
-    assert clone.scale.ft_per_px == pytest.approx(20 / 96) 
+    assert clone.scale.ft_per_px == pytest.approx(20 / 96)
+
+
+# ---------------------------------------------------------------------------
+# Parametrised round-trip across different units (ID 6-a)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "units,val_per_in", [("ft", 20.0), ("yd", 6.667), ("m", 6.096)])
+def test_scale_roundtrip_param(units, val_per_in):
+    """Project → dict → Project round-trip preserves ProjectScale values."""
+
+    proj = Project(
+        name="demo",
+        scale=ProjectScale(px_per_in=96.0, world_units=units, world_per_in=val_per_in),
+    )
+
+    clone = from_dict(to_dict(proj))
+
+    assert clone.scale is not None
+    assert clone.scale.world_units == units
+    # ft_per_px (alias of world_per_px when units==ft) should equal val/96 within tolerance
+    expected = val_per_in / 96.0
+    assert math.isclose(clone.scale.world_per_px, expected, rel_tol=1e-9, abs_tol=1e-9) 
