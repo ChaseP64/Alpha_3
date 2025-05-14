@@ -568,7 +568,9 @@ class MainWindow(QMainWindow):
         self.tracing_menu.addSeparator()
 
         # NEW: Scale calibration action
-        self.scale_calib_act = QAction("Scale Calibration…", self)
+        self.scale_calib_act = QAction(QIcon.fromTheme("mdi.ruler"), "Scale…", self)
+        self.scale_calib_act.setToolTip("Calibrate or edit drawing scale (Ctrl+K)")
+        self.scale_calib_act.setShortcut("Ctrl+K")
         self.scale_calib_act.triggered.connect(self.on_scale_calibration)
         self.scale_calib_act.setEnabled(False)  # Disabled until a PDF is loaded
         self.tracing_menu.addAction(self.scale_calib_act)
@@ -650,6 +652,7 @@ class MainWindow(QMainWindow):
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self.pdf_toolbar)
         
         self.pdf_toolbar.addAction(self.load_pdf_background_action)
+        self.pdf_toolbar.addAction(self.scale_calib_act)  # Add Scale action next to load
         self.pdf_toolbar.addAction(self.clear_pdf_background_action)
         self.pdf_toolbar.addSeparator()
         self.pdf_toolbar.addAction(self.prev_pdf_page_action)

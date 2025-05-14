@@ -27,8 +27,13 @@ from PySide6.QtWidgets import (
     QDoubleSpinBox,
     QDialogButtonBox,
     QComboBox,
+    QRadioButton,
+    QButtonGroup,
     QApplication,
     QMessageBox,
+    QTabWidget,
+    QWidget,
+    QLineEdit,
 )
 
 from digcalc_project.src.models.project_scale import ProjectScale
@@ -234,22 +239,80 @@ class ScaleCalibrationDialog(QDialog):
             presets_row.addWidget(btn)
         presets_row.addStretch()
 
+        # ---------------- Tabs ---------------------------------------------
+        self.tabs = QTabWidget(self)
+
+        # ---- Pick Points tab (existing controls) ----
+        pick_tab = QWidget()
+        pick_lay = QVBoxLayout(pick_tab)
+        pick_lay.addWidget(self._view, stretch=1)
+        pick_lay.addWidget(self._info_lbl)
+        pick_lay.addLayout(dist_row)
+        pick_lay.addLayout(presets_row)
+        pick_lay.addWidget(self._pick_btn, alignment=Qt.AlignmentFlag.AlignLeft)
+        self.tabs.addTab(pick_tab, "Pick Points")
+
+        # ---- Enter Scale tab ---------------------------------------------
+        enter_tab = QWidget()
+        enter_lay = QVBoxLayout(enter_tab)
+
+        # Mode radios
+        self.radio_world = QRadioButton("Direct entry (units / inch)")
+        self.radio_ratio = QRadioButton("Ratio (1 : N)")
+        self.radio_world.setChecked(True)
+        mode_group = QButtonGroup(enter_tab)
+        mode_group.addButton(self.radio_world)
+        mode_group.addButton(self.radio_ratio)
+
+        # Direct entry widgets
+        self.spin_value = QDoubleSpinBox()
+        self.spin_value.setDecimals(3)
+        self.spin_value.setMinimum(0.01)
+        self.spin_value.setMaximum(1_000_000)
+        self.combo_units = QComboBox()
+        self.combo_units.addItems(["ft", "yd", "m"])
+
+        direct_row = QHBoxLayout()
+        direct_row.addWidget(self.spin_value)
+        direct_row.addWidget(self.combo_units)
+
+        # Ratio widgets
+        ratio_row = QHBoxLayout()
+        self.edit_numer = QLabel("1 :")  # Fixed numerator label
+        self.edit_denom = QLineEdit()
+        self.edit_denom.setPlaceholderText("denominator")
+        ratio_row.addWidget(self.edit_numer)
+        ratio_row.addWidget(self.edit_denom)
+
+        # Helper label showing world_per_px preview
+        self.lbl_helper = QLabel("")
+
+        # Assemble enter tab layout
+        enter_lay.addWidget(self.radio_world)
+        enter_lay.addLayout(direct_row)
+        enter_lay.addSpacing(8)
+        enter_lay.addWidget(self.radio_ratio)
+        enter_lay.addLayout(ratio_row)
+        enter_lay.addStretch(1)
+        enter_lay.addWidget(self.lbl_helper)
+
+        self.tabs.addTab(enter_tab, "Enter Scale")
+
         # Dialog buttons -----------------------------------------------------
         self._btn_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel, self)
         self._btn_box.accepted.connect(self._on_accept)
         self._btn_box.rejected.connect(self.reject)
         ok_button = self._btn_box.button(QDialogButtonBox.StandardButton.Ok)
-        if ok_button: # pragma: no cover
-             ok_button.setEnabled(False)
+        if ok_button:
+            ok_button.setEnabled(False)
 
-        # Layout -------------------------------------------------------------
-        lay = QVBoxLayout(self)
-        lay.addWidget(self._view, stretch=1)
-        lay.addWidget(self._info_lbl)
-        lay.addLayout(dist_row)
-        lay.addLayout(presets_row)
-        lay.addWidget(self._pick_btn, alignment=Qt.AlignmentFlag.AlignLeft)
-        lay.addWidget(self._btn_box)
+        # Expose for tests
+        self.buttonBox = self._btn_box  # type: ignore
+
+        # Main dialog layout -------------------------------------------------
+        main_lay = QVBoxLayout(self)
+        main_lay.addWidget(self.tabs, stretch=1)
+        main_lay.addWidget(self._btn_box)
 
         # Load last-used defaults and connect signals
         self._units_combo.currentTextChanged.connect(self._on_units_changed)
@@ -260,6 +323,15 @@ class ScaleCalibrationDialog(QDialog):
         # Force default selection to 'ft' for test determinism
         if self._units_combo.currentText() != "ft":
             self._units_combo.setCurrentText("ft")
+
+        # Connect validation for new widgets
+        self.spin_value.valueChanged.connect(self._validate_ready)
+        self.combo_units.currentTextChanged.connect(self._validate_ready)
+        self.radio_world.toggled.connect(self._validate_ready)
+        self.edit_denom.textChanged.connect(self._validate_ready)
+        self.radio_ratio.toggled.connect(self._validate_ready)
+
+        self.tabs.currentChanged.connect(self._validate_ready)
 
     def _load_last_used_settings(self):
         """Load last used scale and units from SettingsService and apply."""
@@ -394,48 +466,102 @@ class ScaleCalibrationDialog(QDialog):
 
     def _validate_ready(self):
         ok_btn = self._btn_box.button(QDialogButtonBox.StandardButton.Ok)
-        if ok_btn: # pragma: no cover
-            # Ready if points are picked (span_px > 0) and distance is entered
+        if not ok_btn:
+            return
+
+        if self.tabs.currentIndex() == 0:
+            # Pick points mode
             ready = (self._span_px > 1e-6) and (self._dist_spin.value() > 1e-6)
             ok_btn.setEnabled(ready)
+        else:
+            # Enter scale tab
+            if self.radio_world.isChecked():
+                ready = self.spin_value.value() > 0.0
+            else:
+                try:
+                    denom_val = float(self.edit_denom.text())
+                    ready = denom_val > 0.0
+                except ValueError:
+                    ready = False
+            ok_btn.setEnabled(ready)
+
+            # Update helper preview
+            try:
+                dpi = float(self._project.pdf_background_dpi) if self._project else 96.0
+                if self.radio_world.isChecked():
+                    world_per_px = self.spin_value.value() / dpi
+                else:
+                    denom_val = float(self.edit_denom.text()) if self.edit_denom.text() else 0.0
+                    if denom_val > 0:
+                        # world_per_in depends on units – assume ratio 1:denom same units as selected
+                        units = self.combo_units.currentText()
+                        if units == "ft":
+                            world_per_in = denom_val / 12.0
+                        elif units == "yd":
+                            world_per_in = denom_val / 36.0
+                        else:
+                            world_per_in = denom_val * 0.0254
+                        world_per_px = world_per_in / dpi
+                    else:
+                        world_per_px = 0.0
+                self.lbl_helper.setText(f"~{world_per_px:.4f} {self.combo_units.currentText()}/px @ {dpi} dpi")
+            except Exception:
+                self.lbl_helper.setText("")
 
     # ------------------------------------------------------------------
     # Accept / result helpers
     # ------------------------------------------------------------------
     def _on_accept(self):
-        if self._span_px < 1e-6 : # Check against a small epsilon
-            return # Should not happen due to validation
+        # Branch based on active tab ---------------------------------------
+        if self.tabs.currentIndex() == 0:
+            # Original pick-points workflow --------------------------------
+            if self._span_px < 1e-6:
+                return  # validation
 
-        selected_units_code = self._units_combo.currentText()
-        real_dist_in_selected_units = self._dist_spin.value()
-        
-        px_per_in_display = self._compute_px_per_in() # Effective DPI of display + PDF render
+            selected_units_code = self._units_combo.currentText()
+            real_dist_in_selected_units = self._dist_spin.value()
 
-        # world_per_px is in terms of selected_units_code / pixel
-        world_per_px = real_dist_in_selected_units / self._span_px
-        
-        # world_val_per_inch_paper is the scale value in selected_units_code per inch of paper
-        world_val_per_inch_paper = world_per_px * px_per_in_display
+            px_per_in_display = self._compute_px_per_in()
 
-        self._scale = ProjectScale(
-            px_per_in=px_per_in_display,
-            world_units=selected_units_code, # Store the actual unit used
-            world_per_in=world_val_per_inch_paper, # This is the value in selected_units_code per inch of paper
-        )
-        
+            world_per_px = real_dist_in_selected_units / self._span_px
+            world_val_per_inch_paper = world_per_px * px_per_in_display
+
+            self._scale = ProjectScale(
+                px_per_in=px_per_in_display,
+                world_units=selected_units_code,
+                world_per_in=world_val_per_inch_paper,
+            )
+        else:
+            dpi = float(self._project.pdf_background_dpi) if self._project else 96.0
+            if dpi <= 0:
+                QMessageBox.warning(self, "Scale Calibration", "Invalid or unknown PDF DPI; cannot build scale.")
+                return
+
+            units = self.combo_units.currentText()
+            if self.radio_world.isChecked():
+                self._scale = ProjectScale.from_direct(
+                    value=self.spin_value.value(),
+                    units=units,
+                    render_dpi=dpi,
+                )
+            else:
+                denom_val = float(self.edit_denom.text())
+                self._scale = ProjectScale.from_ratio(
+                    numer=1.0,
+                    denom=denom_val,
+                    units=units,
+                    render_dpi=dpi,
+                )
+
+        # Store on project immediately
+        if self._project is not None:
+            self._project.scale = self._scale
+
         # Persist settings: Convert to ft or m for SettingsService
-        unit_to_persist = selected_units_code
-        value_to_persist = world_val_per_inch_paper
-
-        if selected_units_code == "yd":
-            unit_to_persist = "ft"
-            value_to_persist = world_val_per_inch_paper * 3.0 # Convert yd/in to ft/in
-        
-        # SettingsService expects "ft" or "m"
-        if unit_to_persist in ("ft", "m"):
-             SettingsService().set_last_scale(unit_to_persist, value_to_persist)
-        # else: # If somehow unit_to_persist is not ft or m (e.g. future changes)
-        #     logger.warning(f"Cannot persist scale for unit {unit_to_persist} in SettingsService.")
+        unit_to_persist = self._units_combo.currentText() if self.tabs.currentIndex()==0 else self.combo_units.currentText()
+        value_to_persist = getattr(self._scale, 'world_per_in', None)
+        if unit_to_persist in ("ft", "m") and value_to_persist:
+            SettingsService().set_last_scale(unit_to_persist, value_to_persist)
 
         self.accept()
 

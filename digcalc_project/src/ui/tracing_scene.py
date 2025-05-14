@@ -51,6 +51,7 @@ from digcalc_project.src.ui.commands.interpolate_segment_z_command import (
     InterpolateSegmentZCommand,
 )
 from digcalc_project.src.ui.items.vertex_item import VertexItem
+from digcalc_project.src.exceptions import NoScaleError
 
 # --- MODIFIED: Use TYPE_CHECKING for PolylineData --- 
 if TYPE_CHECKING:
@@ -352,6 +353,18 @@ class TracingScene(QGraphicsScene):
 
         # --- Tracing is Enabled ---
         if event.button() == Qt.LeftButton:
+            # Guard: ensure a valid scale exists before starting/adding vertices
+            try:
+                proj = getattr(self, "project", None) or getattr(self.panel, "current_project", None)
+                if proj is None or proj.scale is None:
+                    raise NoScaleError(
+                        "Tracing requires a calibrated scale. "
+                        "Use Tracing ▸ Calibrate Scale… before digitising."
+                    )
+            except NoScaleError as e:
+                QMessageBox.warning(self.parent_view if self.parent_view else None, "Scale Required", str(e))
+                return
+
             pos = self._constrained_pos(event.scenePos(), event.modifiers()) # Apply constraints on press
 
             # Check if click is within any background item bounds (if backgrounds exist)
@@ -492,11 +505,13 @@ class TracingScene(QGraphicsScene):
 
         scale = getattr(project, "scale", None) if project else None
         if not scale:
-            # No calibration → return raw pixel values (1 px == 1 world-unit)
-            return scene_pos.x(), scene_pos.y()
+            # Escalate – tracing logic should never call this without a scale.
+            raise NoScaleError(
+                "Tracing requires a calibrated scale. "
+                "Use Tracing ▸ Calibrate Scale… before digitising."
+            )
 
-        # Convert: (world length / inch) ÷ (pixels / inch) ⇒ world length / px
-        factor = scale.world_per_in / scale.px_per_in
+        factor = scale.world_per_px  # direct helper
         return scene_pos.x() * factor, scene_pos.y() * factor
 
     def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent):

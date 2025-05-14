@@ -68,6 +68,8 @@ class Project:
     metadata: Dict[str, Any] = field(default_factory=dict)
     regions: list[Region] = field(default_factory=list)
     scale: Optional[ProjectScale] = None  # Updated to new ProjectScale
+    # Flags for project-level state (e.g., legacy scale invalid)
+    flags: List[str] = field(default_factory=list)
     
     # --- Tracing / PDF Background Data ---
     pdf_background_path: Optional[str] = None
@@ -309,7 +311,8 @@ class Project:
                 'pdf_background_page': self.pdf_background_page,
                 'pdf_background_dpi': self.pdf_background_dpi,
                 'traced_polylines': self._serialisable_polylines(),
-                'layer_revisions': dict(self.layer_revisions) # Convert defaultdict
+                'layer_revisions': dict(self.layer_revisions), # Convert defaultdict
+                'flags': self.flags,
             }
             
             with open(self.filepath, 'w') as f:
@@ -324,7 +327,7 @@ class Project:
             return False
 
     @classmethod
-    def load(cls, filename: str) -> Optional["Project"]:
+    def load(cls, filename: str, pdf_service: Optional[Any] = None) -> Optional["Project"]:
         """Loads a project from a JSON file."""
         logger = logging.getLogger(__name__)
         migrated = False # Track if any migration occurred
@@ -341,12 +344,20 @@ class Project:
 
             # --- Migration --- 
             if project_version < 2:
-                 data = _migrate_project_scale_v1_to_v2(data) # NEW migration function needed
+                 data = _migrate_project_scale_v1_to_v2(data)
                  migrated = True
-            # Ensure these are still called if necessary for other parts of the data
-            data = _migrate_v2_add_scale(data)  # This might need review if it assumes old scale format
-            data = _migrate_v1_to_v2(data) # This was for regions, should be fine
-            # --- End Migration ---
+
+            # Convert legacy world_per_in to ProjectScale (v3 shim)
+            render_dpi = None
+            try:
+                render_dpi = pdf_service.current_render_dpi() if pdf_service else None
+            except AttributeError:
+                render_dpi = None
+
+            data = _migrate_v2_add_scale(data, render_dpi)
+
+            # Other v1→v2 migrations (regions etc.)
+            data = _migrate_v1_to_v2(data)
 
             # Create project instance
             project = cls(name=data.get("name", "Untitled Project"))
@@ -362,6 +373,7 @@ class Project:
                 project.modified_at = project.created_at
             project.author = data.get("author", "Unknown")
             project.metadata = data.get("metadata", {})
+            project.flags = data.get("flags", [])
 
             # --- Load Project Scale (optional) ---  # NEW
             scale_data = data.get("scale")
@@ -546,7 +558,37 @@ def _migrate_project_scale_v1_to_v2(data: dict) -> dict:
 # def _migrate_v2_add_scale(st: dict) -> dict: ...
 # def _migrate_v1_to_v2(data: dict) -> dict: ... # This one was for regions, should be fine
 
-def _migrate_v2_add_scale(st: dict) -> dict:
-    """v2 – ensure "scale" key exists (None if legacy file)."""
-    st.setdefault("scale", None)
-    return st
+def _migrate_v2_add_scale(data: dict, project_render_dpi: float | None) -> dict:
+    """
+    Legacy projects (≤ v0.3) stored a bare `world_per_in` float.
+    Convert it into a full ProjectScale object or mark as invalid.
+    """
+
+    # If already contains proper scale or no legacy key → nothing to do.
+    if "scale" in data or "world_per_in" not in data:
+        return data
+
+    world_per_in = data.pop("world_per_in")
+
+    # Could not determine DPI → flag invalid scale
+    if project_render_dpi is None or project_render_dpi <= 0:
+        data["scale"] = None
+        data["flags"] = data.get("flags", []) + ["scale-invalid"]
+        return data
+
+    from .project_scale import ProjectScale
+
+    try:
+        scale_obj = ProjectScale.from_direct(
+            value=world_per_in,
+            units=data.get("world_units", "ft"),
+            render_dpi=project_render_dpi,
+        )
+        data["scale"] = scale_obj.dict(exclude_none=True)
+    except Exception as exc:
+        logger.warning("Failed to convert legacy scale: %s", exc, exc_info=True)
+        data["scale"] = None
+        data["flags"] = data.get("flags", []) + ["scale-invalid"]
+
+    # Clean up legacy key 'world_units' if not used elsewhere (optional)
+    return data
