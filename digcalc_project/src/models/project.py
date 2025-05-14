@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from .surface import Surface
 from .calculation import VolumeCalculation
 from .region import Region
-from .project_scale import ProjectScale  # NEW
+from .project_scale import ProjectScale # NEW Pydantic model
 
 # Configure logging for the module
 logger = logging.getLogger(__name__)
@@ -67,7 +67,7 @@ class Project:
     calculations: List[VolumeCalculation] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
     regions: list[Region] = field(default_factory=list)
-    scale: Optional[ProjectScale] = None  # NEW field for printed-scale calibration
+    scale: Optional[ProjectScale] = None  # Updated to new ProjectScale
     
     # --- Tracing / PDF Background Data ---
     pdf_background_path: Optional[str] = None
@@ -286,9 +286,15 @@ class Project:
         self.logger.info(f"Saving project '{self.name}' to {self.filepath}")
         
         try:
-            # --- Create serializable representation --- 
+            scale_dict_data = None
+            if self.scale:
+                scale_dict_data = self.scale.dict(exclude_none=True) # Use Pydantic's .dict()
+                # Ensure datetime is ISO format string for JSON
+                if 'calibrated_at' in scale_dict_data and isinstance(scale_dict_data['calibrated_at'], datetime.datetime):
+                    scale_dict_data['calibrated_at'] = scale_dict_data['calibrated_at'].isoformat()
+
             data_to_save = {
-                'version': 1, # Simple versioning
+                'version': 2, # Bump version due to scale model change
                 'name': self.name,
                 'description': self.description,
                 'created_at': self.created_at.isoformat(),
@@ -298,14 +304,13 @@ class Project:
                 'calculations': [c.to_dict() for c in self.calculations],
                 'regions': [r.to_dict() for r in self.regions],
                 'metadata': self.metadata,
-                'scale': self.scale.to_dict() if self.scale else None,  # NEW
+                'scale': scale_dict_data, # Use the processed dict
                 'pdf_background_path': self.pdf_background_path,
                 'pdf_background_page': self.pdf_background_page,
                 'pdf_background_dpi': self.pdf_background_dpi,
                 'traced_polylines': self._serialisable_polylines(),
                 'layer_revisions': dict(self.layer_revisions) # Convert defaultdict
             }
-            # --- End serializable representation --- 
             
             with open(self.filepath, 'w') as f:
                 json.dump(data_to_save, f, indent=4)
@@ -322,7 +327,7 @@ class Project:
     def load(cls, filename: str) -> Optional["Project"]:
         """Loads a project from a JSON file."""
         logger = logging.getLogger(__name__)
-        migrated = False # Track if any migration occurred (e.g., polylines)
+        migrated = False # Track if any migration occurred
 
         if not Path(filename).is_file():
             logger.error(f"Load failed: Project file not found at '{filename}'")
@@ -331,11 +336,16 @@ class Project:
         try:
             with open(filename, 'r') as f:
                 data = json.load(f)
+            
+            project_version = data.get('version', 0)
 
             # --- Migration --- 
-            data = _migrate_v2_add_scale(data)  # v2: ensure 'scale' key exists before other migrations
-            data = _migrate_v1_to_v2(data)
-            # Add future migration calls here: data = _migrate_v2_to_v3(data) ...
+            if project_version < 2:
+                 data = _migrate_project_scale_v1_to_v2(data) # NEW migration function needed
+                 migrated = True
+            # Ensure these are still called if necessary for other parts of the data
+            data = _migrate_v2_add_scale(data)  # This might need review if it assumes old scale format
+            data = _migrate_v1_to_v2(data) # This was for regions, should be fine
             # --- End Migration ---
 
             # Create project instance
@@ -355,7 +365,15 @@ class Project:
 
             # --- Load Project Scale (optional) ---  # NEW
             scale_data = data.get("scale")
-            project.scale = ProjectScale.from_dict(scale_data) if scale_data else None
+            if scale_data:
+                try:
+                    # Pydantic will parse ISO string for calibrated_at to datetime automatically
+                    project.scale = ProjectScale(**scale_data) 
+                except Exception as e_scale:
+                    logger.error(f"Failed to load/parse new ProjectScale data: {e_scale}. Scale will be None.", exc_info=True)
+                    project.scale = None
+            else:
+                project.scale = None
 
             # --- Load Surfaces --- 
             surfaces_data = data.get("surfaces", {})
@@ -487,7 +505,46 @@ class Project:
         return new_revision
     # --- END NEW --- 
 
-# --- NEW: Migration helper for v2 (scale) ---
+# --- NEW: Migration helper for ProjectScale v1 (dataclass) to v2 (Pydantic) --- 
+# This should be defined at the module level in project.py
+
+def _migrate_project_scale_v1_to_v2(data: dict) -> dict:
+    """Migrates old ProjectScale (dataclass-like dict) to new Pydantic ProjectScale structure."""
+    logger.info("Attempting to migrate ProjectScale from v1 to v2 format.")
+    scale_data_v1 = data.get("scale")
+    if not scale_data_v1 or not isinstance(scale_data_v1, dict):
+        logger.debug("No v1 scale data found or not a dict, skipping migration.")
+        return data # No old scale data to migrate
+
+    # Old fields: px_per_in, world_units, world_per_in
+    # New fields: input_method, world_units, world_per_paper_in, ratio_numer, ratio_denom, render_dpi_at_cal, calibrated_at
+    try:
+        px_per_in = float(scale_data_v1.get("px_per_in", 96.0)) # Default if missing
+        world_units = str(scale_data_v1.get("world_units", "ft"))
+        world_per_in = float(scale_data_v1.get("world_per_in", 0.0))
+
+        # For old data, assume it came from two-point calibration or was set directly
+        # We don't have ratio_numer/denom for old data.
+        # calibrated_at will be set to now by Pydantic default_factory if not provided.
+        new_scale_data = {
+            "input_method": "two_point", # Assume old scales were effectively two-point or direct
+            "world_units": world_units,
+            "world_per_paper_in": world_per_in,
+            "render_dpi_at_cal": px_per_in,
+            "ratio_numer": None, # Not available in old format
+            "ratio_denom": None, # Not available in old format
+            # "calibrated_at": datetime.datetime.utcnow().isoformat() # Or let Pydantic handle default
+        }
+        data["scale"] = new_scale_data
+        logger.info(f"Successfully migrated scale data for project. New scale dict: {new_scale_data}")
+    except Exception as e:
+        logger.error(f"Error migrating old scale data: {e}. Old scale data: {scale_data_v1}. Scale will be discarded.", exc_info=True)
+        data["scale"] = None # Discard problematic old scale data
+    return data
+
+# Ensure existing migration functions are compatible or updated if they also touch 'scale'
+# def _migrate_v2_add_scale(st: dict) -> dict: ...
+# def _migrate_v1_to_v2(data: dict) -> dict: ... # This one was for regions, should be fine
 
 def _migrate_v2_add_scale(st: dict) -> dict:
     """v2 – ensure "scale" key exists (None if legacy file)."""

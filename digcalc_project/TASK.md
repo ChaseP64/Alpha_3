@@ -35,6 +35,7 @@
 - [ ] Update Surface model implementation to match test assumptions
 - [ ] Fix issues with LandXML parser tests
 - [x] 2025-05-10 Disable tracing at startup to prevent accidental tracing before user enables mode
+- [x] 2025-05-16 Fix pytest failures related to ScaleCalibrationDialog, ProjectScale, and VisualizationPanel mocks (TypeError, ValidationError, C++ object deletion)
 
 ## Next Steps
 1. **Fix Remaining Test Issues**:

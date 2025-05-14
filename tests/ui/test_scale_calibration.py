@@ -1,13 +1,25 @@
 import math
 import pytest
+from unittest.mock import MagicMock
 
 from digcalc_project.src.ui.dialogs.scale_calibration_dialog import ScaleCalibrationDialog
+from digcalc_project.src.models.project import Project
 
 
-def test_scale_calibration_dialog_simple(qtbot):
+# Create a reusable mock project fixture
+@pytest.fixture
+def mock_project():
+    project = MagicMock(spec=Project)
+    project.pdf_background_path = "dummy.pdf"
+    project.pdf_background_dpi = 96.0
+    project.pdf_background_page = 1
+    return project
+
+
+def test_scale_calibration_dialog_simple(qtbot, mock_project):
     """Ensure the dialog converts picked span + distance into ProjectScale."""
     # Create dialog with no scene (we will inject the picked span manually)
-    dlg = ScaleCalibrationDialog(parent=None, scene=None, page_pixmap=None)
+    dlg = ScaleCalibrationDialog(parent=None, project=mock_project, scene=None, page_pixmap=None)
 
     # Inject picked span (10 px) and set real-world distance (20 ft)
     dlg._span_px = 10.0

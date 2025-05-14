@@ -42,7 +42,12 @@ def test_scale_warning_shown_once(qtbot, monkeypatch, main_window):
     assert scene._scale_overlay is not None, "Overlay not created when scale missing."
 
     # Simulate calibration by setting project.scale and notifying the scene
-    project.scale = ProjectScale(px_per_in=96, world_units="ft", world_per_in=20)
+    project.scale = ProjectScale(
+        input_method="two_point", 
+        world_units="ft", 
+        world_per_paper_in=20.0, 
+        render_dpi_at_cal=96.0
+    )
     scene.on_scale_calibrated()
 
     assert scene._scale_overlay is None, "Overlay not removed after calibration." 

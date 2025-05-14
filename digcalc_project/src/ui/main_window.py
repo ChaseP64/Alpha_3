@@ -13,7 +13,7 @@ from typing import Optional, Dict, List, Tuple
 
 # PySide6 imports
 from PySide6.QtCore import Qt, QSize, Signal, Slot, QTimer # Added QTimer
-from PySide6.QtGui import QIcon, QAction, QKeySequence, QKeyEvent, QActionGroup, QShortcut # Added QShortcut
+from PySide6.QtGui import QIcon, QAction, QKeySequence, QKeyEvent, QActionGroup, QShortcut, QPixmap # Added QPixmap
 from PySide6 import QtWidgets
 from PySide6.QtWidgets import (
     QMainWindow, QDockWidget, QMenu, QToolBar,
@@ -2347,26 +2347,66 @@ class MainWindow(QMainWindow):
     # 3. Slot at end of class
     @Slot()
     def on_scale_calibration(self):
-        """Open the scale-calibration dialog and store result on project/settings."""
-        # Ensure the 2-D PDF view is visible so global point-picking works
-        # (prevents hidden-viewport dead-click issues when user is on 3-D tab)
-        if hasattr(self, "visualization_panel"):
-            try:
-                self.visualization_panel.show_2d_view()
-            except Exception as exc:
-                # Defensive – don't block calibration if switching fails
-                self.logger.warning("Failed to switch to 2-D view before scale calibration: %s", exc)
+        """Handles the 'Calibrate Scale...' menu action."""
+        if not self.project_controller or not self.project_controller.project:
+            QMessageBox.warning(self, "No Project", "Please open or create a project first.")
+            return
 
-        # Obtain active 2-D tracing scene if available
-        scene = getattr(self.visualization_panel, "scene_2d", None)
+        project = self.project_controller.project
+        if not project.pdf_background_path:
+            QMessageBox.information(self, "No PDF Loaded", "Please load a PDF background image first.")
+            return
 
-        dlg = ScaleCalibrationDialog(parent=self, scene=scene)
-        # Launch modeless so clicks on the main view are not blocked
-        dlg.setWindowModality(Qt.NonModal)
-        dlg.open()
-        # Handle result asynchronously when the dialog finishes
-        dlg.finished.connect(lambda res, d=dlg: self._on_scale_dialog_done(d, res))
-        return  # Exit early – further processing occurs in callback
+        # Ensure we have the TracingScene from the VisualizationPanel
+        if not hasattr(self.visualization_panel, 'scene_2d') or not self.visualization_panel.scene_2d:
+            self.logger.error("TracingScene (scene_2d) not found in VisualizationPanel.")
+            QMessageBox.critical(self, "Error", "Cannot open scale calibration: 2D scene not available.")
+            return
+        
+        scene = self.visualization_panel.scene_2d
+        # Get current page pixmap from TracingScene or VisualizationPanel if available
+        # This part might need adjustment based on how TracingScene stores its current background
+        current_bg_pixmap = None
+        if scene._background_items: # Accessing protected member, consider a getter in TracingScene
+            current_bg_pixmap = scene._background_items[0].pixmap() # Assuming first is current
+        
+        if not current_bg_pixmap or current_bg_pixmap.isNull():
+            # As a fallback, or if TracingScene doesn't hold the main pixmap directly for calibration preview,
+            # re-render the current page from the project's PDF path and DPI.
+            # This ensures the dialog gets a pixmap rendered at the correct project DPI.
+            if project.pdf_background_path and project.pdf_background_dpi > 0:
+                self.logger.info(f"No direct pixmap from scene, re-rendering page {project.pdf_background_page} at {project.pdf_background_dpi} DPI for calibration dialog.")                
+                # Use PdfService to get the PdfDocument
+                pdf_service = PdfService()
+                # pdf_service.load_pdf might have already been called, get current doc
+                # This needs a way to get the PdfDocument instance that PDFRenderer would use.
+                # For now, assuming PDFRenderer can be instantiated if needed.
+                try:
+                    # We need the PdfDocument that was loaded for the project.
+                    # This logic is a bit convoluted because PDFRenderer is created in VisualizationPanel.
+                    # A better way would be for PdfService to hold the *current* PdfDocument
+                    # that the project is associated with.
+                    temp_renderer = PDFRenderer(project.pdf_background_path, dpi=project.pdf_background_dpi)
+                    qimage = temp_renderer.get_page_image(project.pdf_background_page)
+                    if qimage and not qimage.isNull():
+                        current_bg_pixmap = QPixmap.fromImage(qimage)
+                    temp_renderer.close() # Important to close it
+                except Exception as e_render:
+                    self.logger.error(f"Failed to re-render PDF page for calibration dialog: {e_render}")
+                    QMessageBox.warning(self, "PDF Error", "Could not prepare PDF preview for calibration.")
+                    return # Exit if we can't get a pixmap
+            else:
+                 QMessageBox.warning(self, "PDF Error", "Could not prepare PDF preview for calibration: No PDF path or DPI.")
+                 return
+
+        if not current_bg_pixmap or current_bg_pixmap.isNull():
+             QMessageBox.warning(self, "PDF Error", "Could not obtain PDF page image for calibration.")
+             return
+
+        # Pass the project instance to the dialog
+        dlg = ScaleCalibrationDialog(parent=self, project=project, scene=scene, page_pixmap=current_bg_pixmap)
+        dlg.finished.connect(lambda result, dialog=dlg: self._on_scale_dialog_done(dialog, result))
+        dlg.exec()
 
     # ------------------------------------------------------------------
     # Scale-calibration dialog callback (modeless)

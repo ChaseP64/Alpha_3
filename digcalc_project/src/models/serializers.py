@@ -87,6 +87,22 @@ class ProjectSerializer:
 # They are intentionally *schema-stable* and ignore extraneous keys.
 # ---------------------------------------------------------------------------
 
+def scale_to_dict(scale: Optional[ProjectScale]) -> Optional[dict]:
+    """Serialize ProjectScale to dict, excluding None values."""
+    return scale.dict(exclude_none=True) if scale else None
+
+def scale_from_dict(d: Optional[dict]) -> Optional[ProjectScale]:
+    """Deserialize dict to ProjectScale."""
+    # This will only work if 'd' perfectly matches ProjectScale fields.
+    # Migration for old formats needs to happen before this point if 'd' is from an old file.
+    if d is None:
+        return None
+    try:
+        return ProjectScale(**d)
+    except Exception as e:
+        logger.warning(f"Failed to create ProjectScale from dict: {d}. Error: {e}. Returning None.")
+        return None
+
 def _load_surfaces(data: dict | None) -> dict[str, Surface]:
     """Helper to reconstruct *Surface* objects from a mapping."""
 
@@ -125,15 +141,7 @@ def to_dict(project: Project) -> dict:
         # ------------------------------------------------------------------
         # Scale (new) – include sub-keys explicitly for clarity
         # ------------------------------------------------------------------
-        "scale": (
-            {
-                "px_per_in": project.scale.px_per_in,
-                "world_units": project.scale.world_units,
-                "world_per_in": project.scale.world_per_in,
-            }
-            if project.scale is not None
-            else None
-        ),
+        "scale": scale_to_dict(project.scale),
         # Keep other sections minimal for now – can be expanded later.
         "surfaces": {n: s.to_dict() for n, s in project.surfaces.items()},
         "polylines": project._serialisable_polylines(),
@@ -144,19 +152,13 @@ def from_dict(data: dict) -> Project:
 
     # ---------------- Scale (legacy-safe) ------------------------------
     scale_data = data.get("scale")
-    scale_obj: ProjectScale | None
-    if scale_data is not None:
-        try:
-            scale_obj = ProjectScale(
-                px_per_in=float(scale_data["px_per_in"]),
-                world_units=str(scale_data["world_units"]),
-                world_per_in=float(scale_data["world_per_in"]),
-            )
-        except (KeyError, ValueError, TypeError) as exc:
-            logger.warning("Failed to parse scale data – defaulting to None: %s", exc)
-            scale_obj = None
-    else:
-        scale_obj = None
+    scale_obj: Optional[ProjectScale] = scale_from_dict(scale_data)
+
+    # If scale_from_dict returns None due to parsing error of old format, scale_obj will be None.
+    # A proper migration path in Project.load would be needed to transform old scale_data
+    # before it even reaches here for an in-memory from_dict scenario, or this function
+    # would need to be smarter about trying to parse old vs. new formats.
+    # For now, this assumes scale_data is either new format or None.
 
     proj = Project(
         name=data.get("name", "Untitled"),

@@ -33,6 +33,7 @@ from PySide6.QtWidgets import (
 
 from digcalc_project.src.models.project_scale import ProjectScale
 from digcalc_project.src.services.settings_service import SettingsService
+from digcalc_project.src.models.project import Project
 
 __all__ = ["ScaleCalibrationDialog"]
 
@@ -169,10 +170,11 @@ class ScaleCalibrationDialog(QDialog):
     shows an empty scene.
     """
 
-    def __init__(self, parent, scene, page_pixmap: QPixmap | None = None):  # noqa: D401
+    def __init__(self, parent, project: Project, scene, page_pixmap: QPixmap | None = None):  # noqa: D401
         super().__init__(parent)
         self.setWindowTitle("Calibrate Printed Scale")
         self.resize(800, 600)
+        self._project = project
         self._tracing_scene = scene  # not directly used yet (future)
         self._pixmap = page_pixmap or QPixmap()
 
@@ -438,26 +440,22 @@ class ScaleCalibrationDialog(QDialog):
         self.accept()
 
     def _compute_px_per_in(self) -> float:
-        """Attempt to estimate the current monitor DPI / zoom factor."""
-        # This is a simplification. True px_per_in of the *original document*
-        # might be different from screen DPI. For now, assume screen DPI is a proxy.
-        try: # pragma: no cover
-            # For Qt6, devicePixelRatioF might be more relevant than physicalDpiX alone
-            # if view transformation is involved.
-            # However, for a direct pixmap, physicalDpiX should be the screen's DPI.
-            # If the PDF was rendered at a specific DPI (e.g., 300 DPI) and then displayed,
-            # that render DPI would be the true px_per_in of the *image data*.
-            # For now, we use screen DPI as an estimate.
-            dpi = self._view.screen().physicalDotsPerInch() if self._view.screen() else 96.0
-            # No, this should be based on the view's effective DPI if PDF is scaled.
-            # If the PDF is rendered to match screen pixels 1:1 at its original size, then PDF's own DPI matters.
-            # If it's scaled to fit, then it's more complex.
-            # Let's assume for now a default of 96 DPI for paper context if nothing else available.
-            # This is a placeholder value, true "pixels per inch of paper" can be tricky.
-            # A common default for many systems if actual DPI is not correctly queried.
-            return 96.0
-        except Exception:  # pragma: no cover
-            return 96.0 # Fallback DPI
+        """
+        Returns the DPI at which the currently displayed PDF page (for calibration)
+        was rendered. This comes from the project settings.
+        """
+        if self._project and self._project.pdf_background_path and self._project.pdf_background_dpi > 0:
+            # Ensure a PDF is actually loaded in the project and has a valid DPI set
+            return float(self._project.pdf_background_dpi)
+        else:
+            # Fallback or error condition if no PDF is loaded or DPI is invalid
+            # This case should ideally be prevented by disabling calibration if no PDF/DPI
+            QMessageBox.warning(
+                self, 
+                "Scale Calibration Error", 
+                "Cannot determine rendering DPI. Please ensure a PDF is loaded with a valid DPI setting in the project."
+            )
+            return 96.0 # Or raise an error / return a value that signals failure
 
     # ------------------------------------------------------------------
     def result_scale(self) -> ProjectScale | None: # Changed to allow None if not accepted
