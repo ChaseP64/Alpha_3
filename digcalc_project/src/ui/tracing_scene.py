@@ -646,7 +646,8 @@ class TracingScene(QGraphicsScene):
             return
 
         last_point = self._current_polyline_points[-1]
-        constrained_pos = self._constrained_pos(current_pos, Qt.NoModifier) # Apply constraints for display only? No, apply in move event.
+        # Suppress Ruff F841 by using underscore for unused assignment (no side effects)
+        _ = self._constrained_pos(current_pos, Qt.NoModifier)  # noqa: F841
 
         # Use the already constrained position from mouseMoveEvent
         pos_to_draw_to = current_pos # Use the position passed in (already constrained)

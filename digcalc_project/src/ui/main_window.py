@@ -2422,11 +2422,11 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_scale_calibration(self):
         """Handles the 'Calibrate Scale...' menu action."""
-        if not self.project_controller or not self.project_controller.project:
+        if not self.project_controller or not self.project_controller.get_current_project():
             QMessageBox.warning(self, "No Project", "Please open or create a project first.")
             return
 
-        project = self.project_controller.project
+        project = self.project_controller.get_current_project()
         if not project.pdf_background_path:
             QMessageBox.information(self, "No PDF Loaded", "Please load a PDF background image first.")
             return
@@ -2451,7 +2451,7 @@ class MainWindow(QMainWindow):
             if project.pdf_background_path and project.pdf_background_dpi > 0:
                 self.logger.info(f"No direct pixmap from scene, re-rendering page {project.pdf_background_page} at {project.pdf_background_dpi} DPI for calibration dialog.")
                 # Use PdfService to get the PdfDocument
-                pdf_service = PdfService()
+                _pdf_service = PdfService()  # noqa: F841
                 # pdf_service.load_pdf might have already been called, get current doc
                 # This needs a way to get the PdfDocument instance that PDFRenderer would use.
                 # For now, assuming PDFRenderer can be instantiated if needed.

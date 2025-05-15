@@ -37,14 +37,44 @@ jobs:
         run: echo "VTK_DEFAULT_RENDER_WINDOW_OFFSCREEN=ON" >> $GITHUB_ENV
 
       # ------------------------------------------------------------------
-      # Install Python dependencies
+      # Install Python dev dependencies (extras)  
       # ------------------------------------------------------------------
-      - name: Install dependencies
+      - name: Install dev extras
         run: |
           python -m pip install --upgrade pip
-          pip install -r Alpha_3/digcalc_project/requirements.txt
+          # Install the local package with the "dev" extra (ruff, pytest, mypy, …)
+          pip install ".[dev]"
 
-      # Run tests
-      - name: Run pytest
+      # ------------------------------------------------------------------
+      # Ruff lint
+      # ------------------------------------------------------------------
+      - name: Ruff lint
+        run: ruff check .
+
+      # ------------------------------------------------------------------
+      # Static type-checking (loose)
+      # ------------------------------------------------------------------
+      - name: Type check (mypy)
+        run: mypy .
+
+      # ------------------------------------------------------------------
+      # Test suite & coverage
+      # ------------------------------------------------------------------
+      - name: Test & coverage
+        run: pytest -q --cov=digcalc_project --cov-report=xml
+
+      # ------------------------------------------------------------------
+      # Enforce coverage threshold (84 %) – optional
+      # ------------------------------------------------------------------
+      - name: Enforce coverage threshold
         run: |
-          pytest -q 
+          python - <<'PY'
+          import xml.etree.ElementTree as ET, sys, pathlib
+          cov_file = pathlib.Path('coverage.xml')
+          if not cov_file.exists():
+              print('coverage.xml not found – skipping threshold check.')
+              sys.exit(1)
+          cov = float(ET.parse(cov_file).getroot().get('line-rate')) * 100
+          print(f'Coverage: {cov:.1f}% (required ≥ 84%)')
+          sys.exit(0 if cov >= 84 else 1)
+          PY 

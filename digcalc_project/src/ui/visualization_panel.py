@@ -338,6 +338,10 @@ class VisualizationPanel(QWidget):
         # Now store the reference to the selected project (may be None).
         self.current_project = project
 
+        # Keep the TracingScene aware of the active project for scale checks
+        if hasattr(self, "scene_2d") and self.scene_2d:
+            self.scene_2d.project = project
+
         if project:
             # Load PDF Background if available
             if project.pdf_background_path and Path(project.pdf_background_path).is_file():

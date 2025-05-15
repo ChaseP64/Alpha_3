@@ -40,7 +40,8 @@ dev = [
     "pytest",
     "pytest-qt>=4.0.0",
     # "mypy" # Can uncomment later if needed
-    ]
+    "ruff>=0.4",
+]
 
 # Script entry point (if desired later)
 # [project.scripts]
@@ -50,3 +51,30 @@ dev = [
 # Point to the directory containing the main 'digcalc_project' package source
 where = ["digcalc_project"]
 include = ["digcalc_project*"] # Include the package and its subpackages 
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+ignore-init-module-imports = true
+# Global ignores (low-value churn for now)
+extend-ignore = [
+  "E266", # too many leading '#'
+  "E402", # module-level import not at top of file – allow for logging/config blocks
+  "E701", # multiple statements on one line (colon) – low priority style
+  "F401", # imported but unused – many false-positives in optional/qt imports
+  "F811", # redefinition – tolerating intentional overloads for now
+  "E702", # multiple statements on one line (semicolon)
+  "F841", # unused variables
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+  "S101",  # use of assert
+  "ANN",   # missing type hints
+  "ARG001",# unused fixture arg
+  "SLF001",# accessing _private
+  "D",     # docstrings
+  "F401",  # unused imports in tests
+  "F841",  # assigned but unused variables in tests
+] 
