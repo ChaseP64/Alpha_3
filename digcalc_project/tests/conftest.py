@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Pytest configuration for DigCalc tests.
+"""Pytest configuration for DigCalc tests.
 
 This module contains shared fixtures and configuration for
 all test modules in the DigCalc application.
 """
 
-import os
 import sys
 import tempfile
-import pytest
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator, Any
+
+import pytest
 
 # Add the project root to the Python path
 root_dir = Path(__file__).parent.parent
@@ -28,11 +26,11 @@ print(f"Python path: {sys.path}")
 
 @pytest.fixture
 def temp_dir() -> Generator[str, None, None]:
-    """
-    Create a temporary directory for test files.
+    """Create a temporary directory for test files.
     
     Returns:
         Path to a temporary directory
+
     """
     with tempfile.TemporaryDirectory() as tmp_dir:
-        yield tmp_dir 
+        yield tmp_dir

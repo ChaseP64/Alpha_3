@@ -1,1 +1,1 @@
-"""3-D related utilities and widgets using PyVista / PyVistaQt.""" 
+"""3-D related utilities and widgets using PyVista / PyVistaQt."""

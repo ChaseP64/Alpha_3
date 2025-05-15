@@ -1,5 +1,3 @@
-import pytest
-from pathlib import Path
 
 # Since SettingsService is a singleton and might be imported elsewhere,
 # we need to be careful with patching its internal _path for tests.
@@ -13,7 +11,7 @@ def test_last_scale_roundtrip(tmp_path, monkeypatch):
 
     # Create a unique settings path for this test
     test_settings_file = tmp_path / "test_settings.json"
-    
+
     # Ensure SettingsService uses this unique path for this test instance
     # The Singleton nature means we need to be careful.
     # If SettingsService() was already called, its _path is set.
@@ -29,9 +27,9 @@ def test_last_scale_roundtrip(tmp_path, monkeypatch):
     # patching _path alone might not be enough without re-triggering __init__ or _load.
     # For now, let's assume the monkeypatch is sufficient before first get/set in test.
     # A more robust way might involve clearing the singleton instance if possible.
-    
+
     # Resetting the _initialized flag to force re-init if the singleton pattern allows
-    if hasattr(SettingsService, '_instance') and SettingsService._instance is not None:
+    if hasattr(SettingsService, "_instance") and SettingsService._instance is not None:
         SettingsService._instance._initialized = False # type: ignore[attr-defined]
         # del SettingsService._instance # This would be more aggressive
         # SettingsService._instance = None # Common way to reset singleton for tests
@@ -47,11 +45,11 @@ def test_last_scale_roundtrip(tmp_path, monkeypatch):
 
     # Verify it's saved and reloaded correctly
     # Create a new instance (should be the same due to singleton) or re-initialize
-    if hasattr(SettingsService, '_instance') and SettingsService._instance is not None:
+    if hasattr(SettingsService, "_instance") and SettingsService._instance is not None:
          SettingsService._instance._initialized = False # type: ignore[attr-defined]
-    
+
     svc_new = SettingsService()
     reloaded_units, reloaded_val = svc_new.last_scale()
 
     assert reloaded_units == "m"
-    assert reloaded_val == 5.0 
+    assert reloaded_val == 5.0

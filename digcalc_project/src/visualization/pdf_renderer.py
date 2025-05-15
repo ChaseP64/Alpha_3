@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-from __future__ import annotations # Postpones evaluation of type hints
+from __future__ import annotations  # Postpones evaluation of type hints
+
 """
 PDF Rendering Module for DigCalc.
 
@@ -9,13 +9,13 @@ Uses PyMuPDF (fitz) to load and render PDF pages as QImage objects.
 
 import logging
 import sys
-import typing # Import typing
-from typing import List, Optional, Tuple
+import typing  # Import typing
+from typing import List, Optional
 
 # --- Dependency Handling ---
 # Check for PyMuPDF (fitz)
 if typing.TYPE_CHECKING:
-    import fitz # Move import here
+    import fitz  # Move import here
 else:
     try:
         import fitz  # PyMuPDF - Requires `pip install PyMuPDF`
@@ -27,7 +27,7 @@ else:
 # Check for PySide6
 try:
     from PySide6.QtGui import QImage
-    from PySide6.QtWidgets import QApplication # Needed for __main__ test
+    from PySide6.QtWidgets import QApplication  # Needed for __main__ test
     # QPixmap can be created from QImage if needed later
 except ImportError:
     print("Error: PySide6 library not found.", file=sys.stderr)
@@ -39,12 +39,11 @@ except ImportError:
 
 class PDFRendererError(Exception):
     """Custom exception for PDF Renderer errors."""
-    pass
+
 
 
 class PDFRenderer:
-    """
-    Handles loading PDF files and rendering pages as QImage objects using PyMuPDF.
+    """Handles loading PDF files and rendering pages as QImage objects using PyMuPDF.
 
     Attributes:
         pdf_path (str): Path to the loaded PDF file.
@@ -54,12 +53,13 @@ class PDFRenderer:
         offset_x (float): Placeholder for X offset (for future calibration).
         offset_y (float): Placeholder for Y offset (for future calibration).
         doc: The loaded PyMuPDF document object.
+
     """
+
     logger = logging.getLogger(__name__)
 
     def __init__(self, pdf_path: str, dpi: int = 150):
-        """
-        Initialize the PDFRenderer, load the PDF, and render its pages.
+        """Initialize the PDFRenderer, load the PDF, and render its pages.
 
         Args:
             pdf_path (str): The full path to the PDF file.
@@ -70,6 +70,7 @@ class PDFRenderer:
             PDFRendererError: If PyMuPDF or PySide6 is not installed, or if the
                               PDF file cannot be opened or rendered.
             FileNotFoundError: If the pdf_path does not exist.
+
         """
         if fitz is None or QImage is None:
             raise PDFRendererError("Required libraries (PyMuPDF, PySide6) not available.")
@@ -130,7 +131,7 @@ class PDFRenderer:
 
                 # Determine QImage format - Assuming RGB for now
                 fmt = QImage.Format.Format_RGB888
-                
+
                 # Create QImage from pixmap data
                 qimage = QImage(pix.samples, pix.width, pix.height, pix.stride, fmt)
 
@@ -147,8 +148,7 @@ class PDFRenderer:
 
 
     def get_page_image(self, page_number: int) -> Optional[QImage]:
-        """
-        Retrieves the rendered QImage for a specific page.
+        """Retrieves the rendered QImage for a specific page.
 
         Args:
             page_number (int): The page number to retrieve (1-based index).
@@ -156,6 +156,7 @@ class PDFRenderer:
         Returns:
             Optional[QImage]: The rendered QImage for the page, or None if the
                               page number is invalid or rendering failed for that page.
+
         """
         if not 1 <= page_number <= len(self._rendered_pages):
             self.logger.warning(f"Invalid page number requested: {page_number}. Max page: {len(self._rendered_pages)}")
@@ -165,8 +166,7 @@ class PDFRenderer:
         return self._rendered_pages[page_number - 1]
 
     def get_page_count(self) -> int:
-        """
-        Returns the total number of pages successfully rendered and stored.
+        """Returns the total number of pages successfully rendered and stored.
         May be less than doc.page_count if errors occurred.
         """
         return len(self._rendered_pages)
@@ -190,7 +190,7 @@ class PDFRenderer:
 # --- Example Usage / Basic Test ---
 if __name__ == "__main__":
     # Basic logging setup for testing
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     # Ensure libraries loaded for test execution
     if fitz is None or QImage is None or QApplication is None:
@@ -214,7 +214,7 @@ if __name__ == "__main__":
         if renderer:
             orig_pages = renderer.get_original_page_count()
             rendered_pages = renderer.get_page_count()
-            print(f"\n--- PDF Renderer Test ---")
+            print("\n--- PDF Renderer Test ---")
             print(f"PDF Path: {renderer.pdf_path}")
             print(f"Original Page Count: {orig_pages}")
             print(f"Successfully Rendered Pages: {rendered_pages}")
@@ -230,7 +230,7 @@ if __name__ == "__main__":
                     # print(f"Saved first page image to {save_path}")
                 else:
                     print("Could not retrieve the first page image (check logs for errors).")
-            print(f"-------------------------\n")
+            print("-------------------------\n")
 
     except FileNotFoundError:
         print(f"Error: The specified file was not found: {pdf_file}")
@@ -245,4 +245,4 @@ if __name__ == "__main__":
             renderer.close()
 
     # No app.exec() needed as this is just a console test
-    sys.exit(0) 
+    sys.exit(0)

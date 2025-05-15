@@ -8,18 +8,26 @@ can click on a thumbnail to select a page to trace in the main view.
 
 from typing import Dict
 
-from PySide6.QtCore import Qt, QModelIndex, QAbstractListModel, Signal, QByteArray, QBuffer, QIODevice
-from PySide6.QtGui import QPixmap, QColor, QCursor
+from PySide6.QtCore import (
+    QAbstractListModel,
+    QBuffer,
+    QByteArray,
+    QIODevice,
+    QModelIndex,
+    Qt,
+    Signal,
+)
+from PySide6.QtGui import QColor, QCursor, QPixmap
 from PySide6.QtWidgets import (
+    QAbstractItemView,
     QDockWidget,
     QListView,
-    QAbstractItemView,
     QToolTip,
 )
 
 __all__ = [
-    "PdfThumbnailModel",
     "PdfThumbnailDock",
+    "PdfThumbnailModel",
 ]
 
 
@@ -35,10 +43,10 @@ class PdfThumbnailModel(QAbstractListModel):
     # ------------------------------------------------------------------
     # Qt overrides
     # ------------------------------------------------------------------
-    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:  # noqa: D401
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         return 0 if parent.isValid() else self._page_count
 
-    def data(self, index: QModelIndex, role: int):  # noqa: D401
+    def data(self, index: QModelIndex, role: int):
         if not index.isValid():
             return None
         row = index.row()
@@ -51,7 +59,7 @@ class PdfThumbnailModel(QAbstractListModel):
         return None
 
     # Allow background role editing
-    def setData(self, index: QModelIndex, value, role: int = Qt.EditRole):  # noqa: D401
+    def setData(self, index: QModelIndex, value, role: int = Qt.EditRole):
         if not index.isValid():
             return False
         row = index.row()
@@ -64,20 +72,20 @@ class PdfThumbnailModel(QAbstractListModel):
             return True
         return False
 
-    def flags(self, index: QModelIndex):  # noqa: D401
+    def flags(self, index: QModelIndex):
         return Qt.ItemIsEnabled | Qt.ItemIsSelectable
 
     # ------------------------------------------------------------------
     # Slots / API used by PdfService signals
     # ------------------------------------------------------------------
-    def set_page_count(self, count: int) -> None:  # noqa: D401
+    def set_page_count(self, count: int) -> None:
         """Reset model when a new document is loaded."""
         self.beginResetModel()
         self._page_count = count
         self._thumbnails.clear()
         self.endResetModel()
 
-    def update_thumbnail(self, page: int, pixmap: QPixmap) -> None:  # noqa: D401
+    def update_thumbnail(self, page: int, pixmap: QPixmap) -> None:
         """Cache pixmap and notify view that decoration changed."""
         if page < 0 or page >= self._page_count:
             return
@@ -125,7 +133,7 @@ class PdfThumbnailDock(QDockWidget):
 
         # Dock default settings
         self.setFeatures(
-            QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable
+            QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable,
         )
         self.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
 
@@ -133,7 +141,7 @@ class PdfThumbnailDock(QDockWidget):
     # Internals
     # ------------------------------------------------------------------
 
-    def _emit_pages_clicked(self, *_):  # noqa: D401
+    def _emit_pages_clicked(self, *_):
         """Collect selected indexes and emit as a list."""
         rows = [idx.row() for idx in self.view.selectionModel().selectedRows()]
         rows.sort()
@@ -143,7 +151,7 @@ class PdfThumbnailDock(QDockWidget):
     # Selection / UI helpers
     # ------------------------------------------------------------------
 
-    def _on_selection_changed(self, selected, deselected):  # noqa: D401
+    def _on_selection_changed(self, selected, deselected):
         """Update background colours when selection changes."""
         # Clear previous highlight
         if self._currentItem and self._currentItem.isValid():
@@ -159,7 +167,7 @@ class PdfThumbnailDock(QDockWidget):
         else:
             self._currentItem = None
 
-    def _show_thumbnail_tooltip(self, index: QModelIndex):  # noqa: D401
+    def _show_thumbnail_tooltip(self, index: QModelIndex):
         """Show a scaled thumbnail tooltip on hover."""
         if not index.isValid():
             return
@@ -179,9 +187,10 @@ class PdfThumbnailDock(QDockWidget):
 
 if __name__ == "__main__":
     import sys
+
     from PySide6.QtWidgets import QApplication
 
     app = QApplication(sys.argv)
     window = PdfThumbnailDock()
     window.show()
-    sys.exit(app.exec()) 
+    sys.exit(app.exec())

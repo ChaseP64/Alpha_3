@@ -28,11 +28,11 @@ class PdfController(QObject):
     # Slots
     # ------------------------------------------------------------------
     @Slot(int)
-    def on_page_clicked(self, page: int) -> None:  # noqa: D401
+    def on_page_clicked(self, page: int) -> None:
         """Handle *pageClicked* from :class:`PdfThumbnailDock`.
 
         The dock emits *zero‑based* page numbers – we convert them to *one‑based*
         to match the rest of the application API before re‑emitting.
         """
         # Convert to 1‑based index expected elsewhere in the codebase.
-        self.pageSelected.emit(page + 1) 
+        self.pageSelected.emit(page + 1)

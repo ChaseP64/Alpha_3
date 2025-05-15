@@ -40,7 +40,7 @@ def test_fallback_without_scipy(monkeypatch):
     # Remove scipy from sys.modules & make import raise
     monkeypatch.setitem(sys.modules, "scipy", None)
 
-    def _raise(*args, **kwargs):  # noqa: D401
+    def _raise(*args, **kwargs):
         raise ImportError("forced for test")
 
     monkeypatch.setitem(sys.modules, "scipy.interpolate", _raise)

@@ -3,17 +3,17 @@
 import logging
 from typing import Optional
 
-from PySide6.QtCore import Qt, QPoint # Corrected import for QPoint
+from PySide6.QtCore import QPoint, Qt  # Corrected import for QPoint
 from PySide6.QtGui import QMouseEvent, QWheelEvent
-from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QWidget
+from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QWidget
 
 logger = logging.getLogger(__name__)
 
 class InteractiveGraphicsView(QGraphicsView):
-    """
-    A custom QGraphicsView that adds interactive zooming with Ctrl+Wheel
+    """A custom QGraphicsView that adds interactive zooming with Ctrl+Wheel
     centered on the mouse cursor, and panning with the middle mouse button drag.
     """
+
     def __init__(self, scene: QGraphicsScene, parent: Optional[QWidget] = None):
         super().__init__(scene, parent)
 
@@ -104,4 +104,4 @@ class InteractiveGraphicsView(QGraphicsView):
             event.accept()
         else:
             # Pass other release events to the base class
-            super().mouseReleaseEvent(event) 
+            super().mouseReleaseEvent(event)

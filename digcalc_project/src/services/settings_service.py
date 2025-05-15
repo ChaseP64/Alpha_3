@@ -60,7 +60,7 @@ class SettingsService(Singleton):
     }
 
     # ------------------------------------------------------------------
-    def __init__(self) -> None:  # noqa: D401
+    def __init__(self) -> None:
         # Guard – only run once due to Singleton inheritance
         if getattr(self, "_initialized", False):  # type: ignore[attr-defined]
             return
@@ -90,17 +90,17 @@ class SettingsService(Singleton):
             return {}
 
     # ------------------------------------------------------------------
-    def get(self, key: str, default: Any | None = None) -> Any | None:  # noqa: D401 – simple accessor
+    def get(self, key: str, default: Any | None = None) -> Any | None:
         """Return setting *key* or *default* if missing."""
         return self._data.get(key, default)
 
     # ------------------------------------------------------------------
-    def set(self, key: str, value: Any) -> None:  # noqa: D401 – simple mutator
+    def set(self, key: str, value: Any) -> None:
         """Update setting value in memory. Call :pymeth:`save` to persist."""
         self._data[key] = value
 
     # ------------------------------------------------------------------
-    def save(self) -> None:  # noqa: D401 – straightforward persist
+    def save(self) -> None:
         """Write current settings to JSON file, creating directories as needed."""
         try:
             self._path.parent.mkdir(parents=True, exist_ok=True)
@@ -133,97 +133,84 @@ class SettingsService(Singleton):
     # ------------------------------------------------------------------
     # Spline smoothing preference
     # ------------------------------------------------------------------
-    def smooth_default(self) -> bool:  # noqa: D401
+    def smooth_default(self) -> bool:
         """Return the user's default preference for *smooth* polyline tracing."""
-
         return bool(self.get("smooth_default", self._defaults["smooth_default"]))
 
-    def set_smooth_default(self, val: bool) -> None:  # noqa: D401
+    def set_smooth_default(self, val: bool) -> None:
         """Persist the default polyline smoothing preference."""
-
         self.set("smooth_default", bool(val))
         self.save()
 
     # ------------------------------------------------------------------
     # Tracing elevation workflow preferences
     # ------------------------------------------------------------------
-    def tracing_elev_mode(self) -> str:  # noqa: D401
+    def tracing_elev_mode(self) -> str:
         """Return current elevation prompt mode (``"point"``, ``"interpolate"``, or ``"line"``)."""
-
         return str(self.get("tracing_elev_mode", self._defaults["tracing_elev_mode"]))
 
-    def set_tracing_elev_mode(self, mode: str) -> None:  # noqa: D401
+    def set_tracing_elev_mode(self, mode: str) -> None:
         """Persist the elevation prompt mode preference."""
-
         assert mode in ("point", "interpolate", "line"), "Invalid tracing elevation mode"
         self.set("tracing_elev_mode", mode)
         self.save()
 
-    def tracing_enabled(self) -> bool:  # noqa: D401
+    def tracing_enabled(self) -> bool:
         """Return whether tracing is globally enabled."""
-
         return bool(self.get("tracing_enabled", self._defaults["tracing_enabled"]))
 
-    def set_tracing_enabled(self, flag: bool) -> None:  # noqa: D401
+    def set_tracing_enabled(self, flag: bool) -> None:
         """Set global tracing enable flag and persist."""
-
         self.set("tracing_enabled", bool(flag))
         self.save()
 
     # ------------------------------------------------------------------
     # Spline density (smooth sampling) preference
     # ------------------------------------------------------------------
-    def smooth_sampling_ft(self) -> float:  # noqa: D401
+    def smooth_sampling_ft(self) -> float:
         """Return current resample spacing in feet for spline sampling."""
-
         return float(self.get("smooth_sampling_ft", self._defaults["smooth_sampling_ft"]))
 
-    def set_smooth_sampling_ft(self, val: float) -> None:  # noqa: D401
+    def set_smooth_sampling_ft(self, val: float) -> None:
         """Persist spline resample spacing in feet."""
-
         self.set("smooth_sampling_ft", float(val))
         self.save()
 
     # ------------------------------------------------------------------
     # Spline sample compression preferences
     # ------------------------------------------------------------------
-    def smooth_min_spacing_ft(self) -> float:  # noqa: D401
+    def smooth_min_spacing_ft(self) -> float:
         """Return minimum spacing (ft) allowed between sampled spline points."""
-
         return float(self.get("smooth_min_spacing_ft", self._defaults["smooth_min_spacing_ft"]))
 
-    def smooth_max_points(self) -> int:  # noqa: D401
+    def smooth_max_points(self) -> int:
         """Return maximum allowed number of sampled points before compression."""
-
         return int(self.get("smooth_max_points", self._defaults["smooth_max_points"]))
 
     # ------------------------------------------------------------------
     # Vertex drawing preferences
     # ------------------------------------------------------------------
-    def vertex_cross_px(self) -> int:  # noqa: D401
+    def vertex_cross_px(self) -> int:
         """Return half-length of vertex crosshair in screen pixels."""
-
         return int(self.get("vertex_cross_px", self._defaults["vertex_cross_px"]))
 
-    def set_vertex_cross_px(self, val: int) -> None:  # noqa: D401
+    def set_vertex_cross_px(self, val: int) -> None:
         self.set("vertex_cross_px", int(val))
         self.save()
 
-    def vertex_hover_colour(self) -> str:  # noqa: D401
+    def vertex_hover_colour(self) -> str:
         """Return colour string for vertex hover state (#RRGGBB)."""
-
         return str(self.get("vertex_hover_colour", self._defaults["vertex_hover_colour"]))
 
-    def set_vertex_hover_colour(self, colour: str) -> None:  # noqa: D401
+    def set_vertex_hover_colour(self, colour: str) -> None:
         self.set("vertex_hover_colour", str(colour))
         self.save()
 
-    def vertex_line_thickness(self) -> int:  # noqa: D401
+    def vertex_line_thickness(self) -> int:
         """Return pen width (0 for cosmetic hairline)."""
-
         return int(self.get("vertex_line_thickness", self._defaults["vertex_line_thickness"]))
 
-    def set_vertex_line_thickness(self, width: int) -> None:  # noqa: D401
+    def set_vertex_line_thickness(self, width: int) -> None:
         self.set("vertex_line_thickness", int(width))
         self.save()
 
@@ -234,26 +221,24 @@ class SettingsService(Singleton):
     # ==================================================================
     #  Plan-Scale - remember the most-recent calibration
     # ==================================================================
-    def last_scale(self) -> tuple[str, float]:            # noqa: D401
-        """
-        Return the last scale the user confirmed in *Calibrate Scale…*.
+    def last_scale(self) -> tuple[str, float]:
+        """Return the last scale the user confirmed in *Calibrate Scale…*.
 
         Returns
         -------
         (units, world_per_in)
             ``units``  – ``"ft"`` or ``"m"``  
             ``world_per_in`` – numeric (e.g. 20.0 ⇒ "20 ft per inch")
-        """
 
+        """
         units = self.get("last_scale_world_units",
                          self._defaults["last_scale_world_units"])
         val   = float(self.get("last_scale_world_per_in",
                                self._defaults["last_scale_world_per_in"]))
         return units, val
 
-    def set_last_scale(self, units: str, val: float) -> None:  # noqa: D401
-        """
-        Persist the *most recently confirmed* plan scale.
+    def set_last_scale(self, units: str, val: float) -> None:
+        """Persist the *most recently confirmed* plan scale.
 
         Parameters
         ----------
@@ -261,8 +246,8 @@ class SettingsService(Singleton):
             ``"ft"`` or ``"m"``
         val
             Real-world length per inch on paper (e.g. 20 → "1" = 20 ft")
-        """
 
+        """
         assert units in ("ft", "m"), "units must be 'ft' or 'm'"
         self.set("last_scale_world_units", units)
         self.set("last_scale_world_per_in", float(val))

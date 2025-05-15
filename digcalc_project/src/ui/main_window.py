@@ -1,120 +1,156 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Main window for the DigCalc application.
+"""Main window for the DigCalc application.
 
 This module defines the main application window and its components.
 """
 
 import logging
-import os
 from pathlib import Path
-from typing import Optional, Dict, List, Tuple
+from typing import Optional, Tuple
+
+# --- END NEW ---
+import numpy as np  # Added for type hinting dz_grid etc.
+from PySide6 import QtWidgets
 
 # PySide6 imports
-from PySide6.QtCore import Qt, QSize, Signal, Slot, QTimer # Added QTimer
-from PySide6.QtGui import QIcon, QAction, QKeySequence, QKeyEvent, QActionGroup, QShortcut, QPixmap # Added QPixmap
-from PySide6 import QtWidgets
+from PySide6.QtCore import QSize, Qt, QTimer, Signal, Slot  # Added QTimer
+from PySide6.QtGui import (  # Added QPixmap
+    QAction,
+    QActionGroup,
+    QIcon,
+    QKeyEvent,
+    QKeySequence,
+    QPixmap,
+    QShortcut,
+)
 from PySide6.QtWidgets import (
-    QMainWindow, QDockWidget, QMenu, QToolBar,
-    QFileDialog, QMessageBox, QVBoxLayout, QWidget, QDialog,
-    QComboBox, QLabel, QGridLayout, QPushButton, QLineEdit, QSpinBox,
-    QDoubleSpinBox, QCheckBox, QFormLayout, QHBoxLayout, QDialogButtonBox,
-    QSplitter, QMenuBar, QStatusBar, QSizePolicy, QTreeWidget, QTreeWidgetItem,
-    QGraphicsItem, QGraphicsPathItem, QStyle
+    QDialog,
+    QDockWidget,
+    QFileDialog,
+    QGraphicsItem,
+    QGraphicsPathItem,
+    QLabel,
+    QMainWindow,
+    QMessageBox,
+    QSpinBox,
+    QStatusBar,
+    QStyle,
+    QToolBar,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QVBoxLayout,
+    QWidget,
 )
 
-# Local imports - Use relative paths
-from ..core.importers.csv_parser import CSVParser
-from ..core.importers.dxf_parser import DXFParser
-from ..core.importers.file_parser import FileParser
-from ..core.importers.landxml_parser import LandXMLParser
-from ..core.importers.pdf_parser import PDFParser
-from ..models.project import Project, PolylineData
-from ..models.surface import Surface
-from .project_panel import ProjectPanel
-from .visualization_panel import VisualizationPanel, HAS_3D
-from .properties_dock import PropertiesDock
+# from src.controllers.pdf_controller import PdfController # OLD
+from digcalc_project.src.controllers.pdf_controller import PdfController  # NEW
+
+# --- PDF Navigation Imports (Use absolute from src) ---
+# from src.services.pdf_service import PdfService # OLD
+from digcalc_project.src.services.pdf_service import PdfService  # NEW
+
+# --- End PDF Imports ---# existing imports …
+from digcalc_project.src.services.settings_service import (
+    SettingsService,  # <-- add this
+)
+
+# --- End Import Check ---
+from digcalc_project.src.ui.dialogs.scale_calibration_dialog import (
+    ScaleCalibrationDialog,  # NEW
+)
+
+# from src.ui.docks.pdf_thumbnail_dock import PdfThumbnailDock # OLD
+from digcalc_project.src.ui.docks.pdf_thumbnail_dock import PdfThumbnailDock  # NEW
+
+# --- Ensure ProjectController is Imported ---
+# from src.ui.project_controller import ProjectController # OLD
+from digcalc_project.src.ui.project_controller import ProjectController  # NEW
+
 from ..core.calculations.volume_calculator import VolumeCalculator
-from .dialogs.import_options_dialog import ImportOptionsDialog
+from ..core.geometry.surface_builder import SurfaceBuilder, SurfaceBuilderError
+
+# Local imports - Use relative paths
+from ..models.project import PolylineData, Project
+from ..visualization.pdf_renderer import PDFRenderer, PDFRendererError
+from .dialogs.build_surface_dialog import BuildSurfaceDialog
+from .dialogs.elevation_dialog import ElevationDialog
+
+# --- NEW: Add missing import ---
+from .dialogs.pdf_page_selector_dialog import PdfPageSelectorDialog
 from .dialogs.report_dialog import ReportDialog
 from .dialogs.volume_calculation_dialog import VolumeCalculationDialog
-from ..visualization.pdf_renderer import PDFRenderer, PDFRendererError
-from .dialogs.elevation_dialog import ElevationDialog
-from .dialogs.build_surface_dialog import BuildSurfaceDialog
-from ..core.geometry.surface_builder import SurfaceBuilder, SurfaceBuilderError
-# --- NEW: Add missing import --- 
-from .dialogs.pdf_page_selector_dialog import PdfPageSelectorDialog
-# --- END NEW ---
-import numpy as np # Added for type hinting dz_grid etc.
-
-# --- PDF Navigation Imports (Use absolute from src) --- 
-# from src.services.pdf_service import PdfService # OLD
-from digcalc_project.src.services.pdf_service import PdfService # NEW
-# from src.controllers.pdf_controller import PdfController # OLD
-from digcalc_project.src.controllers.pdf_controller import PdfController # NEW
-# from src.ui.docks.pdf_thumbnail_dock import PdfThumbnailDock # OLD
-from digcalc_project.src.ui.docks.pdf_thumbnail_dock import PdfThumbnailDock # NEW
-# --- End PDF Imports ---# existing imports …
-from digcalc_project.src.services.settings_service import SettingsService   # <-- add this
-# --- Ensure ProjectController is Imported --- 
-# from src.ui.project_controller import ProjectController # OLD
-from digcalc_project.src.ui.project_controller import ProjectController # NEW
-# --- End Import Check ---
-from digcalc_project.src.ui.dialogs.scale_calibration_dialog import ScaleCalibrationDialog  # NEW
+from .project_panel import ProjectPanel
+from .properties_dock import PropertiesDock
+from .visualization_panel import VisualizationPanel
 
 logger = logging.getLogger(__name__)
 
 
+# --- NEW: ClickableLabel Class ---
+class ClickableLabel(QLabel):
+    """A QLabel that emits a clicked signal when clicked."""
+
+    clicked = Signal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setCursor(Qt.PointingHandCursor)
+
+    def mouseReleaseEvent(self, event):
+        """Emit clicked signal on left button release."""
+        if event.button() == Qt.LeftButton:
+            self.clicked.emit()
+        super().mouseReleaseEvent(event)
+# --- END NEW ---
+
+
 class MainWindow(QMainWindow):
-    """
-    Main application window for DigCalc.
+    """Main application window for DigCalc.
     Handles menus, toolbars, docking widgets (Project Panel, Visualization),
     and overall application workflow for project management and analysis.
     """
-    
+
     def __init__(self):
-        """
-        Initialize the main window and its components.
+        """Initialize the main window and its components.
         """
         super().__init__()
-        
+
         self.logger = logging.getLogger(__name__)
 
-        
-        # --- PDF Service and Controller --- 
+
+        # --- PDF Service and Controller ---
         # Instantiate PdfService (should likely be singleton or passed in if shared)
         # self.pdf_service = PdfService(self) # Incorrect - Singleton takes no args
         self.pdf_service = PdfService() # Correct instantiation for Singleton
         # self.pdf_controller = PdfController(self.pdf_service, self) # Incorrect - __init__ takes only parent
         self.pdf_controller = PdfController(self) # Pass only parent
         # --- End PDF Service ---
-        
+
         self._selected_scene_item: Optional[QGraphicsPathItem] = None
         self.pdf_dpi_setting = 300
         self._last_volume_calculation_params: Optional[dict] = None # Cache params
         self._last_dz_cache: Optional[Tuple[np.ndarray, np.ndarray, np.ndarray]] = None # Cache dz grid
         self._last_pad_elev: float | None = None  # Remember last pad elevation
-        
-        # --- Rebuild Engine Members --- 
+
+        # --- Rebuild Engine Members ---
         self._rebuild_needed_layers: set[str] = set()
         self._rebuild_timer = QTimer(self)
         self._rebuild_timer.setInterval(250) # Debounce interval in ms
         self._rebuild_timer.setSingleShot(True)
         self._rebuild_timer.timeout.connect(self._process_rebuild_queue)
         # --- End Rebuild Engine Members ---
-        
+
         # Set up the main window properties
         self.setWindowTitle("DigCalc - Excavation Takeoff Tool")
         self.setMinimumSize(1024, 768)
-        
+
         # Initialize UI components
         self._init_ui()
-        
+
         # --- Instantiate ProjectController AFTER UI Init --- << MUST EXIST HERE
         self.project_controller = ProjectController(self)
         # --- End Instantiate ---
-        
+
         self.menu_bar = self.menuBar()
         self._create_actions()
         self._create_menus()
@@ -123,66 +159,86 @@ class MainWindow(QMainWindow):
         # --- MODIFIED: Moved _create_shortcuts call here ---
         self._create_shortcuts()
         # --- END MODIFIED ---
+
+        # --- NEW: Initialize Scale Pill ---
+        self.scale_pill = ClickableLabel("Scale: —") # Use the ClickableLabel class defined earlier
+        self.scale_pill.setObjectName("scalePill")
+        self.scale_pill.setMargin(4) # Margin in pixels
+        # Base style, color will be set in _update_scale_pill
+        self.scale_pill.setStyleSheet("QLabel#scalePill { border-radius: 8px; padding: 2px 5px; }")
+        self.scale_pill.clicked.connect(self.on_scale_calibration) # Assuming _open_scale_dialog is on_scale_calibration
+
+        # Ensure status bar exists and add the pill
+        status_bar = self.statusBar() # Get or create status bar
+        if not status_bar:
+            status_bar = QStatusBar(self)
+            self.setStatusBar(status_bar)
+        status_bar.addPermanentWidget(self.scale_pill)
+
+        self._update_scale_pill()   # Set initial state
+        # --- END NEW ---
+
+        # --- END MODIFIED ---
         self._connect_signals()
         self._update_view_actions_state()
-        
+
         self.logger.debug("MainWindow initialized")
         # Ensure Scale-Calibration menu action reflects current PDF state at startup
         self._update_scale_action_enabled(False)
         # --- Connect PdfService signal to update scale action ---
-        if hasattr(self, 'pdf_service') and self.pdf_service:
+        if hasattr(self, "pdf_service") and self.pdf_service:
             self.pdf_service.documentLoaded.connect(
-                lambda page_count: self._update_scale_action_enabled(page_count > 0)
+                lambda page_count: self._update_scale_action_enabled(page_count > 0),
             )
-    
+
     def _init_ui(self):
         """Initialize the UI components, including docked panels."""
         # Create central widget
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
-        
+
         # Main layout
         self.main_layout = QVBoxLayout(self.central_widget)
-        
+
         # Create visualization panel
         self.visualization_panel = VisualizationPanel(self)
         self.main_layout.addWidget(self.visualization_panel)
-        
+
         # Create project panel as a dock widget, passing self (MainWindow)
         self.project_dock = QDockWidget("Project", self)
         self.project_dock.setFeatures(
-            QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable
+            QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable,
         )
         self.project_panel = ProjectPanel(main_window=self, parent=self)
         self.project_dock.setWidget(self.project_panel)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.project_dock)
-        
+
         # --- Verify Project Dock ---
         self.layer_dock = QDockWidget("Layers", self)
         self.layer_dock.setObjectName("LayerDock")
         self.layer_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
-        
+
         self.layer_tree = QTreeWidget(self.layer_dock)
         self.layer_tree.setHeaderHidden(True)
         self.layer_dock.setWidget(self.layer_tree)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.layer_dock)
-        
+
         # --- NEW: Create and add Properties Dock ---
         self.prop_dock = PropertiesDock(self)
         self.addDockWidget(Qt.RightDockWidgetArea, self.prop_dock)
         self.prop_dock.hide()
         # --- END NEW ---
-        
+
         # --- NEW: Create and add PDF Thumbnail Dock ---
         # self.pdf_thumbnail_dock = PdfThumbnailDock(self.pdf_service, self.pdf_controller, self) # Incorrect
         self.pdf_thumbnail_dock = PdfThumbnailDock(self) # Correct - Pass only parent
         self.addDockWidget(Qt.LeftDockWidgetArea, self.pdf_thumbnail_dock)
         self.pdf_thumbnail_dock.hide() # Initially hidden, show when PDF is loaded?
         # --- END NEW ---
-        
+
         # Connect the signal for item changes (checkbox toggles)
-        self.layer_tree.itemChanged.connect(self._on_layer_visibility_changed)     
-    
+        self.layer_tree.itemChanged.connect(self._on_layer_visibility_changed)
+
     def _connect_signals(self):
         """Connect signals from UI components to main window slots."""
         self.logger.debug("Connecting MainWindow signals...")
@@ -201,20 +257,20 @@ class MainWindow(QMainWindow):
         # --- END NEW ---
 
         # Connect visualization panel signals
-        if hasattr(self.visualization_panel, 'surface_visualization_failed'):
+        if hasattr(self.visualization_panel, "surface_visualization_failed"):
             self.visualization_panel.surface_visualization_failed.connect(self._on_visualization_failed)
 
         # Connect tracing scene signals (via visualization panel)
-        if hasattr(self.visualization_panel, 'scene_2d') and self.visualization_panel.scene_2d:
+        if hasattr(self.visualization_panel, "scene_2d") and self.visualization_panel.scene_2d:
             self.visualization_panel.scene_2d.polyline_finalized.connect(self._on_polyline_drawn)
             self.visualization_panel.scene_2d.selectionChanged.connect(self._on_item_selected)
             # --- NEW: Connect pageRectChanged for fitting view ---
-            if hasattr(self.visualization_panel.scene_2d, 'pageRectChanged'):
+            if hasattr(self.visualization_panel.scene_2d, "pageRectChanged"):
                 self.visualization_panel.scene_2d.pageRectChanged.connect(self._fit_view_to_scene)
             else:
                 self.logger.warning("TracingScene does not have 'pageRectChanged' signal.")
             # --- NEW: Connect padDrawn signal ---
-            if hasattr(self.visualization_panel.scene_2d, 'padDrawn'):
+            if hasattr(self.visualization_panel.scene_2d, "padDrawn"):
                 self.visualization_panel.scene_2d.padDrawn.connect(self._on_pad_drawn)
             else:
                 self.logger.warning("TracingScene does not have 'padDrawn' signal.")
@@ -225,7 +281,7 @@ class MainWindow(QMainWindow):
         # Connect layer tree signal
         self.layer_tree.itemChanged.connect(self._on_layer_visibility_changed)
 
-        # --- NEW: Connect PropertiesDock signal --- 
+        # --- NEW: Connect PropertiesDock signal ---
         # self.prop_dock.edited.connect(self._apply_elevation_edit) # Old signal name
         self.prop_dock.polylineEdited.connect(self._apply_elevation_edit) # Corrected signal name
         # TODO: Connect self.prop_dock.regionUpdated to a handler method
@@ -235,58 +291,58 @@ class MainWindow(QMainWindow):
 
 
         # --- NEW: Connect View Actions ---
-        if hasattr(self, 'view_2d_action') and self.view_2d_action:
+        if hasattr(self, "view_2d_action") and self.view_2d_action:
             self.view_2d_action.triggered.connect(self.on_view_2d)
         else:
              logger.error("view_2d_action not found during signal connection.")
-        if hasattr(self, 'view_3d_action') and self.view_3d_action:
+        if hasattr(self, "view_3d_action") and self.view_3d_action:
             self.view_3d_action.triggered.connect(self.on_view_3d)
         else:
              logger.error("view_3d_action not found during signal connection.")
         # --- END NEW ---
 
         # --- Connect PDF Actions ---
-        if hasattr(self, 'load_pdf_background_action'):
+        if hasattr(self, "load_pdf_background_action"):
             self.load_pdf_background_action.triggered.connect(self.on_load_pdf_background)
-        if hasattr(self, 'clear_pdf_background_action'):
+        if hasattr(self, "clear_pdf_background_action"):
             self.clear_pdf_background_action.triggered.connect(self.on_clear_pdf_background)
-        if hasattr(self, 'prev_pdf_page_action'):
+        if hasattr(self, "prev_pdf_page_action"):
             self.prev_pdf_page_action.triggered.connect(self.on_prev_pdf_page)
-        if hasattr(self, 'next_pdf_page_action'):
+        if hasattr(self, "next_pdf_page_action"):
             self.next_pdf_page_action.triggered.connect(self.on_next_pdf_page)
-        if hasattr(self, 'toggle_trace_mode_action'):
+        if hasattr(self, "toggle_trace_mode_action"):
             self.toggle_trace_mode_action.toggled.connect(self.on_toggle_tracing_mode)
 
         # --- Connect Analysis Actions ---
-        if hasattr(self, 'calculate_volume_action'):
+        if hasattr(self, "calculate_volume_action"):
             self.calculate_volume_action.triggered.connect(self.on_calculate_volume)
-        if hasattr(self, 'build_surface_action'):
+        if hasattr(self, "build_surface_action"):
             self.build_surface_action.triggered.connect(self.on_build_surface)
-        if hasattr(self, 'generate_report_action'):
+        if hasattr(self, "generate_report_action"):
             self.generate_report_action.triggered.connect(self.on_generate_report)
 
         # --- Connect Help Actions ---
-        if hasattr(self, 'about_action'):
+        if hasattr(self, "about_action"):
             self.about_action.triggered.connect(self.on_about)
 
         # --- Connect Project Controller signals (for UI updates) ---
-        if hasattr(self, 'project_controller'):
+        if hasattr(self, "project_controller"):
             self.project_controller.project_loaded.connect(self._update_ui_for_project)
             self.project_controller.project_closed.connect(lambda: self._update_ui_for_project(None))
             self.project_controller.project_modified.connect(self._update_window_title)
             self.project_controller.surfaces_rebuilt.connect(self._on_surfaces_rebuilt)
             # Connect import actions through controller
-            if hasattr(self, 'import_csv_action'):
-                self.import_csv_action.triggered.connect(lambda: self.project_controller.on_import_file('csv'))
-            if hasattr(self, 'import_dxf_action'):
-                self.import_dxf_action.triggered.connect(lambda: self.project_controller.on_import_file('dxf'))
-            if hasattr(self, 'import_landxml_action'):
-                self.import_landxml_action.triggered.connect(lambda: self.project_controller.on_import_file('landxml'))
+            if hasattr(self, "import_csv_action"):
+                self.import_csv_action.triggered.connect(lambda: self.project_controller.on_import_file("csv"))
+            if hasattr(self, "import_dxf_action"):
+                self.import_dxf_action.triggered.connect(lambda: self.project_controller.on_import_file("dxf"))
+            if hasattr(self, "import_landxml_action"):
+                self.import_landxml_action.triggered.connect(lambda: self.project_controller.on_import_file("landxml"))
         else:
             self.logger.error("ProjectController not found during signal connection.")
 
         # --- Connect PDF Controller Signal ---
-        if hasattr(self, 'pdf_controller') and self.pdf_controller:
+        if hasattr(self, "pdf_controller") and self.pdf_controller:
             self.pdf_controller.pageSelected.connect(self._on_pdf_page_selected)
             self.logger.debug("Connected pdf_controller.pageSelected signal.")
         else:
@@ -296,11 +352,11 @@ class MainWindow(QMainWindow):
         # ------------------------------------------------------------------
         # Tracing menu – elevation mode radio actions (update SettingsService)
         # ------------------------------------------------------------------
-        if hasattr(self, 'trace_point_action'):
+        if hasattr(self, "trace_point_action"):
             self.trace_point_action.triggered.connect(lambda _checked=False: self._set_tracing_elev_mode("point"))
-        if hasattr(self, 'trace_interpolate_action'):
+        if hasattr(self, "trace_interpolate_action"):
             self.trace_interpolate_action.triggered.connect(lambda _checked=False: self._set_tracing_elev_mode("interpolate"))
-        if hasattr(self, 'trace_line_action'):
+        if hasattr(self, "trace_line_action"):
             self.trace_line_action.triggered.connect(lambda _checked=False: self._set_tracing_elev_mode("line"))
 
         self.logger.debug("Finished connecting MainWindow signals.")
@@ -389,25 +445,25 @@ class MainWindow(QMainWindow):
 
         # View menu actions (Toggles for docks - simplified creation)
         # Ensure docks exist before creating actions that depend on them
-        if hasattr(self, 'project_dock'):
+        if hasattr(self, "project_dock"):
             self.view_project_panel_action = self.project_dock.toggleViewAction()
             self.view_project_panel_action.setText("&Project Panel")
         else:
              self.logger.error("Cannot create view_project_panel_action: project_dock missing")
 
-        if hasattr(self, 'layer_dock'):
+        if hasattr(self, "layer_dock"):
             self.view_layer_panel_action = self.layer_dock.toggleViewAction()
             self.view_layer_panel_action.setText("&Layer Panel")
         else:
              self.logger.error("Cannot create view_layer_panel_action: layer_dock missing")
 
-        if hasattr(self, 'prop_dock'):
+        if hasattr(self, "prop_dock"):
             self.view_properties_dock_action = self.prop_dock.toggleViewAction()
             self.view_properties_dock_action.setText("P&roperties Dock")
         else:
              self.logger.error("Cannot create view_properties_dock_action: prop_dock missing")
 
-        if hasattr(self, 'pdf_thumbnail_dock'):
+        if hasattr(self, "pdf_thumbnail_dock"):
             self.view_pdf_thumbnail_dock_action = self.pdf_thumbnail_dock.toggleViewAction()
             self.view_pdf_thumbnail_dock_action.setText("PDF T&humbnails")
             self.view_pdf_thumbnail_dock_action.setEnabled(False)
@@ -468,7 +524,7 @@ class MainWindow(QMainWindow):
     def _create_menus(self):
         """Create the main menu bar."""
         self.menu_bar = self.menuBar()
-        
+
         # File menu
         file_menu = self.menu_bar.addMenu("&File")
         file_menu.addAction(self.new_project_action)
@@ -487,13 +543,13 @@ class MainWindow(QMainWindow):
         file_menu.addSeparator()
         # --- END NEW ---
         file_menu.addAction(self.exit_action)
-        
+
         # Import menu
         self.import_menu = self.menu_bar.addMenu("Import")
         self.import_menu.addAction(self.import_csv_action)
         self.import_menu.addAction(self.import_dxf_action)
         self.import_menu.addAction(self.import_landxml_action)
-        
+
         # View menu - Add PDF actions here
         self.view_menu = self.menu_bar.addMenu("View")
         self.view_menu.addAction(self.load_pdf_background_action)
@@ -508,23 +564,23 @@ class MainWindow(QMainWindow):
         self.view_menu.addAction(self.view3d_action)
         self.view_menu.addSeparator()
         # Ensure project_dock exists before adding its action
-        if hasattr(self, 'project_dock'):
+        if hasattr(self, "project_dock"):
             self.view_menu.addAction(self.project_dock.toggleViewAction())
         else:
              self.logger.error("Project dock not created, cannot add toggle action.")
         # --- Verify Layer Dock Toggle Action ---
         # Check if layer_dock exists before adding its action
-        if hasattr(self, 'layer_dock') and self.layer_dock:
+        if hasattr(self, "layer_dock") and self.layer_dock:
              self.view_menu.addAction(self.layer_dock.toggleViewAction())
         else:
              self.logger.error("Layer dock not created or is None, cannot add toggle action.")
         # --- End Verify Layer Dock Toggle Action ---
-        # --- Properties Dock Toggle Action --- 
+        # --- Properties Dock Toggle Action ---
         # Check if prop_dock exists before adding its action
-        if hasattr(self, 'prop_dock'):
+        if hasattr(self, "prop_dock"):
             view_menu_actions = self.view_menu.actions()
             insert_before_action = None
-            layer_toggle_action = self.layer_dock.toggleViewAction() if hasattr(self, 'layer_dock') and self.layer_dock else None
+            layer_toggle_action = self.layer_dock.toggleViewAction() if hasattr(self, "layer_dock") and self.layer_dock else None
 
             if layer_toggle_action:
                 try:
@@ -548,7 +604,7 @@ class MainWindow(QMainWindow):
         # --- End Properties Dock Toggle Action ---
         self.view_menu.addSeparator()
         self.view_menu.addAction(self.toggle_trace_mode_action)
-        
+
         # --- NEW: Surfaces Menu ---
         self.surfaces_menu = self.menu_bar.addMenu("Surfaces")
         self.surfaces_menu.addAction(self.build_surface_action)
@@ -557,7 +613,7 @@ class MainWindow(QMainWindow):
         # Analysis menu
         self.analysis_menu = self.menu_bar.addMenu("Analysis")
         self.analysis_menu.addAction(self.calculate_volume_action)
-        
+
         # ------------------------------------------------------------------
         # Tracing menu (new)
         # ------------------------------------------------------------------
@@ -612,45 +668,45 @@ class MainWindow(QMainWindow):
         # Help menu
         self.help_menu = self.menu_bar.addMenu("Help")
         # Add help actions here
-    
+
     def _create_toolbars(self):
         """Create the application toolbars."""
         # Main toolbar
         self.main_toolbar = QToolBar("Main Toolbar")
         self.main_toolbar.setIconSize(QSize(24, 24))
         self.addToolBar(self.main_toolbar)
-        
+
         # Add actions to toolbar
         self.main_toolbar.addAction(self.new_project_action)
         self.main_toolbar.addAction(self.open_project_action)
         self.main_toolbar.addAction(self.save_project_action)
         self.main_toolbar.addSeparator()
-        
+
         # Add the layer selector from VisualizationPanel
-        if hasattr(self, 'visualization_panel') and hasattr(self.visualization_panel, 'layer_selector'):
+        if hasattr(self, "visualization_panel") and hasattr(self.visualization_panel, "layer_selector"):
             self.main_toolbar.addSeparator()
             self.main_toolbar.addWidget(QLabel(" Layer:"))
             self.main_toolbar.addWidget(self.visualization_panel.layer_selector)
         else:
             self.logger.warning("Could not add layer selector to toolbar: visualization_panel or layer_selector not found.")
-        
+
         # Import toolbar
         self.import_toolbar = QToolBar("Import Toolbar")
         self.import_toolbar.setIconSize(QSize(24, 24))
         self.addToolBar(self.import_toolbar)
-        
+
         self.import_toolbar.addAction(self.import_csv_action)
         self.import_toolbar.addAction(self.import_dxf_action)
         self.import_toolbar.addAction(self.import_landxml_action)
-        
+
         self.main_toolbar.addSeparator()
         self.main_toolbar.addAction(self.calculate_volume_action)
-        
+
         # --- PDF Toolbar --- (Optional, could also be in status bar)
         self.pdf_toolbar = QToolBar("PDF Toolbar")
         self.pdf_toolbar.setIconSize(QSize(24, 24))
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self.pdf_toolbar)
-        
+
         self.pdf_toolbar.addAction(self.load_pdf_background_action)
         self.pdf_toolbar.addAction(self.scale_calib_act)  # Add Scale action next to load
         self.pdf_toolbar.addAction(self.clear_pdf_background_action)
@@ -665,12 +721,12 @@ class MainWindow(QMainWindow):
         self.pdf_toolbar.addWidget(self.pdf_page_spinbox)
         self.pdf_toolbar.addAction(self.next_pdf_page_action)
         self.pdf_toolbar.setVisible(False)
-        
+
         # --- Tracing Toolbar Action ---
         self.pdf_toolbar.addSeparator()
         self.pdf_toolbar.addAction(self.toggle_trace_mode_action)
-        
-        # --- NEW: Optional View Toolbar --- 
+
+        # --- NEW: Optional View Toolbar ---
         self.view_toolbar = QToolBar("View Toolbar")
         self.view_toolbar.setIconSize(QSize(24, 24))
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self.view_toolbar)
@@ -678,19 +734,18 @@ class MainWindow(QMainWindow):
         self.view_toolbar.addAction(self.view_2d_action)
         self.view_toolbar.addAction(self.view_3d_action)
         self.view_toolbar.addAction(self.view3d_action)
-        # --- END NEW --- 
-    
+        # --- END NEW ---
+
     def _create_statusbar(self):
         """Create the status bar."""
         self.statusBar().showMessage("Ready")
         # Maybe add PDF page info to status bar later?
 
-    
-   
+
+
 
     def _update_analysis_actions_state(self):
-        """
-        Enable/disable analysis actions based on the current project state.
+        """Enable/disable analysis actions based on the current project state.
         Specifically, enables volume calculation if >= 2 surfaces exist.
         """
         project = self.project_controller.get_current_project()
@@ -706,10 +761,9 @@ class MainWindow(QMainWindow):
         self.masshaul_action.setEnabled(can_calculate and has_req_surfaces)
         # --- END NEW ---
         self.logger.debug(f"Calculate Volume action enabled state: {can_calculate}")
-    
+
     def _update_pdf_controls(self):
-        """
-        Updates the state of PDF-related controls (spinbox, labels, actions).
+        """Updates the state of PDF-related controls (spinbox, labels, actions).
         Now uses VisualizationPanel to get document state.
         """
         # Get state directly from VisualizationPanel
@@ -717,7 +771,7 @@ class MainWindow(QMainWindow):
         has_pdf = panel.has_pdf() # Checks if renderer and bg item exist
         page_count = panel.pdf_renderer.get_page_count() if panel.pdf_renderer else 0
         # current_pdf_page in panel is 1-based
-        current_page_1_based = panel.current_pdf_page if has_pdf else 1 
+        current_page_1_based = panel.current_pdf_page if has_pdf else 1
 
         # --- FIX: Use correct attribute names (remove leading underscore) ---
         if self.pdf_page_spinbox:
@@ -742,16 +796,16 @@ class MainWindow(QMainWindow):
 
         # Enable/disable next/prev actions (ensure they exist)
         # Use 1-based index for comparison
-        if hasattr(self, 'prev_pdf_page_action'):
+        if hasattr(self, "prev_pdf_page_action"):
             self.prev_pdf_page_action.setEnabled(has_pdf and current_page_1_based > 1)
-        if hasattr(self, 'next_pdf_page_action'):
+        if hasattr(self, "next_pdf_page_action"):
             self.next_pdf_page_action.setEnabled(has_pdf and current_page_1_based < page_count)
-            
+
         # Show/hide thumbnail dock based on whether a PDF is loaded
         self.pdf_thumbnail_dock.setVisible(has_pdf)
 
-        # --- FIX: Show/hide the PDF toolbar itself --- 
-        if hasattr(self, 'pdf_toolbar'):
+        # --- FIX: Show/hide the PDF toolbar itself ---
+        if hasattr(self, "pdf_toolbar"):
             self.pdf_toolbar.setVisible(has_pdf)
             self.logger.debug(f"Setting PDF toolbar visibility to: {has_pdf}")
         else:
@@ -765,16 +819,23 @@ class MainWindow(QMainWindow):
         # ------------------------------------------------------------------
         self._update_scale_action_enabled(has_pdf)
 
+        # --- NEW: Refresh scale pill whenever PDF controls change (may affect DPI) ---
+        try:
+            self._update_scale_pill()
+        except Exception as exc:
+            self.logger.warning("Failed to refresh scale pill in _update_pdf_controls: %s", exc)
+        # --- END NEW ---
+
     # Event handlers
-    
+
 
     def _on_visualization_failed(self, surface_name: str, error_msg: str):
-        """
-        Handle visualization failure.
+        """Handle visualization failure.
         
         Args:
             surface_name: Name of the surface that failed to visualize
             error_msg: Error message
+
         """
         self.statusBar().showMessage(f"Failed to visualize surface '{surface_name}': {error_msg}", 5000)
         self.logger.error(f"Visualization failed for surface '{surface_name}': {error_msg}")
@@ -785,21 +846,21 @@ class MainWindow(QMainWindow):
         """Handle the 'Calculate Volumes' action."""
         project = self.project_controller.get_current_project()
         if not project or len(project.surfaces) < 2:
-            QMessageBox.warning(self, "Cannot Calculate Volumes", 
+            QMessageBox.warning(self, "Cannot Calculate Volumes",
                                 "Please ensure at least two surfaces exist in the project.")
             self.logger.warning("Volume calculation attempted with insufficient surfaces.")
             return
 
         surface_names = list(project.surfaces.keys())
         dialog = VolumeCalculationDialog(surface_names, self)
-        
+
         if dialog.exec():
             selection = dialog.get_selected_surfaces()
             resolution = dialog.get_grid_resolution()
 
             if selection and resolution > 0:
-                existing_name = selection['existing']
-                proposed_name = selection['proposed']
+                existing_name = selection["existing"]
+                proposed_name = selection["proposed"]
                 self.logger.info(f"Starting volume calculation: Existing='{existing_name}', Proposed='{proposed_name}', Resolution={resolution}")
                 self.statusBar().showMessage(f"Calculating volumes (Grid: {resolution})...", 0)
 
@@ -810,7 +871,7 @@ class MainWindow(QMainWindow):
 
                     if not existing_surface or not proposed_surface:
                          raise ValueError("Selected surface(s) not found in project.")
-                         
+
                     if not existing_surface.points or not proposed_surface.points:
                          raise ValueError("Selected surface(s) have no data points for calculation.")
 
@@ -818,17 +879,17 @@ class MainWindow(QMainWindow):
                     # extend bounding boxes with regions and log context.
                     calculator = VolumeCalculator(project)
                     results = calculator.calculate_surface_to_surface(
-                        surface1=existing_surface, 
-                        surface2=proposed_surface, 
-                        grid_resolution=resolution
+                        surface1=existing_surface,
+                        surface2=proposed_surface,
+                        grid_resolution=resolution,
                     )
-                    cut_volume = results['cut_volume']
-                    fill_volume = results['fill_volume']
-                    net_volume = results['net_volume']
+                    cut_volume = results["cut_volume"]
+                    fill_volume = results["fill_volume"]
+                    net_volume = results["net_volume"]
 
                     self.statusBar().showMessage(f"Calculation complete: Cut={cut_volume:.2f}, Fill={fill_volume:.2f}, Net={net_volume:.2f}", 5000)
                     self.logger.info(f"Volume calculation successful: Cut={cut_volume:.2f}, Fill={fill_volume:.2f}, Net={net_volume:.2f}")
-                    
+
                     report_dialog = ReportDialog(
                         existing_surface_name=existing_name,
                         proposed_surface_name=proposed_name,
@@ -836,14 +897,14 @@ class MainWindow(QMainWindow):
                         cut_volume=cut_volume,
                         fill_volume=fill_volume,
                         net_volume=net_volume,
-                        parent=self
+                        parent=self,
                     )
                     self.logger.debug("Displaying volume calculation report.")
                     report_dialog.exec()
 
                 except Exception as e:
                     self.logger.exception(f"Error during volume calculation: {e}")
-                    QMessageBox.critical(self, "Calculation Error", 
+                    QMessageBox.critical(self, "Calculation Error",
                                          f"Failed to calculate volumes:\n{e}")
                     self.statusBar().showMessage("Volume calculation failed.", 5000)
             else:
@@ -865,8 +926,8 @@ class MainWindow(QMainWindow):
         # Delegate confirmation logic to ProjectController
         if self.project_controller._confirm_close_project():
             # Perform any MainWindow-specific cleanup before closing
-            if hasattr(self, 'visualization_panel'):
-                 self.visualization_panel.clear_pdf_background() 
+            if hasattr(self, "visualization_panel"):
+                 self.visualization_panel.clear_pdf_background()
             self.logger.info("Closing application.")
             event.accept()
         else:
@@ -883,9 +944,9 @@ class MainWindow(QMainWindow):
             self,
             "Load PDF Background",
             "",
-            "PDF Files (*.pdf);;All Files (*)"
+            "PDF Files (*.pdf);;All Files (*)",
         )
-        
+
         if filename:
             self.logger.info(f"User selected PDF for background: {filename}")
             self.statusBar().showMessage(f"Loading PDF background '{Path(filename).name}'...", 0)
@@ -893,18 +954,18 @@ class MainWindow(QMainWindow):
             try:
                 # Call the panel's load method, which now returns success/failure
                 success = self.visualization_panel.load_pdf_background(filename, dpi=self.pdf_dpi_setting)
-                
+
                 if success:
                     # Get project from controller
                     project = self.project_controller.get_current_project()
                     if project:
                         project.pdf_background_path = filename
                         # Use the actual current page from the panel (might be adjusted if initial_page was invalid)
-                        project.pdf_background_page = self.visualization_panel.current_pdf_page 
+                        project.pdf_background_page = self.visualization_panel.current_pdf_page
                         project.pdf_background_dpi = self.pdf_dpi_setting
                         project.clear_traced_polylines() # Clear old traces if new PDF loaded
                         self.visualization_panel.clear_polylines_from_scene() # Clear visuals too
-                    
+
                     # Update status bar only on success, getting page count safely
                     page_count = self.visualization_panel.pdf_renderer.get_page_count() if self.visualization_panel.pdf_renderer else 0
                     self.statusBar().showMessage(f"Loaded PDF background '{Path(filename).name}' ({page_count} pages).", 5000)
@@ -968,7 +1029,7 @@ class MainWindow(QMainWindow):
                        project.pdf_background_page = current - 1
                   self._update_pdf_controls()
                   self.statusBar().showMessage(f"Showing PDF page {current - 1}/{total}", 3000)
-                  
+
     def on_set_pdf_page_from_spinbox(self, page_number: int):
         """Handles setting the PDF page from the spinbox."""
         if self.pdf_page_spinbox.isEnabled() and page_number > 0:
@@ -984,11 +1045,10 @@ class MainWindow(QMainWindow):
              self.statusBar().showMessage(f"Showing PDF page {page_number}/{total}", 3000)
 
     def on_toggle_tracing_mode(self, checked: bool):
-        """
-        Slot connected to the toggle_tracing_action.
+        """Slot connected to the toggle_tracing_action.
         Enables/disables tracing mode in the VisualizationPanel.
         """
-        if hasattr(self, 'visualization_panel'):
+        if hasattr(self, "visualization_panel"):
             self.visualization_panel.set_tracing_mode(checked)
             self.logger.info(f"Tracing mode {'enabled' if checked else 'disabled'} via MainWindow action.")
             self.toggle_trace_mode_action.setText("Disable Tracing" if checked else "Enable Tracing")
@@ -1002,15 +1062,14 @@ class MainWindow(QMainWindow):
             layer_name = item.text(0)
             is_visible = item.checkState(0) == Qt.Checked
             self.logger.debug(f"Layer '{layer_name}' visibility toggle -> {is_visible}")
-            if hasattr(self, 'visualization_panel') and hasattr(self.visualization_panel, 'scene_2d') and hasattr(self.visualization_panel.scene_2d, 'setLayerVisible'):
+            if hasattr(self, "visualization_panel") and hasattr(self.visualization_panel, "scene_2d") and hasattr(self.visualization_panel.scene_2d, "setLayerVisible"):
                 self.visualization_panel.scene_2d.setLayerVisible(layer_name, is_visible)
             else:
                 self.logger.warning("Cannot toggle layer visibility: Visualization panel, scene_2d, or setLayerVisible method not found.")
 
     @Slot(list, QGraphicsPathItem)
     def _on_polyline_drawn(self, points_qpointf: list, item: QGraphicsPathItem):
-        """
-        Handles the polyline_finalized signal from TracingScene.
+        """Handles the polyline_finalized signal from TracingScene.
         Prompts for elevation and adds the polyline data to the project.
         Stores the final index back into the QGraphicsPathItem.
         """
@@ -1021,7 +1080,7 @@ class MainWindow(QMainWindow):
             if item.scene(): item.scene().removeItem(item)
             return
 
-        # --- FIX: Use correct key to get layer name --- 
+        # --- FIX: Use correct key to get layer name ---
         layer_name = item.data(Qt.UserRole + 1) # Key used in _finalize_current_polyline
         # --- END FIX ---
         if layer_name is None:
@@ -1062,9 +1121,9 @@ class MainWindow(QMainWindow):
                 self.project_panel._update_tree()
                 self._update_layer_tree()
                 self.statusBar().showMessage(f"Polyline added to layer '{layer_name}' (Elev: {elevation})", 3000)
-                # --- Trigger Rebuild --- 
+                # --- Trigger Rebuild ---
                 self._queue_surface_rebuilds_for_layer(layer_name)
-                # --- End Trigger --- 
+                # --- End Trigger ---
             except Exception as e:
                  logger.error(f"Error updating UI/logging after adding polyline (Index: {new_index}, Layer: '{layer_name}'): {e}", exc_info=True)
         else:
@@ -1075,8 +1134,7 @@ class MainWindow(QMainWindow):
 
     @Slot(QGraphicsItem)
     def _on_item_selected(self, item: Optional[QGraphicsItem]):
-        """
-        Handles the selectionChanged signal from the TracingScene.
+        """Handles the selectionChanged signal from the TracingScene.
         Loads the selected polyline's data into the PropertiesDock.
         Stores a reference to the selected scene item.
         """
@@ -1087,18 +1145,18 @@ class MainWindow(QMainWindow):
         if not project:
             self._selected_scene_item = None # Clear selection reference
             logger.warning("_on_item_selected called but no current project.")
-            if hasattr(self, 'prop_dock'): self.prop_dock.clear_selection()
-            if hasattr(self, 'prop_dock'): self.prop_dock.hide()
+            if hasattr(self, "prop_dock"): self.prop_dock.clear_selection()
+            if hasattr(self, "prop_dock"): self.prop_dock.hide()
             logger.debug("--- _on_item_selected --- END (no project) ---")
             return
-        if not hasattr(self, 'prop_dock') or not self.prop_dock:
+        if not hasattr(self, "prop_dock") or not self.prop_dock:
             self._selected_scene_item = None # Clear selection reference
             logger.error("Properties dock not initialized.")
             logger.debug("--- _on_item_selected --- END (no properties dock) ---")
             return
 
         if item and isinstance(item, QGraphicsPathItem):
-            # --- Store reference to selected item --- 
+            # --- Store reference to selected item ---
             self._selected_scene_item = item
             # --- End Store ---
             layer_name = item.data(0)
@@ -1159,8 +1217,7 @@ class MainWindow(QMainWindow):
 
     @Slot(str, int, float)
     def _apply_elevation_edit(self, layer_name: str, index: int, new_elevation: Optional[float]): # Allow None
-        """
-        Handles the 'edited' signal from PropertiesDock.
+        """Handles the 'edited' signal from PropertiesDock.
         Updates the elevation in the current project's data model.
         """
         logger.debug(f"_apply_elevation_edit called: Layer={layer_name}, Index={index}, New Elevation={new_elevation}")
@@ -1186,26 +1243,24 @@ class MainWindow(QMainWindow):
             logger.debug(f"Comparing elevation for {layer_name}[{index}]: Current={current_elevation} (Type: {type(current_elevation)}), New={new_elevation} (Type: {type(new_elevation)})")
 
             elevation_changed = False
-            if current_elevation is None and new_elevation is not None:
+            if (current_elevation is None and new_elevation is not None) or (current_elevation is not None and new_elevation is None):
                 elevation_changed = True
-            elif current_elevation is not None and new_elevation is None:
-                 elevation_changed = True
             elif current_elevation is not None and new_elevation is not None:
                  if abs(current_elevation - new_elevation) > 1e-6:
                      elevation_changed = True
 
             if elevation_changed:
                 poly_list[index]["elevation"] = new_elevation
-                
+
                 # Use the project variable
                 new_revision = project._bump_layer_revision(layer_name) # Call project helper
-                
+
                 logger.info(f"Updated elevation for polyline (Layer: {layer_name}, Index: {index}) to {new_elevation}. New layer revision: {new_revision}")
                 self.statusBar().showMessage(f"Elevation updated for {layer_name} polyline {index}.", 3000)
                 if self._selected_scene_item and \
                    self._selected_scene_item.data(0) == layer_name and \
                    self._selected_scene_item.data(1) == index:
-                    if hasattr(self, 'prop_dock') and self.prop_dock:
+                    if hasattr(self, "prop_dock") and self.prop_dock:
                          self.prop_dock.load_polyline(layer_name, index, new_elevation)
                          logger.debug("Refreshed PropertiesDock with updated elevation.")
                     else:
@@ -1244,7 +1299,7 @@ class MainWindow(QMainWindow):
         # --- NEW: update Build Surface button state whenever layer tree changes ---
         self._update_build_surface_action_state()
 
-    # --- NEW: Handle Delete Key Press --- 
+    # --- NEW: Handle Delete Key Press ---
     def keyPressEvent(self, event: QKeyEvent):
         """Handle key presses, specifically the Delete key for selected polylines."""
         key = event.key()
@@ -1272,7 +1327,7 @@ class MainWindow(QMainWindow):
         if layer_name is None or index is None:
             self.logger.error("Selected item is missing layer or index data, cannot delete.")
             self._selected_scene_item = None
-            if hasattr(self, 'prop_dock'): # Check if dock exists
+            if hasattr(self, "prop_dock"): # Check if dock exists
                 self.prop_dock.clear_selection()
                 self.prop_dock.hide()
             return
@@ -1281,20 +1336,20 @@ class MainWindow(QMainWindow):
         reply = QMessageBox.question(
             self,
             "Delete Polyline",
-            f"Are you sure you want to delete the selected polyline from layer \'{layer_name}\' (Index: {index})?",
+            f"Are you sure you want to delete the selected polyline from layer '{layer_name}' (Index: {index})?",
             QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
+            QMessageBox.No,
         )
 
         if reply == QMessageBox.Yes:
             self.logger.info(f"Attempting to delete polyline: Layer='{layer_name}', Index={index}")
             layer_name_to_rebuild = layer_name # Store before item might be invalidated
-            
-            # --- Remove from Project (using the controller's project) --- 
+
+            # --- Remove from Project (using the controller's project) ---
             removed_from_project = project.remove_polyline(layer_name, index)
 
             if removed_from_project:
-                # --- Remove from Scene --- 
+                # --- Remove from Scene ---
                 scene = self._selected_scene_item.scene()
                 if scene:
                     scene.removeItem(self._selected_scene_item)
@@ -1302,19 +1357,19 @@ class MainWindow(QMainWindow):
                 else:
                     self.logger.warning("Could not remove item from scene (item has no scene).")
 
-                # --- Update UI --- 
-                if hasattr(self, 'prop_dock'):
+                # --- Update UI ---
+                if hasattr(self, "prop_dock"):
                     self.prop_dock.clear_selection()
                     self.prop_dock.hide()
-                if hasattr(self, 'project_panel'):
+                if hasattr(self, "project_panel"):
                     self.project_panel._update_tree()
                 self.statusBar().showMessage(f"Deleted polyline from '{layer_name}'.", 3000)
-                
-                # --- Trigger Rebuild --- 
+
+                # --- Trigger Rebuild ---
                 self._queue_surface_rebuilds_for_layer(layer_name_to_rebuild)
-                # --- End Trigger --- 
-                
-                # --- Optional: Reload polylines using controller's project --- 
+                # --- End Trigger ---
+
+                # --- Optional: Reload polylines using controller's project ---
                 # if hasattr(self, 'visualization_panel'):
                 #     self.logger.info("Reloading all traced polylines in scene to update indices after deletion.")
                 #     self.visualization_panel.load_and_display_polylines(project.traced_polylines)
@@ -1323,8 +1378,8 @@ class MainWindow(QMainWindow):
             else:
                 self.logger.error(f"Failed to remove polyline from project data (Layer: {layer_name}, Index: {index}).")
                 QMessageBox.warning(self, "Deletion Error", "Could not delete the polyline from the project data.")
-            
-            # --- Clear selection reference --- 
+
+            # --- Clear selection reference ---
             self._selected_scene_item = None
         else:
             self.logger.debug("Polyline deletion cancelled by user.")
@@ -1333,7 +1388,7 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_view_2d(self):
         """Switch to the 2D (PDF/Tracing) view."""
-        if hasattr(self, 'visualization_panel'):
+        if hasattr(self, "visualization_panel"):
             self.logger.debug("Switching to 2D view.")
             self.visualization_panel.show_2d_view()
             self._update_view_actions_state() # Update check states
@@ -1343,7 +1398,7 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_view_3d(self):
         """Switch to the 3D (Terrain) view."""
-        if hasattr(self, 'visualization_panel'):
+        if hasattr(self, "visualization_panel"):
             self.logger.debug("Switching to 3D view.")
             self.visualization_panel.show_3d_view()
             self._update_view_actions_state() # Update check states
@@ -1351,11 +1406,10 @@ class MainWindow(QMainWindow):
             self.logger.error("Cannot switch to 3D view: VisualizationPanel not found.")
 
     def _update_view_actions_state(self):
-        """
-        Updates the enabled and checked state of the view toggle actions (2D/3D)
+        """Updates the enabled and checked state of the view toggle actions (2D/3D)
         based on available content and the current view widget.
         """
-        if not hasattr(self, 'view_2d_action') or not hasattr(self, 'view_3d_action') or not hasattr(self, 'visualization_panel'):
+        if not hasattr(self, "view_2d_action") or not hasattr(self, "view_3d_action") or not hasattr(self, "visualization_panel"):
             logger.warning("_update_view_actions_state called before actions/panel were created.")
             return
 
@@ -1372,10 +1426,10 @@ class MainWindow(QMainWindow):
         self.view_2d_action.setEnabled(has_pdf)
         self.view_3d_action.setEnabled(has_surfaces)
 
-        # --- Enable Tracing Action --- 
+        # --- Enable Tracing Action ---
         # Tracing is only possible in 2D view with a PDF loaded
         can_trace = is_2d_current and has_pdf
-        if hasattr(self, 'toggle_trace_mode_action'):
+        if hasattr(self, "toggle_trace_mode_action"):
             self.toggle_trace_mode_action.setEnabled(can_trace)
             logger.debug(f"Set toggle_trace_mode_action enabled state: {can_trace}")
         else:
@@ -1399,22 +1453,22 @@ class MainWindow(QMainWindow):
     # --- END NEW ---
  # --- Restore Method for Controller to Update UI ---
     def _update_ui_for_project(self, project: Optional[Project]):
-        """
-        Updates various UI components based on the current project state.
+        """Updates various UI components based on the current project state.
         Called by ProjectController when the project changes.
 
         Args:
             project: The new current project (or None).
+
         """
         self.logger.debug(f"Updating UI for project: {project.name if project else 'None'}")
         # Update UI elements
-        if hasattr(self, 'project_panel'): self.project_panel.set_project(project)
+        if hasattr(self, "project_panel"): self.project_panel.set_project(project)
         self._update_layer_tree() # Update layer tree
-        if hasattr(self, 'visualization_panel'): self.visualization_panel.set_project(project)
+        if hasattr(self, "visualization_panel"): self.visualization_panel.set_project(project)
         self._update_analysis_actions_state() # Update menu/toolbar item enabled state
         self._update_pdf_controls() # Update PDF controls based on project state
         self._update_window_title() # Update window title
-        if hasattr(self, 'prop_dock'):
+        if hasattr(self, "prop_dock"):
             self.prop_dock.clear_selection() # Clear properties dock
             if self._selected_scene_item is None: # Don't hide if something is selected
                 self.prop_dock.hide()
@@ -1425,6 +1479,12 @@ class MainWindow(QMainWindow):
         # --- NEW: Update Build-Surface enabled state once project UI is set up ---
         self._update_build_surface_action_state()
         # --- END NEW ---
+        # --- NEW: Refresh scale pill for new project ---
+        try:
+            self._update_scale_pill()
+        except Exception as exc:
+            self.logger.warning("Failed to refresh scale pill in _update_ui_for_project: %s", exc)
+        # --- END NEW ---
         self.logger.debug("UI update complete.")
     # --- End Restore ---
 
@@ -1432,7 +1492,7 @@ class MainWindow(QMainWindow):
     def _update_window_title(self):
          """Sets the main window title based on the current project name and dirty state."""
          # Check if project_controller exists before accessing it
-         if not hasattr(self, 'project_controller'):
+         if not hasattr(self, "project_controller"):
               self.setWindowTitle("DigCalc") # Default title if controller not ready
               return
          project = self.project_controller.get_current_project()
@@ -1448,7 +1508,7 @@ class MainWindow(QMainWindow):
          else:
              self.setWindowTitle(base_title)
     # --- End Restore ---
-    # --- NEW: Slot for Building Surface --- 
+    # --- NEW: Slot for Building Surface ---
     @Slot()
     def on_build_surface(self):
         """Handles the 'Build Surface from Layer' action."""
@@ -1459,20 +1519,20 @@ class MainWindow(QMainWindow):
             logger.warning("Build Surface action triggered but no traced polylines exist.")
             return
 
-        # --- FIX: Handle list/dict format when checking for elevation --- 
+        # --- FIX: Handle list/dict format when checking for elevation ---
         layers_with_elevation = []
         # Use project variable
         for layer, polys in project.traced_polylines.items():
             # ... (rest of elevation check uses local vars) ...
-            if not isinstance(polys, list): 
+            if not isinstance(polys, list):
                 # ...
                 continue
             has_elevation = False
             for p_data in polys:
                 # ...
-                if isinstance(p_data, dict) and p_data.get('elevation') is not None:
+                if isinstance(p_data, dict) and p_data.get("elevation") is not None:
                     has_elevation = True
-                    break 
+                    break
             if has_elevation:
                 layers_with_elevation.append(layer)
         # --- END FIX ---
@@ -1508,7 +1568,7 @@ class MainWindow(QMainWindow):
                 # Re-assign the real value here
                 valid_polys_for_build = [
                     p for p in polylines_to_build
-                    if isinstance(p, dict) and p.get('elevation') is not None
+                    if isinstance(p, dict) and p.get("elevation") is not None
                 ]
                 # Check the filtered list, not the original
                 if not valid_polys_for_build:
@@ -1519,9 +1579,9 @@ class MainWindow(QMainWindow):
                 # ... (logging) ...
 
                 surface = SurfaceBuilder.build_from_polylines(
-                    layer_name=selected_layer, 
+                    layer_name=selected_layer,
                     polylines_data=valid_polys_for_build, # Pass the filtered list
-                    revision=current_layer_rev
+                    revision=current_layer_rev,
                 )
                 surface.name = surface_name
                 # Use project variable
@@ -1531,11 +1591,11 @@ class MainWindow(QMainWindow):
                 # --- END ADD ---
                 # ... (rest of UI updates and error handling) ...
 
-                if hasattr(self, 'project_panel'):
+                if hasattr(self, "project_panel"):
                     self.project_panel._update_tree()
-                # --- ADD THIS --- 
+                # --- ADD THIS ---
                 self._update_analysis_actions_state() # Check if calc button should be enabled
-                # --- END ADD --- 
+                # --- END ADD ---
                 self.statusBar().showMessage(f"Surface '{surface_name}' created from layer '{selected_layer}'.", 5000)
                 # Update the view action states now that content has changed
                 self._update_view_actions_state()
@@ -1545,7 +1605,7 @@ class MainWindow(QMainWindow):
                     self.project_controller.surfaces_rebuilt.emit()
 
                 # Update visualization - Use update_surface_mesh (defined in Part 4)
-                if hasattr(self.visualization_panel, 'update_surface_mesh'):
+                if hasattr(self.visualization_panel, "update_surface_mesh"):
                     self.visualization_panel.update_surface_mesh(surface)
 
             except SurfaceBuilderError as e:
@@ -1561,7 +1621,7 @@ class MainWindow(QMainWindow):
              self.statusBar().showMessage("Build surface cancelled.", 3000)
     # --- END NEW ---
 
-    # --- NEW: Rebuild Helpers --- 
+    # --- NEW: Rebuild Helpers ---
     def _queue_surface_rebuilds_for_layer(self, layer_name: str):
         """Adds a layer to the rebuild queue and starts the debounce timer."""
         if layer_name: # Ensure layer_name is valid
@@ -1620,19 +1680,19 @@ class MainWindow(QMainWindow):
 
         # --- Check if already up-to-date ---
         if surf.source_layer_revision is not None and surf.source_layer_revision == current_layer_rev:
-             # --- Add specific log here --- 
+             # --- Add specific log here ---
              self.logger.info(f"CONDITION MET: Surface '{surface_name}' revision ({surf.source_layer_revision}) matches current layer revision ({current_layer_rev}). Skipping rebuild.")
-             # --- End add --- 
+             # --- End add ---
              self.logger.debug(f" -> Surface '{surface_name}' is already up-to-date (Revision {current_layer_rev}). Skipping rebuild.")
              if surf.is_stale:
                   # Restore original code to clear stale state
                   surf.is_stale = False
                   # Use project variable
                   project.is_modified = True
-                  if hasattr(self.project_panel, '_update_tree_item_text'):
+                  if hasattr(self.project_panel, "_update_tree_item_text"):
                       self.project_panel._update_tree_item_text(surf.name)
              return
-        
+
         self.logger.debug(f" -> Surface '{surface_name}' needs rebuild (SavedRev={surf.source_layer_revision} != CurrentRev={current_layer_rev}).")
         # ... (rest of rebuild logic) ...
 
@@ -1646,7 +1706,7 @@ class MainWindow(QMainWindow):
             logger.warning(f"Layer '{layer}' has no valid polylines with elevation to rebuild surface '{surface_name}'. Marking as stale.")
             surf.is_stale = True
             project.is_modified = True
-            if hasattr(self.project_panel, '_update_tree_item_text'): # Check if method exists
+            if hasattr(self.project_panel, "_update_tree_item_text"): # Check if method exists
                 self.project_panel._update_tree_item_text(surf.name)
             return
 
@@ -1662,13 +1722,13 @@ class MainWindow(QMainWindow):
             project.is_modified = True
 
             # Update visualization - Use update_surface_mesh (defined in Part 4)
-            if hasattr(self.visualization_panel, 'update_surface_mesh'):
+            if hasattr(self.visualization_panel, "update_surface_mesh"):
                 self.visualization_panel.update_surface_mesh(new_surf)
             else:
                  logger.error("VisualizationPanel does not have 'update_surface_mesh' method.")
 
             # Update project panel
-            if hasattr(self.project_panel, '_update_tree_item_text'): # Check if method exists
+            if hasattr(self.project_panel, "_update_tree_item_text"): # Check if method exists
                 self.project_panel._update_tree_item_text(new_surf.name)
 
             self.logger.info(f"Successfully rebuilt surface '{surface_name}' from layer '{layer}' (New Rev: {current_layer_rev}).")
@@ -1680,7 +1740,7 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(f"Rebuild failed for '{surface_name}'.", 5000)
             surf.is_stale = True
             project.is_modified = True
-            if hasattr(self.project_panel, '_update_tree_item_text'): # Check if method exists
+            if hasattr(self.project_panel, "_update_tree_item_text"): # Check if method exists
                 self.project_panel._update_tree_item_text(surf.name)
         except Exception as e:
             logger.exception(f"Unexpected error rebuilding surface '{surface_name}'")
@@ -1688,7 +1748,7 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(f"Rebuild error for '{surface_name}'.", 5000)
             surf.is_stale = True
             project.is_modified = True
-            if hasattr(self.project_panel, '_update_tree_item_text'): # Check if method exists
+            if hasattr(self.project_panel, "_update_tree_item_text"): # Check if method exists
                  self.project_panel._update_tree_item_text(surf.name)
     # --- End Rebuild Helpers ---
 
@@ -1708,10 +1768,9 @@ class MainWindow(QMainWindow):
                             gx: Optional[np.ndarray],
                             gy: Optional[np.ndarray],
                             generate_map: bool):
-        """
-        Handles the results of a volume calculation, including updating the cut/fill map.
+        """Handles the results of a volume calculation, including updating the cut/fill map.
         "
-"""
+        """
         self.logger.info(f"Volume computed: Cut={cut:.2f}, Fill={fill:.2f}, Net={net:.2f}, GenerateMap={generate_map}")
         # Display results (e.g., in a dialog or status bar)
         # Keep existing report dialog logic
@@ -1725,7 +1784,7 @@ class MainWindow(QMainWindow):
                 self.cutfill_action.setEnabled(True)
                 # Ensure visibility matches checkbox state after generation
                 # Check the action *after* enabling it
-                self.cutfill_action.setChecked(True) 
+                self.cutfill_action.setChecked(True)
                 # Set visibility directly - toggled signal will handle the rest
                 self.visualization_panel.set_cutfill_visible(True)
                 self.logger.info("Cut/Fill map generated and displayed.")
@@ -1738,11 +1797,10 @@ class MainWindow(QMainWindow):
             self.logger.info("Cut/Fill map not generated or data invalid, ensuring it is cleared.")
             self._clear_cutfill_state()
 
-    # --- NEW: Slot for PDF Page Selection --- 
+    # --- NEW: Slot for PDF Page Selection ---
     @Slot(int)
     def _on_pdf_page_selected(self, page_index: int):
-        """
-        Handles the pageSelected signal from the PdfController.
+        """Handles the pageSelected signal from the PdfController.
         Delegates to the VisualizationPanel to display the page.
         """
         self.logger.info(f"MainWindow received pageSelected signal for index: {page_index}")
@@ -1753,8 +1811,7 @@ class MainWindow(QMainWindow):
     # --- Add new slot for Trace PDF Action ---
     @Slot()
     def _on_trace_from_pdf(self):
-        """
-        Handles the 'Trace from PDF...' action.
+        """Handles the 'Trace from PDF...' action.
         Opens a file dialog, loads the PDF, shows the page selector,
         and queues creation of tracing layers for selected pages.
         """
@@ -1769,7 +1826,7 @@ class MainWindow(QMainWindow):
             self,
             "Select PDF for Tracing",
             self.project_controller.get_last_directory(), # Start in last used dir
-            "PDF Files (*.pdf)"
+            "PDF Files (*.pdf)",
         )
         file_path_str = file_path_tuple[0]
 
@@ -1799,7 +1856,7 @@ class MainWindow(QMainWindow):
              QMessageBox.critical(self, "PDF Load Error", f"An unexpected error occurred while loading the PDF: {e}")
              return
 
-        # --- NEW: Load PDF into Visualization Panel --- 
+        # --- NEW: Load PDF into Visualization Panel ---
         self.visualization_panel.load_pdf_background(str(file_path))
         # --- END NEW ---
 
@@ -1825,7 +1882,7 @@ class MainWindow(QMainWindow):
                     # Construct a base layer name including page label/number
                     page_label = self.pdf_service.current_document.page_label(index)
                     base_layer_name = f"PDF Trace - {file_path.name} - Page {page_label}"
-                    
+
                     # Get a unique layer name from the project
                     unique_layer_name = project.get_unique_layer_name(base_layer_name)
 
@@ -1857,7 +1914,7 @@ class MainWindow(QMainWindow):
                 # Enable the action if it was previously disabled and a project exists
                 self.trace_pdf_action.setEnabled(True)
 
-                # --- NEW: Show the first selected page --- 
+                # --- NEW: Show the first selected page ---
                 if selected_indices: # Ensure list is not empty
                     first_page_number = selected_indices[0] + 1 # Convert 0-based index to 1-based page number
                     self.logger.info(f"Automatically displaying first selected PDF page: {first_page_number}")
@@ -1880,8 +1937,7 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------
     @Slot()
     def on_generate_report(self) -> None:
-        """
-        Generate a PDF report for the current project.
+        """Generate a PDF report for the current project.
 
         For now this is a stub: it just shows a message box so the
         QAction connection works and avoids the AttributeError.
@@ -1891,7 +1947,7 @@ class MainWindow(QMainWindow):
             self,
             "DigCalc",
             "Report generation is not implemented yet.\n"
-            "This placeholder slot proves the QAction hookup works."
+            "This placeholder slot proves the QAction hookup works.",
         )
 
     # ------------------------------------------------------------------
@@ -1906,7 +1962,7 @@ class MainWindow(QMainWindow):
             "About DigCalc",
             "DigCalc - Digital Calculation Tool\n\n"
             "Version 0.1 (Placeholder)\n"
-            "Built with Python and PySide6."
+            "Built with Python and PySide6.",
         )
 
     # ------------------------------------------------------------------
@@ -1916,7 +1972,7 @@ class MainWindow(QMainWindow):
     @Slot()
     def _toggle_other_layers_visibility(self):
         """Toggles the visibility of all layers except the active tracing layer."""
-        if not hasattr(self, 'visualization_panel') or not hasattr(self, 'layer_tree'):
+        if not hasattr(self, "visualization_panel") or not hasattr(self, "layer_tree"):
             self.logger.warning("_toggle_other_layers_visibility called but panel or layer tree missing.")
             return
 
@@ -1935,7 +1991,7 @@ class MainWindow(QMainWindow):
             if layer_name != active_layer and item.checkState(0) == Qt.Checked:
                 found_visible_other = True
                 break
-        
+
         if found_visible_other:
             target_state = Qt.Unchecked
             self.logger.debug("Found visible non-active layer, target state is Unchecked.")
@@ -1958,10 +2014,10 @@ class MainWindow(QMainWindow):
         self.logger.debug("Finished toggling other layer visibility.")
     # --- END NEW SLOT ---
 
-    # --- Moved Helper Method --- 
+    # --- Moved Helper Method ---
     def _trigger_layer_visibility_update(self, layer_name: str, visible: bool):
         """Helper to explicitly call the scene's visibility function."""
-        if hasattr(self, 'visualization_panel') and hasattr(self.visualization_panel, 'scene_2d') and hasattr(self.visualization_panel.scene_2d, 'setLayerVisible'):
+        if hasattr(self, "visualization_panel") and hasattr(self.visualization_panel, "scene_2d") and hasattr(self.visualization_panel.scene_2d, "setLayerVisible"):
             self.visualization_panel.scene_2d.setLayerVisible(layer_name, visible)
         else:
             self.logger.warning("Cannot trigger visibility update: Missing components.")
@@ -1975,13 +2031,13 @@ class MainWindow(QMainWindow):
         # fit_shortcut.activated.connect(self._fit_view_to_scene) # Requires _fit_view_to_scene slot
         # fit_shortcut.setContext(Qt.ApplicationShortcut)
 
-        # --- NEW: Alt+V Shortcut --- 
+        # --- NEW: Alt+V Shortcut ---
         alt_v_shortcut = QShortcut(QKeySequence("Alt+V"), self)
         # Connect to the newly added slot
-        alt_v_shortcut.activated.connect(self._toggle_other_layers_visibility) 
+        alt_v_shortcut.activated.connect(self._toggle_other_layers_visibility)
         alt_v_shortcut.setContext(Qt.WindowShortcut) # Use Window context so it doesn't interfere globally
         self.logger.debug("Created Alt+V shortcut to toggle other layer visibility.")
-        # --- END NEW --- 
+        # --- END NEW ---
 
         self.logger.debug("Shortcuts (currently placeholder) setup complete.")
 
@@ -1992,8 +2048,8 @@ class MainWindow(QMainWindow):
     def _fit_view_to_scene(self):
         """Fits the 2D view to the current scene rectangle (Placeholder)."""
         self.logger.debug("Fitting view to scene requested (Placeholder)." )
-        if hasattr(self.visualization_panel, 'view_2d') and \
-           hasattr(self.visualization_panel, 'scene_2d') and \
+        if hasattr(self.visualization_panel, "view_2d") and \
+           hasattr(self.visualization_panel, "scene_2d") and \
            self.visualization_panel.view_2d and \
            self.visualization_panel.scene_2d:
             view = self.visualization_panel.view_2d
@@ -2011,7 +2067,7 @@ class MainWindow(QMainWindow):
         # ------------------------------------------------------------------
         # Undo/Redo stack
         # ------------------------------------------------------------------
-        from PySide6.QtGui import QUndoStack, QShortcut  # Import both from QtGui
+        from PySide6.QtGui import QShortcut, QUndoStack  # Import both from QtGui
 
         self.undoStack = QUndoStack(self)
 
@@ -2032,13 +2088,13 @@ class MainWindow(QMainWindow):
             return
 
         # Access TracingScene via VisualizationPanel
-        scene = getattr(self.visualization_panel, 'scene_2d', None)
+        scene = getattr(self.visualization_panel, "scene_2d", None)
         if scene is None:
             QMessageBox.warning(self, "DigCalc", "2D Tracing Scene is not active.")
             return
 
         # Ensure a polyline is selected
-        if not hasattr(scene, 'current_polyline') or not scene.current_polyline():
+        if not hasattr(scene, "current_polyline") or not scene.current_polyline():
             QMessageBox.warning(self, "DigCalc", "Select a polyline first.")
             return
 
@@ -2050,10 +2106,13 @@ class MainWindow(QMainWindow):
                 return
             try:
                 poly = scene.current_polyline_points()
-                from digcalc_project.src.tools.daylight_offset_tool import offset_polygon, project_to_slope
+                from digcalc_project.src.tools.daylight_offset_tool import (
+                    offset_polygon,
+                    project_to_slope,
+                )
                 off2d = offset_polygon(poly, dist)
                 off3d = project_to_slope(off2d, abs(dist), slope)
-                if hasattr(scene, 'add_offset_breakline'):
+                if hasattr(scene, "add_offset_breakline"):
                     scene.add_offset_breakline(off3d)
                 else:
                     # Fallback: log error if scene lacks helper
@@ -2071,10 +2130,15 @@ class MainWindow(QMainWindow):
     def _on_pad_drawn(self, points2d):
         """Handle closed pad polyline creation, prompting for elevation and adding to scene."""
         from PySide6.QtWidgets import QDialog, QUndoStack  # Local import
-        from digcalc_project.src.ui.dialogs.pad_elevation_dialog import PadElevationDialog
-        from digcalc_project.src.ui.commands.set_pad_elevation_command import SetPadElevationCommand
+
+        from digcalc_project.src.ui.commands.set_pad_elevation_command import (
+            SetPadElevationCommand,
+        )
+        from digcalc_project.src.ui.dialogs.pad_elevation_dialog import (
+            PadElevationDialog,
+        )
         # Ensure we have undoStack
-        if not hasattr(self, 'undoStack'):
+        if not hasattr(self, "undoStack"):
             from PySide6.QtWidgets import QUndoStack
             self.undoStack = QUndoStack(self)
         # Dialog handling
@@ -2093,13 +2157,13 @@ class MainWindow(QMainWindow):
         if len(points2d) < 3:
             return  # safety
         pts3d = [(x, y, elev) for x, y in points2d[:-1]]
-        scene = getattr(self.visualization_panel, 'scene_2d', None)
+        scene = getattr(self.visualization_panel, "scene_2d", None)
         if scene is None:
             return
         cmd = SetPadElevationCommand(scene, pts3d)
         self.undoStack.push(cmd)
         # Trigger surface rebuilds or other updates as needed
-        if hasattr(self, 'project_controller'):
+        if hasattr(self, "project_controller"):
             try:
                 self.project_controller.rebuild_surfaces()
             except AttributeError:
@@ -2112,7 +2176,7 @@ class MainWindow(QMainWindow):
     @Slot()
     def _on_surfaces_rebuilt(self):
         """Refresh visualizations after surfaces are rebuilt."""
-        if hasattr(self, 'visualization_panel'):
+        if hasattr(self, "visualization_panel"):
             # For now, just force re-display of any surfaces already visible
             for surf in self.project_controller.get_current_project().surfaces.values():
                 try:
@@ -2127,11 +2191,14 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_mass_haul(self):
         """Generate mass-haul curve, chart, and CSV report section."""
-        from PySide6.QtWidgets import QMessageBox, QDialog
-        from digcalc_project.src.ui.dialogs.haul_alignment_dialog import HaulAlignmentDialog
+        from PySide6.QtWidgets import QDialog, QMessageBox
+
         from digcalc_project.src.core.calculations.mass_haul import build_mass_haul
         from digcalc_project.src.core.reporting.haul_chart import make_mass_haul_chart
         from digcalc_project.src.services.csv_writer import write_mass_haul
+        from digcalc_project.src.ui.dialogs.haul_alignment_dialog import (
+            HaulAlignmentDialog,
+        )
 
         # Ensure tracing scene and alignment polyline
         if not hasattr(self.visualization_panel, "scene_2d"):
@@ -2158,7 +2225,9 @@ class MainWindow(QMainWindow):
 
         # Build shapely LineString
         try:
-            from shapely.geometry import LineString  # local import to avoid heavy cost if not used
+            from shapely.geometry import (
+                LineString,  # local import to avoid heavy cost if not used
+            )
             alignment = LineString(pts)
         except Exception as exc:  # pragma: no cover
             QMessageBox.warning(self, "DigCalc", f"Failed to create alignment: {exc}")
@@ -2223,7 +2292,6 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_export_report(self):
         """Export a PDF report (and companion CSVs) via file dialog."""
-
         path, _ = QFileDialog.getSaveFileName(self, "Save PDF", "", "PDF files (*.pdf)")
         if not path:
             return
@@ -2236,13 +2304,14 @@ class MainWindow(QMainWindow):
 
         # Build the PDF story using helpers
         try:
+            from reportlab.platypus import SimpleDocTemplate
+
             from digcalc_project.src.core.reporting.pdf_report import (
                 add_job_summary,
+                add_mass_haul,
                 add_region_table,
                 add_slice_table,
-                add_mass_haul,
             )
-            from reportlab.platypus import SimpleDocTemplate
             from digcalc_project.src.services.settings_service import SettingsService
         except Exception as exc:  # pragma: no cover – missing optional deps
             QMessageBox.critical(self, "Export Error", f"Required libraries missing: {exc}")
@@ -2265,12 +2334,13 @@ class MainWindow(QMainWindow):
 
         # Companion CSV exports
         try:
+            from pathlib import Path as _Path
+
             from digcalc_project.src.services.csv_writer import (
+                write_mass_haul,
                 write_region_table,
                 write_slice_table,
-                write_mass_haul,
             )
-            from pathlib import Path as _Path
         except Exception:
             self.logger.warning("CSV writer helpers not available – skipping CSV companions.")
             write_region_table = write_slice_table = write_mass_haul = None  # type: ignore
@@ -2292,6 +2362,7 @@ class MainWindow(QMainWindow):
     def on_open_3d(self):
         """Open or raise the 3-D viewer dock widget."""
         from PySide6.QtCore import Qt
+
         # Local import of PvDock to avoid heavy PyVista import at module load.
         from digcalc_project.src.ui.docks.pv_dock import PvDock
 
@@ -2305,7 +2376,7 @@ class MainWindow(QMainWindow):
     def _update_build_surface_action_state(self):
         """Enable or disable the Build-Surface action based on project data."""
         # Guard: ensure the action attribute exists
-        if not hasattr(self, 'build_surface_action'):
+        if not hasattr(self, "build_surface_action"):
             self.logger.warning("build_surface_action attribute not found – cannot update state.")
             return
 
@@ -2313,16 +2384,16 @@ class MainWindow(QMainWindow):
 
         # Safely obtain the current project (controller may not be initialised yet)
         project = None
-        if hasattr(self, 'project_controller'):
+        if hasattr(self, "project_controller"):
             project = self.project_controller.get_current_project()
 
-        if project and getattr(project, 'traced_polylines', None):
+        if project and getattr(project, "traced_polylines", None):
             # Iterate over layers and look for at least one polyline with elevation
             for polys in project.traced_polylines.values():
                 if not isinstance(polys, list):
                     continue  # skip invalid format
                 for pdata in polys:
-                    if isinstance(pdata, dict) and pdata.get('elevation') is not None:
+                    if isinstance(pdata, dict) and pdata.get("elevation") is not None:
                         enabled = True
                         break
                 if enabled:
@@ -2341,8 +2412,8 @@ class MainWindow(QMainWindow):
 
         # Propagate to the live TracingScene, if available
         try:
-            scene = getattr(self.visualization_panel, 'scene_2d', None)
-            if scene and hasattr(scene, 'set_elevation_mode'):
+            scene = getattr(self.visualization_panel, "scene_2d", None)
+            if scene and hasattr(scene, "set_elevation_mode"):
                 scene.set_elevation_mode(mode)
         except Exception as exc:  # pragma: no cover – defensive
             self.logger.error("Failed to propagate elevation mode '%s' to scene: %s", mode, exc, exc_info=True)
@@ -2361,24 +2432,24 @@ class MainWindow(QMainWindow):
             return
 
         # Ensure we have the TracingScene from the VisualizationPanel
-        if not hasattr(self.visualization_panel, 'scene_2d') or not self.visualization_panel.scene_2d:
+        if not hasattr(self.visualization_panel, "scene_2d") or not self.visualization_panel.scene_2d:
             self.logger.error("TracingScene (scene_2d) not found in VisualizationPanel.")
             QMessageBox.critical(self, "Error", "Cannot open scale calibration: 2D scene not available.")
             return
-        
+
         scene = self.visualization_panel.scene_2d
         # Get current page pixmap from TracingScene or VisualizationPanel if available
         # This part might need adjustment based on how TracingScene stores its current background
         current_bg_pixmap = None
         if scene._background_items: # Accessing protected member, consider a getter in TracingScene
             current_bg_pixmap = scene._background_items[0].pixmap() # Assuming first is current
-        
+
         if not current_bg_pixmap or current_bg_pixmap.isNull():
             # As a fallback, or if TracingScene doesn't hold the main pixmap directly for calibration preview,
             # re-render the current page from the project's PDF path and DPI.
             # This ensures the dialog gets a pixmap rendered at the correct project DPI.
             if project.pdf_background_path and project.pdf_background_dpi > 0:
-                self.logger.info(f"No direct pixmap from scene, re-rendering page {project.pdf_background_page} at {project.pdf_background_dpi} DPI for calibration dialog.")                
+                self.logger.info(f"No direct pixmap from scene, re-rendering page {project.pdf_background_page} at {project.pdf_background_dpi} DPI for calibration dialog.")
                 # Use PdfService to get the PdfDocument
                 pdf_service = PdfService()
                 # pdf_service.load_pdf might have already been called, get current doc
@@ -2414,7 +2485,7 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------
     # Scale-calibration dialog callback (modeless)
     # ------------------------------------------------------------------
-    def _on_scale_dialog_done(self, dlg: 'ScaleCalibrationDialog', result: int):
+    def _on_scale_dialog_done(self, dlg: "ScaleCalibrationDialog", result: int):
         """Handle completion of ScaleCalibrationDialog launched modelessly."""
         from PySide6.QtWidgets import QDialog
         if result != QDialog.DialogCode.Accepted:  # User cancelled
@@ -2431,6 +2502,15 @@ class MainWindow(QMainWindow):
                 current_project.is_dirty = True
             except Exception as exc:
                 self.logger.error("Failed to set project scale: %s", exc)
+
+        # --- NEW: Refresh scale pill & tracing scene overlay ---
+        try:
+            self._update_scale_pill()
+            if hasattr(self.visualization_panel, "scene_2d") and hasattr(self.visualization_panel.scene_2d, "invalidate_cache"):
+                self.visualization_panel.scene_2d.invalidate_cache()
+        except Exception as exc:
+            self.logger.warning("Failed to refresh scale pill or scene after calibration: %s", exc)
+        # --- END NEW ---
 
         # Settings already persisted by dialog
         try:
@@ -2452,3 +2532,47 @@ class MainWindow(QMainWindow):
         """Enable the Tracing ▸ Calibrate Scale… action based on *loaded*."""
         if hasattr(self, "scale_calib_act") and self.scale_calib_act:
             self.scale_calib_act.setEnabled(bool(loaded))
+
+    # --- NEW: _update_scale_pill method ---
+    def _update_scale_pill(self):
+        """Updates the scale pill's text and color based on the current project scale."""
+        proj = getattr(self.project_controller, "project", None)
+        text = "Scale: —"
+        # Default style with grey background
+        style = "QLabel#scalePill { background-color: #888888; color: white; border-radius: 8px; padding: 2px 5px; }"
+
+        if proj and proj.scale and self.pdf_service:
+            # Placeholder for proj.scale.to_short_str()
+            # This method should be implemented in your ProjectScale model
+            scale_str = "Unknown Scale"
+            if hasattr(proj.scale, "to_short_str") and callable(proj.scale.to_short_str):
+                try:
+                    scale_str = proj.scale.to_short_str()
+                except Exception as e:
+                    self.logger.error(f"Error calling proj.scale.to_short_str(): {e}")
+            elif hasattr(proj.scale, "world_per_paper_in") and proj.scale.world_per_paper_in is not None:
+                scale_str = f"{proj.scale.world_per_paper_in:.2f} {proj.scale.world_units}/in"
+            elif hasattr(proj.scale, "ratio_denom") and proj.scale.ratio_denom is not None:
+                 scale_str = f"1 : {proj.scale.ratio_denom:.0f}"
+
+
+            text = f"Scale: {scale_str}"
+
+            current_render_dpi = getattr(self.pdf_service, "current_render_dpi", None)
+            if current_render_dpi is not None and proj.scale.render_dpi_at_cal is not None:
+                dpi_mismatch = abs(current_render_dpi - proj.scale.render_dpi_at_cal) > 0.5
+                if dpi_mismatch:
+                    # Red for DPI mismatch
+                    style = "QLabel#scalePill { background-color: #D88080; color: white; border-radius: 8px; padding: 2px 5px; }"
+                else:
+                    # Green for valid scale
+                    style = "QLabel#scalePill { background-color: #80D880; color: black; border-radius: 8px; padding: 2px 5px; }"
+            else:
+                # Could be grey if DPIs are not set, but defaults to grey anyway if this block is skipped
+                self.logger.warning("Cannot determine DPI mismatch for scale pill: DPI info missing.")
+
+
+        self.scale_pill.setText(text)
+        self.scale_pill.setStyleSheet(style)
+        self.logger.debug(f"Scale pill updated: Text='{text}', Style='{style}'")
+    # --- END NEW ---

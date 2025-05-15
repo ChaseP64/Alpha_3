@@ -27,9 +27,9 @@ class PdfService(QObject):
     # -----------------------------------------------------------------------------------------
     # Construction / singleton helper
     # -----------------------------------------------------------------------------------------
-    _instance: Optional["PdfService"] = None
+    _instance: Optional[PdfService] = None
 
-    def __new__(cls) -> "PdfService":  # ensure singleton
+    def __new__(cls) -> PdfService:  # ensure singleton
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
@@ -37,7 +37,7 @@ class PdfService(QObject):
     # -----------------------------------------------------------------------------------------
     # Qt init
     # -----------------------------------------------------------------------------------------
-    def __init__(self) -> None:  # noqa: D401
+    def __init__(self) -> None:
         # Guard against double‑init when singleton is requested multiple times.
         if hasattr(self, "_initialized") and self._initialized:  # type: ignore[attr-defined]
             return
@@ -85,4 +85,4 @@ class PdfService(QObject):
 
         pix = self._current.render_page(page, width)
         self._thumb_cache[cache_key] = pix
-        self.thumbnailReady.emit(page, pix) 
+        self.thumbnailReady.emit(page, pix)

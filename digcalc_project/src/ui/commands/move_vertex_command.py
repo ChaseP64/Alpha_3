@@ -9,8 +9,8 @@ be collapsed into a single entry on the :class:`PySide6.QtGui.QUndoStack`,
 matching typical UX expectations (one uninterrupted drag ⇒ one undo).
 """
 
-from PySide6.QtGui import QUndoCommand
 from PySide6.QtCore import QPointF
+from PySide6.QtGui import QUndoCommand
 
 from digcalc_project.src.ui.items.vertex_item import VertexItem
 
@@ -24,6 +24,7 @@ class MoveVertexCommand(QUndoCommand):
         vtx:   The :class:`VertexItem` being moved.
         old_pos: The starting position *before* the drag (scene coordinates).
         new_pos: The ending position *after* the drag (scene coordinates).
+
     """
 
     def __init__(self, vtx: VertexItem, old_pos: QPointF, new_pos: QPointF):
@@ -39,18 +40,18 @@ class MoveVertexCommand(QUndoCommand):
     # ------------------------------------------------------------------
     # QUndoCommand interface
     # ------------------------------------------------------------------
-    def undo(self):  # noqa: D401
+    def undo(self):
         """Restore the vertex to its *pre-drag* position."""
         self._vtx.setPos(self._old)
 
-    def redo(self):  # noqa: D401
+    def redo(self):
         """Apply the drag to move the vertex to its final position."""
         self._vtx.setPos(self._new)
 
     # ------------------------------------------------------------------
     # Merge logic – successive drags on the **same vertex** merge.
     # ------------------------------------------------------------------
-    def mergeWith(self, other: "QUndoCommand") -> bool:  # noqa: D401,N802
+    def mergeWith(self, other: QUndoCommand) -> bool:  # noqa: N802
         """Collapse consecutive drags of the *same* vertex into one step.
 
         The newest command's *new* position replaces the existing one so that
@@ -65,7 +66,6 @@ class MoveVertexCommand(QUndoCommand):
     # ------------------------------------------------------------------
     # Qt override – command id for mergeable commands
     # ------------------------------------------------------------------
-    def id(self) -> int:  # noqa: D401,N802 – Qt uses camelCase
+    def id(self) -> int:
         """Return constant ID so QUndoStack groups these commands."""
-
-        return self._cmd_id 
+        return self._cmd_id

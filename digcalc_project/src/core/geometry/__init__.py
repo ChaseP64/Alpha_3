@@ -1,3 +1,2 @@
+"""Package initialization for geometry module.
 """
-Package initialization for geometry module.
-""" 

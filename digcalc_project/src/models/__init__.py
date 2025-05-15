@@ -1,4 +1,3 @@
+"""Package initialization for models module.
 """
-Package initialization for models module.
-""" 
-from .pdf_document import PdfDocument 
+from .pdf_document import PdfDocument

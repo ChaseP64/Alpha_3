@@ -6,16 +6,16 @@ PNG image suitable for embedding into PDF reports or displaying in the UI.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 import matplotlib
 
 # Use a non-interactive backend to allow rendering in headless environments
 # (CI pipelines, servers, etc.).
-matplotlib.use("Agg")  # noqa: E402 – must be set before importing pyplot
+matplotlib.use("Agg")
 
-import matplotlib.pyplot as plt  # noqa: E402 – import after backend set
+import matplotlib.pyplot as plt
 
 __all__ = ["make_mass_haul_chart"]
 
@@ -45,8 +45,8 @@ def make_mass_haul_chart(
 
     Returns:
         None. The PNG is written to *png_path*.
-    """
 
+    """
     if len(stations) != len(cumulatives):
         raise ValueError("'stations' and 'cumulatives' must be the same length")
 
@@ -76,4 +76,4 @@ def make_mass_haul_chart(
 
     fig.tight_layout()
     fig.savefig(png_path, dpi=150)
-    plt.close(fig) 
+    plt.close(fig)

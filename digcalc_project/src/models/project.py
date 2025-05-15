@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 from __future__ import annotations
+
 """
 Project model for the DigCalc application.
 
@@ -8,20 +8,21 @@ This module defines the Project model class which represents
 an excavation takeoff project.
 """
 
-import os
-import logging
-import json
 import datetime
-from pathlib import Path
-from typing import List, Dict, Optional, Any, Union, Tuple, TypedDict
+import json
+import logging
+import os
 from collections import defaultdict
 from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, TypedDict
+
+from .calculation import VolumeCalculation
+from .project_scale import ProjectScale  # NEW Pydantic model
+from .region import Region
 
 # Use relative imports
 from .surface import Surface
-from .calculation import VolumeCalculation
-from .region import Region
-from .project_scale import ProjectScale # NEW Pydantic model
 
 # Configure logging for the module
 logger = logging.getLogger(__name__)
@@ -49,14 +50,13 @@ DEFAULT_LAYER = "Default Layer"
 
 @dataclass
 class Project:
-    """
-    Project model representing an excavation takeoff project.
+    """Project model representing an excavation takeoff project.
     
     A project contains surfaces, volume calculations, and metadata.
     `traced_polylines` is now a dict keyed by layer name; see
     add_traced_polyline() for details.
     """
-    
+
     name: str
     filepath: Optional[str] = None
     description: str = ""
@@ -70,7 +70,7 @@ class Project:
     scale: Optional[ProjectScale] = None  # Updated to new ProjectScale
     # Flags for project-level state (e.g., legacy scale invalid)
     flags: List[str] = field(default_factory=list)
-    
+
     # --- Tracing / PDF Background Data ---
     pdf_background_path: Optional[str] = None
     pdf_background_page: int = 1
@@ -79,18 +79,18 @@ class Project:
     # where each polyline is a list of (x, y) tuples
     traced_polylines: TracedPolylinesType = field(default_factory=dict)
     is_dirty: bool = False # Track if project has unsaved changes
-    # --- NEW: Layer Revisions --- 
+    # --- NEW: Layer Revisions ---
     # Dictionary to track revisions of layers (used for surface staleness)
     layer_revisions: Dict[str, int] = field(default_factory=lambda: defaultdict(int))
     # --- END NEW ---
-    
+
     def __post_init__(self):
         self.logger = logging.getLogger(__name__)
         self.logger.debug(f"Project '{self.name}' initialized")
-    
+
     @property
     def legacy_traced_polylines(self) -> List[List[Tuple[float, float]]]:
-        """ Flatten and return all polylines regardless of layer.
+        """Flatten and return all polylines regardless of layer.
 
         This lets older code that still iterates over
         `project.legacy_traced_polylines` work without change.
@@ -103,30 +103,30 @@ class Project:
         return flat_list
 
     def add_surface(self, surface: Surface) -> None:
-        """
-        Add a surface to the project using its name as the key.
+        """Add a surface to the project using its name as the key.
         Ensures the surface has a unique name before adding.
         
         Args:
             surface: Surface to add
+
         """
         # Ensure name is unique before adding
         unique_name = self.get_unique_surface_name(surface.name)
         surface.name = unique_name # Update surface name if modified
-        
+
         self.surfaces[surface.name] = surface # Use name as key
         self.modified_at = datetime.datetime.now()
         self.logger.info(f"Surface '{surface.name}' added to project")
-    
+
     def remove_surface(self, surface_name: str) -> bool:
-        """
-        Remove a surface from the project by name.
+        """Remove a surface from the project by name.
         
         Args:
             surface_name: Name of the surface to remove
             
         Returns:
             bool: True if surface was removed, False otherwise
+
         """
         if surface_name in self.surfaces:
             del self.surfaces[surface_name] # Remove by key
@@ -135,22 +135,21 @@ class Project:
             return True
         self.logger.warning(f"Attempted to remove non-existent surface: '{surface_name}'")
         return False
-    
+
     def get_surface(self, name: str) -> Optional[Surface]: # Renamed for clarity
-        """
-        Get a surface by name directly from the dictionary.
+        """Get a surface by name directly from the dictionary.
         
         Args:
             name: Surface name
             
         Returns:
             Surface or None if not found
+
         """
         return self.surfaces.get(name) # Use dict.get for safety
 
     def get_unique_surface_name(self, base_name: str) -> str:
-        """
-        Generates a unique surface name within the project.
+        """Generates a unique surface name within the project.
         If base_name already exists, appends (1), (2), etc. until unique.
 
         Args:
@@ -158,10 +157,11 @@ class Project:
 
         Returns:
             str: A unique surface name.
+
         """
         if base_name not in self.surfaces:
             return base_name
-        
+
         counter = 1
         while True:
             new_name = f"{base_name} ({counter})"
@@ -170,24 +170,23 @@ class Project:
             counter += 1
 
     def add_calculation(self, calculation: VolumeCalculation) -> None:
-        """
-        Add a volume calculation to the project.
+        """Add a volume calculation to the project.
         
         Args:
             calculation: Volume calculation to add
+
         """
         self.calculations.append(calculation)
         self.modified_at = datetime.datetime.now()
         self.is_dirty = True
         self.logger.info(f"Calculation '{calculation.name}' added to project")
-    
+
     def add_traced_polyline(
         self,
         polyline: PolylineData, # Expect only the dictionary format now
         layer_name: str = "Existing Surface",
     ) -> Optional[int]: # Return index on success, None on failure
-        """
-        Adds a traced polyline (as a PolylineData dictionary) to the specified layer.
+        """Adds a traced polyline (as a PolylineData dictionary) to the specified layer.
 
         Args:
             polyline (PolylineData): The polyline data dictionary containing
@@ -199,6 +198,7 @@ class Project:
         Returns:
             Optional[int]: The index of the added polyline within its layer list,
                            or None if adding failed.
+
         """
         # Validate the input dictionary
         if not isinstance(polyline, dict) or "points" not in polyline:
@@ -214,7 +214,7 @@ class Project:
         # Ensure elevation key exists, defaulting to None if missing
         polyline_obj: PolylineData = {
             "points": points_list,
-            "elevation": polyline.get("elevation") # Use get for safety
+            "elevation": polyline.get("elevation"), # Use get for safety
         }
 
         if layer_name not in self.traced_polylines:
@@ -224,7 +224,7 @@ class Project:
         self.modified_at = datetime.datetime.now()
         new_index = len(self.traced_polylines[layer_name]) - 1
 
-        # --- Bump Revision --- 
+        # --- Bump Revision ---
         new_revision = self._bump_layer_revision(layer_name)
         # --- End Bump ---
 
@@ -235,8 +235,8 @@ class Project:
         """Removes a polyline from a layer by its index."""
         if layer_name in self.traced_polylines and 0 <= polyline_index < len(self.traced_polylines[layer_name]):
             removed = self.traced_polylines[layer_name].pop(polyline_index)
-            
-            # --- Bump Revision --- 
+
+            # --- Bump Revision ---
             new_revision = self._bump_layer_revision(layer_name)
             # --- End Bump ---
 
@@ -271,7 +271,7 @@ class Project:
                         serializable_points = [[pt[0], pt[1]] for pt in poly_data["points"] if isinstance(pt, (list, tuple)) and len(pt) == 2]
                         serializable_polys.append({
                             "points": serializable_points,
-                            "elevation": poly_data.get("elevation")
+                            "elevation": poly_data.get("elevation"),
                         })
             serializable_data[layer] = serializable_polys
         return serializable_data
@@ -286,48 +286,48 @@ class Project:
         self.filepath = save_path
         self.modified_at = datetime.datetime.now()
         self.logger.info(f"Saving project '{self.name}' to {self.filepath}")
-        
+
         try:
             scale_dict_data = None
             if self.scale:
                 scale_dict_data = self.scale.dict(exclude_none=True) # Use Pydantic's .dict()
                 # Ensure datetime is ISO format string for JSON
-                if 'calibrated_at' in scale_dict_data and isinstance(scale_dict_data['calibrated_at'], datetime.datetime):
-                    scale_dict_data['calibrated_at'] = scale_dict_data['calibrated_at'].isoformat()
+                if "calibrated_at" in scale_dict_data and isinstance(scale_dict_data["calibrated_at"], datetime.datetime):
+                    scale_dict_data["calibrated_at"] = scale_dict_data["calibrated_at"].isoformat()
 
             data_to_save = {
-                'version': 2, # Bump version due to scale model change
-                'name': self.name,
-                'description': self.description,
-                'created_at': self.created_at.isoformat(),
-                'modified_at': self.modified_at.isoformat(),
-                'author': self.author,
-                'surfaces': {name: s.to_dict() for name, s in self.surfaces.items()},
-                'calculations': [c.to_dict() for c in self.calculations],
-                'regions': [r.to_dict() for r in self.regions],
-                'metadata': self.metadata,
-                'scale': scale_dict_data, # Use the processed dict
-                'pdf_background_path': self.pdf_background_path,
-                'pdf_background_page': self.pdf_background_page,
-                'pdf_background_dpi': self.pdf_background_dpi,
-                'traced_polylines': self._serialisable_polylines(),
-                'layer_revisions': dict(self.layer_revisions), # Convert defaultdict
-                'flags': self.flags,
+                "version": 2, # Bump version due to scale model change
+                "name": self.name,
+                "description": self.description,
+                "created_at": self.created_at.isoformat(),
+                "modified_at": self.modified_at.isoformat(),
+                "author": self.author,
+                "surfaces": {name: s.to_dict() for name, s in self.surfaces.items()},
+                "calculations": [c.to_dict() for c in self.calculations],
+                "regions": [r.to_dict() for r in self.regions],
+                "metadata": self.metadata,
+                "scale": scale_dict_data, # Use the processed dict
+                "pdf_background_path": self.pdf_background_path,
+                "pdf_background_page": self.pdf_background_page,
+                "pdf_background_dpi": self.pdf_background_dpi,
+                "traced_polylines": self._serialisable_polylines(),
+                "layer_revisions": dict(self.layer_revisions), # Convert defaultdict
+                "flags": self.flags,
             }
-            
-            with open(self.filepath, 'w') as f:
+
+            with open(self.filepath, "w") as f:
                 json.dump(data_to_save, f, indent=4)
-            
+
             self.is_dirty = False # Mark as saved
             self.logger.info("Project saved successfully.")
             return True
-            
-        except Exception as e:
+
+        except Exception:
             self.logger.exception(f"Failed to save project to {self.filepath}")
             return False
 
     @classmethod
-    def load(cls, filename: str, pdf_service: Optional[Any] = None) -> Optional["Project"]:
+    def load(cls, filename: str, pdf_service: Optional[Any] = None) -> Optional[Project]:
         """Loads a project from a JSON file."""
         logger = logging.getLogger(__name__)
         migrated = False # Track if any migration occurred
@@ -337,12 +337,12 @@ class Project:
             return None
 
         try:
-            with open(filename, 'r') as f:
+            with open(filename) as f:
                 data = json.load(f)
-            
-            project_version = data.get('version', 0)
 
-            # --- Migration --- 
+            project_version = data.get("version", 0)
+
+            # --- Migration ---
             if project_version < 2:
                  data = _migrate_project_scale_v1_to_v2(data)
                  migrated = True
@@ -380,14 +380,14 @@ class Project:
             if scale_data:
                 try:
                     # Pydantic will parse ISO string for calibrated_at to datetime automatically
-                    project.scale = ProjectScale(**scale_data) 
+                    project.scale = ProjectScale(**scale_data)
                 except Exception as e_scale:
                     logger.error(f"Failed to load/parse new ProjectScale data: {e_scale}. Scale will be None.", exc_info=True)
                     project.scale = None
             else:
                 project.scale = None
 
-            # --- Load Surfaces --- 
+            # --- Load Surfaces ---
             surfaces_data = data.get("surfaces", {})
             if isinstance(surfaces_data, dict):
                 for name, surface_data in surfaces_data.items():
@@ -399,7 +399,7 @@ class Project:
             else:
                 logger.warning("Surface data in project file is not a dictionary. Skipping surface load.")
 
-            # --- Load PDF Background Info (Directly from top level) --- 
+            # --- Load PDF Background Info (Directly from top level) ---
             project.pdf_background_path = data.get("pdf_background_path") # Can be None
             project.pdf_background_page = data.get("pdf_background_page", 1)
             project.pdf_background_dpi = data.get("pdf_background_dpi", 150)
@@ -410,8 +410,8 @@ class Project:
                      logger.info(f"Found PDF background path in project file: {project.pdf_background_path}")
             else:
                  logger.info("No PDF background path found in project file.")
-                 
-            # --- Load Traced Polylines (Handle legacy list and new format) --- 
+
+            # --- Load Traced Polylines (Handle legacy list and new format) ---
             polylines_raw = data.get("traced_polylines", {})
             loaded_polylines_dict: TracedPolylinesType = {}
             if isinstance(polylines_raw, list):
@@ -444,7 +444,7 @@ class Project:
                                 try:
                                     p_data["points"] = [tuple(map(float, pt)) if isinstance(pt, list) and len(pt)==2 else tuple(pt) for pt in p_data["points"]]
                                     # Ensure elevation key exists
-                                    p_data["elevation"] = p_data.get("elevation") 
+                                    p_data["elevation"] = p_data.get("elevation")
                                     if len(p_data["points"]) >= 2: # Ensure enough valid points after conversion
                                          valid_polys.append(p_data)
                                     else:
@@ -459,13 +459,13 @@ class Project:
                          logger.warning(f"Invalid data type for layer '{layer}' polylines: {type(polys)}. Skipping layer.")
             else:
                  logger.warning(f"Traced polyline data found but is in an unexpected format: {type(polylines_raw)}")
-            
+
             project.traced_polylines = loaded_polylines_dict
 
-            # --- Load Layer Revisions --- 
+            # --- Load Layer Revisions ---
             project.layer_revisions = defaultdict(int, data.get("layer_revisions", {}))
 
-            # --- Check Surface Staleness --- 
+            # --- Check Surface Staleness ---
             for surface_name, surface in project.surfaces.items():
                 if surface.source_layer_name:
                     current_rev = project.layer_revisions.get(surface.source_layer_name, 0)
@@ -477,8 +477,8 @@ class Project:
                         surface.is_stale = False
                 else:
                     surface.is_stale = False
-            
-            # --- Load Regions --- 
+
+            # --- Load Regions ---
             project.regions = [Region.from_dict(r) for r in data.get("regions", [])]
 
             project.is_dirty = migrated # Mark modified if migration happened
@@ -496,12 +496,11 @@ class Project:
         """Returns a string representation of the Project."""
         modified_status = "*" if self.is_dirty else ""
         num_polylines = sum(len(polys) for polys in self.traced_polylines.values())
-        return f"<Project(name='{self.name}{modified_status}', path='{self.filepath}', layers={len(self.traced_polylines)}, polylines={num_polylines})>" 
+        return f"<Project(name='{self.name}{modified_status}', path='{self.filepath}', layers={len(self.traced_polylines)}, polylines={num_polylines})>"
 
-    # --- NEW: Layer Revision Helper --- 
+    # --- NEW: Layer Revision Helper ---
     def _bump_layer_revision(self, layer_name: str) -> int:
-        """
-        Increments the revision number for the specified layer and marks
+        """Increments the revision number for the specified layer and marks
         the project as modified.
 
         Args:
@@ -509,15 +508,16 @@ class Project:
 
         Returns:
             int: The new revision number for the layer.
+
         """
         self.layer_revisions[layer_name] += 1
         new_revision = self.layer_revisions[layer_name]
         self.is_dirty = True # Bumping revision counts as modification
         logger.debug(f"Bumped layer '{layer_name}' revision to {new_revision}")
         return new_revision
-    # --- END NEW --- 
+    # --- END NEW ---
 
-# --- NEW: Migration helper for ProjectScale v1 (dataclass) to v2 (Pydantic) --- 
+# --- NEW: Migration helper for ProjectScale v1 (dataclass) to v2 (Pydantic) ---
 # This should be defined at the module level in project.py
 
 def _migrate_project_scale_v1_to_v2(data: dict) -> dict:
@@ -559,11 +559,9 @@ def _migrate_project_scale_v1_to_v2(data: dict) -> dict:
 # def _migrate_v1_to_v2(data: dict) -> dict: ... # This one was for regions, should be fine
 
 def _migrate_v2_add_scale(data: dict, project_render_dpi: float | None) -> dict:
-    """
-    Legacy projects (≤ v0.3) stored a bare `world_per_in` float.
+    """Legacy projects (≤ v0.3) stored a bare `world_per_in` float.
     Convert it into a full ProjectScale object or mark as invalid.
     """
-
     # If already contains proper scale or no legacy key → nothing to do.
     if "scale" in data or "world_per_in" not in data:
         return data

@@ -1,6 +1,5 @@
-from digcalc_project.src.core.geometry.surface_builder import flat_surface
 from digcalc_project.src.core.calculations.volume_calculator import VolumeCalculator
-
+from digcalc_project.src.core.geometry.surface_builder import flat_surface
 
 
 def test_two_equal_slices():
@@ -19,4 +18,4 @@ def test_two_equal_slices():
     assert all(s.fill > 0 for s in slices)
 
     # Each slice should have the same fill volume
-    assert sum(s.fill for s in slices) == slices[0].fill * 2 
+    assert sum(s.fill for s in slices) == slices[0].fill * 2

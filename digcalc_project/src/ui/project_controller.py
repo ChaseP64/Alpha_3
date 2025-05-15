@@ -1,27 +1,26 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Project Controller Module for DigCalc.
+"""Project Controller Module for DigCalc.
 
 Handles project lifecycle management (new, open, save, close)
 and maintains the current project state.
 """
 
 import logging
-import os
 from pathlib import Path
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 # --- Add QObject and Signal ---
 from PySide6.QtCore import QObject, Signal
+
 # --- End Add ---
 from PySide6.QtWidgets import QFileDialog, QMessageBox
 
+from ..core.geometry.surface_builder import lowest_surface
+
 # Local imports (use relative paths if within the same package structure)
 from ..models.project import Project
-from ..models.serializers import ProjectSerializer, ProjectLoadError
+from ..models.serializers import ProjectLoadError, ProjectSerializer
 from ..models.surface import Surface
-from ..core.geometry.surface_builder import lowest_surface
 
 # Use TYPE_CHECKING to avoid circular imports with MainWindow
 if TYPE_CHECKING:
@@ -32,8 +31,7 @@ logger = logging.getLogger(__name__)
 # --- Inherit from QObject ---
 class ProjectController(QObject):
 # --- End Inherit ---
-    """
-    Manages the lifecycle and state of the DigCalc project.
+    """Manages the lifecycle and state of the DigCalc project.
 
     Acts as the intermediary between the UI (MainWindow) and the
     Project data model for operations like new, open, save.
@@ -44,6 +42,7 @@ class ProjectController(QObject):
         project_modified (): Emitted when the project's dirty status changes.
         surfaces_rebuilt (): Emitted after surfaces are rebuilt so views can refresh
     """
+
     # --- Define Signals ---
     project_loaded = Signal(Project)
     project_closed = Signal()
@@ -52,12 +51,12 @@ class ProjectController(QObject):
     surfacesChanged = Signal()   # Emitted when lowest/composite surfaces refresh
     # --- End Define ---
 
-    def __init__(self, main_window: 'MainWindow'):
-        """
-        Initialize the ProjectController.
+    def __init__(self, main_window: "MainWindow"):
+        """Initialize the ProjectController.
 
         Args:
             main_window: The main application window instance.
+
         """
         # --- Call super().__init__() ---
         super().__init__()
@@ -79,12 +78,12 @@ class ProjectController(QObject):
     # --------------------------------------------------------------------------
 
     def _update_project(self, project: Optional[Project]):
-        """
-        Sets the current project and updates the UI accordingly.
+        """Sets the current project and updates the UI accordingly.
         Emits project_loaded signal.
 
         Args:
             project: The project to set as current, or None.
+
         """
         self.logger.info(f"Setting current project to: {project.name if project else 'None'}")
         self.current_project = project
@@ -136,7 +135,7 @@ class ProjectController(QObject):
             self.main_window,
             "Open Project",
             "", # Start directory (can be improved)
-            "DigCalc Projects (*.digcalc);;All Files (*)"
+            "DigCalc Projects (*.digcalc);;All Files (*)",
         )
 
         if filename:
@@ -154,7 +153,7 @@ class ProjectController(QObject):
                     f"""Could not load project file:
 {filename}
 
-Error: {e}"""
+Error: {e}""",
                 )
                 # --- Re-implement default project creation on error ---
                 self.logger.info("Creating default project after failed load.")
@@ -169,7 +168,7 @@ Error: {e}"""
                      f"""An unexpected error occurred while loading:
 {filename}
 
-Error: {e}"""
+Error: {e}""",
                  )
                  # --- Re-implement default project creation on error ---
                  self.logger.info("Creating default project after failed load.")
@@ -178,8 +177,7 @@ Error: {e}"""
                  # --- End Re-implement ---
 
     def on_save_project(self, save_as=False) -> bool:
-        """
-        Handles the 'Save Project' and 'Save Project As...' actions.
+        """Handles the 'Save Project' and 'Save Project As...' actions.
         Emits project_modified if the dirty state changes to False.
 
         Args:
@@ -189,6 +187,7 @@ Error: {e}"""
             bool: True if the project was saved successfully or save was cancelled,
                   False if the save operation failed or was aborted by the user
                   in a critical way (e.g., closing dialog without saving when required).
+
         """
         self.logger.debug(f"Save Project action triggered (save_as={save_as}).")
         if not self.current_project:
@@ -204,7 +203,7 @@ Error: {e}"""
                 self.main_window,
                 "Save Project As",
                 project_path or f"{self.current_project.name}.digcalc", # Suggest name/path
-                "DigCalc Projects (*.digcalc);;All Files (*)"
+                "DigCalc Projects (*.digcalc);;All Files (*)",
             )
             if not filename:
                 self.logger.info("Save As cancelled by user.")
@@ -233,7 +232,7 @@ Error: {e}"""
                 f"""Could not save project file:
 {project_path}
 
-Error: {e}"""
+Error: {e}""",
             )
 
         if save_successful:
@@ -246,30 +245,29 @@ Error: {e}"""
             self.logger.info("Project saved successfully.")
             # self.main_window._update_window_title() # Let signal handle this
             return True
-        else:
-            return False # Save failed
+        return False # Save failed
 
     # --------------------------------------------------------------------------
     # Helper Methods
     # --------------------------------------------------------------------------
 
     def _should_save_project(self) -> bool:
-        """
-        Checks if the current project is dirty (has unsaved changes).
+        """Checks if the current project is dirty (has unsaved changes).
 
         Returns:
             bool: True if the project has unsaved changes, False otherwise.
+
         """
         return self.current_project is not None and self.current_project.is_dirty
 
     def _confirm_close_project(self) -> bool:
-        """
-        Checks if the current project needs saving and prompts the user if necessary.
+        """Checks if the current project needs saving and prompts the user if necessary.
         Called before opening a new project or closing the application.
 
         Returns:
             bool: True if it's safe to proceed (project saved or user chose not to),
                   False if the user cancelled the operation.
+
         """
         if not self._should_save_project():
             return True # No unsaved changes, safe to proceed
@@ -281,18 +279,18 @@ Error: {e}"""
             f"""Project '{self.current_project.name}' has unsaved changes.
 Do you want to save them?""",
             QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
-            QMessageBox.Save # Default button
+            QMessageBox.Save, # Default button
         )
 
         if reply == QMessageBox.Save:
             self.logger.debug("User chose to Save.")
             return self.on_save_project() # Returns True if save successful/cancelled, False if failed critically
-        elif reply == QMessageBox.Discard:
+        if reply == QMessageBox.Discard:
             self.logger.debug("User chose to Discard changes.")
             return True # Safe to proceed without saving
-        else: # reply == QMessageBox.Cancel
-            self.logger.debug("User chose to Cancel.")
-            return False # Operation cancelled, do not proceed
+        # reply == QMessageBox.Cancel
+        self.logger.debug("User chose to Cancel.")
+        return False # Operation cancelled, do not proceed
 
     # --- Renamed to set_project_modified and emit signal ---
     def set_project_modified(self, modified: bool = True):
@@ -320,7 +318,10 @@ Do you want to save them?""",
            if their source layer still has valid polylines with elevation.
         3. Emit the *surfaces_rebuilt* signal so that views (2-D/3-D) can refresh.
         """
-        from digcalc_project.src.core.geometry.surface_builder import SurfaceBuilder, SurfaceBuilderError
+        from digcalc_project.src.core.geometry.surface_builder import (
+            SurfaceBuilder,
+            SurfaceBuilderError,
+        )
 
         if not self.current_project:
             self.logger.warning("rebuild_surfaces called but there is no active project.")
@@ -329,17 +330,17 @@ Do you want to save them?""",
         project = self.current_project
 
         # 1. Clear cached dz/cut-fill state in the MainWindow (if attribute exists)
-        if hasattr(self.main_window, '_clear_cutfill_state'):
+        if hasattr(self.main_window, "_clear_cutfill_state"):
             self.main_window._clear_cutfill_state()
 
         rebuilt_count = 0
         for surf_name, surf in list(project.surfaces.items()):
-            src_layer = getattr(surf, 'source_layer_name', None)
+            src_layer = getattr(surf, "source_layer_name", None)
             if not src_layer:
                 continue  # Skip surfaces without a source layer
 
             polylines = project.traced_polylines.get(src_layer, [])
-            valid_polys = [p for p in polylines if isinstance(p, dict) and p.get('elevation') is not None]
+            valid_polys = [p for p in polylines if isinstance(p, dict) and p.get("elevation") is not None]
             if not valid_polys:
                 self.logger.info("Layer '%s' has no valid polylines with elevation for rebuilding '%s'.", src_layer, surf_name)
                 continue
@@ -352,8 +353,8 @@ Do you want to save them?""",
                 rebuilt_count += 1
 
                 # Update visualization if possible
-                if hasattr(self.main_window, 'visualization_panel') and \
-                   hasattr(self.main_window.visualization_panel, 'update_surface_mesh'):
+                if hasattr(self.main_window, "visualization_panel") and \
+                   hasattr(self.main_window.visualization_panel, "update_surface_mesh"):
                     self.main_window.visualization_panel.update_surface_mesh(new_surf)
             except SurfaceBuilderError as e:
                 self.logger.error("Failed to rebuild surface '%s': %s", surf_name, e)
@@ -400,7 +401,7 @@ Do you want to save them?""",
                 self.current_project.surfaces[self._lowest_surface.name] = self._lowest_surface
                 self.surfacesChanged.emit()
             except Exception as err:
-                self.logger.error("Failed to build lowest surface: %s", err, exc_info=True) 
+                self.logger.error("Failed to build lowest surface: %s", err, exc_info=True)
 
     # --------------------------------------------------------------------------
     # Rebuild debounce trigger (called by Settings changes etc.)
@@ -416,4 +417,4 @@ Do you want to save them?""",
         try:
             self.rebuild_surfaces()
         except Exception as exc:  # pragma: no cover – defensive
-            logger.error("trigger_rebuild_if_needed failed: %s", exc, exc_info=True) 
+            logger.error("trigger_rebuild_if_needed failed: %s", exc, exc_info=True)

@@ -1,5 +1,6 @@
-import pytest
 import importlib
+
+import pytest
 
 # Skip entire module if PyVista is not installed
 pytest.importorskip("pyvista")
@@ -21,4 +22,4 @@ def test_polydata_conversion():
 
     # Ensure the mesh has geometry
     assert mesh.n_points > 0, "Converted mesh has no points"
-    assert mesh.n_cells > 0, "Converted mesh has no cells" 
+    assert mesh.n_cells > 0, "Converted mesh has no cells"

@@ -1,4 +1,7 @@
-from digcalc_project.src.core.geometry.surface_builder import flat_surface, lowest_surface
+from digcalc_project.src.core.geometry.surface_builder import (
+    flat_surface,
+    lowest_surface,
+)
 
 
 def test_lowest_is_min():
@@ -9,4 +12,4 @@ def test_lowest_is_min():
     low = lowest_surface(design, existing)
 
     # All resulting points should have Z = 3 (the lower of 3 and 5)
-    assert all(p.z == 3 for p in low.points.values()) 
+    assert all(p.z == 3 for p in low.points.values())

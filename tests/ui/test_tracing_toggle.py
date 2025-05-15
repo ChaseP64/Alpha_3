@@ -8,10 +8,10 @@ from digcalc_project.src.ui.main_window import MainWindow
 def _app(qtbot):
     """Ensure a QApplication instance is available for all tests."""
     app = QApplication.instance() or QApplication([])
-    yield app
+    return app
 
 
-@pytest.fixture()
+@pytest.fixture
 def main_window(qtbot):
     """Create and show a MainWindow instance for the test."""
     mw = MainWindow()
@@ -41,4 +41,4 @@ def test_tracing_toggle_respects_enabled_flag(qtbot, main_window):
 
     # Attempt to start drawing directly – should be blocked because tracing is disabled
     scene.start_drawing()
-    assert scene._is_drawing is False, "Drawing started even though tracing is disabled." 
+    assert scene._is_drawing is False, "Drawing started even though tracing is disabled."

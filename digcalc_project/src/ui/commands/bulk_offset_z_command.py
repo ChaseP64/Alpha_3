@@ -2,8 +2,10 @@ from __future__ import annotations
 
 """BulkOffsetZCommand – apply uniform Z delta to multiple VertexItems."""
 
+from collections.abc import Iterable
+from typing import List
+
 from PySide6.QtGui import QUndoCommand
-from typing import Iterable, List
 
 from digcalc_project.src.ui.items.vertex_item import VertexItem
 
@@ -18,10 +20,10 @@ class BulkOffsetZCommand(QUndoCommand):
         self._verts: List[VertexItem] = list(vertices)
         self._dz: float = float(delta_z)
 
-    def undo(self):  # noqa: D401
+    def undo(self):
         for v in self._verts:
             v.set_z(v.z() - self._dz)
 
-    def redo(self):  # noqa: D401
+    def redo(self):
         for v in self._verts:
-            v.set_z(v.z() + self._dz) 
+            v.set_z(v.z() + self._dz)

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """Dialog to prompt user for a constant elevation value."""
 
 import logging
-from PySide6 import QtWidgets, QtCore
 from typing import Optional
+
+from PySide6 import QtWidgets
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +22,7 @@ class ElevationDialog(QtWidgets.QDialog):
             parent (QWidget, optional): Parent widget. Defaults to None.
             initial_value (float, optional): Initial value for the spinbox. 
                                            If None, uses the last remembered value.
+
         """
         super().__init__(parent)
         global _LAST_ELEV
@@ -42,7 +43,7 @@ class ElevationDialog(QtWidgets.QDialog):
 
         self._buttonbox = QtWidgets.QDialogButtonBox(
             QtWidgets.QDialogButtonBox.StandardButton.Ok
-            | QtWidgets.QDialogButtonBox.StandardButton.Cancel
+            | QtWidgets.QDialogButtonBox.StandardButton.Cancel,
         )
 
         # Layout
@@ -72,7 +73,7 @@ class ElevationDialog(QtWidgets.QDialog):
         logger.debug("Stored last elevation value: %.2f", _LAST_ELEV)
 
 # Example Usage (for testing the dialog directly)
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
     logging.basicConfig(level=logging.DEBUG)
     app = QtWidgets.QApplication(sys.argv)
@@ -86,4 +87,4 @@ if __name__ == '__main__':
         dialog2.exec()
     else:
         print("Dialog cancelled.")
-    sys.exit() 
+    sys.exit()

@@ -1,15 +1,16 @@
-from PySide6.QtWidgets import (
-    QDockWidget,
-    QWidget,
-    QVBoxLayout,
-    QComboBox,
-    QToolBar,
-    QLabel,
-)
-from PySide6.QtGui import QAction, QKeySequence
-from PySide6.QtCore import Qt
 from functools import cached_property
 from importlib import import_module
+
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QAction, QKeySequence
+from PySide6.QtWidgets import (
+    QComboBox,
+    QDockWidget,
+    QLabel,
+    QToolBar,
+    QVBoxLayout,
+    QWidget,
+)
 
 
 class PvDock(QDockWidget):
@@ -46,7 +47,7 @@ class PvDock(QDockWidget):
         # Ensure the shortcut works even when toolbar is not focused
         self.refresh_act.setShortcutContext(Qt.WidgetWithChildrenShortcut)
         self.refresh_act.triggered.connect(
-            lambda: self._load_surface(self.surf_cb.currentText())
+            lambda: self._load_surface(self.surf_cb.currentText()),
         )
         tb.addAction(self.refresh_act)
 
@@ -66,8 +67,8 @@ class PvDock(QDockWidget):
         if self._pv is None:
             v.addWidget(
                 QLabel(
-                    "PyVista not available.\nInstall with  pip install \"digcalc[3d]\""
-                )
+                    'PyVista not available.\nInstall with  pip install "digcalc[3d]"',
+                ),
             )
             return
 

@@ -1,7 +1,7 @@
 """Unit tests for VolumeCalculator.compute_slice_volumes."""
 
-from digcalc_project.src.core.geometry.surface_builder import flat_surface
 from digcalc_project.src.core.calculations.volume_calculator import VolumeCalculator
+from digcalc_project.src.core.geometry.surface_builder import flat_surface
 
 
 def test_two_slice():
@@ -19,4 +19,4 @@ def test_two_slice():
 
     # Both slices should be pure fill (no cut) with positive volume
     assert slices[0].fill > 0 and slices[0].cut == 0
-    assert slices[1].fill > 0 and slices[1].cut == 0 
+    assert slices[1].fill > 0 and slices[1].cut == 0

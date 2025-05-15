@@ -1,9 +1,10 @@
 """Global test fixtures for environments without pytest-mock installed."""
 import importlib
-import types
-import pytest
 import sys
+import types
 from pathlib import Path
+
+import pytest
 
 # ---------------------------------------------------------------------------
 # Ensure the repository root is on sys.path so that `import digcalc_project` is
@@ -15,7 +16,7 @@ if str(_repo_root) not in sys.path:
 
 
 @pytest.fixture
-def mocker(monkeypatch):  # noqa: D401
+def mocker(monkeypatch):
     """Very small subset of *pytest-mock*'s fixture.
 
     Only implements :py:meth:`patch` with *return_value* support which is all
@@ -25,7 +26,6 @@ def mocker(monkeypatch):  # noqa: D401
     """
     try:
         # If pytest-mock is installed, use the real fixture to avoid surprises.
-        from pytest_mock import MockerFixture  # type: ignore
         # pylint: disable=import-error
         import pytest_mock  # noqa: F401
         # Request the real fixture from pytest's fixture store.
@@ -35,13 +35,13 @@ def mocker(monkeypatch):  # noqa: D401
             def __init__(self, _mp):
                 self._mp = _mp
 
-            def patch(self, target: str, **kwargs):  # noqa: D401
-                module_name, attr_name = target.rsplit('.', 1)
+            def patch(self, target: str, **kwargs):
+                module_name, attr_name = target.rsplit(".", 1)
                 module = importlib.import_module(module_name)
-                dummy = kwargs.get('return_value')
+                dummy = kwargs.get("return_value")
                 if dummy is None:
                     dummy = types.SimpleNamespace()
                 self._mp.setattr(module, attr_name, dummy)
                 return dummy
 
-        return _StubMocker(monkeypatch) 
+        return _StubMocker(monkeypatch)

@@ -1,17 +1,15 @@
 import json
 from pathlib import Path
-import pytest
-from typing import List, Tuple, Optional, Dict
+from typing import Dict, List, Optional, Tuple
 
 # Adjust the import based on your project structure and how pytest discovers it
 # If running pytest from the workspace root 'digcalc_project':
 try:
-    from src.models.project import Project, PolylineData
-    from src.models.surface import Surface, Point3D
+    from src.models.project import PolylineData, Project
+    from src.models.surface import Point3D, Surface
 except ImportError:
     # If running pytest in a way that requires the full path:
-    from digcalc_project.src.models.project import Project, PolylineData
-    from digcalc_project.src.models.surface import Surface, Point3D
+    from digcalc_project.src.models.project import PolylineData, Project
 
 # Type alias for clarity
 TracedPolylinesType = Dict[str, List[PolylineData]]
@@ -56,11 +54,11 @@ def test_save_and_load_roundtrip(tmp_path: Path):
     polyline_data_new_format: TracedPolylinesType = {
         "Test Layer 1": [
             _poly((5, 5), (6, 6), elevation=10.0),
-            _poly((7, 7), (8, 8), elevation=None)
+            _poly((7, 7), (8, 8), elevation=None),
         ],
         "Test Layer 2": [
-            _poly((10, 10), (11, 11), elevation=20.5)
-        ]
+            _poly((10, 10), (11, 11), elevation=20.5),
+        ],
     }
     # Assign the correctly structured data
     pr.traced_polylines = polyline_data_new_format
@@ -86,13 +84,13 @@ def test_legacy_migration(tmp_path: Path, caplog):
     # Simulate an old file that stored a simple list of lists of points
     legacy_poly_points_list = [
         [(0.0, 0.0), (1.0, 1.0)],
-        [(2.0, 2.0), (3.0, 3.0)]
+        [(2.0, 2.0), (3.0, 3.0)],
     ]
     legacy_data = {
         "name": "legacy_project",
         "created_at": "2023-01-01T12:00:00",
         "modified_at": "2023-01-01T13:00:00",
-        "traced_polylines": legacy_poly_points_list # The old list format
+        "traced_polylines": legacy_poly_points_list, # The old list format
     }
     file = tmp_path / "legacy.json"
     file.write_text(json.dumps(legacy_data))
@@ -105,7 +103,7 @@ def test_legacy_migration(tmp_path: Path, caplog):
     assert list(pr.traced_polylines.keys()) == ["Legacy Traces"], "Only 'Legacy Traces' layer should exist"
     migrated_layer = pr.traced_polylines["Legacy Traces"]
     assert len(migrated_layer) == 2, "Both polylines should be migrated"
-    
+
     # Verify structure of migrated items
     assert isinstance(migrated_layer[0], dict)
     assert "points" in migrated_layer[0]
@@ -131,7 +129,7 @@ def test_load_invalid_polyline_format(tmp_path: Path, caplog):
         "name": "invalid_format_project",
         "created_at": "2023-01-01T12:00:00",
         "modified_at": "2023-01-01T13:00:00",
-        "traced_polylines": "this is not valid data"
+        "traced_polylines": "this is not valid data",
     }
     file = tmp_path / "invalid.json"
     file.write_text(json.dumps(invalid_data))
@@ -142,10 +140,10 @@ def test_load_invalid_polyline_format(tmp_path: Path, caplog):
 
     # Check that traced_polylines is empty
     assert not pr.traced_polylines, "traced_polylines should be empty after loading invalid format"
-    
+
     # Check that the project is not marked as modified
     assert not pr.is_modified, "Project should not be marked as modified"
-    
+
     # Check logger warning for invalid format
     assert "Traced polyline data found but is in an unexpected format" in caplog.text
     assert "<class 'str'>" in caplog.text # Check that the type was logged
@@ -157,7 +155,7 @@ def test_load_missing_polylines_key(tmp_path: Path, caplog):
     missing_key_data = {
         "name": "missing_key_project",
         "created_at": "2023-01-01T12:00:00",
-        "modified_at": "2023-01-01T13:00:00"
+        "modified_at": "2023-01-01T13:00:00",
     }
     file = tmp_path / "missing_key.json"
     file.write_text(json.dumps(missing_key_data))
@@ -168,10 +166,10 @@ def test_load_missing_polylines_key(tmp_path: Path, caplog):
 
     # Check that traced_polylines is empty
     assert not pr.traced_polylines, "traced_polylines should be empty when key is missing"
-    
+
     # Check that the project is not marked as modified
     assert not pr.is_modified, "Project should not be marked as modified"
-    
+
     # Ensure no error/warning about missing key specifically (it should default safely)
     assert "Migrated legacy" not in caplog.text
-    assert "unexpected format" not in caplog.text 
+    assert "unexpected format" not in caplog.text

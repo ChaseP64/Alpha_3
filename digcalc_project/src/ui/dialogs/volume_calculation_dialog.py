@@ -1,16 +1,26 @@
 import logging
-from typing import Optional, Dict, List
+from typing import Dict, List, Optional
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QComboBox, QLabel, QDoubleSpinBox, QFormLayout, 
-    QDialogButtonBox, QWidget, QSizePolicy, QCheckBox
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QDoubleSpinBox,
+    QFormLayout,
+    QLabel,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
 )
-import numpy as np
+
 from ...services.settings_service import SettingsService
+
 
 class VolumeCalculationDialog(QDialog):
     """Dialog for selecting surfaces and parameters for volume calculation."""
+
     # volumeComputed = Signal(float, float, float, np.ndarray, np.ndarray, np.ndarray, bool) # Removed unused signal
 
     def __init__(self, surface_names: List[str], parent: Optional[QWidget] = None):
@@ -41,7 +51,7 @@ class VolumeCalculationDialog(QDialog):
         # ------------------------------------------------------------
         controller = None
         if parent is not None and hasattr(parent, "project_controller"):
-            controller = getattr(parent, "project_controller")
+            controller = parent.project_controller
 
         if controller is not None and getattr(controller, "lowest_surface", None):
             if controller.lowest_surface():
@@ -107,7 +117,7 @@ class VolumeCalculationDialog(QDialog):
         self.combo_existing.currentIndexChanged.connect(self._validate_selection)
         self.combo_proposed.currentIndexChanged.connect(self._validate_selection)
         self._validate_selection() # Initial validation
-        
+
         self.setLayout(layout)
         self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
         self.adjustSize() # Adjust size to fit contents
@@ -119,7 +129,7 @@ class VolumeCalculationDialog(QDialog):
         if not valid and len(self.surface_names) > 1:
             # Optional: Log warning or provide non-modal feedback
             # self.logger.debug("Validation failed: Same surface selected.")
-            pass 
+            pass
 
     def get_selected_surfaces(self) -> Optional[Dict[str, str]]:
         """Get the names of the selected existing and proposed surfaces."""
@@ -127,10 +137,10 @@ class VolumeCalculationDialog(QDialog):
         valid = (self.combo_existing.currentText() != self.combo_proposed.currentText())
         if valid and self.combo_existing.currentText() and self.combo_proposed.currentText():
              return {
-                 'existing': self.combo_existing.currentText(),
-                 'proposed': self.combo_proposed.currentText()
+                 "existing": self.combo_existing.currentText(),
+                 "proposed": self.combo_proposed.currentText(),
              }
-        elif not valid:
+        if not valid:
              self.logger.warning("Attempted to get selection when validation failed (surfaces are the same).")
         return None
 
@@ -145,7 +155,7 @@ class VolumeCalculationDialog(QDialog):
     # ------------------------------------------------------------------
     # Accept override – ensure *Lowest* resolves to actual Surface object
     # ------------------------------------------------------------------
-    def accept(self):  # noqa: D401
+    def accept(self):
         """Handle OK press and persist slice thickness preference."""
         # Persist slice thickness if slice volumes enabled
         if hasattr(self, "slice_cb") and self.slice_cb.isChecked():
@@ -187,7 +197,7 @@ class VolumeCalculationDialog(QDialog):
     #          self.volumeComputed.emit(cut, fill, net, dz_grid, grid_x, grid_y, True)
     #     else:
     #          # Emit without dz data if map not generated or calculation failed
-    #          self.volumeComputed.emit(cut, fill, net, np.array([]), np.array([]), np.array([]), False) 
+    #          self.volumeComputed.emit(cut, fill, net, np.array([]), np.array([]), np.array([]), False)
 
     # ------------------------------------------------------------------
     # Helpers
@@ -202,10 +212,9 @@ class VolumeCalculationDialog(QDialog):
         existing combo to a different index so that the two selections differ
         (required for the *OK* button to enable).
         """
-
         keywords = {
             "proposed", "design", "final", "finished", "target", "new",
-            "plan", "top"
+            "plan", "top",
         }
 
         chosen_idx = None
@@ -232,4 +241,4 @@ class VolumeCalculationDialog(QDialog):
                     break
 
         # No need to call _validate_selection here – it will be invoked once
-        # signal connections are established later in __init__. 
+        # signal connections are established later in __init__.

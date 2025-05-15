@@ -1,5 +1,6 @@
 from PySide6.QtGui import QUndoCommand
 
+
 class EditVertexZCommand(QUndoCommand):
     """Undo/redo command that edits a :class:`VertexItem` elevation (Z value)."""
 
@@ -11,6 +12,7 @@ class EditVertexZCommand(QUndoCommand):
                 :py:meth:`z` and :py:meth:`set_z` helpers.
             new_z (float): The new elevation value.
             description (str, optional): Description shown in the undo stack/GUI.
+
         """
         super().__init__(description)
         self._v = vertex
@@ -21,10 +23,10 @@ class EditVertexZCommand(QUndoCommand):
     # ------------------------------------------------------------------
     # QUndoCommand interface
     # ------------------------------------------------------------------
-    def undo(self):  # noqa: D401
+    def undo(self):
         """Restore the previous elevation value."""
         self._v.set_z(self._old)
 
-    def redo(self):  # noqa: D401
+    def redo(self):
         """Apply the new elevation value."""
-        self._v.set_z(self._new) 
+        self._v.set_z(self._new)

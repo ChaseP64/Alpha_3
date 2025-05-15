@@ -7,7 +7,6 @@ from digcalc_project.src.ui.main_window import MainWindow
 @pytest.mark.skipif(not qt_api, reason="pytest-qt not available")
 def test_calibrate_action_enabled(qtbot):
     """Scale-calibration menu item toggles based on PDF load signal."""
-
     win = MainWindow()
     qtbot.addWidget(win)
 
@@ -23,4 +22,4 @@ def test_calibrate_action_enabled(qtbot):
     # Simulate clearing background via MainWindow helper to verify disable
     win.on_clear_pdf_background()
     qtbot.wait(10)
-    assert not act.isEnabled() 
+    assert not act.isEnabled()

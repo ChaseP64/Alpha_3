@@ -12,12 +12,14 @@ from __future__ import annotations
 
 from typing import List
 
-from PySide6.QtWidgets import QGraphicsPathItem
+from PySide6.QtCore import QObject, QPointF, Signal
 from PySide6.QtGui import QPainterPath, QPen
-from PySide6.QtCore import QPointF, Qt, Signal, QObject
+from PySide6.QtWidgets import QGraphicsPathItem
+
+from digcalc_project.src.tools.spline import catmull_rom
+from digcalc_project.src.tools.spline import sample as spline_sample
 
 from .vertex_item import VertexItem
-from digcalc_project.src.tools.spline import catmull_rom, sample as spline_sample
 
 
 class PolylineItem(QObject, QGraphicsPathItem):
@@ -27,6 +29,7 @@ class PolylineItem(QObject, QGraphicsPathItem):
         points: Initial list of vertex positions in *scene* coordinates.
         layer_pen: Pen used to draw the polyline.
         mode: Either ``"entered"`` (straight lines) or ``"interpolated"`` (future spline).
+
     """
 
     # Future: Could add a signal "geometryChanged" to inform external listeners.
@@ -81,7 +84,7 @@ class PolylineItem(QObject, QGraphicsPathItem):
     # ------------------------------------------------------------------
     # Evaluation helpers
     # ------------------------------------------------------------------
-    def sample(self, density_ft: float):  # noqa: D401
+    def sample(self, density_ft: float):
         """Return simplified list of (x, y, z) tuples at ≈ ``density_ft`` spacing.
 
         First generate *pts3d* either via spline resampling (for *interpolated*
@@ -94,7 +97,6 @@ class PolylineItem(QObject, QGraphicsPathItem):
           emitted, guarding against pathological polylines producing millions
           of samples.
         """
-
         # ------------------------------------------------------------------
         # 1) Generate the full point list (may be long for splines)
         # ------------------------------------------------------------------
@@ -168,7 +170,7 @@ class PolylineItem(QObject, QGraphicsPathItem):
     # ------------------------------------------------------------------
     # Qt housekeeping
     # ------------------------------------------------------------------
-    def shape(self):  # noqa: D401
+    def shape(self):
         """Return the item's shape for collision/select uses.
 
         Using the underlying :class:`QPainterPath` is sufficient because the
@@ -182,9 +184,8 @@ class PolylineItem(QObject, QGraphicsPathItem):
     # ------------------------------------------------------------------
     def toggle_mode(self):
         """Toggle between *entered* and *interpolated* display modes."""
-
         self.mode = "interpolated" if self.mode == "entered" else "entered"
         self._rebuild_path()
 
 
-__all__ = ["PolylineItem"] 
+__all__ = ["PolylineItem"]

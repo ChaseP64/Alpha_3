@@ -1,3 +1,2 @@
+"""Package initialization for src module.
 """
-Package initialization for src module.
-""" 

@@ -31,4 +31,4 @@ def test_migrate_world_per_in(tmp_path):
     proj2 = Project.load(str(pth), pdf_service=Dummy())
     assert isinstance(proj2.scale, ProjectScale)
     expected = 40.0 / 150.0
-    assert abs(proj2.scale.world_per_px - expected) < 1e-6 
+    assert abs(proj2.scale.world_per_px - expected) < 1e-6

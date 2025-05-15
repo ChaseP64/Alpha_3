@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-import pytest
 from datetime import datetime
+
+import pytest
 from pydantic import ValidationError
 
 # Adjust the import path according to your project structure
 from digcalc_project.src.models.project_scale import ProjectScale
+
 
 def test_project_scale_from_direct():
     """Test creating ProjectScale using the from_direct factory method."""
@@ -80,7 +82,7 @@ def test_world_per_px_calculation_direct():
         input_method="direct_entry",
         world_units="ft",
         world_per_paper_in=20.0, # 20 ft per paper inch
-        render_dpi_at_cal=100.0   # 100 pixels per paper inch
+        render_dpi_at_cal=100.0,   # 100 pixels per paper inch
     )
     # Expected: (20 ft / paper_in) / (100 px / paper_in) = 0.2 ft / px
     assert abs(scale.world_per_px - 0.2) < 1e-9
@@ -97,7 +99,7 @@ def test_world_per_px_calculation_ratio():
         ratio_numer=1.0,
         ratio_denom=240.0, # implies 240 world inches for 1 paper inch
         world_per_paper_in=20.0, # Derived: (240/1)/12
-        render_dpi_at_cal=100.0
+        render_dpi_at_cal=100.0,
     )
     # Expected: (20 ft / paper_in) / (100 px / paper_in) = 0.2 ft / px
     assert abs(scale_ft.world_per_px - 0.2) < 1e-9
@@ -111,7 +113,7 @@ def test_world_per_px_calculation_ratio():
         ratio_numer=1.0,
         ratio_denom=100.0, # implies 100 world inches for 1 paper inch
         world_per_paper_in=2.54, # Derived: (100/1) * 0.0254
-        render_dpi_at_cal=100.0
+        render_dpi_at_cal=100.0,
     )
     # Expected: (2.54 m / paper_in) / (100 px / paper_in) = 0.0254 m / px
     assert abs(scale_m.world_per_px - 0.0254) < 1e-9
@@ -126,7 +128,7 @@ def test_world_per_px_missing_world_per_paper_in():
             input_method="direct_entry", # Or any other if world_per_paper_in isn't auto-calculated
             world_units="ft",
             # world_per_paper_in is missing
-            render_dpi_at_cal=100.0
+            render_dpi_at_cal=100.0,
         )
         _ = scale.world_per_px # Access the property
 
@@ -137,7 +139,7 @@ def test_world_per_px_zero_dpi():
             input_method="direct_entry",
             world_units="ft",
             world_per_paper_in=20.0,
-            render_dpi_at_cal=0.0 # Invalid DPI
+            render_dpi_at_cal=0.0, # Invalid DPI
         )
         _ = scale.world_per_px
 
@@ -146,7 +148,7 @@ def test_world_per_px_zero_dpi():
             input_method="direct_entry",
             world_units="ft",
             world_per_paper_in=20.0,
-            render_dpi_at_cal=0.0
+            render_dpi_at_cal=0.0,
         )
 
 def test_pydantic_validations():
@@ -215,7 +217,7 @@ def test_to_dict_serialization():
         ratio_numer=1.0,
         ratio_denom=100.0, # 1:100 (paper_in : world_in)
         render_dpi_at_cal=96.0,
-        calibrated_at=dt
+        calibrated_at=dt,
     )
     scale_dict = scale.to_dict()
 
@@ -229,7 +231,7 @@ def test_to_dict_serialization():
     # Check derived properties are also in the dict
     assert "pixel_ft" in scale_dict # This name is a bit misleading if units are 'm'
     assert "inch_ft" in scale_dict  # This name is also misleading if units are 'm'
-    
+
     # world_per_px = 2.54 / 96
     # pixel_ft is render_dpi / world_per_paper_in = 96 / 2.54
     assert abs(scale_dict["pixel_ft"] - (96.0 / 2.54)) < 1e-9
@@ -276,8 +278,7 @@ def test_from_dict_missing_optional_fields():
     assert scale.ratio_denom is None
 
 def test_world_per_px_dynamic_calculation_for_ratio_if_world_per_paper_in_is_none():
-    """
-    Test if world_per_px can dynamically calculate from ratio components
+    """Test if world_per_px can dynamically calculate from ratio components
     if world_per_paper_in is None (as per the logic in the property).
     """
     # Scenario: world_per_paper_in is not explicitly set, but ratio parts are.
@@ -287,7 +288,7 @@ def test_world_per_px_dynamic_calculation_for_ratio_if_world_per_paper_in_is_non
         # world_per_paper_in=None, # Explicitly None
         ratio_numer=1.0,
         ratio_denom=600.0, # 1:600 inches -> 50 ft/in
-        render_dpi_at_cal=100.0
+        render_dpi_at_cal=100.0,
     )
     # Expected world_per_paper_in from ratio parts = (600/1)/12 = 50 ft/in
     # Expected world_per_px = 50 / 100 = 0.5 ft/px
@@ -299,7 +300,7 @@ def test_world_per_px_dynamic_calculation_for_ratio_if_world_per_paper_in_is_non
         # world_per_paper_in=None,
         ratio_numer=1.0,
         ratio_denom=100.0, # 1:100 inches -> 100 * 0.0254 = 2.54 m/in
-        render_dpi_at_cal=100.0
+        render_dpi_at_cal=100.0,
     )
     # Expected world_per_paper_in from ratio parts = (100/1) * 0.0254 = 2.54 m/in
     # Expected world_per_px = 2.54 / 100 = 0.0254 m/px
@@ -326,4 +327,4 @@ def test_world_per_px_dynamic_calculation_for_ratio_if_world_per_paper_in_is_non
 
 # It's good practice to also test edge cases or invalid inputs for from_dict
 # but Pydantic handles most of this.
-# However, if `from_dict` had more complex logic, more tests would be needed. 
+# However, if `from_dict` had more complex logic, more tests would be needed.

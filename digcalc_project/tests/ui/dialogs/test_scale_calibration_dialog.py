@@ -1,18 +1,24 @@
+import math
+from unittest.mock import MagicMock  # Added for mocking Project
+
 import pytest
 from PySide6 import QtCore
-from PySide6.QtWidgets import QWidget, QGraphicsView, QGraphicsScene
-from pytestqt.qt_compat import qt_api
-import math
-from PySide6.QtCore import QPoint, Qt
 from PySide6.QtGui import QPixmap
-from unittest.mock import MagicMock # Added for mocking Project
+from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QWidget
+from pytestqt.qt_compat import qt_api
 
 try:
-    from digcalc_project.src.ui.dialogs.scale_calibration_dialog import ScaleCalibrationDialog
-    from digcalc_project.src.models.project import Project # Added for type hint, if Project is used
+    from digcalc_project.src.models.project import (
+        Project,  # Added for type hint, if Project is used
+    )
+    from digcalc_project.src.ui.dialogs.scale_calibration_dialog import (
+        ScaleCalibrationDialog,
+    )
 except ImportError:  # pragma: no cover – fallback for alternative paths during CI
-    from src.ui.dialogs.scale_calibration_dialog import ScaleCalibrationDialog  # type: ignore
-    from src.models.project import Project # type: ignore
+    from src.models.project import Project  # type: ignore
+    from src.ui.dialogs.scale_calibration_dialog import (
+        ScaleCalibrationDialog,  # type: ignore
+    )
 
 # Skip tests entirely if pytest-qt (qt_api) is not available
 if not qt_api:
@@ -30,7 +36,7 @@ def mock_project():
     return project
 
 
-@pytest.fixture()
+@pytest.fixture
 def pdf_view_widget(qtbot):
     """Create a dummy top-level window containing a QGraphicsView named 'pdf_view'."""
     win = QWidget()
@@ -63,7 +69,7 @@ def test_pick_uses_global_when_pdf_view_visible(qtbot, pdf_view_widget, mock_pro
     """When the PDF view is visible the dialog should attach the global picker."""
     win, view = pdf_view_widget
     # Show the window so the view is visible
-    win.show()  # noqa: E305 – required for visibility
+    win.show()
     view.show()
     qtbot.waitExposed(win)  # Ensure window is processed
 
@@ -96,10 +102,9 @@ def test_pick_uses_global_when_pdf_view_visible(qtbot, pdf_view_widget, mock_pro
     "units,val", [("ft", 20.0), ("yd", 6.667), ("m", 6.096)])
 def test_scale_calibration_dialog_roundtrip(qtbot, units, val, mock_project):
     """Simulate user picking two points 96 px apart and entering *val* in *units*."""
-
     pix = QPixmap(200, 200)  # Dummy blank pixmap
     # Ensure mock_project has a valid DPI for _compute_px_per_in
-    mock_project.pdf_background_dpi = 96.0 
+    mock_project.pdf_background_dpi = 96.0
     dlg = ScaleCalibrationDialog(None, project=mock_project, scene=None, page_pixmap=pix)
     qtbot.addWidget(dlg)
 
@@ -116,4 +121,4 @@ def test_scale_calibration_dialog_roundtrip(qtbot, units, val, mock_project):
     scale = dlg.result_scale()
     assert scale is not None, "Dialog should return a ProjectScale on accept"
     assert scale.world_units == units
-    assert math.isclose(scale.world_per_in, val, rel_tol=1e-5) 
+    assert math.isclose(scale.world_per_in, val, rel_tol=1e-5)

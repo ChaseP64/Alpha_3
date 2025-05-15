@@ -1,6 +1,6 @@
 from digcalc_project.src.models.project import Project
 from digcalc_project.src.models.project_scale import ProjectScale
-from digcalc_project.src.models.serializers import to_dict, from_dict
+from digcalc_project.src.models.serializers import from_dict, to_dict
 
 
 def test_project_scale_round_trip():
@@ -14,4 +14,4 @@ def test_project_scale_round_trip():
     assert clone.scale is not None, "Scale missing after round-trip"
 
     # Compare dict representations to avoid datetime mismatch formatting
-    assert clone.scale.dict(exclude_none=True) == pscale.dict(exclude_none=True) 
+    assert clone.scale.dict(exclude_none=True) == pscale.dict(exclude_none=True)

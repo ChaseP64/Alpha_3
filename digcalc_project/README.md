@@ -23,6 +23,23 @@ DigCalc is a desktop application for calculating earthwork volumes from digital 
 | Slice-Volume Table | ![Slice Volume](docs/img/slice_volume.png) |
 | Mass-Haul Diagram | ![Mass Haul](docs/img/mass_haul.png) |
 
+## 📏  Set Scale *without* Measuring
+
+DigCalc now lets you skip the two-point pick and simply **type the drawing's scale**.
+
+| Where | Action |
+|-------|--------|
+| **Toolbar** | Click **Scale…** ![ruler-icon] or press **Ctrl + K** |
+| **Dialog – Enter Scale tab** | • *World units / inch* → type `50` & select `ft`<br>• **or** *Ratio* → keep `1` : `600` |
+| **Status Pill** | The pill in the status-bar turns <span style="color:#3c9;font-weight:bold;">green</span> → "Scale: 50 ft/in". Red means the PDF DPI no longer matches. |
+
+<figure>
+  <img src="docs/gif/scale_entry_ratio.gif" alt="Enter Scale dialog – ratio entry" width="640">
+  <figcaption><b>Fig 1.</b> Setting "1 : 600" gives 50 ft&nbsp;/ in at 150 dpi.</figcaption>
+</figure>
+
+> **Tip:** If you ever change the PDF render DPI, the pill flips red and tracing is disabled until you recalibrate.
+
 ## Installation
 
 ### Prerequisites

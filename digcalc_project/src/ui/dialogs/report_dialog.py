@@ -1,13 +1,19 @@
 import datetime
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QLabel, QDialogButtonBox, QFormLayout, QWidget,
-    QSizePolicy
+    QDialog,
+    QDialogButtonBox,
+    QFormLayout,
+    QLabel,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
 )
 
+
 class ReportDialog(QDialog):
-    """
-    A dialog window to display the results of a volume calculation.
+    """A dialog window to display the results of a volume calculation.
 
     Args:
         existing_surface_name (str): Name of the existing surface.
@@ -17,14 +23,16 @@ class ReportDialog(QDialog):
         fill_volume (float): Calculated fill volume.
         net_volume (float): Calculated net volume (fill - cut).
         parent (QWidget | None): The parent widget. Defaults to None.
+
     """
-    def __init__(self, 
-                 existing_surface_name: str, 
-                 proposed_surface_name: str, 
-                 grid_resolution: float, 
-                 cut_volume: float, 
-                 fill_volume: float, 
-                 net_volume: float, 
+
+    def __init__(self,
+                 existing_surface_name: str,
+                 proposed_surface_name: str,
+                 grid_resolution: float,
+                 cut_volume: float,
+                 fill_volume: float,
+                 net_volume: float,
                  parent: QWidget | None = None):
         super().__init__(parent)
         self.setWindowTitle("Volume Calculation Report")
@@ -62,7 +70,7 @@ class ReportDialog(QDialog):
         form_layout.addRow("Cut Volume:", self.lbl_cut)
         form_layout.addRow("Fill Volume:", self.lbl_fill)
         form_layout.addRow("Net Volume:", self.lbl_net)
-        
+
         # Set label alignment for clarity
         for i in range(form_layout.rowCount()):
             label_item = form_layout.itemAt(i, QFormLayout.LabelRole)
@@ -80,9 +88,10 @@ class ReportDialog(QDialog):
         self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
         self.adjustSize() # Adjust size to fit contents
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Example Usage (for testing)
     import sys
+
     from PySide6.QtWidgets import QApplication
 
     app = QApplication(sys.argv)
@@ -93,7 +102,7 @@ if __name__ == '__main__':
         cut_volume=1234.567,
         fill_volume=876.543,
         net_volume=876.543 - 1234.567,
-        parent=None
+        parent=None,
     )
     dialog.exec()
-    sys.exit() 
+    sys.exit()

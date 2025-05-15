@@ -1,9 +1,12 @@
 import math
-import pytest
 from unittest.mock import MagicMock
 
-from digcalc_project.src.ui.dialogs.scale_calibration_dialog import ScaleCalibrationDialog
+import pytest
+
 from digcalc_project.src.models.project import Project
+from digcalc_project.src.ui.dialogs.scale_calibration_dialog import (
+    ScaleCalibrationDialog,
+)
 
 
 # Create a reusable mock project fixture
@@ -33,4 +36,4 @@ def test_scale_calibration_dialog_simple(qtbot, mock_project):
     assert math.isclose(scale.world_per_px, 2.0)
     # Reciprocal pixels per foot should therefore be 0.5 px/ft
     assert math.isclose(1 / scale.world_per_px, 0.5, rel_tol=1e-6)
-    assert scale.world_units == "ft" 
+    assert scale.world_units == "ft"

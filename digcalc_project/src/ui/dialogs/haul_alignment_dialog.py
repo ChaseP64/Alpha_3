@@ -7,12 +7,12 @@ polyline will be supplied elsewhere in the UI (Phase 9).
 
 from __future__ import annotations
 
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
 from PySide6.QtWidgets import (
     QDialog,
-    QDoubleSpinBox,
     QDialogButtonBox,
+    QDoubleSpinBox,
     QFormLayout,
     QVBoxLayout,
 )
@@ -27,6 +27,7 @@ class HaulAlignmentDialog(QDialog):
         default_interval: Initial station interval (ft).
         default_free:     Initial free-haul distance (ft).
         parent:           Parent widget.
+
     """
 
     def __init__(
@@ -77,6 +78,5 @@ class HaulAlignmentDialog(QDialog):
     # ------------------------------------------------------------------
     def values(self) -> Tuple[float, float]:
         """Return *(station_interval, free_haul_distance)* in feet."""
-
         return self.interval.value(), self.free.value()
 

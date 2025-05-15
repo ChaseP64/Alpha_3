@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Serialization classes for DigCalc project data.
+"""Serialization classes for DigCalc project data.
 """
 
-import logging
-import pickle
-from typing import Optional
 import json
+import logging
+from typing import Optional
 
 from .project import Project  # Use relative import
 from .project_scale import ProjectScale
@@ -17,18 +14,16 @@ logger = logging.getLogger(__name__)
 
 class ProjectLoadError(Exception):
     """Custom exception for errors during project loading."""
-    pass
+
 
 class ProjectSerializer:
-    """
-    Handles saving and loading of the Project object.
+    """Handles saving and loading of the Project object.
     Delegates saving and loading to the Project class methods,
     which handle the actual serialization format (currently JSON).
     """
 
     def save(self, project: Project, filepath: str):
-        """
-        Saves the Project object by calling its save method.
+        """Saves the Project object by calling its save method.
 
         Args:
             project: The Project instance to save.
@@ -36,6 +31,7 @@ class ProjectSerializer:
 
         Raises:
             Exception: Any exception raised by Project.save.
+
         """
         logger.info(f"Delegating save for project '{project.name}' to Project.save({filepath}).")
         try:
@@ -48,8 +44,7 @@ class ProjectSerializer:
             raise # Re-raise the original exception
 
     def load(self, filepath: str) -> Project:
-        """
-        Loads a Project object by calling the Project.load class method.
+        """Loads a Project object by calling the Project.load class method.
 
         Args:
             filepath: The path to the project file to load.
@@ -60,18 +55,19 @@ class ProjectSerializer:
         Raises:
             ProjectLoadError: If Project.load fails or returns None.
             Exception: Any other unexpected exception during loading.
+
         """
         logger.info(f"Delegating load for {filepath} to Project.load.")
         try:
             project = Project.load(filepath)
-            
+
             if project is None:
                 logger.error(f"Project.load returned None for file: {filepath}")
                 raise ProjectLoadError(f"Failed to load project from {filepath}. File may be invalid, corrupted, or not found.")
-            
+
             logger.debug(f"Project.load successfully returned project '{project.name}' from {filepath}.")
             return project
-            
+
         except FileNotFoundError:
             logger.error(f"Project file not found: {filepath}")
             raise ProjectLoadError(f"Project file not found: {filepath}")
@@ -105,7 +101,6 @@ def scale_from_dict(d: Optional[dict]) -> Optional[ProjectScale]:
 
 def _load_surfaces(data: dict | None) -> dict[str, Surface]:
     """Helper to reconstruct *Surface* objects from a mapping."""
-
     surfaces_dict: dict[str, Surface] = {}
     if not isinstance(data, dict):
         return surfaces_dict
@@ -124,7 +119,6 @@ def _load_polylines(data):  # type: ignore[override]
     The *Project* class owns the heavy lifting of validating and migrating the
     traced-polyline schema, so at this stage we just pass things through.
     """
-
     return data if data is not None else {}
 
 def to_dict(project: Project) -> dict:
@@ -135,7 +129,6 @@ def to_dict(project: Project) -> dict:
     :py:meth:`Project.save`, but it lives here so it can evolve independently
     from on-disk persistence.
     """
-
     return {
         "name": project.name,
         # ------------------------------------------------------------------
@@ -149,7 +142,6 @@ def to_dict(project: Project) -> dict:
 
 def from_dict(data: dict) -> Project:
     """Hydrate a :class:`Project` from an in-memory mapping."""
-
     # ---------------- Scale (legacy-safe) ------------------------------
     scale_data = data.get("scale")
     scale_obj: Optional[ProjectScale] = scale_from_dict(scale_data)
@@ -169,4 +161,4 @@ def from_dict(data: dict) -> Project:
     proj.surfaces = _load_surfaces(data.get("surfaces"))
     proj.traced_polylines = _load_polylines(data.get("polylines"))
 
-    return proj 
+    return proj

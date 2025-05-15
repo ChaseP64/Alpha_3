@@ -1,13 +1,13 @@
-"""
-Tests for the PropertiesDock UI component.
+"""Tests for the PropertiesDock UI component.
 """
 
 import pytest
-from PySide6.QtWidgets import QDoubleSpinBox, QComboBox
+from PySide6.QtWidgets import QComboBox, QDoubleSpinBox
+
+from digcalc_project.src.services.settings_service import SettingsService
 
 # Widget being tested
 from digcalc_project.src.ui.properties_dock import PropertiesDock
-from digcalc_project.src.services.settings_service import SettingsService
 
 
 @pytest.fixture(autouse=True)
@@ -25,8 +25,8 @@ def dock(qtbot) -> PropertiesDock:
     widget = PropertiesDock()
     qtbot.addWidget(widget) # Manage widget lifetime
     # Ensure the tracing tab widgets are created and accessible
-    assert hasattr(widget, '_spline_sampling_spin')
-    assert hasattr(widget, '_elev_mode_combo')
+    assert hasattr(widget, "_spline_sampling_spin")
+    assert hasattr(widget, "_elev_mode_combo")
     return widget
 
 
@@ -108,7 +108,7 @@ def test_load_persisted_values_on_recreation(qtbot):
 
     # Clear the singleton instance cache to force re-init
     # (Requires knowledge of Singleton implementation, adjust if needed)
-    if hasattr(SettingsService, '_instances'):
+    if hasattr(SettingsService, "_instances"):
          SettingsService._instances = {}
     else:
          pytest.skip("Cannot reliably clear Singleton cache for this test.")
@@ -124,5 +124,5 @@ def test_load_persisted_values_on_recreation(qtbot):
     assert mode_combo.currentData() == test_mode
 
     # Clean up singleton cache again if needed
-    if hasattr(SettingsService, '_instances'):
-         SettingsService._instances = {} 
+    if hasattr(SettingsService, "_instances"):
+         SettingsService._instances = {}

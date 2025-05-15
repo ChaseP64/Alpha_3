@@ -2,12 +2,12 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from reportlab.platypus import SimpleDocTemplate
+
 from digcalc_project.src.core.reporting.pdf_report import add_job_summary
 
 
 def test_pdf_smoke(tmp_path):
     """Smoke-test: ensure a minimal PDF can be produced."""
-
     pdf: Path = tmp_path / "out.pdf"
 
     # Compose story.
@@ -25,4 +25,4 @@ def test_pdf_smoke(tmp_path):
     SimpleDocTemplate(str(pdf)).build(story)
 
     # Verify output file exists and is not empty.
-    assert pdf.exists() and pdf.stat().st_size > 0 
+    assert pdf.exists() and pdf.stat().st_size > 0

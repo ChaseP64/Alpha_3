@@ -1,15 +1,20 @@
 # digcalc_project/src/ui/dialogs/build_surface_dialog.py
 
 import logging
-from typing import List, Optional
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
+from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QFormLayout, QComboBox, QLineEdit, QDialogButtonBox,
-    QWidget
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QFormLayout,
+    QLineEdit,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtCore import Slot, Qt
 
 # --- Standard try/except import ---
 try:
@@ -21,10 +26,10 @@ except ImportError:
 # --- End Import ---
 
 class BuildSurfaceDialog(QDialog):
-    """
-    Dialog for selecting the source layer and naming the new surface
+    """Dialog for selecting the source layer and naming the new surface
     to be built from traced polylines.
     """
+
     # --- Use the potentially imported Project or fallback object ---
     def __init__(self, project: Optional[Project], parent: Optional[QWidget] = None):
     # --- END ---
@@ -37,13 +42,12 @@ class BuildSurfaceDialog(QDialog):
         if not self._project_model_available:
              logger.critical("Project model could not be imported. Dialog cannot function properly.")
              self.project = None
+        # Perform isinstance check against the imported Project class
+        elif project is not None and not isinstance(project, Project):
+            logger.error(f"Incorrect type passed for project: expected {Project}, got {type(project)}")
+            self.project = None
         else:
-             # Perform isinstance check against the imported Project class
-             if project is not None and not isinstance(project, Project):
-                 logger.error(f"Incorrect type passed for project: expected {Project}, got {type(project)}")
-                 self.project = None
-             else:
-                 self.project = project
+            self.project = project
         # --- END Simplified Check ---
         self.setMinimumWidth(350)
 
@@ -90,7 +94,7 @@ class BuildSurfaceDialog(QDialog):
         # --- END FIX ---
             for layer_name, polylines in self.project.traced_polylines.items():
                 # Add safety check for dictionary format inside loop
-                has_elevation = any(p.get('elevation') is not None for p in polylines if isinstance(p, dict))
+                has_elevation = any(p.get("elevation") is not None for p in polylines if isinstance(p, dict))
                 if has_elevation:
                     layers_found.append(layer_name)
                 else:
@@ -167,4 +171,4 @@ class BuildSurfaceDialog(QDialog):
 
     def surface_name(self) -> str:
         """Returns the entered surface name, stripped of whitespace."""
-        return self.name_edit.text().strip() 
+        return self.name_edit.text().strip()

@@ -1,4 +1,5 @@
 import math
+
 from digcalc_project.src.tools.daylight_offset_tool import offset_polygon
 
 
@@ -13,4 +14,4 @@ def test_offset_square():
     xs = [p[0] for p in out]
     ys = [p[1] for p in out]
     assert math.isclose(max(xs) - min(xs), 12.0, abs_tol=0.1)
-    assert math.isclose(max(ys) - min(ys), 12.0, abs_tol=0.1) 
+    assert math.isclose(max(ys) - min(ys), 12.0, abs_tol=0.1)

@@ -1,5 +1,6 @@
 from PySide6.QtGui import QUndoCommand
 
+
 class ToggleSmoothCommand(QUndoCommand):
     """Undo/redo command that toggles a polyline's smooth (interpolated) mode."""
 
@@ -10,10 +11,10 @@ class ToggleSmoothCommand(QUndoCommand):
     # ------------------------------------------------------------------
     # QUndoCommand interface
     # ------------------------------------------------------------------
-    def undo(self):  # noqa: D401
+    def undo(self):
         """Revert the polyline to its previous smoothing state."""
         self._pl.toggle_mode()
 
-    def redo(self):  # noqa: D401
+    def redo(self):
         """Apply the smoothing toggle on the polyline."""
-        self._pl.toggle_mode() 
+        self._pl.toggle_mode()

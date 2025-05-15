@@ -1,12 +1,15 @@
 from __future__ import annotations
-from pydantic import BaseModel, Field, ConfigDict
-from typing import Literal, Optional
+
 from datetime import datetime
+from typing import Literal, Optional
+
+from pydantic import BaseModel, ConfigDict, Field
 
 # Backwards-compatible ProjectScale with old field aliases
 
 class ProjectScale(BaseModel):
     """Stores how a drawing's paper inches convert to world units."""
+
     # Provide default to maintain backward compatibility where input_method was optional
     input_method: Literal["direct_entry", "ratio", "two_point"] = "two_point"
 
@@ -16,7 +19,7 @@ class ProjectScale(BaseModel):
     # direct entry  (e.g. 50 ft / in)
     # Alias old name "world_per_in" so legacy code/tests continue to work.
     world_per_paper_in: Optional[float] = Field(
-        None, gt=0, alias="world_per_in", serialization_alias="world_per_in"
+        None, gt=0, alias="world_per_in", serialization_alias="world_per_in",
     )
 
     # ratio entry   (e.g. 1 : 600)
@@ -26,7 +29,7 @@ class ProjectScale(BaseModel):
     # render context
     # Alias old name "px_per_in" so legacy code/tests continue to work.
     render_dpi_at_cal: float = Field(
-        96.0, gt=0, alias="px_per_in", serialization_alias="px_per_in"
+        96.0, gt=0, alias="px_per_in", serialization_alias="px_per_in",
     )
     calibrated_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -39,7 +42,7 @@ class ProjectScale(BaseModel):
             # Or if direct_entry was chosen but world_per_paper_in was not provided (should be caught by validation if not Optional)
             # For now, raise an error or return a sensible default / handle as per application logic.
             # Raising an error is safer to highlight misconfiguration.
-            if self.input_method == 'ratio' and self.ratio_numer and self.ratio_denom:
+            if self.input_method == "ratio" and self.ratio_numer and self.ratio_denom:
                 # Attempt to calculate on the fly if ratio parts are present
                 # This logic needs to be robust and match from_ratio or a dedicated calculation method
                 temp_world_per_in_for_ratio: float
@@ -58,11 +61,10 @@ class ProjectScale(BaseModel):
                     temp_world_per_in_for_ratio = self.ratio_denom / self.ratio_numer
                 else: # yd
                     temp_world_per_in_for_ratio = self.ratio_denom / (self.ratio_numer * 36.0) # inches to yards
-                
+
                 if self.render_dpi_at_cal > 0:
                     return temp_world_per_in_for_ratio / self.render_dpi_at_cal
-                else:
-                    raise ValueError("render_dpi_at_cal must be positive to calculate world_per_px")
+                raise ValueError("render_dpi_at_cal must be positive to calculate world_per_px")
 
             raise ValueError("world_per_paper_in is not set, cannot calculate world_per_px.")
         if self.render_dpi_at_cal <= 0:
@@ -71,7 +73,7 @@ class ProjectScale(BaseModel):
 
     # factory helpers
     @classmethod
-    def from_direct(cls, value: float, units: Literal["ft", "yd", "m"], render_dpi: float) -> "ProjectScale":
+    def from_direct(cls, value: float, units: Literal["ft", "yd", "m"], render_dpi: float) -> ProjectScale:
         return cls(
             input_method="direct_entry",
             world_units=units,
@@ -80,11 +82,11 @@ class ProjectScale(BaseModel):
         )
 
     @classmethod
-    def from_ratio(cls, numer: float, denom: float, units: Literal["ft", "yd", "m"], render_dpi: float) -> "ProjectScale":
+    def from_ratio(cls, numer: float, denom: float, units: Literal["ft", "yd", "m"], render_dpi: float) -> ProjectScale:
         # Assuming ratio is numer paper_units : denom world_units_of_same_kind
         # e.g., 1 inch on paper represents 600 inches in the world for a 1:600 scale.
         # world_per_paper_in should be in 'units' per 'paper inch'.
-        
+
         # Calculate how many specified 'units' are in one 'denom' unit (which is same as paper unit implied by ratio numerator)
         # Example: Ratio 1:600 (e.g. 1 paper inch to 600 world inches).
         # If project units are 'ft', then world_per_paper_in is 600in / 12(in/ft) = 50 ft/paper_in.
@@ -119,21 +121,21 @@ class ProjectScale(BaseModel):
     # Placeholder for two_point calibration method, if needed here
     # Or it can be constructed directly in ScaleCalibrationDialog
     @classmethod
-    def from_two_point(cls, world_units: Literal["ft", "yd", "m"], 
-                         world_per_paper_in: float, 
-                         render_dpi_at_cal: float) -> "ProjectScale":
+    def from_two_point(cls, world_units: Literal["ft", "yd", "m"],
+                         world_per_paper_in: float,
+                         render_dpi_at_cal: float) -> ProjectScale:
         return cls(
             input_method="two_point",
             world_units=world_units,
             world_per_paper_in=world_per_paper_in,
-            render_dpi_at_cal=render_dpi_at_cal
+            render_dpi_at_cal=render_dpi_at_cal,
         )
 
     # ------------------------------------------------------------------ #
     # Backwards-compat / semantic alias
     # ------------------------------------------------------------------ #
     @property
-    def ft_per_px(self) -> float:  # noqa: D401  (imperial naming kept for brevity)
+    def ft_per_px(self) -> float:
         """Alias of :pyattr:`world_per_px`.
 
         Historically our UI copy referred to the conversion factor as
@@ -143,8 +145,8 @@ class ProjectScale(BaseModel):
 
         Returns:
             float: Identical value to :pyattr:`world_per_px` (units per pixel).
-        """
 
+        """
         return self.world_per_px
 
     # ------------------------------------------------------------------ #
@@ -158,7 +160,6 @@ class ProjectScale(BaseModel):
         printed scale is expressed as *inches per foot* (common in civil
         drawings, e.g. 1" = 20').
         """
-
         if self.world_per_paper_in == 0:
             raise ZeroDivisionError("world_per_paper_in must be non-zero to compute inch_ft.")
         return 1 / self.world_per_paper_in
@@ -166,22 +167,19 @@ class ProjectScale(BaseModel):
     @property
     def pixel_ft(self) -> float:
         """Return *pixels per foot* for the current monitor + zoom setup."""
-
         return self.render_dpi_at_cal / self.world_per_paper_in if self.world_per_paper_in else 0
 
     # ------------------------------------------------------------------ #
     # Legacy attribute accessors
     # ------------------------------------------------------------------ #
     @property
-    def px_per_in(self) -> float:  # noqa: D401
+    def px_per_in(self) -> float:
         """Alias for :pyattr:`render_dpi_at_cal` (legacy name used in tests)."""
-
         return self.render_dpi_at_cal
 
     @property
-    def world_per_in(self) -> Optional[float]:  # noqa: D401
+    def world_per_in(self) -> Optional[float]:
         """Alias for :pyattr:`world_per_paper_in` (legacy name)."""
-
         return self.world_per_paper_in
 
     # Make model allow population by both field names and aliases
@@ -203,13 +201,14 @@ class ProjectScale(BaseModel):
         }
 
     @classmethod
-    def from_dict(cls, d: dict) -> "ProjectScale":
+    def from_dict(cls, d: dict) -> ProjectScale:
         """Create :class:`ProjectScale` from a dictionary.
 
         Args:
             d (dict): A mapping with the keys ``input_method``, ``world_units``,
                 ``world_per_paper_in``, ``ratio_numer``, ``ratio_denom``,
                 ``render_dpi_at_cal``, and ``calibrated_at``. Additional keys are ignored.
+
         """
         return cls(
             input_method=str(d["input_method"]),
@@ -219,4 +218,4 @@ class ProjectScale(BaseModel):
             ratio_denom=float(d["ratio_denom"]) if d["ratio_denom"] else None,
             render_dpi_at_cal=float(d["render_dpi_at_cal"]),
             calibrated_at=datetime.fromisoformat(d["calibrated_at"]) if d["calibrated_at"] else None,
-        ) 
+        )

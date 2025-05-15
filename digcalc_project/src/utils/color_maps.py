@@ -1,10 +1,10 @@
-import numpy as np
 import matplotlib.cm
 import matplotlib.colors
+import numpy as np
+
 
 def dz_to_rgba(dz: np.ndarray, clip: float = 5.0) -> np.ndarray:
-    """
-    Convert a delta-Z (elevation difference) array to an RGBA image.
+    """Convert a delta-Z (elevation difference) array to an RGBA image.
 
     Uses a Red-Blue diverging colormap ('RdBu_r') where negative values (cut)
     are red, positive values (fill) are blue, and values near zero are white.
@@ -19,6 +19,7 @@ def dz_to_rgba(dz: np.ndarray, clip: float = 5.0) -> np.ndarray:
     Returns:
         np.ndarray: An (H, W, 4) numpy array of uint8 RGBA values. Alpha is set
                     to 180 (out of 255) for slight transparency.
+
     """
     cmap = matplotlib.cm.get_cmap("RdBu_r")
     # Normalize dz values to [0, 1] after clipping
@@ -33,4 +34,4 @@ def dz_to_rgba(dz: np.ndarray, clip: float = 5.0) -> np.ndarray:
 
     # Set a global alpha value (e.g., 180 for some transparency)
     rgba[..., 3] = 180
-    return rgba 
+    return rgba

@@ -6,19 +6,20 @@ Provides a simple UI for specifying the horizontal offset distance and
 slope ratio (H:V) for daylight/break-line generation.
 """
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDialog,
-    QFormLayout,
-    QDoubleSpinBox,
     QDialogButtonBox,
+    QDoubleSpinBox,
+    QFormLayout,
     QVBoxLayout,
 )
-from PySide6.QtCore import Qt
+
 
 class DaylightDialog(QDialog):
     """Modal dialog to request daylight offset parameters from the user."""
 
-    def __init__(self, parent=None):  # noqa: D401 (simple init)
+    def __init__(self, parent=None):
         super().__init__(parent)
 
         self.setWindowTitle("Daylight Offset")

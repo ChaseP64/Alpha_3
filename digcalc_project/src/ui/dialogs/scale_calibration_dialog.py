@@ -8,37 +8,37 @@ enters the true distance between them.  From this we derive a
 coordinates can be converted from pixels → world units.
 """
 
-from typing import Optional
 import math
+from typing import Optional
 
-from PySide6.QtCore import Qt, QObject, QEvent, QPointF, QLineF, Signal
-from PySide6.QtGui import QPixmap, QPen, QBrush, QColor, QPainter, QMouseEvent
+from PySide6.QtCore import QEvent, QLineF, QObject, QPointF, Qt, Signal
+from PySide6.QtGui import QBrush, QColor, QMouseEvent, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
+    QApplication,
+    QButtonGroup,
+    QComboBox,
     QDialog,
-    QVBoxLayout,
-    QLabel,
-    QPushButton,
-    QGraphicsScene,
-    QGraphicsView,
-    QGraphicsPixmapItem,
+    QDialogButtonBox,
+    QDoubleSpinBox,
     QGraphicsEllipseItem,
     QGraphicsLineItem,
+    QGraphicsPixmapItem,
+    QGraphicsScene,
+    QGraphicsView,
     QHBoxLayout,
-    QDoubleSpinBox,
-    QDialogButtonBox,
-    QComboBox,
-    QRadioButton,
-    QButtonGroup,
-    QApplication,
-    QMessageBox,
-    QTabWidget,
-    QWidget,
+    QLabel,
     QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QRadioButton,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
 )
 
+from digcalc_project.src.models.project import Project
 from digcalc_project.src.models.project_scale import ProjectScale
 from digcalc_project.src.services.settings_service import SettingsService
-from digcalc_project.src.models.project import Project
 
 __all__ = ["ScaleCalibrationDialog"]
 
@@ -78,7 +78,7 @@ class _PointPicker(QObject):
             pass  # Defensive – ignore if signal not available
 
     # ----------------------------------------------
-    def eventFilter(self, obj: QObject, ev: QEvent):  # noqa: D401 – Qt API
+    def eventFilter(self, obj: QObject, ev: QEvent):
         """Capture first two mouse clicks on *viewport* and emit scene coords."""
         # Guard against the QGraphicsView being deleted between events
         if self._view is None:
@@ -92,11 +92,10 @@ class _PointPicker(QObject):
                     # First point picked – store and swallow event
                     self._p1 = scene_pt
                     return True  # Swallow to prevent panning
-                else:
-                    # Second point – emit and clean up
-                    self.points_picked.emit(self._p1, scene_pt)
-                    self._cleanup()
-                    return True
+                # Second point – emit and clean up
+                self.points_picked.emit(self._p1, scene_pt)
+                self._cleanup()
+                return True
         return False
 
     # ----------------------------------------------
@@ -140,7 +139,7 @@ class _GlobalPointPicker(QObject):
             pass
 
     # -----------------------------------------------------
-    def eventFilter(self, obj: QObject, ev: QEvent):  # noqa: D401
+    def eventFilter(self, obj: QObject, ev: QEvent):
         if self._view is None:
             return False
         if obj is self._view.viewport() and ev.type() == QEvent.Type.MouseButtonPress:
@@ -175,7 +174,7 @@ class ScaleCalibrationDialog(QDialog):
     shows an empty scene.
     """
 
-    def __init__(self, parent, project: Project, scene, page_pixmap: QPixmap | None = None):  # noqa: D401
+    def __init__(self, parent, project: Project, scene, page_pixmap: QPixmap | None = None):
         super().__init__(parent)
         self.setWindowTitle("Calibrate Printed Scale")
         self.resize(800, 600)
@@ -220,7 +219,7 @@ class ScaleCalibrationDialog(QDialog):
         self._dist_spin.setMaximum(1_000_000)
         # Backward-compatibility alias for tests and older code
         self.dist_spin = self._dist_spin
-        
+
         self._units_combo = QComboBox(self)
         self._units_combo.addItems(["ft", "yd", "m"])
 
@@ -258,6 +257,9 @@ class ScaleCalibrationDialog(QDialog):
 
         # Mode radios
         self.radio_world = QRadioButton("Direct entry (units / inch)")
+        # Alias for backward-compatibility with unit-tests that expect
+        # a widget named ``radio_direct`` (introduced in Task 12 spec).
+        self.radio_direct = self.radio_world  # type: ignore[attr-defined]
         self.radio_ratio = QRadioButton("Ratio (1 : N)")
         self.radio_world.setChecked(True)
         mode_group = QButtonGroup(enter_tab)
@@ -317,7 +319,7 @@ class ScaleCalibrationDialog(QDialog):
         # Load last-used defaults and connect signals
         self._units_combo.currentTextChanged.connect(self._on_units_changed)
         self._dist_spin.valueChanged.connect(self._validate_ready)
-        
+
         self._load_last_used_settings()
 
         # Force default selection to 'ft' for test determinism
@@ -336,7 +338,7 @@ class ScaleCalibrationDialog(QDialog):
     def _load_last_used_settings(self):
         """Load last used scale and units from SettingsService and apply."""
         last_units_stored, last_val_world_per_inch = SettingsService().last_scale()
-        
+
         # Force default to 'ft' for initial dialog (tests assume feet). Users can switch.
         if last_units_stored not in ("ft",):
             last_units_stored = "ft"
@@ -345,7 +347,7 @@ class ScaleCalibrationDialog(QDialog):
             self._units_combo.setCurrentText(last_units_stored)
         else:
             self._units_combo.setCurrentIndex(0)  # Default to 'ft'
-            
+
         # _on_units_changed will be triggered by setCurrentText if text changes,
         # or we call it manually to ensure correct initial state of _dist_spin.
         self._on_units_changed(self._units_combo.currentText())
@@ -353,7 +355,7 @@ class ScaleCalibrationDialog(QDialog):
     def _on_units_changed(self, unit_code: str):
         """Update distance spinbox suffix and initial value based on selected unit."""
         self._dist_spin.setSuffix(f" {unit_code}")
-        
+
         # Get the last persisted scale from settings (always in ft or m per inch)
         persisted_unit, persisted_val_per_inch = SettingsService().last_scale()
 
@@ -369,9 +371,9 @@ class ScaleCalibrationDialog(QDialog):
                 display_value = persisted_val_per_inch / 0.3048  # m/in -> ft/in
             elif unit_code == "yd":
                 display_value = persisted_val_per_inch / 0.9144 # m/in -> yd/in
-        
+
         # If unit_code is the same as persisted_unit, display_value remains persisted_val_per_inch
-        
+
         self._dist_spin.setValue(display_value)
         self._validate_ready()
 
@@ -422,7 +424,7 @@ class ScaleCalibrationDialog(QDialog):
         # Reuse existing processing logic – draws overlay in preview too
         self._on_points_selected(p1, p2)
 
-    def _on_points_selected(self, p1: QPointF, p2: QPointF):  # noqa: D401 – Qt slot
+    def _on_points_selected(self, p1: QPointF, p2: QPointF):
         # Restore dialog visibility after picking
         if hasattr(self, "_was_visible") and self._was_visible:
             self.show()
@@ -559,29 +561,27 @@ class ScaleCalibrationDialog(QDialog):
 
         # Persist settings: Convert to ft or m for SettingsService
         unit_to_persist = self._units_combo.currentText() if self.tabs.currentIndex()==0 else self.combo_units.currentText()
-        value_to_persist = getattr(self._scale, 'world_per_in', None)
+        value_to_persist = getattr(self._scale, "world_per_in", None)
         if unit_to_persist in ("ft", "m") and value_to_persist:
             SettingsService().set_last_scale(unit_to_persist, value_to_persist)
 
         self.accept()
 
     def _compute_px_per_in(self) -> float:
-        """
-        Returns the DPI at which the currently displayed PDF page (for calibration)
+        """Returns the DPI at which the currently displayed PDF page (for calibration)
         was rendered. This comes from the project settings.
         """
         if self._project and self._project.pdf_background_path and self._project.pdf_background_dpi > 0:
             # Ensure a PDF is actually loaded in the project and has a valid DPI set
             return float(self._project.pdf_background_dpi)
-        else:
-            # Fallback or error condition if no PDF is loaded or DPI is invalid
-            # This case should ideally be prevented by disabling calibration if no PDF/DPI
-            QMessageBox.warning(
-                self, 
-                "Scale Calibration Error", 
-                "Cannot determine rendering DPI. Please ensure a PDF is loaded with a valid DPI setting in the project."
-            )
-            return 96.0 # Or raise an error / return a value that signals failure
+        # Fallback or error condition if no PDF is loaded or DPI is invalid
+        # This case should ideally be prevented by disabling calibration if no PDF/DPI
+        QMessageBox.warning(
+            self,
+            "Scale Calibration Error",
+            "Cannot determine rendering DPI. Please ensure a PDF is loaded with a valid DPI setting in the project.",
+        )
+        return 96.0 # Or raise an error / return a value that signals failure
 
     # ------------------------------------------------------------------
     def result_scale(self) -> ProjectScale | None: # Changed to allow None if not accepted
@@ -590,4 +590,4 @@ class ScaleCalibrationDialog(QDialog):
 
     # Alias for backward-compatibility with older tests that directly call _accept()
     # and for consistency as _on_accept is the slot.
-    _accept = _on_accept 
+    _accept = _on_accept

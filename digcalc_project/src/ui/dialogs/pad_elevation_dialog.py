@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """Pad Elevation dialog.
 
 Provides a simple interface for the user to enter a pad elevation and optionally
@@ -13,11 +12,11 @@ from typing import Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QDialog,
-    QFormLayout,
-    QDoubleSpinBox,
     QCheckBox,
+    QDialog,
     QDialogButtonBox,
+    QDoubleSpinBox,
+    QFormLayout,
     QVBoxLayout,
 )
 
@@ -32,7 +31,7 @@ _LAST_PAD_ELEV: float = 0.0  # Remember the last entered elevation this session
 class PadElevationDialog(QDialog):
     """Modal dialog to request a pad elevation from the user."""
 
-    def __init__(self, last_value: Optional[float] | None = None, parent=None):  # noqa: D401
+    def __init__(self, last_value: Optional[float] | None = None, parent=None):
         super().__init__(parent)
         global _LAST_PAD_ELEV
 
@@ -93,4 +92,4 @@ class PadElevationDialog(QDialog):
         """Cache the accepted value for the next dialog instance."""
         global _LAST_PAD_ELEV
         _LAST_PAD_ELEV = self.value()
-        logger.debug("Stored last pad elevation value: %.2f", _LAST_PAD_ELEV) 
+        logger.debug("Stored last pad elevation value: %.2f", _LAST_PAD_ELEV)

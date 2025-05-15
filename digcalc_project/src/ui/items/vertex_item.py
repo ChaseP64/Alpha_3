@@ -7,9 +7,9 @@ scene position changes, and highlights on hover.
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import QGraphicsPathItem, QStyleOptionGraphicsItem, QGraphicsItem
-from PySide6.QtGui import QPainterPath, QPen, QPainter, QColor
-from PySide6.QtCore import Qt, Signal, QPointF, QObject, QEvent
+from PySide6.QtCore import QObject, QPointF, Qt, Signal
+from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
+from PySide6.QtWidgets import QGraphicsItem, QGraphicsPathItem, QStyleOptionGraphicsItem
 
 from digcalc_project.src.services.settings_service import SettingsService
 
@@ -87,12 +87,12 @@ class VertexItem(QObject, QGraphicsPathItem):
     # ------------------------------------------------------------------
     # QGraphicsItem overrides
     # ------------------------------------------------------------------
-    def hoverEnterEvent(self, _event):  # noqa: D401 – Qt override signature
+    def hoverEnterEvent(self, _event):
         """Highlight the item when hovered."""
         self.setPen(self._hover_pen)
         self._update_tooltip()
 
-    def hoverLeaveEvent(self, _event):  # noqa: D401 – Qt override signature
+    def hoverLeaveEvent(self, _event):
         """Restore normal appearance when the cursor leaves."""
         self.setPen(self._normal_pen)
 
@@ -110,7 +110,7 @@ class VertexItem(QObject, QGraphicsPathItem):
     # ------------------------------------------------------------------
     # Painting – ensure crisp rendering (optional override)
     # ------------------------------------------------------------------
-    def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget=None):  # noqa: D401,E501
+    def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget=None):
         """Ensure the pen is used from current item state then delegate to base."""
         painter.setPen(self.pen())
         QGraphicsPathItem.paint(self, painter, option, widget)
@@ -134,16 +134,15 @@ class VertexItem(QObject, QGraphicsPathItem):
     # ------------------------------------------------------------------
     # Convenience helpers
     # ------------------------------------------------------------------
-    def to_tuple(self) -> tuple[float, float, float]:  # noqa: D401
+    def to_tuple(self) -> tuple[float, float, float]:
         """Return the vertex position as an *(x, y, z)* tuple in scene units."""
-
         pos: QPointF = self.pos()
         return (pos.x(), pos.y(), self._z)
 
     # ------------------------------------------------------------------
     # Mouse interaction overrides
     # ------------------------------------------------------------------
-    def mousePressEvent(self, ev):  # noqa: D401
+    def mousePressEvent(self, ev):
         """Record starting position before a potential drag."""
         # Capture starting position *before* the built-in movable logic updates it.
         self._drag_start_pos = QPointF(self.pos())
@@ -154,7 +153,7 @@ class VertexItem(QObject, QGraphicsPathItem):
         self._start_pos = QPointF(self.scenePos())
         super().mousePressEvent(ev)
 
-    def mouseMoveEvent(self, ev):  # noqa: D401
+    def mouseMoveEvent(self, ev):
         if self._constrain:
             delta = ev.scenePos() - self._start_pos
             if abs(delta.x()) >= abs(delta.y()):
@@ -172,7 +171,7 @@ class VertexItem(QObject, QGraphicsPathItem):
 
         super().mouseMoveEvent(ev)
 
-    def mouseReleaseEvent(self, ev):  # noqa: D401
+    def mouseReleaseEvent(self, ev):
         """Push a :class:`MoveVertexCommand` if the vertex has moved."""
         super().mouseReleaseEvent(ev)
         # Handle Ctrl-drag duplication
@@ -180,7 +179,9 @@ class VertexItem(QObject, QGraphicsPathItem):
             try:
                 parent = self.parentItem()
                 if parent and hasattr(parent, "_vertex_items"):
-                    from digcalc_project.src.ui.items.vertex_item import VertexItem  # self-import safe
+                    from digcalc_project.src.ui.items.vertex_item import (
+                        VertexItem,  # self-import safe
+                    )
 
                     new_v = VertexItem(self.pos(), parent=parent)
                     vertices = parent._vertex_items  # type: ignore[attr-defined]
@@ -217,14 +218,16 @@ class VertexItem(QObject, QGraphicsPathItem):
             if main_win is None or not hasattr(main_win, "undoStack"):
                 return
 
-            from digcalc_project.src.ui.commands.move_vertex_command import MoveVertexCommand
+            from digcalc_project.src.ui.commands.move_vertex_command import (
+                MoveVertexCommand,
+            )
 
             main_win.undoStack.push(MoveVertexCommand(self, self._drag_start_pos, new_pos))
         finally:
             # Reset the start position marker
             self._drag_start_pos = None
 
-    def mouseDoubleClickEvent(self, ev):  # noqa: D401
+    def mouseDoubleClickEvent(self, ev):
         """Emit :pyattr:`doubleClicked` when the item is double-clicked."""
         # Emit signal with self reference so listeners can access properties
         self.doubleClicked.emit(self)
@@ -236,7 +239,6 @@ class VertexItem(QObject, QGraphicsPathItem):
     # ------------------------------------------------------------------
     def _layer_pen_colour(self):
         """Return colour based on parent polyline pen or fallback."""
-
         p = self.parentItem()
         if p and hasattr(p, "pen"):
             try:
@@ -250,7 +252,6 @@ class VertexItem(QObject, QGraphicsPathItem):
     # --------------------------------------------------------------
     def _update_tooltip(self):
         """Update tooltip with XYZ coordinates, Δ to previous vertex, and station."""
-
         try:
             parent = self.parentItem()
             if parent is None or not hasattr(parent, "_vertex_items"):
@@ -276,11 +277,11 @@ class VertexItem(QObject, QGraphicsPathItem):
             # Tooltip string
             self.setToolTip(
                 f"X:{this.x():.2f}  Y:{this.y():.2f}  Z:{self._z:.2f}\n"
-                f"ΔPrev:{prev_dist:.2f}  Station:{station:.2f}"
+                f"ΔPrev:{prev_dist:.2f}  Station:{station:.2f}",
             )
         except Exception:
             # Fail quietly – tooltip is non-critical.
             pass
 
 
-__all__ = ["VertexItem"] 
+__all__ = ["VertexItem"]

@@ -12,8 +12,8 @@ To maintain backwards compatibility we alias these top-level sub-packages to
 their real locations under :pymod:`digcalc_project.src` at import time.
 """
 
-from importlib import import_module
 import sys as _sys
+from importlib import import_module
 
 _subs = [
     "core",
@@ -36,4 +36,4 @@ for _sub in _subs:
         continue
 
 # Clean-up namespace
-del import_module, _sys, _sub, _module, _subs 
+del import_module, _sys, _sub, _module, _subs

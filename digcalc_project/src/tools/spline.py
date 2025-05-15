@@ -1,5 +1,4 @@
-"""
-Catmull-Rom spline helper for DigCalc.
+"""Catmull-Rom spline helper for DigCalc.
 
 Provides a utility to convert a list of QPointF control points into a smoothed
 QPainterPath using the Catmull-Rom interpolation scheme. When fewer than three
@@ -8,16 +7,15 @@ straight poly-line so that callers do not need to special-case their input size.
 """
 from __future__ import annotations
 
-from typing import List, Tuple
-
-from PySide6.QtCore import QPointF
-from PySide6.QtGui import QPainterPath
-
 # ----------------------------------------------------------------------
 # Extras needed for sampling helper
 # ----------------------------------------------------------------------
 import hashlib
 import math
+from typing import List, Tuple
+
+from PySide6.QtCore import QPointF
+from PySide6.QtGui import QPainterPath
 
 # Internal cache keyed by density + vertex hash so repeated requests are cheap
 _sample_cache: dict[str, List[Tuple[float, float, float]]] = {}
@@ -35,13 +33,12 @@ def _points_to_xyz(pts: List[QPointF]) -> List[Tuple[float, float, float]]:
     subclass or monkey-patched attribute/property ``z``/``z()`` we happily
     consume it, otherwise we default to zero for compatibility.
     """
-
     out: List[Tuple[float, float, float]] = []
     for pt in pts:
         # Be tolerant – support .z attribute *or* .z() method if supplied.
         z_val = 0.0
         if hasattr(pt, "z"):
-            z_attr = getattr(pt, "z")  # could be value or callable
+            z_attr = pt.z  # could be value or callable
             z_val = z_attr() if callable(z_attr) else float(z_attr)
         out.append((float(pt.x()), float(pt.y()), float(z_val)))
     return out
@@ -49,7 +46,6 @@ def _points_to_xyz(pts: List[QPointF]) -> List[Tuple[float, float, float]]:
 
 def _vertex_hash(pts: List[QPointF]) -> str:
     """Return SHA-1 hash for the *x,y* coordinates – cache key helper."""
-
     h = hashlib.sha1()
     for pt in pts:
         h.update(float(pt.x()).hex().encode())
@@ -62,8 +58,8 @@ def _vertex_hash(pts: List[QPointF]) -> str:
 # ----------------------------------------------------------------------
 
 
-def sample(pts: List[QPointF], density_ft: float = 1.0) -> List[Tuple[float, float, float]]:  # noqa: D401,E501
-    """Return evenly spaced (≈ *density_ft*) points along a smoothed spline.
+def sample(pts: List[QPointF], density_ft: float = 1.0) -> List[Tuple[float, float, float]]:  # noqa: E501
+    r"""Return evenly spaced (≈ *density_ft*) points along a smoothed spline.
 
     Behaviour
     ---------
@@ -75,7 +71,6 @@ def sample(pts: List[QPointF], density_ft: float = 1.0) -> List[Tuple[float, flo
     The routine internally caches results by ``(density, SHA-1(vertices))`` so
     repeated calls are *O(1)* after the first computation.
     """
-
     # Degenerate cases – nothing or singleton list – just echo back.
     if len(pts) < 2:
         return _points_to_xyz(pts)
@@ -132,7 +127,6 @@ def sample(pts: List[QPointF], density_ft: float = 1.0) -> List[Tuple[float, flo
 
 def _linear_resample(xyz: List[Tuple[float, float, float]], density: float) -> List[Tuple[float, float, float]]:
     """Return linearly densified points along *xyz* polyline."""
-
     import numpy as np
 
     arr = np.asarray(xyz, dtype=float)
@@ -156,7 +150,7 @@ def _linear_resample(xyz: List[Tuple[float, float, float]], density: float) -> L
 __all__ = ["catmull_rom", "sample"]
 
 
-def catmull_rom(pts: List[QPointF], samples_per_seg: int = 8) -> QPainterPath:  # noqa: D401,E501
+def catmull_rom(pts: List[QPointF], samples_per_seg: int = 8) -> QPainterPath:
     """Return a Catmull-Rom interpolated ``QPainterPath``.
 
     The helper walks the provided *pts* list and creates a smoothed
@@ -178,8 +172,8 @@ def catmull_rom(pts: List[QPointF], samples_per_seg: int = 8) -> QPainterPath:  
         QPainterPath: A path that starts at ``pts[0]`` and ends at the last
             control point while smoothly passing through the intermediate
             points.
-    """
 
+    """
     # Defensive programming – allow any iterable, but materialise once.
     pts = list(pts)
 
@@ -225,4 +219,4 @@ def catmull_rom(pts: List[QPointF], samples_per_seg: int = 8) -> QPainterPath:  
 
     # Ensure we end exactly at the last control point.
     path.lineTo(pts[-1])
-    return path 
+    return path

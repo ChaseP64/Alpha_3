@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """Undo command to add/remove a pad polyline with constant elevation.
 
 A *pad* is treated here as a closed polyline (polygon) whose vertices share the
@@ -9,7 +8,7 @@ another undo command inside it (avoiding double-pushes).
 
 from __future__ import annotations
 
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 
 from PySide6.QtGui import QUndoCommand
 
@@ -22,7 +21,7 @@ Point3D = Tuple[float, float, float]
 class SetPadElevationCommand(QUndoCommand):
     """Adds or removes a pad polyline from a :class:`TracingScene`."""
 
-    def __init__(self, scene: TracingScene, pts3d: List[Point3D], layer: str = "Pads"):  # noqa: D401
+    def __init__(self, scene: TracingScene, pts3d: List[Point3D], layer: str = "Pads"):
         super().__init__("Set pad elevation")
         if len(pts3d) < 3:
             raise ValueError("Pad must contain at least three vertices (closed polygon).")
@@ -34,7 +33,7 @@ class SetPadElevationCommand(QUndoCommand):
     # ------------------------------------------------------------------
     # QUndoCommand API
     # ------------------------------------------------------------------
-    def redo(self):  # noqa: D401
+    def redo(self):
         """Add (or show) the pad polyline in the scene."""
         if self._item is None:
             # `add_offset_breakline` returns the item when *push_to_undo* is False
@@ -45,7 +44,7 @@ class SetPadElevationCommand(QUndoCommand):
         else:
             self._item.setVisible(True)
 
-    def undo(self):  # noqa: D401
+    def undo(self):
         """Hide (effectively remove) the pad polyline from the scene."""
         if self._item:
-            self._item.setVisible(False) 
+            self._item.setVisible(False)

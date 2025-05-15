@@ -16,6 +16,7 @@ class SetPolylineUniformZCommand(QUndoCommand):
     Args:
         polyline: The ``PolylineItem`` whose vertices will be modified.
         z: The elevation (Z) value to apply in *feet*.
+
     """
 
     def __init__(self, polyline: PolylineItem, z: float):
@@ -28,12 +29,12 @@ class SetPolylineUniformZCommand(QUndoCommand):
     # ------------------------------------------------------------------
     # QtUndoCommand overrides
     # ------------------------------------------------------------------
-    def redo(self):  # noqa: D401 – Qt signature
+    def redo(self):
         """Apply the uniform Z elevation to all vertices."""
         for v in self._polyline.vertices():
             v.set_z(self._new_z)
 
-    def undo(self):  # noqa: D401 – Qt signature
+    def undo(self):
         """Restore the original per-vertex elevations that existed before redo."""
         for v, old_z in zip(self._polyline.vertices(), self._old_z):
-            v.set_z(old_z) 
+            v.set_z(old_z)

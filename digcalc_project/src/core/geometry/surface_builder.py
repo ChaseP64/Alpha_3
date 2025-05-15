@@ -1,19 +1,19 @@
 # digcalc_project/src/core/geometry/surface_builder.py
 
 import logging
-from typing import List, Tuple, Dict, Optional, Any
+from typing import Any, Dict, List, Tuple
+
 import numpy as np
 from scipy.spatial import Delaunay, QhullError
 
 # Ensure Point3D and Triangle are imported alongside Surface
-from ...models.surface import Surface, Point3D, Triangle
-from ...models.project import PolylineData
+from ...models.surface import Point3D, Surface, Triangle
 
 logger = logging.getLogger(__name__)
 
 class SurfaceBuilderError(Exception):
     """Custom exception for surface building errors."""
-    pass
+
 
 class SurfaceBuilder:
     """Builds a triangulated surface (TIN) from geometric data."""
@@ -22,10 +22,9 @@ class SurfaceBuilder:
     def build_from_polylines(
         layer_name: str,
         polylines_data: List[Dict[str, Any]], # Expect list of PolylineData dicts
-        revision: int # New argument
+        revision: int, # New argument
     ) -> Surface:
-        """
-        Builds a TIN surface from a list of polylines with elevation data.
+        """Builds a TIN surface from a list of polylines with elevation data.
 
         Args:
             layer_name: The name of the source layer.
@@ -37,12 +36,13 @@ class SurfaceBuilder:
 
         Raises:
             SurfaceBuilderError: If input data is invalid or triangulation fails.
+
         """
         logger.info(f"Attempting to build surface from layer '{layer_name}' ({len(polylines_data)} polylines).")
         points_3d: List[Tuple[float, float, float]] = []
         unique_pts_check = set()
 
-        # --- Extract 3D Points --- 
+        # --- Extract 3D Points ---
         for i, poly_dict in enumerate(polylines_data):
             try:
                 elevation = poly_dict.get("elevation")
@@ -68,10 +68,10 @@ class SurfaceBuilder:
         if num_unique_pts < 3:
             raise SurfaceBuilderError(
                 f"Cannot build surface from layer '{layer_name}'. "
-                f"Requires at least 3 unique points with elevation, but found only {num_unique_pts}."
+                f"Requires at least 3 unique points with elevation, but found only {num_unique_pts}.",
             )
 
-        # --- Triangulation --- 
+        # --- Triangulation ---
         points_array = np.array(points_3d)
         xy_coords = points_array[:, :2]
         faces_np = None # Initialize faces_np
@@ -81,7 +81,7 @@ class SurfaceBuilder:
             if len(unique_xy) < 3:
                  raise SurfaceBuilderError(
                     f"Cannot build surface from layer '{layer_name}'. "
-                    f"Requires at least 3 unique XY locations, but found only {len(unique_xy)}."
+                    f"Requires at least 3 unique XY locations, but found only {len(unique_xy)}.",
                 )
             tri = Delaunay(unique_xy)
             original_indices_map = unique_indices[tri.simplices]
@@ -90,7 +90,7 @@ class SurfaceBuilder:
         except QhullError as qe:
              logger.error(f"Delaunay triangulation failed for layer '{layer_name}': {qe}", exc_info=True)
              raise SurfaceBuilderError(
-                 f"Triangulation failed for layer '{layer_name}'. Points might be collinear or insufficient. Error: {qe}"
+                 f"Triangulation failed for layer '{layer_name}'. Points might be collinear or insufficient. Error: {qe}",
              ) from qe
         except Exception as e:
             logger.exception(f"Unexpected error during triangulation for layer '{layer_name}': {e}")
@@ -106,7 +106,7 @@ class SurfaceBuilder:
             # Create Point3D object (ID will be generated automatically)
             point_obj = Point3D(x=float(x), y=float(y), z=float(z))
             surface_points_dict[point_obj.id] = point_obj # Use point ID as the key
-            
+
         # Convert faces_np into the required dictionary formats using the NEW point IDs
         # We need a map from the original point index (0, 1, 2...) to the new Point3D ID
         point_id_list = [p.id for p in surface_points_dict.values()] # Assumes order is preserved from enumerate
@@ -115,9 +115,9 @@ class SurfaceBuilder:
         # surface_points_dict: Dict[str, Point3D] = {}
         # for i, (x, y, z) in enumerate(points_array):
         #     point_obj = Point3D(x=float(x), y=float(y), z=float(z))
-        #     surface_points_dict[point_obj.id] = point_obj 
-        #     point_id_list.append(point_obj.id) 
-        
+        #     surface_points_dict[point_obj.id] = point_obj
+        #     point_id_list.append(point_obj.id)
+
         surface_triangles_dict: Dict[str, Triangle] = {}
         # Assuming faces_np contains indices corresponding to the original points_array order
         for i, face_indices in enumerate(faces_np):
@@ -127,8 +127,8 @@ class SurfaceBuilder:
                 p2_id = point_id_list[face_indices[1]]
                 p3_id = point_id_list[face_indices[2]]
                 # Create Triangle object using the actual Point3D objects
-                triangle = Triangle(p1=surface_points_dict[p1_id], 
-                                    p2=surface_points_dict[p2_id], 
+                triangle = Triangle(p1=surface_points_dict[p1_id],
+                                    p2=surface_points_dict[p2_id],
                                     p3=surface_points_dict[p3_id])
                 surface_triangles_dict[triangle.id] = triangle # Use triangle ID as key
             except IndexError as e_idx:
@@ -138,17 +138,17 @@ class SurfaceBuilder:
                  logger.error(f"Key error creating triangle {i} (likely missing point ID): {e_key}. Face indices: {face_indices}")
                  continue # Skip this triangle
 
-        # --- Create Surface object --- 
+        # --- Create Surface object ---
         surface = Surface(
             name=default_surface_name,
             points=surface_points_dict, # Pass dict of Point3D objects
             triangles=surface_triangles_dict, # Pass dict of Triangle objects
             source_layer_name=layer_name,
-            source_layer_revision=revision
+            source_layer_revision=revision,
         )
 
         logger.info(f"Successfully built surface '{surface.name}' from layer '{layer_name}' (Rev: {revision}).")
-        return surface 
+        return surface
 
 def lowest_surface(design: Surface, existing: Surface) -> Surface:
     """Return a Surface whose Z at each (x,y) is the lower of *design* or
@@ -166,8 +166,8 @@ def lowest_surface(design: Surface, existing: Surface) -> Surface:
     Returns:
         A new :class:`~digcalc_project.models.surface.Surface` instance called
         "Lowest" coloured yellow for UI visibility.
-    """
 
+    """
     assert design.grid_spacing == existing.grid_spacing, "mismatch spacing"
 
     # Points are stored in dictionaries keyed by UUIDs so the ordering is not
@@ -175,7 +175,7 @@ def lowest_surface(design: Surface, existing: Surface) -> Surface:
     # that *zip()* pairs matching locations together.
     def _sorted(surface: Surface):
         return sorted(
-            [(p.x, p.y, p.z) for p in surface.points.values()], key=lambda t: (t[0], t[1])
+            [(p.x, p.y, p.z) for p in surface.points.values()], key=lambda t: (t[0], t[1]),
         )
 
     design_pts = _sorted(design)
@@ -192,7 +192,7 @@ def lowest_surface(design: Surface, existing: Surface) -> Surface:
         points=new_pts,
         spacing=design.grid_spacing,
         color="yellow",
-    ) 
+    )
 
 # ------------------------------------------------------------------
 # Utility helpers for testing / quick-build surfaces
@@ -211,4 +211,4 @@ def flat_surface(z: float, size: int = 10, name: str = "Flat", spacing: float = 
             y = j * spacing
             pts.append((x, y, z))
 
-    return Surface.from_point_list(name=name, points=pts, spacing=spacing) 
+    return Surface.from_point_list(name=name, points=pts, spacing=spacing)

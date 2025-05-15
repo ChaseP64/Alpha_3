@@ -27,6 +27,9 @@
 - [x] Create visualization panel
 - [ ] Add reporting functionality
 
+### GUI Testing
+- [x] Task 12: GUI Tests for Two-Tab Scale Dialog (World-units, Ratio, Invalid input) - 2025-05-23
+
 ## Discovered During Work
 - [x] Recreate Python files as UTF-8 text files to remove null bytes and invalid characters
 - [x] Reset `__init__.py` files to clean UTF-8 files

@@ -2,8 +2,8 @@
 
 from shapely.geometry import LineString
 
-from digcalc_project.src.core.geometry.surface_builder import flat_surface
 from digcalc_project.src.core.calculations.mass_haul import build_mass_haul
+from digcalc_project.src.core.geometry.surface_builder import flat_surface
 
 
 def test_simple_fill_job() -> None:
@@ -19,4 +19,4 @@ def test_simple_fill_job() -> None:
     assert stations[-1].cumulative > 0
 
     # Ensure the number of stations matches expectation (~100/10 + 1 = 11)
-    assert len(stations) == 11 
+    assert len(stations) == 11

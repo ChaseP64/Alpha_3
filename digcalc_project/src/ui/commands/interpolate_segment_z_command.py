@@ -24,10 +24,10 @@ class InterpolateSegmentZCommand(QUndoCommand):
     # ------------------------------------------------------------------
     # QUndoCommand interface
     # ------------------------------------------------------------------
-    def redo(self):  # noqa: D401
+    def redo(self):
         for v, z in zip(self._verts, self._new_z):
             v.set_z(z)
 
-    def undo(self):  # noqa: D401
+    def undo(self):
         for v, z in zip(self._verts, self._old_z):
-            v.set_z(z) 
+            v.set_z(z)

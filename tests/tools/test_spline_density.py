@@ -14,7 +14,6 @@ from digcalc_project.src.tools.spline import catmull_rom, sample  # noqa: E402
 
 def test_square_density_default():
     """A 40-ft perimeter square sampled at 1-ft density should yield ~40 points."""
-
     square = [
         QPointF(0, 0),
         QPointF(10, 0),
@@ -33,4 +32,4 @@ def test_square_density_default():
 
     # Endpoints should match original start/end (x,y only; sample returns (x,y,z))
     assert pts[0][0] == 0 and pts[0][1] == 0
-    assert pts[-1][0] == 0 and pts[-1][1] == 0 
+    assert pts[-1][0] == 0 and pts[-1][1] == 0

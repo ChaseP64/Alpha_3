@@ -1,19 +1,19 @@
 import pytest
-from PySide6.QtWidgets import QMessageBox, QApplication
+from PySide6.QtWidgets import QApplication, QMessageBox
 
-from digcalc_project.src.ui.main_window import MainWindow
 from digcalc_project.src.models.project import Project
 from digcalc_project.src.models.project_scale import ProjectScale
+from digcalc_project.src.ui.main_window import MainWindow
 
 
 @pytest.fixture(autouse=True)
 def _app(qtbot):
     """Ensure a QApplication instance is available for all tests."""
     app = QApplication.instance() or QApplication([])
-    yield app
+    return app
 
 
-@pytest.fixture()
+@pytest.fixture
 def main_window(qtbot):
     """Create a main window and register with qtbot."""
     mw = MainWindow()
@@ -43,11 +43,11 @@ def test_scale_warning_shown_once(qtbot, monkeypatch, main_window):
 
     # Simulate calibration by setting project.scale and notifying the scene
     project.scale = ProjectScale(
-        input_method="two_point", 
-        world_units="ft", 
-        world_per_paper_in=20.0, 
-        render_dpi_at_cal=96.0
+        input_method="two_point",
+        world_units="ft",
+        world_per_paper_in=20.0,
+        render_dpi_at_cal=96.0,
     )
     scene.on_scale_calibrated()
 
-    assert scene._scale_overlay is None, "Overlay not removed after calibration." 
+    assert scene._scale_overlay is None, "Overlay not removed after calibration."

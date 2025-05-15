@@ -1,10 +1,10 @@
 import numpy as np
 import pyvista as pv
 
+
 # TODO: Add type hint for 'surface' after confirming its type
 def surface_to_polydata(surface):
-    """
-    Converts Surface (TIN/grid) to PyVista PolyData with 'dz' scalar
+    """Converts Surface (TIN/grid) to PyVista PolyData with 'dz' scalar
     if surface has cut/fill map in surface.dz_grid, else just elevation.
 
     Args:
@@ -12,6 +12,7 @@ def surface_to_polydata(surface):
 
     Returns:
         pyvista.PolyData: A PyVista mesh representation of the surface.
+
     """
     # ------------------------------------------------------------------
     # Build point array (handle both list-of-tuples and dict-of-Point3D)
@@ -30,10 +31,10 @@ def surface_to_polydata(surface):
     # Build faces array if triangles are present and reference by objects or indices
     # ------------------------------------------------------------------
     faces = None
-    if hasattr(surface, 'triangles') and surface.triangles:
+    if hasattr(surface, "triangles") and surface.triangles:
         # If triangles is a dict of Triangle objects
         first = next(iter(surface.triangles.values()))
-        if hasattr(first, 'p1'):
+        if hasattr(first, "p1"):
             # Triangle object path
             face_list = []
             for tri in surface.triangles.values():
@@ -77,4 +78,4 @@ def surface_to_polydata(surface):
     else:
         mesh["dz"] = pts[:, 2] # Use Z coordinate if no dz_grid
 
-    return mesh 
+    return mesh

@@ -1,10 +1,12 @@
 import math
+
+from src.core.calculations.volume_calculator import VolumeCalculator
 from src.models.project import Project
 from src.models.region import Region
-from src.core.calculations.volume_calculator import VolumeCalculator
-from src.models.surface import Surface, Point3D, Triangle
+from src.models.surface import Point3D, Surface, Triangle
 
-# --- Test Helper Function --- 
+
+# --- Test Helper Function ---
 def flat_surface(z: float, size: float, name: str = "Flat Surface") -> Surface:
     """Creates a simple square flat surface centered at (0,0)."""
     half_size = size / 2.0
@@ -19,7 +21,7 @@ def flat_surface(z: float, size: float, name: str = "Flat Surface") -> Surface:
     t2 = Triangle(p2, p3, p4) # BR, TR, TL
     triangles = {t.id: t for t in [t1, t2]}
     return Surface(name=name, points=points, triangles=triangles)
-# --- End Helper --- 
+# --- End Helper ---
 
 def test_region_stripping_depth():
     proj = Project(name="Test Project") # Add name for dataclass
@@ -27,8 +29,8 @@ def test_region_stripping_depth():
         Region(
             name="WholeSite",
             polygon=[(0,0),(100,0),(100,100),(0,100)],
-            strip_depth_ft=1.0
-        )
+            strip_depth_ft=1.0,
+        ),
     )
     # Assuming flat_surface exists and works as expected
     existing = flat_surface(z=10, size=100, name="Existing")
@@ -44,4 +46,4 @@ def test_region_stripping_depth():
 
     # assert math.isclose(result["cut"], 10000, abs_tol=1e-3) # Original assertion check
     assert math.isclose(result["fill"], 2500.0, abs_tol=1e-3) # Corrected: Expecting fill based on default grid size
-    assert result["cut"] == 0 
+    assert result["cut"] == 0

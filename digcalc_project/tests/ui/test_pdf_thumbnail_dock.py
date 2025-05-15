@@ -1,7 +1,7 @@
 import pytest
-from PySide6.QtWidgets import QApplication
-from PySide6.QtGui import QPixmap
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QPixmap
+from PySide6.QtWidgets import QApplication
 
 from digcalc_project.src.services.pdf_service import PdfService
 from digcalc_project.src.ui.docks.pdf_thumbnail_dock import PdfThumbnailDock
@@ -47,4 +47,4 @@ def test_page_clicked_signal(qtbot, svc, dock):
     assert dock.model.rowCount() == 3
     with qtbot.waitSignal(dock.pageClicked):
         idx = dock.model.index(1, 0)
-        dock.view.clicked.emit(idx) 
+        dock.view.clicked.emit(idx)

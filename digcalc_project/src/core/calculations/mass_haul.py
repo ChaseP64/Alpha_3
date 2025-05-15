@@ -11,9 +11,9 @@ The implementation deliberately avoids any direct UI or file I/O so it can
 be unit-tested in isolation.
 """
 
-from dataclasses import dataclass
 import math
-from typing import Iterable, Mapping, TYPE_CHECKING
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import numpy as np
 from shapely.geometry import LineString, Point
@@ -25,7 +25,7 @@ from shapely.geometry import LineString, Point
 # a mapping of *(x, y) -> point* will work here.
 
 if TYPE_CHECKING:  # pragma: no cover
-    from ...models.surface import Surface, Point3D  # type: ignore
+    from ...models.surface import Point3D, Surface  # type: ignore
 
 @dataclass(slots=True)
 class HaulStation:
@@ -37,6 +37,7 @@ class HaulStation:
         cut (float): Total cut (positive) volume assigned to this station.
         fill (float): Total fill (positive) volume assigned to this station.
         cumulative (float): Running cumulative (cut – fill) up to this station.
+
     """
 
     station: float
@@ -63,8 +64,8 @@ class HaulStationList(list[HaulStation]):
 # ---------------------------------------------------------------------------
 
 def build_mass_haul(
-    surface_ref: "Surface",
-    surface_diff: "Surface",
+    surface_ref: Surface,
+    surface_diff: Surface,
     alignment: LineString,
     station_interval: float,
     free_haul_ft: float,
@@ -103,8 +104,8 @@ def build_mass_haul(
           nested loops. For small to medium station counts (< 1 000) this is
           acceptable; if performance becomes an issue we can switch to a more
           efficient prefix-sum approach.
-    """
 
+    """
     if station_interval <= 0:
         raise ValueError("station_interval must be positive")
     if free_haul_ft < 0:
@@ -123,7 +124,7 @@ def build_mass_haul(
     # ---------------------------------------------------------------------
 
     # Build a quick lookup dict for the *diff* surface keyed by XY coordinates.
-    diff_lookup: dict[tuple[float, float], "Point3D"] = {
+    diff_lookup: dict[tuple[float, float], Point3D] = {
         (p.x, p.y): p for p in surface_diff.points.values()
     }
 
@@ -165,7 +166,7 @@ def build_mass_haul(
                 cut=cuts[i],
                 fill=fills[i],
                 cumulative=cumulative,
-            )
+            ),
         )
 
     # ---------------------------------------------------------------------

@@ -14,7 +14,6 @@ from digcalc_project.src.tools.daylight_offset_tool import (
     project_to_slope,
 )
 
-
 # -----------------------------------------------------------------------------
 # Tests for `offset_polygon`
 # -----------------------------------------------------------------------------
@@ -66,4 +65,4 @@ def test_project_to_slope_basic():
 def test_project_to_slope_zero_ratio():
     """Passing slope_ratio=0 should raise ZeroDivisionError."""
     with pytest.raises(ZeroDivisionError):
-        project_to_slope([(0.0, 0.0)], horiz_off=1.0, slope_ratio=0.0) 
+        project_to_slope([(0.0, 0.0)], horiz_off=1.0, slope_ratio=0.0)

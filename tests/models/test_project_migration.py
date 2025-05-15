@@ -23,7 +23,7 @@ def test_migrate_world_per_in(tmp_path):
     assert "scale-invalid" in proj.flags
 
     # Case 2 – provide dummy PDF service with DPI
-    class DummyPdfService:  # noqa: D401 – simple stub
+    class DummyPdfService:
         @staticmethod
         def current_render_dpi() -> float:
             return 150.0
@@ -32,4 +32,4 @@ def test_migrate_world_per_in(tmp_path):
     assert isinstance(proj2.scale, ProjectScale)
     # world_per_px should equal 40ft / 150dpi
     expected = 40.0 / 150.0
-    assert abs(proj2.scale.world_per_px - expected) < 1e-6 
+    assert abs(proj2.scale.world_per_px - expected) < 1e-6

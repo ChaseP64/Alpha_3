@@ -14,9 +14,9 @@ from typing import Any
 
 
 class Singleton:  # noqa: D101 – trivial helper
-    _instance: "Singleton | None" = None
+    _instance: Singleton | None = None
 
-    def __new__(cls, *args: Any, **kwargs: Any):  # noqa: D401 – keep concise
+    def __new__(cls, *args: Any, **kwargs: Any):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-        return cls._instance 
+        return cls._instance

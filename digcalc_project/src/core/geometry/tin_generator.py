@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-TIN (Triangulated Irregular Network) generator for the DigCalc application.
+"""TIN (Triangulated Irregular Network) generator for the DigCalc application.
 
 This module provides functionality to generate TIN surfaces from point clouds.
 """
 
 import logging
-from typing import List, Dict, Optional, Tuple, Set, Any
+from typing import List
+
 import numpy as np
 
 # Use the actual Delaunay implementation
@@ -19,12 +18,11 @@ except ImportError:
 
 # REMOVED sys.path manipulation
 # Use absolute import for models
-from digcalc_project.src.models.surface import Surface, Point3D, Triangle
+from digcalc_project.src.models.surface import Point3D, Surface, Triangle
 
 
 class TINGenerator:
-    """
-    Generator for TIN (Triangulated Irregular Network) surfaces.
+    """Generator for TIN (Triangulated Irregular Network) surfaces.
 
     Uses scipy.spatial.Delaunay to perform 2D triangulation based on XY coordinates.
     """
@@ -37,8 +35,7 @@ class TINGenerator:
              # Consider raising an exception or handling this more gracefully depending on application requirements
 
     def generate_from_points(self, points: List[Point3D], name: str) -> Surface:
-        """
-        Generate a TIN surface from a list of 3D points using Delaunay triangulation.
+        """Generate a TIN surface from a list of 3D points using Delaunay triangulation.
 
         Args:
             points (List[Point3D]): List of 3D points.
@@ -49,6 +46,7 @@ class TINGenerator:
 
         Raises:
             RuntimeError: If SciPy is not installed or if an unexpected error occurs.
+
         """
         self.logger.info(f"Generating TIN '{name}' from {len(points)} points")
 
@@ -65,9 +63,9 @@ class TINGenerator:
                  point_dict[p.id] = p
             else:
                  # Optional: Log or handle duplicate point IDs if necessary
-                 pass 
+                 pass
         surface.points = point_dict
-        
+
         # Get the unique points list again from the dictionary values for triangulation
         unique_points_list = list(surface.points.values())
 
@@ -129,4 +127,4 @@ class TINGenerator:
         self.logger.info(f"Generated TIN surface '{name}' with {len(surface.points)} points and {len(surface.triangles)} triangles.")
         return surface
 
-    # Removed the placeholder _create_sample_triangles method 
+    # Removed the placeholder _create_sample_triangles method

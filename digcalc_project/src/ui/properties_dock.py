@@ -1,33 +1,44 @@
 # digcalc_project/src/ui/properties_dock.py
 
 import logging
-from typing import Optional, Tuple, Any
+from typing import Any, Optional, Tuple
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
-    QDockWidget, QLabel, QDoubleSpinBox, QFormLayout, QDialogButtonBox,
-    QWidget, QVBoxLayout, QTabWidget, QLineEdit, QPushButton, QCheckBox, QGraphicsPathItem,
-    QComboBox, QSpinBox
+    QCheckBox,
+    QComboBox,
+    QDialogButtonBox,
+    QDockWidget,
+    QDoubleSpinBox,
+    QFormLayout,
+    QGraphicsPathItem,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QSpinBox,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
 )
+
+# New import for ToggleSmoothCommand
+from digcalc_project.src.ui.commands.toggle_smooth_command import ToggleSmoothCommand
+
+# New import for vertex items
+from digcalc_project.src.ui.items.vertex_item import VertexItem
 
 # Relative imports
 from ..models.region import Region
 from ..services.settings_service import SettingsService
 
-# New import for vertex items
-from digcalc_project.src.ui.items.vertex_item import VertexItem
-
-# New import for ToggleSmoothCommand
-from digcalc_project.src.ui.commands.toggle_smooth_command import ToggleSmoothCommand
-
 # Define module-level logger
 logger = logging.getLogger(__name__)
 
 class PropertiesDock(QDockWidget):
-    """
-    A dock widget to display and edit properties of selected items.
+    """A dock widget to display and edit properties of selected items.
     Uses tabs for different item types (Polyline, Region).
     """
+
     # Signals emitted when the 'Apply' button is clicked for each type.
     polylineEdited = Signal(str, int, float) # layer_name, polyline_index, new_elevation
     regionUpdated = Signal(Region)           # Updated Region object
@@ -148,7 +159,7 @@ class PropertiesDock(QDockWidget):
 
     def _create_vertex_tab(self):
         """Creates the tab for editing VertexItem elevation."""
-        from PySide6.QtWidgets import QFormLayout, QDoubleSpinBox, QPushButton
+        from PySide6.QtWidgets import QDoubleSpinBox, QFormLayout, QPushButton
 
         self.vertex_tab = QWidget()
         vlay = QFormLayout(self.vertex_tab)
@@ -295,12 +306,12 @@ class PropertiesDock(QDockWidget):
         # sync checkbox state
         # Attempt to find the polyline item in the scene via main window reference
         main_win = self.parent()
-        while main_win and not hasattr(main_win, 'undoStack'):
+        while main_win and not hasattr(main_win, "undoStack"):
             main_win = main_win.parent()
         polyline_item = None
-        if main_win and hasattr(main_win, '_selected_scene_item'):
-            polyline_item = getattr(main_win, '_selected_scene_item')
-        self.smooth_chk.setChecked(bool(polyline_item and getattr(polyline_item, 'mode', 'entered') == 'interpolated'))
+        if main_win and hasattr(main_win, "_selected_scene_item"):
+            polyline_item = main_win._selected_scene_item
+        self.smooth_chk.setChecked(bool(polyline_item and getattr(polyline_item, "mode", "entered") == "interpolated"))
         logger.debug(f"Loaded polyline: Layer='{layer_name}', Index={index}, Elevation={elevation}")
 
     def load_region(self, region: Region):
@@ -397,40 +408,42 @@ class PropertiesDock(QDockWidget):
         """Apply the elevation change for the currently loaded vertex."""
         if getattr(self, "_current_vertex", None):
             z = self.vertex_z_spin.value()
-            from digcalc_project.src.ui.commands.edit_vertex_z_command import EditVertexZCommand
+            from digcalc_project.src.ui.commands.edit_vertex_z_command import (
+                EditVertexZCommand,
+            )
             # Access undoStack via main window
             main_win = self.parent()
-            if main_win and hasattr(main_win, 'undoStack'):
+            if main_win and hasattr(main_win, "undoStack"):
                 main_win.undoStack.push(EditVertexZCommand(self._current_vertex, z))
             else:
                 self._current_vertex.set_z(z)
-            logger.info("Vertex elevation applied: %.3f", z) 
+            logger.info("Vertex elevation applied: %.3f", z)
 
     # ------------------------------------------------------------------
     # Smooth checkbox handlers
     # ------------------------------------------------------------------
     def _apply_polyline_smooth(self):
         """Push ToggleSmoothCommand when user toggles checkbox."""
-        if not getattr(self, '_current_polyline_info', None):
+        if not getattr(self, "_current_polyline_info", None):
             return
         main_win = self.parent()
-        while main_win and not hasattr(main_win, 'undoStack'):
+        while main_win and not hasattr(main_win, "undoStack"):
             main_win = main_win.parent()
 
         polyline_item = None
-        if main_win and hasattr(main_win, '_selected_scene_item'):
-            polyline_item = getattr(main_win, '_selected_scene_item')
+        if main_win and hasattr(main_win, "_selected_scene_item"):
+            polyline_item = main_win._selected_scene_item
 
         if not polyline_item or not isinstance(polyline_item, QGraphicsPathItem):
             return
 
         # Only push when states differ
         should_be_interp = self.smooth_chk.isChecked()
-        if (polyline_item.mode == 'interpolated') != should_be_interp:
-            if main_win and hasattr(main_win, 'undoStack'):
+        if (polyline_item.mode == "interpolated") != should_be_interp:
+            if main_win and hasattr(main_win, "undoStack"):
                 main_win.undoStack.push(ToggleSmoothCommand(polyline_item))
             else:
-                polyline_item.toggle_mode() 
+                polyline_item.toggle_mode()
 
     # --- Handlers for Tracing Tab ---
 
@@ -448,7 +461,7 @@ class PropertiesDock(QDockWidget):
             SettingsService().set_tracing_elev_mode(mode)
             self.settingsChanged.emit()
         else:
-             logger.error(f"Could not get user data for combo box index {index}") 
+             logger.error(f"Could not get user data for combo box index {index}")
 
     def _update_vertex_size(self, value: int):
         """Update vertex cross size setting and emit signal."""
@@ -470,4 +483,4 @@ class PropertiesDock(QDockWidget):
             SettingsService().set_vertex_hover_colour(colour)
             self.settingsChanged.emit()
         else:
-            logger.warning("Hover colour is empty, not updating.") 
+            logger.warning("Hover colour is empty, not updating.")

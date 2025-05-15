@@ -1,9 +1,10 @@
+
 import pytest
-from pathlib import Path
-from digcalc_project.src.services.pdf_service import PdfService
-from digcalc_project.src.models.pdf_document import PdfDocument
-from PySide6.QtCore import QEventLoop, QTimer
 from PyPDF2 import PdfWriter
+from PySide6.QtCore import QEventLoop, QTimer
+
+from digcalc_project.src.models.pdf_document import PdfDocument
+from digcalc_project.src.services.pdf_service import PdfService
 
 
 @pytest.fixture(scope="session")
@@ -77,4 +78,4 @@ def test_thumbnail_cache(qtbot, fixture_pdf_file):
     svc.thumbnailReady.connect(on_thumb)
 
     svc.request_thumbnail(1, 100)
-    assert count["calls"] == 1 
+    assert count["calls"] == 1

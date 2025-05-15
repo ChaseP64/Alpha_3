@@ -1,38 +1,59 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Visualization panel for the DigCalc application.
+"""Visualization panel for the DigCalc application.
 
 This module defines the 3D visualization panel for displaying surfaces and calculations.
 It also manages the 2D view for PDF rendering and tracing (currently using QGraphicsView,
 planned migration to QML via QQuickWidget).
 """
 
+import enum  # Add import
 import logging
-import enum # Add import
-from typing import Optional, Dict, List, Any, Tuple
-import numpy as np
 from pathlib import Path
-import fitz # PyMuPDF
+from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np
+from PySide6 import QtWidgets
 
 # PySide6 imports
-from PySide6.QtCore import Qt, Slot, Signal, QRectF, QPointF, QPoint, QSize
-from PySide6 import QtWidgets
-from PySide6.QtGui import QPixmap, QImage, QPainter # Added QPainter, QSize
-from PySide6.QtWidgets import QGraphicsPixmapItem
+from PySide6.QtCore import QPoint, QPointF, Qt, Signal, Slot
+from PySide6.QtGui import (  # Added QPainter, QSize
+    QImage,
+    QMouseEvent,
+    QPainter,
+    QPixmap,
+    QTransform,
+    QWheelEvent,
+)
+
 # Import QQuickWidget if we were fully integrating QML here
-# from PySide6.QtQuickWidgets import QQuickWidget 
+# from PySide6.QtQuickWidgets import QQuickWidget
 # Import QJSValue for type hinting if needed
-from PySide6.QtQml import QJSValue # Use for type hint if receiving from QML
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QGraphicsView, QGraphicsScene, QComboBox, QMessageBox, QStackedWidget
-from PySide6.QtGui import QMouseEvent, QWheelEvent, QTransform
+from PySide6.QtQml import QJSValue  # Use for type hint if receiving from QML
+from PySide6.QtWidgets import (
+    QComboBox,
+    QGraphicsPixmapItem,
+    QGraphicsScene,
+    QGraphicsView,
+    QLabel,
+    QMessageBox,
+    QStackedWidget,
+    QVBoxLayout,
+    QWidget,
+)
+
 # Removed: from PySide6.QtPdf import QPdfDocument
 
 # Import visualization libraries
 try:
-    from pyqtgraph.opengl import GLViewWidget, GLMeshItem, GLGridItem, GLLinePlotItem, GLAxisItem
-    import pyqtgraph.opengl as gl
     import pyqtgraph
+    import pyqtgraph.opengl as gl
+    from pyqtgraph.opengl import (
+        GLAxisItem,
+        GLGridItem,
+        GLLinePlotItem,
+        GLMeshItem,
+        GLViewWidget,
+    )
     HAS_3D = True
 except ImportError:
     HAS_3D = False
@@ -41,19 +62,19 @@ except ImportError:
         pass
     class GLMeshItem:
         pass
-    
+
 # Local imports - Use relative paths
-from ..models.surface import Surface, Point3D, Triangle
-from ..visualization.pdf_renderer import PDFRenderer, PDFRendererError
-from .tracing_scene import TracingScene # Relative within ui package
 from ..models.project import Project
+from ..models.surface import Point3D, Surface
+from ..utils.color_maps import dz_to_rgba  # Import the new color utility
+from ..visualization.pdf_renderer import PDFRenderer, PDFRendererError
+
 # Import the new dialog
 from .dialogs.elevation_dialog import ElevationDialog
-from .interactive_graphics_view import InteractiveGraphicsView # Import the custom view
-from ..utils.color_maps import dz_to_rgba # Import the new color utility
-from ..services.pdf_service import PdfService  # local import to avoid cycles
+from .interactive_graphics_view import InteractiveGraphicsView  # Import the custom view
+from .tracing_scene import TracingScene  # Relative within ui package
 
-# --- Logger --- 
+# --- Logger ---
 logger = logging.getLogger(__name__)
 
 # --- Enums ---
@@ -63,10 +84,10 @@ class DrawingMode(enum.Enum):
     # Add other modes as needed
 
 class InteractiveGraphicsView(QGraphicsView):
-    """
-    A custom QGraphicsView that adds interactive zooming with Ctrl+Wheel
+    """A custom QGraphicsView that adds interactive zooming with Ctrl+Wheel
     and panning with the middle mouse button drag.
     """
+
     def __init__(self, scene: QGraphicsScene, parent: Optional[QWidget] = None):
         super().__init__(scene, parent)
 
@@ -163,43 +184,42 @@ class InteractiveGraphicsView(QGraphicsView):
 
 
 class VisualizationPanel(QWidget):
-    """
-    Panel for 3D visualization of surfaces and calculation results.
+    """Panel for 3D visualization of surfaces and calculation results.
     Also includes components for 2D PDF viewing and tracing.
     """
-    
+
     # Signals
     surface_visualization_failed = Signal(str, str)  # (surface name, error message)
     # Signal to indicate polyline data needs to be sent TO QML
-    request_polylines_load_to_qml = Signal() 
-    
+    request_polylines_load_to_qml = Signal()
+
     def __init__(self, parent=None):
-        """
-        Initialize the visualization panel.
+        """Initialize the visualization panel.
         
         Args:
             parent: Parent widget
+
         """
         super().__init__(parent)
-        
+
         self.logger = logging.getLogger(__name__)
         # self.surfaces: Dict[str, Dict[str, Any]] = {} # Old storage
-        # --- NEW: Store mesh items directly --- 
+        # --- NEW: Store mesh items directly ---
         self.surface_mesh_items: Dict[str, gl.GLMeshItem] = {}
         # --- END NEW ---
         self.pdf_renderer: Optional[PDFRenderer] = None
         # --- REMOVE: _pymupdf_doc is managed by PDFRenderer ---
-        # self._pymupdf_doc: Optional[fitz.Document] = None 
+        # self._pymupdf_doc: Optional[fitz.Document] = None
         self._pdf_bg_item: Optional[QGraphicsPixmapItem] = None
         self.current_pdf_page: int = 1
         self.current_project: Optional[Project] = None
-        
+
         # Temporary default until layer selector UI is implemented
         self.active_layer_name: str = "Existing Surface"
-        
+
         # Give the panel a minimum size
         self.setMinimumSize(400, 300)
-        
+
         # Layer selector combobox (will be added to MainWindow toolbar)
         self.layer_selector = QComboBox(self) # Parented to panel, but not added to its layout
         self.layer_selector.addItems([
@@ -212,39 +232,38 @@ class VisualizationPanel(QWidget):
         self.layer_selector.setCurrentText(self.active_layer_name)
         self.layer_selector.setToolTip("Choose the layer new traces belong to")
         self.layer_selector.currentTextChanged.connect(self._on_layer_changed)
-        
+
         # --- Tracing Scene and Layer Panel ---
         self.scene_2d: TracingScene = None # Will be initialized in _init_ui
         # --- QML Widget Placeholder (to be added when integrating QML) ---
-        # self.qml_widget: Optional[QQuickWidget] = None 
-        
+        # self.qml_widget: Optional[QQuickWidget] = None
+
         # --- Cut/Fill Map Attributes ---
         self._dz_image_item: Optional[QGraphicsPixmapItem] = None
         self._dz_mesh_item: Optional[gl.GLMeshItem] = None # For 3D pyqtgraph mesh
         self._cutfill_visible: bool = False
         # --- End Cut/Fill Map Attributes ---
-        
+
         # Initialize UI components
         self._init_ui()
-        
+
         # Connect signals
         self.surface_visualization_failed.connect(self._on_visualization_failed)
         # Connect the request signal to the actual loading method
         self.request_polylines_load_to_qml.connect(self.load_polylines_into_qml)
-        
+
         self.logger.debug("VisualizationPanel initialized")
-        
+
         self.drawing_mode = DrawingMode.SELECT
         self.surface_colors: Dict[str, str] = {}
-    
+
     @Slot(str)
     def _on_layer_changed(self, layer: str) -> None:
-        """
-        Update the active layer when the combo-box changes.
+        """Update the active layer when the combo-box changes.
         """
         self.logger.debug("Active tracing layer switched to %s", layer)
         self.active_layer_name = layer
-        
+
     def _init_ui(self):
         """Initialize the UI components, using QStackedWidget for views."""
         layout = QVBoxLayout(self)
@@ -254,7 +273,7 @@ class VisualizationPanel(QWidget):
         self.stacked_widget = QStackedWidget(self)
         layout.addWidget(self.stacked_widget)
 
-        # --- Legacy 2D Scene/View --- 
+        # --- Legacy 2D Scene/View ---
         self.view_2d = InteractiveGraphicsView(None, self)
         self.view_2d.setObjectName("pdf_view")  # Allows ScaleCalibrationDialog global picking
         self.scene_2d = TracingScene(self.view_2d, self, self)
@@ -270,8 +289,8 @@ class VisualizationPanel(QWidget):
         self.stacked_widget.addWidget(self.view_2d)
 
         # REMOVED: Disconnect legacy signal handler
-        
-        # --- 3D View / Placeholder --- 
+
+        # --- 3D View / Placeholder ---
         if HAS_3D:
             self.view_3d = GLViewWidget()
             # ... setup grid, axis ...
@@ -293,18 +312,18 @@ class VisualizationPanel(QWidget):
             # self.view_3d.setVisible(False) # Visibility managed by stack
             self.stacked_widget.addWidget(self.view_3d)
             self.logger.warning("3D visualization libraries not available, placeholder added to stack")
-        
+
         # Set initial view (e.g., default to 3D/placeholder)
         self.stacked_widget.setCurrentWidget(self.view_3d)
-        
+
         self.logger.debug("VisualizationPanel UI initialized with QStackedWidget")
-    
+
     def set_project(self, project: Optional[Project]):
-        """
-        Sets the current project for the visualization panel and updates the display.
+        """Sets the current project for the visualization panel and updates the display.
 
         Args:
             project: The Project object to visualize, or None to clear.
+
         """
         self.logger.info(
             "Setting project in VisualizationPanel: %s",
@@ -328,18 +347,17 @@ class VisualizationPanel(QWidget):
                     self.load_pdf_background(
                         project.pdf_background_path,
                         initial_page=project.pdf_background_page,
-                        dpi=project.pdf_background_dpi
+                        dpi=project.pdf_background_dpi,
                     )
                     # No need to call set_pdf_page here anymore
                 except Exception as e:
                     self.logger.error(f"Failed to load PDF background from project: {e}", exc_info=True)
                     # Optionally show a non-critical message to the user
                     # QMessageBox.warning(self, "PDF Load Warning", f"Could not load PDF background image:\n{project.pdf_background_path}\n\nError: {e}")
+            elif project.pdf_background_path:
+                 self.logger.warning(f"PDF background path in project not found: {project.pdf_background_path}")
             else:
-                if project.pdf_background_path:
-                     self.logger.warning(f"PDF background path in project not found: {project.pdf_background_path}")
-                else:
-                     self.logger.debug("No PDF background path in project.")
+                 self.logger.debug("No PDF background path in project.")
 
             # Load Surfaces
             if project.surfaces:
@@ -350,15 +368,15 @@ class VisualizationPanel(QWidget):
             else:
                 self.logger.debug("No surfaces found in project.")
 
-            # --- Adjust 3D Camera AFTER loading all surfaces --- 
+            # --- Adjust 3D Camera AFTER loading all surfaces ---
             if project.surfaces:
                 all_points = []
                 for surf in project.surfaces.values():
                     if surf and surf.points: # Check if surface and points exist
                         # Assuming surf.points is currently a dict {id: Point3D}
                         # Need to adapt if it changes structure
-                        all_points.extend(surf.points.values()) 
-                
+                        all_points.extend(surf.points.values())
+
                 if all_points:
                     self._adjust_view_to_points(all_points)
                 else:
@@ -373,7 +391,7 @@ class VisualizationPanel(QWidget):
             else:
                 self.logger.debug("No traced polylines found in project.")
 
-            # --- Explicitly fit view AFTER loading everything --- 
+            # --- Explicitly fit view AFTER loading everything ---
             if self.view_2d.isVisible() and self.scene_2d:
                  # Fit to the entire scene content (PDF + polylines)
                  try:
@@ -383,7 +401,7 @@ class VisualizationPanel(QWidget):
                      self.logger.debug("Called fitInView for 2D scene after loading project content.")
                  except Exception as fit_e:
                      self.logger.error(f"Error calling fitInView for 2D view: {fit_e}", exc_info=True)
-            # --- End Fit View --- 
+            # --- End Fit View ---
         else:
             # No project, ensure view is cleared (already done by clear_all)
             self.logger.info("Project cleared from VisualizationPanel.")
@@ -391,8 +409,7 @@ class VisualizationPanel(QWidget):
             self.show_3d_view()
 
     def display_surface(self, surface: Surface) -> bool:
-        """
-        Display a surface in the 3D view. This now calls update_surface_mesh.
+        """Display a surface in the 3D view. This now calls update_surface_mesh.
         Args: surface: Surface to display
         Returns: bool: True if update was initiated, False otherwise
         """
@@ -420,14 +437,13 @@ class VisualizationPanel(QWidget):
             return True # Indicate update was attempted
 
         except Exception as e:
-            error_msg = f"Visualization error: {str(e)}"
+            error_msg = f"Visualization error: {e!s}"
             self.logger.exception(f"Error displaying surface '{surface.name}': {e}")
             self.surface_visualization_failed.emit(surface.name, error_msg)
             return False
 
     def update_surface_mesh(self, surface: Surface):
-        """
-        Adds or replaces the GLMeshItem for the given surface in the 3D view.
+        """Adds or replaces the GLMeshItem for the given surface in the 3D view.
         """
         if not HAS_3D or not isinstance(self.view_3d, gl.GLViewWidget):
             self.logger.warning("Cannot update surface mesh: 3D view not available.")
@@ -470,9 +486,9 @@ class VisualizationPanel(QWidget):
                     faceColors=mesh_data["colors"],
                     smooth=True,
                     drawEdges=True,
-                    edgeColor=(0, 0, 0, 0.5)
+                    edgeColor=(0, 0, 0, 0.5),
                 )
-                # --- Explicitly set visible --- 
+                # --- Explicitly set visible ---
                 new_mesh.setVisible(True)
                 # --- End Set Visible ---
                 self.view_3d.addItem(new_mesh)
@@ -492,7 +508,7 @@ class VisualizationPanel(QWidget):
             self.surface_visualization_failed.emit(name, "Failed to generate mesh data")
 
     def _remove_surface_visualization(self, surface_name: str):
-        """ Remove a surface's mesh item. """
+        """Remove a surface's mesh item."""
         if surface_name not in self.surface_mesh_items:
             self.logger.debug(f"Attempted to remove non-existent surface visualization: '{surface_name}'")
             return
@@ -510,15 +526,15 @@ class VisualizationPanel(QWidget):
 
     @Slot(Surface, bool)
     def set_surface_visibility(self, surface: Surface, visible: bool):
-        """ Set the visibility of a surface's mesh. """
+        """Set the visibility of a surface's mesh."""
         if not surface or surface.name not in self.surface_mesh_items:
             # Log only if surface exists but not in visualized items
             if surface and surface.name:
                  self.logger.warning(f"Cannot set visibility for surface '{surface.name}': Mesh item not found.")
             return
-        
+
         mesh_item = self.surface_mesh_items[surface.name]
-        if hasattr(mesh_item, 'setVisible'):
+        if hasattr(mesh_item, "setVisible"):
              mesh_item.setVisible(visible)
              self.logger.debug(f"Surface '{surface.name}' mesh visibility set to {visible}")
         else:
@@ -547,7 +563,7 @@ class VisualizationPanel(QWidget):
              self.surface_mesh_items.clear()
 
         # Reset the view camera position if 3D view exists
-        if hasattr(self, 'view_3d') and isinstance(self.view_3d, gl.GLViewWidget):
+        if hasattr(self, "view_3d") and isinstance(self.view_3d, gl.GLViewWidget):
             try:
                  self.view_3d.setCameraPosition(distance=100, elevation=30, azimuth=45)
                  self.view_3d.update()
@@ -555,10 +571,10 @@ class VisualizationPanel(QWidget):
                  self.logger.warning(f"Could not reset camera position: {cam_e}")
 
         # Clear project reference
-        self.current_project = None 
+        self.current_project = None
 
         # Reset camera/view
-        if hasattr(self, 'view_2d'):
+        if hasattr(self, "view_2d"):
             self.view_2d.viewport().update()
 
     def has_surfaces(self) -> bool:
@@ -566,8 +582,7 @@ class VisualizationPanel(QWidget):
          return HAS_3D and isinstance(self.view_3d, gl.GLViewWidget) and bool(self.surface_mesh_items)
 
     def set_tracing_mode(self, enabled: bool):
-         """
-         Enables or disables the interactive tracing mode on the scene.
+         """Enables or disables the interactive tracing mode on the scene.
          Also changes the view's drag mode and cursor accordingly.
          """
          # First, ensure the TracingScene knows whether tracing should be active.
@@ -585,7 +600,7 @@ class VisualizationPanel(QWidget):
              # if main_window and hasattr(main_window, 'toggle_tracing_action'):
              #     main_window.toggle_tracing_action.setChecked(False)
              return
-             
+
          if enabled:
               self.scene_2d.start_drawing()
               self.logger.info("Tracing mode enabled.")
@@ -608,13 +623,13 @@ class VisualizationPanel(QWidget):
               # Reset cursor etc. <- covered by line above
 
     def load_and_display_polylines(self, polylines_by_layer: Dict[str, List[List[Tuple[float, float]]]]):
-        """
-        Loads polylines from a dictionary (grouped by layer) into the 2D scene.
+        """Loads polylines from a dictionary (grouped by layer) into the 2D scene.
 
         This replaces the `load_and_display_legacy_polylines`.
 
         Args:
             polylines_by_layer: Dict where keys are layer names and values are lists of polylines.
+
         """
         # Clear existing lines first. Important!
         # self.scene_2d.clear_finalized_polylines() # Clearing is now handled within load_polylines_with_layers
@@ -628,18 +643,17 @@ class VisualizationPanel(QWidget):
 
     @Slot()
     def load_polylines_into_qml(self):
-        """
-        Retrieves layered polyline data from the current project
+        """Retrieves layered polyline data from the current project
         and sends it to the QML tracing component.
         Assumes a QML function like `loadPolylines(polylinesDict)` exists.
         """
         if not self.current_project:
             self.logger.warning("Cannot load polylines into QML: No active project.")
             return
-        
-        # Get the dictionary {layer_name: [polyline1, polyline2, ...]} 
+
+        # Get the dictionary {layer_name: [polyline1, polyline2, ...]}
         polylines_by_layer = self.current_project.traced_polylines
-        
+
         # Ensure data format is suitable for QML (e.g., list of lists for points)
         qml_formatted_data = {}
         total_polylines = 0
@@ -651,13 +665,13 @@ class VisualizationPanel(QWidget):
                 formatted_polylines.append(formatted_poly)
                 total_polylines += 1
             qml_formatted_data[layer] = formatted_polylines
-        
+
         self.logger.info(f"Preparing to load {total_polylines} polylines across {len(qml_formatted_data)} layers into QML.")
-        
+
         # --- Log formatted data for verification ---
         self.logger.debug(f"Formatted data for QML: {qml_formatted_data}") # <-- TEMPORARY LOG (Uncommented)
-        
-        # --- Call the QML function --- 
+
+        # --- Call the QML function ---
         # try:
         #     if self.qml_root_object and hasattr(self.qml_root_object, 'loadPolylines'):
         #          # Assuming QML function accepts a dictionary/JS object
@@ -678,7 +692,7 @@ class VisualizationPanel(QWidget):
             if not self.view_2d.isVisible():
                 super().wheelEvent(event)
                 return
-            
+
             zoom_factor = 1.15 # Adjust as needed
             if event.angleDelta().y() > 0:
                 self.view_2d.scale(zoom_factor, zoom_factor)
@@ -686,38 +700,38 @@ class VisualizationPanel(QWidget):
                 self.view_2d.scale(1.0 / zoom_factor, 1.0 / zoom_factor)
             event.accept()
         else:
-            super().wheelEvent(event) 
+            super().wheelEvent(event)
 
     # --- QML Integration Slots (Placeholder/Future) ---
     @Slot(QJSValue, str) # Or Slot(list, str) if QML sends plain lists
     def _on_qml_polyline_finalized(self, polyline_data_qjs: QJSValue, layer_name: str):
-        """
-        Slot to receive finalized polyline data from QML.
+        """Slot to receive finalized polyline data from QML.
         Prompts for elevation and saves the polyline with elevation to the project.
         
         Args:
             polyline_data_qjs: The QJSValue representing the array of points from QML.
                            Each point should be an object like { x: number, y: number }.
             layer_name: The name of the layer the polyline belongs to (passed from QML).
+
         """
         if self.current_project is None:
             self.logger.warning("_on_qml_polyline_finalized called but no project is active.")
             return
-            
+
         self.logger.debug(f"Received finalized polyline from QML for layer: {layer_name}")
-        
+
         # --- Convert QJSValue to Python list of tuples ---
         points: List[Tuple[float, float]] = []
         if not polyline_data_qjs or not polyline_data_qjs.isArray():
             self.logger.error("Invalid polyline data received from QML: not an array or is null.")
             return
-            
-        length = polyline_data_qjs.property('length').toInt() # QJSValue arrays need length property
+
+        length = polyline_data_qjs.property("length").toInt() # QJSValue arrays need length property
         for i in range(length):
             qml_point = polyline_data_qjs.property(i) # Get the QJSValue for the point object
             if qml_point and qml_point.isObject():
-                x = qml_point.property('x').toNumber()
-                y = qml_point.property('y').toNumber()
+                x = qml_point.property("x").toNumber()
+                y = qml_point.property("y").toNumber()
                 if x is not None and y is not None: # Check conversion success
                     points.append((float(x), float(y)))
                 else:
@@ -725,7 +739,7 @@ class VisualizationPanel(QWidget):
             else:
                  self.logger.warning(f"Invalid item in QML polyline array at index {i}: {qml_point}")
         # --- End Conversion ---
-        
+
         if not points:
             self.logger.warning("No valid points extracted from QML polyline data.")
             return
@@ -740,13 +754,13 @@ class VisualizationPanel(QWidget):
         # Create the polyline data structure expected by Project.add_traced_polyline
         polyline_data = {"points": points, "elevation": z}
         # Use the layer_name provided by the QML signal
-        layer_to_save = layer_name 
+        layer_to_save = layer_name
 
         self.logger.debug(
             "VisualizationPanel: saving QML polyline with %d vertices to layer '%s' (Elevation: %s)",
             len(points),
             layer_to_save,
-            z
+            z,
         )
         # --- Save the polyline to the Project Model ---
         self.current_project.add_traced_polyline(
@@ -755,27 +769,24 @@ class VisualizationPanel(QWidget):
             # Elevation is now inside polyline_data
         )
         # Consider emitting a signal if other UI parts need to know about the update
-        # self.project_updated.emit() 
-        
+        # self.project_updated.emit()
+
         self.logger.info(f"Saved polyline with {len(points)} points (Elevation: {z}) to layer '{layer_to_save}' from QML.")
 
     # --- End QML Slots ---
-    
-    # --- Legacy Tracing Slots --- 
+
+    # --- Legacy Tracing Slots ---
     @Slot(list)
     def _on_legacy_polyline_finalized(self, points_qpointf: List[QPointF]):
-        """
-        DEPRECATED: This slot should no longer be called as the connection
+        """DEPRECATED: This slot should no longer be called as the connection
         has been removed in _init_ui. Handling is now done in MainWindow.
         """
         self.logger.warning("DEPRECATED _on_legacy_polyline_finalized was called! This should not happen.")
         # Prevent any residual execution
-        return
         # ... (Original code removed for clarity) ...
 
     def set_tracing_mode(self, enabled: bool):
-         """
-         Enables or disables the interactive tracing mode on the scene.
+         """Enables or disables the interactive tracing mode on the scene.
          Also changes the view's drag mode and cursor accordingly.
          """
          # First, ensure the TracingScene knows whether tracing should be active.
@@ -793,7 +804,7 @@ class VisualizationPanel(QWidget):
              # if main_window and hasattr(main_window, 'toggle_tracing_action'):
              #     main_window.toggle_tracing_action.setChecked(False)
              return
-             
+
          if enabled:
               self.scene_2d.start_drawing()
               self.logger.info("Tracing mode enabled.")
@@ -816,13 +827,13 @@ class VisualizationPanel(QWidget):
               # Reset cursor etc. <- covered by line above
 
     def load_and_display_polylines(self, polylines_by_layer: Dict[str, List[List[Tuple[float, float]]]]):
-        """
-        Loads polylines from a dictionary (grouped by layer) into the 2D scene.
+        """Loads polylines from a dictionary (grouped by layer) into the 2D scene.
 
         This replaces the previous `load_and_display_legacy_polylines`.
 
         Args:
             polylines_by_layer: Dict where keys are layer names and values are lists of polylines.
+
         """
         # Clear existing lines first. Important!
         # self.scene_2d.clear_finalized_polylines() # Clearing is now handled within load_polylines_with_layers
@@ -836,18 +847,17 @@ class VisualizationPanel(QWidget):
 
     @Slot()
     def load_polylines_into_qml(self):
-        """
-        Retrieves layered polyline data from the current project
+        """Retrieves layered polyline data from the current project
         and sends it to the QML tracing component.
         Assumes a QML function like `loadPolylines(polylinesDict)` exists.
         """
         if not self.current_project:
             self.logger.warning("Cannot load polylines into QML: No active project.")
             return
-        
-        # Get the dictionary {layer_name: [polyline1, polyline2, ...]} 
+
+        # Get the dictionary {layer_name: [polyline1, polyline2, ...]}
         polylines_by_layer = self.current_project.traced_polylines
-        
+
         # Ensure data format is suitable for QML (e.g., list of lists for points)
         qml_formatted_data = {}
         total_polylines = 0
@@ -859,13 +869,13 @@ class VisualizationPanel(QWidget):
                 formatted_polylines.append(formatted_poly)
                 total_polylines += 1
             qml_formatted_data[layer] = formatted_polylines
-        
+
         self.logger.info(f"Preparing to load {total_polylines} polylines across {len(qml_formatted_data)} layers into QML.")
-        
+
         # --- Log formatted data for verification ---
         self.logger.debug(f"Formatted data for QML: {qml_formatted_data}") # <-- TEMPORARY LOG (Uncommented)
-        
-        # --- Call the QML function --- 
+
+        # --- Call the QML function ---
         # try:
         #     if self.qml_root_object and hasattr(self.qml_root_object, 'loadPolylines'):
         #          # Assuming QML function accepts a dictionary/JS object
@@ -886,7 +896,7 @@ class VisualizationPanel(QWidget):
             if not self.view_2d.isVisible():
                 super().wheelEvent(event)
                 return
-            
+
             zoom_factor = 1.15 # Adjust as needed
             if event.angleDelta().y() > 0:
                 self.view_2d.scale(zoom_factor, zoom_factor)
@@ -894,9 +904,9 @@ class VisualizationPanel(QWidget):
                 self.view_2d.scale(1.0 / zoom_factor, 1.0 / zoom_factor)
             event.accept()
         else:
-            super().wheelEvent(event) 
+            super().wheelEvent(event)
 
-    # --- NEW: Helper Methods --- 
+    # --- NEW: Helper Methods ---
     def has_pdf(self) -> bool:
         """Checks if a PDF background is currently loaded."""
         return self.pdf_renderer is not None
@@ -906,15 +916,14 @@ class VisualizationPanel(QWidget):
         current = self.stacked_widget.currentWidget()
         if current == self.view_2d:
             return "2d"
-        elif current == self.view_3d:
+        if current == self.view_3d:
             # Return "3d" even if it's the placeholder Label
             return "3d"
-        else:
-            # Should not happen if stack contains only view_2d and view_3d
-            logger.warning("Current widget in stacked_widget is unexpected!")
-            return "unknown"
+        # Should not happen if stack contains only view_2d and view_3d
+        logger.warning("Current widget in stacked_widget is unexpected!")
+        return "unknown"
 
-    # --- NEW: View Switching Methods --- 
+    # --- NEW: View Switching Methods ---
     def show_2d_view(self):
         """Shows the 2D view (PDF/Tracing) and hides the 3D view."""
         self.logger.debug("Switching to 2D view.")
@@ -937,7 +946,7 @@ class VisualizationPanel(QWidget):
         self.stacked_widget.setCurrentWidget(self.view_3d)
         # No need to call raise_() with QStackedWidget
 
-    # --- Update Existing Methods --- 
+    # --- Update Existing Methods ---
     def _adjust_view_to_surface(self, surface: Surface):
          if not HAS_3D or not isinstance(self.view_3d, gl.GLViewWidget) or not surface or not surface.points:
              return
@@ -945,11 +954,11 @@ class VisualizationPanel(QWidget):
          try:
             points_list = list(surface.points.values())
             if not points_list: return # No points to adjust to
-            
+
             x_vals = [p.x for p in points_list]
             y_vals = [p.y for p in points_list]
             z_vals = [p.z for p in points_list]
-            
+
             center_x = (min(x_vals) + max(x_vals))/2
             center_y = (min(y_vals) + max(y_vals))/2
             center_z = (min(z_vals) + max(z_vals))/2
@@ -963,9 +972,9 @@ class VisualizationPanel(QWidget):
                 pos=center_vec,  # Use 'pos' argument for the target position
                 distance=distance,
                 elevation=30,
-                azimuth=45
+                azimuth=45,
             )
-            
+
             self.logger.debug(f"Adjusted 3D view pos={center_vec}, distance={distance}")
          except Exception as e:
             self.logger.error(f"Error adjusting 3D view: {e}", exc_info=True)
@@ -989,7 +998,7 @@ class VisualizationPanel(QWidget):
                 except (KeyError, AttributeError) as e:
                     self.logger.warning(f"Invalid triangle ID {tri_id} in surface {surface.name}: {e}")
                     continue
-            
+
             if not faces: return None
             faces = np.array(faces)
             # ... color calculation ...
@@ -1003,7 +1012,7 @@ class VisualizationPanel(QWidget):
                 t = np.clip((z_avg - z_min) / z_range, 0, 1)
                 # Simple blue-red gradient
                 colors[i] = [t, 0, 1-t, 0.7] # R, G, B, Alpha
-                
+
             return {"vertices": vertices, "faces": faces, "colors": colors}
          except Exception as e:
              self.logger.exception(f"Error creating mesh data: {e}")
@@ -1020,14 +1029,14 @@ class VisualizationPanel(QWidget):
 
     # Potentially add wheelEvent override if needed here instead of InteractiveGraphicsView
     # def wheelEvent(self, event):
-    #    pass 
+    #    pass
 
     @Slot(str)
     def _on_visualization_failed(self, error_message: str):
         """Handle errors during surface visualization."""
         # Placeholder: Implement proper error handling (e.g., show message box)
         logger.error(f"Surface visualization failed: {error_message}")
-        QMessageBox.critical(self, "Visualization Error", f"Failed to visualize surface:\n{error_message}") 
+        QMessageBox.critical(self, "Visualization Error", f"Failed to visualize surface:\n{error_message}")
 
     @Slot()
     def clear_pdf_background(self):
@@ -1041,24 +1050,23 @@ class VisualizationPanel(QWidget):
                 self.logger.error(f"Error closing PDF renderer: {e}", exc_info=True)
         self.pdf_renderer = None
         # --- REMOVE: Doc managed by renderer ---
-        # self._pymupdf_doc = None 
-        
-        # --- FIX: Use TracingScene API --- 
+        # self._pymupdf_doc = None
+
+        # --- FIX: Use TracingScene API ---
         # Clear previous layers (assuming page change replaces, not stacks)
         # Need to access internal list as there's no public clear method yet
-        while getattr(self.scene_2d, '_background_items', []):
+        while getattr(self.scene_2d, "_background_items", []):
             try:
                 self.scene_2d.removeBackgroundLayer(0)
             except IndexError:
                 break # Should not happen if list check is correct
 
         # --- END FIX ---
-        
+
         self.current_pdf_page = 1
 
     def load_pdf_background(self, pdf_path: str, initial_page: int = 1, dpi: int = 150) -> bool:
-        """
-        Loads a PDF document, renders the initial page, and displays it.
+        """Loads a PDF document, renders the initial page, and displays it.
 
         Args:
             pdf_path: Path to the PDF file.
@@ -1067,18 +1075,19 @@ class VisualizationPanel(QWidget):
             
         Returns:
             bool: True if the PDF was loaded and the initial page rendered successfully, False otherwise.
+
         """
         self.logger.info(f"Loading PDF background: {pdf_path}, initial page: {initial_page}, dpi: {dpi}")
-        
+
         # Clear any existing background first
-        self.clear_pdf_background() 
-        
+        self.clear_pdf_background()
+
         try:
             # Initialize or reuse the renderer
             if not self.pdf_renderer: # Should always be None after clear_pdf_background
                 self.pdf_renderer = PDFRenderer(pdf_path=pdf_path, dpi=dpi)
-            
-            # --- FIX: Get page count after successful init --- 
+
+            # --- FIX: Get page count after successful init ---
             page_count = self.pdf_renderer.get_original_page_count() # Use original count from doc
             self.logger.info(f"PDF document opened successfully via renderer. Page count: {page_count}")
 
@@ -1086,10 +1095,10 @@ class VisualizationPanel(QWidget):
             if not (1 <= initial_page <= page_count):
                 self.logger.warning(f"Initial page {initial_page} is out of range (1-{page_count}). Defaulting to page 1.")
                 initial_page = 1
-            
+
             # Render and display the initial page
             self._render_and_display_page(initial_page, dpi)
-            
+
             self.current_pdf_page = initial_page
             self.logger.info(f"Successfully rendered and displayed page {initial_page} of '{Path(pdf_path).name}'")
             return True # Indicate success
@@ -1097,7 +1106,7 @@ class VisualizationPanel(QWidget):
         except PDFRendererError as e:
             self.logger.error(f"Failed to load or render PDF background: {e}")
             # Ensure renderer is cleared on any failure during this process
-            self.clear_pdf_background() 
+            self.clear_pdf_background()
             return False # Indicate failure
         except Exception as e: # Catch any other unexpected errors
             self.logger.exception(f"Unexpected error loading PDF background: {e}")
@@ -1129,10 +1138,10 @@ class VisualizationPanel(QWidget):
             self.logger.debug(f"Retrieved rendered image for page {page_number} (Size: {qimage.width()}x{qimage.height()}).")
             # --- END FIX ---
 
-            # --- FIX: Use TracingScene API --- 
+            # --- FIX: Use TracingScene API ---
             # Clear previous layers (assuming page change replaces, not stacks)
             # Need to access internal list as there's no public clear method yet
-            while getattr(self.scene_2d, '_background_items', []):
+            while getattr(self.scene_2d, "_background_items", []):
                 try:
                     self.scene_2d.removeBackgroundLayer(0)
                 except IndexError:
@@ -1161,8 +1170,8 @@ class VisualizationPanel(QWidget):
             self.logger.error(error_msg, exc_info=True)
             QMessageBox.warning(self, "PDF Display Error", error_msg)
             # Clear potentially corrupted background item
-            # --- FIX: Use TracingScene API --- 
-            while getattr(self.scene_2d, '_background_items', []):
+            # --- FIX: Use TracingScene API ---
+            while getattr(self.scene_2d, "_background_items", []):
                 try:
                     self.scene_2d.removeBackgroundLayer(0)
                 except IndexError:
@@ -1175,6 +1184,7 @@ class VisualizationPanel(QWidget):
         Args:
             page_number (int): The 1-based page number to display.
             dpi (int): The target resolution for rendering.
+
         """
         # --- FIX: Check pdf_renderer ---
         if not self.pdf_renderer:
@@ -1221,13 +1231,13 @@ class VisualizationPanel(QWidget):
              self.view_3d.update()
 
     def update_cutfill_map(self, dz: np.ndarray, gx: np.ndarray, gy: np.ndarray):
-        """
-        Update or create the cut/fill map visualization.
+        """Update or create the cut/fill map visualization.
 
         Args:
             dz (np.ndarray): 2D numpy array (height, width) of elevation differences.
             gx (np.ndarray): 1D numpy array of X coordinates for the grid.
             gy (np.ndarray): 1D numpy array of Y coordinates for the grid.
+
         """
         if dz is None or gx is None or gy is None or dz.size == 0 or gx.size == 0 or gy.size == 0:
             self.logger.warning("update_cutfill_map called with invalid data. Clearing map.")
@@ -1320,8 +1330,8 @@ class VisualizationPanel(QWidget):
                             faces=faces,
                             vertexColors=vertex_colors_float,
                             smooth=False, # Flat shading for grid cells
-                            shader='shaded',
-                            glOptions='translucent' # Use translucent for potential blending
+                            shader="shaded",
+                            glOptions="translucent", # Use translucent for potential blending
                         )
                         self.view_3d.addItem(self._dz_mesh_item)
                         self.logger.debug("Created new 3D cut/fill mesh item.")
@@ -1329,7 +1339,7 @@ class VisualizationPanel(QWidget):
                         self._dz_mesh_item.setMeshData(
                             vertexes=verts,
                             faces=faces,
-                            vertexColors=vertex_colors_float
+                            vertexColors=vertex_colors_float,
                         )
                         self.logger.debug("Updated existing 3D cut/fill mesh item.")
 
@@ -1367,7 +1377,7 @@ class VisualizationPanel(QWidget):
 
     # --- End Cut/Fill Map Methods ---
 
-    # --- Update clear_all --- 
+    # --- Update clear_all ---
     def clear_all(self):
         """Clears surfaces, PDF background, traced lines, and cut/fill map."""
         self.logger.info("Clearing all visualization data.")
@@ -1391,7 +1401,7 @@ class VisualizationPanel(QWidget):
              self.surface_mesh_items.clear()
 
         # Reset the view camera position if 3D view exists
-        if hasattr(self, 'view_3d') and isinstance(self.view_3d, gl.GLViewWidget):
+        if hasattr(self, "view_3d") and isinstance(self.view_3d, gl.GLViewWidget):
             try:
                  self.view_3d.setCameraPosition(distance=100, elevation=30, azimuth=45)
                  self.view_3d.update()
@@ -1399,40 +1409,39 @@ class VisualizationPanel(QWidget):
                  self.logger.warning(f"Could not reset camera position: {cam_e}")
 
         # Clear project reference
-        self.current_project = None 
+        self.current_project = None
 
         # Reset camera/view
-        if hasattr(self, 'view_2d'):
+        if hasattr(self, "view_2d"):
             self.view_2d.viewport().update()
 
-    # --- Add is_surface_visible method --- 
+    # --- Add is_surface_visible method ---
     def is_surface_visible(self, surface_name: str) -> bool:
-        """
-        Checks if the mesh item for a given surface name exists and is visible.
+        """Checks if the mesh item for a given surface name exists and is visible.
 
         Args:
             surface_name: The name of the surface to check.
 
         Returns:
             True if the surface mesh exists and is visible, False otherwise.
+
         """
         mesh_item = self.surface_mesh_items.get(surface_name)
         if mesh_item:
             # Check if the item has isVisible method, default to True if not (should exist)
-            is_visible = getattr(mesh_item, 'isVisible', lambda: True)()
+            is_visible = getattr(mesh_item, "isVisible", lambda: True)()
             self.logger.debug(f"Checking visibility for surface '{surface_name}': {is_visible}")
             return is_visible
-        else:
-            self.logger.debug(f"Checking visibility for non-existent surface '{surface_name}': False")
-            return False # Surface mesh doesn't exist
-    # --- End Add --- 
+        self.logger.debug(f"Checking visibility for non-existent surface '{surface_name}': False")
+        return False # Surface mesh doesn't exist
+    # --- End Add ---
 
     # --- NEW: Helper to adjust view to a list of Point3D objects ---
     def _adjust_view_to_points(self, points: List[Point3D]):
         """Adjusts the 3D camera view to encompass a list of Point3D objects."""
         if not HAS_3D or not isinstance(self.view_3d, gl.GLViewWidget) or not points:
             return
-        
+
         try:
             x_coords = [p.x for p in points]
             y_coords = [p.y for p in points]
@@ -1463,9 +1472,9 @@ class VisualizationPanel(QWidget):
                 pos=center_vec,      # Set the center point the camera looks at
                 distance=distance,   # Set the distance from the center point
                 elevation=30,        # Keep default elevation angle
-                azimuth=45           # Keep default azimuth angle
+                azimuth=45,           # Keep default azimuth angle
             )
             self.logger.debug(f"Adjusted 3D view to combined bounds: Center={center_vec}, ApproxDistance={distance:.2f}")
         except Exception as e:
             self.logger.error(f"Error adjusting 3D view to points: {e}", exc_info=True)
-    # --- END NEW HELPER --- 
+    # --- END NEW HELPER ---

@@ -34,7 +34,7 @@ class PdfDocument(QObject):
     way Qt manages its lifetime automatically.
     """
 
-    def __init__(self) -> None:  # noqa: D401 (imperative mood is fine here)
+    def __init__(self) -> None:
         super().__init__()
         # ``self`` is passed as parent so the wrapped object follows our
         # lifetime.
@@ -57,6 +57,7 @@ class PdfDocument(QObject):
         -------
         bool
             *True* on success, *False* otherwise.
+
         """
         # Ensure we work with a Path instance.
         pdf_path = Path(path)
@@ -82,13 +83,14 @@ class PdfDocument(QObject):
     # Properties
     # ------------------------------------------------------------------
     @property
-    def page_count(self) -> int:  # noqa: D401
+    def page_count(self) -> int:
         """The number of pages in the current document.
 
         Raises
         ------
         RuntimeError
             If called before :pymeth:`load` succeeds.
+
         """
         if not self._is_loaded:
             raise RuntimeError("PDF not loaded – call `load()` first.")
@@ -97,7 +99,7 @@ class PdfDocument(QObject):
     # ------------------------------------------------------------------
     # Rendering helpers
     # ------------------------------------------------------------------
-    def render_page(self, page: int, width: int) -> QPixmap:  # noqa: D401
+    def render_page(self, page: int, width: int) -> QPixmap:
         """Render *page* at *width* pixels keeping aspect ratio.
 
         Parameters
@@ -119,6 +121,7 @@ class PdfDocument(QObject):
             If the document has not been loaded.
         ValueError
             If *page* is out of range or *width* is not positive.
+
         """
         if not self._is_loaded:
             raise RuntimeError("PDF not loaded – call `load()` first.")
@@ -157,7 +160,7 @@ class PdfDocument(QObject):
     # ------------------------------------------------------------------
     # Python protocol helpers
     # ------------------------------------------------------------------
-    def __del__(self) -> None:  # noqa: D401
+    def __del__(self) -> None:
         """Ensure underlying `QPdfDocument` is closed before GC.
 
         This prevents crashes observed on some Qt versions when a QPdfDocument
@@ -166,4 +169,4 @@ class PdfDocument(QObject):
         try:
             self._doc.close()
         except Exception:  # pragma: no cover – best‑effort cleanup
-            pass 
+            pass

@@ -2,6 +2,7 @@ import pytest
 
 # PySide6/Qt testing via pytest-qt
 from PySide6.QtWidgets import QApplication
+
 from digcalc_project.src.ui.dialogs.pad_elevation_dialog import PadElevationDialog
 
 
@@ -21,4 +22,4 @@ def test_dialog_defaults(qtbot, app):
 
     # Change value programmatically and verify helper
     dlg._elev.setValue(200.0)
-    assert abs(dlg.value() - 200.0) < 1e-6 
+    assert abs(dlg.value() - 200.0) < 1e-6

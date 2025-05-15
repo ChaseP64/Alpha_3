@@ -1,6 +1,7 @@
 from shapely.geometry import LineString
-from digcalc_project.src.core.geometry.surface_builder import flat_surface
+
 from digcalc_project.src.core.calculations.mass_haul import build_mass_haul
+from digcalc_project.src.core.geometry.surface_builder import flat_surface
 
 
 def test_overhaul_positive():
@@ -14,4 +15,4 @@ def test_overhaul_positive():
     stations = build_mass_haul(ref, diff, align, station_interval=25, free_haul_ft=0)
 
     assert stations.overhaul_yd_station is not None
-    assert stations.overhaul_yd_station > 0 
+    assert stations.overhaul_yd_station > 0

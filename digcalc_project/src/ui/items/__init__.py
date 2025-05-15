@@ -9,10 +9,10 @@ Exports:
 
 from __future__ import annotations
 
-from .vertex_item import VertexItem  # noqa: F401
-from .polyline_item import PolylineItem  # noqa: F401
+from .polyline_item import PolylineItem
+from .vertex_item import VertexItem
 
 __all__ = [
-    "VertexItem",
     "PolylineItem",
-] 
+    "VertexItem",
+]

@@ -1,6 +1,5 @@
 import sys
 
-import pytest
 from PySide6.QtCore import QPointF
 
 from digcalc_project.src.tools.spline import sample
@@ -18,7 +17,7 @@ def _square(z: float = 0.0):
     if z:
         for p in pts:
             # Monkey-patch z attribute for 3-D path
-            setattr(p, "z", lambda v=z: v)  # type: ignore[attr-defined]
+            p.z = lambda v=z: v  # type: ignore[attr-defined]
     return pts
 
 
