@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 import math
 from collections.abc import Sequence
+import os  # <-- added for _show_scale_warning
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, TypeAlias
 
 from PySide6.QtCore import QLineF, QPointF, QRectF, QSize, Qt, Signal
@@ -20,6 +21,7 @@ from PySide6.QtGui import (
     QPixmap,
     QShortcut,
     QUndoCommand,
+    QUndoStack,  # Moved from QtWidgets
 )
 from PySide6.QtWidgets import (
     QGraphicsEllipseItem,
@@ -176,15 +178,26 @@ class TracingScene(QGraphicsScene):
         self._marquee_origin: QPointF | None = None
         self._marquee_selection: list[VertexItem] = []
 
-        # ------------------------------------------------------------
+        # ------------------------------------------------------------------
         # scale-calibration hint helpers
-        # ------------------------------------------------------------
+        # ------------------------------------------------------------------
         self._scale_warn_shown: bool = False  # one-shot QMessageBox flag
         # Legacy name kept for backward-compat but no longer used directly.
         self._scale_overlay: QGraphicsSimpleTextItem | None = None  # DEPRECATED
 
         # New overlay item reference
         self._noscale_item: QGraphicsSimpleTextItem | None = None
+
+        # ------------------------------------------------------------------
+        # Local undo/redo stack – lightweight per-scene stack so tests can push
+        # commands without spinning up the whole MainWindow.  MainWindow still
+        # owns its *own* stack for full application use, but exposing one here
+        # simplifies isolated unit-tests that manipulate the scene directly.
+        # ------------------------------------------------------------------
+        self._undo_stack = QUndoStack(self)
+
+        # Expose accessor compatible with MainWindow.undoStack()
+        self.undoStack = lambda: self._undo_stack
 
     # --- Background Image ---
 
@@ -868,13 +881,12 @@ class TracingScene(QGraphicsScene):
         ``self._scale_warn_shown`` is set here so repeated calls from
         ``start_drawing`` or ``set_tracing_enabled`` do not spam the user.
         """
-        # Mark the warning as shown for this session (even if dialog suppressed)
+        # Mark flag regardless of environment (tests assert on it)
         self._scale_warn_shown = True
 
-        import os
         if os.getenv("PYTEST_CURRENT_TEST"):
-            # In CI/test runs we only log to keep the event loop alive.
-            self.logger.info("[Test] Scale warning suppressed – invalid scale.")
+            # During pytest, avoid modal dialogs to prevent hangs
+            self.logger.info("[Test] Scale warning suppressed: invalid scale.")
             return
 
         try:
@@ -1248,6 +1260,90 @@ class TracingScene(QGraphicsScene):
         # Default handling for other cases
         super().contextMenuEvent(ev)
 
+    # --- NEW: Public helper to trigger scene refresh ----------------
+    def invalidate_cache(self):
+        """Trigger a redraw / overlay refresh after scale updates."""
+        try:
+            self._update_noscale_overlay()
+        except Exception:
+            pass
+        self.update()
+
+    # ------------------------------------------------------------------
+    def _show_scale_warning(self):
+        """Show non-blocking scale warning, safe for headless tests."""
+        if os.getenv("PYTEST_CURRENT_TEST"):
+            # During pytest, avoid modal dialogs to prevent hangs
+            self.logger.info("[Test] Scale warning suppressed: invalid scale.")
+            return
+        try:
+            msg = QMessageBox(
+                QMessageBox.Icon.Warning,
+                "Scale Required",
+                "Tracing is disabled until a valid scale is set.\n"
+                "Choose Tracing ▸ Calibrate Scale… or click the green scale pill.",
+                QMessageBox.StandardButton.Ok,
+                self.views()[0] if self.views() else None,
+            )
+            msg.setModal(False)
+            msg.show()
+        except Exception:
+            # Log but do not crash
+            self.logger.warning("Failed to show scale warning dialog", exc_info=True)
+
+    # ------------------------------------------------------------------
+    # Layer-colour propagation
+    # ------------------------------------------------------------------
+    def refresh_layer_item(self, layer_id: str):
+        """Repaint all scene items belonging to *layer_id* (polyline & vertices)."""
+        import sys # For printing to stderr
+        print(f"TracingScene.refresh_layer_item CALLED for layer_id: {layer_id}", flush=True, file=sys.stderr)
+        
+        items_found_for_layer = 0
+        for item in self.items():
+            if isinstance(item, PolylineItem):
+                item_layer_id = getattr(item, "layer_id", None)
+                # print(f"  Found PolylineItem {item}, its item_layer_id: {item_layer_id}", flush=True, file=sys.stderr)
+                if item_layer_id == layer_id:
+                    # print(f"    MATCH! item_layer_id == layer_id.", flush=True, file=sys.stderr)
+                    items_found_for_layer += 1
+                    colour_hex = None
+                    try:
+                        # print(f"      Attempting to get project...", flush=True, file=sys.stderr)
+                        proj = getattr(self, "project", None) or getattr(self.panel, "current_project", None)
+                        print(f"      Project object from panel: {proj} (type: {type(proj)})", flush=True, file=sys.stderr)
+                        if proj:
+                            # Assuming proj is a Project instance, directly call get_layer
+                            print(f"      Attempting to call proj.get_layer(layer_id='{layer_id}')", flush=True, file=sys.stderr)
+                            lyr = proj.get_layer(layer_id)
+                            print(f"      Layer object from project.get_layer: {lyr}", flush=True, file=sys.stderr)
+                            if lyr:
+                                colour_hex = lyr.line_color
+                                print(f"        Retrieved colour_hex '{colour_hex}' from layer '{lyr.name}'", flush=True, file=sys.stderr)
+                            else:
+                                print(f"        Layer with id {layer_id} NOT FOUND in project.", flush=True, file=sys.stderr)
+                        else:
+                            print("      Project object (proj) is None.", flush=True, file=sys.stderr)
+                    except AttributeError as ae:
+                        print(f"      !!! AttributeError: {ae} (Possibly proj is not a Project instance or get_layer is missing)", flush=True, file=sys.stderr)
+                        self.logger.error(f"AttributeError in refresh_layer_item: {ae}", exc_info=True)
+                    except Exception as e:
+                        print(f"      !!! EXCEPTION while getting layer/color: {e}", flush=True, file=sys.stderr)
+                        self.logger.error(f"Error retrieving color for layer {layer_id} in refresh_layer_item: {e}", exc_info=True)
+                    
+                    if colour_hex:
+                        # print(f"    Calling item.update_color('{colour_hex}') for item {item}", flush=True, file=sys.stderr)
+                        item.update_color(colour_hex)
+                    # else:
+                        # print(f"    Skipping item.update_color because colour_hex is STILL None for item {item}", flush=True, file=sys.stderr)
+                # else:
+                    # print(f"    NO MATCH. item_layer_id != layer_id.", flush=True, file=sys.stderr)
+
+        if items_found_for_layer == 0:
+            print(f"TracingScene.refresh_layer_item: No items found OR MATCHED for layer_id {layer_id}", flush=True, file=sys.stderr)
+            self.logger.warning(f"TracingScene.refresh_layer_item: No items found for layer_id {layer_id}")
+        self.update()
+
 # ------------------------------------------------------------------
 # Undo/Redo Command
 # ------------------------------------------------------------------
@@ -1352,39 +1448,3 @@ class SetPadElevationCommand(QUndoCommand):
 # --------------------------------------------------------------
 
 # <<<CUT END>>>
-
-# ------------------------------------------------------------------
-# Helper methods for new elevation workflow (inside TracingScene)
-# ------------------------------------------------------------------
-
-    # --- NEW: Public helper to trigger scene refresh ----------------
-    def invalidate_cache(self):
-        """Trigger a redraw / overlay refresh after scale updates."""
-        try:
-            self._update_noscale_overlay()
-        except Exception:
-            pass
-        self.update()
-
-    # ------------------------------------------------------------------
-    def _show_scale_warning(self):
-        """Show non-blocking scale warning, safe for headless tests."""
-        import os
-        if os.getenv("PYTEST_CURRENT_TEST"):
-            # During pytest, avoid modal dialogs to prevent hangs
-            self.logger.info("[Test] Scale warning suppressed: invalid scale.")
-            return
-        try:
-            msg = QMessageBox(
-                QMessageBox.Icon.Warning,
-                "Scale Required",
-                "Tracing is disabled until a valid scale is set.\n"
-                "Choose Tracing ▸ Calibrate Scale… or click the green scale pill.",
-                QMessageBox.StandardButton.Ok,
-                self.views()[0] if self.views() else None,
-            )
-            msg.setModal(False)
-            msg.show()
-        except Exception:
-            # Log but do not crash
-            self.logger.warning("Failed to show scale warning dialog", exc_info=True)

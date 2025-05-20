@@ -56,6 +56,9 @@ class VertexItem(QObject, QGraphicsPathItem):
         self._hover_pen = QPen(hover_col, width_px)
         self.setPen(self._normal_pen)
 
+        # Store current colour hex for halo fill
+        self._colour_hex: str = c_base.name()
+
         # --- Z (elevation) ------------------------------------------
         self._z: float = 0.0  # elevation value in feet
         # Initialise tooltip
@@ -111,15 +114,31 @@ class VertexItem(QObject, QGraphicsPathItem):
     # Painting – ensure crisp rendering (optional override)
     # ------------------------------------------------------------------
     def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget=None):
-        """Ensure the pen is used from current item state then delegate to base."""
-        painter.setPen(self.pen())
-        QGraphicsPathItem.paint(self, painter, option, widget)
+        """Custom render: white halo + coloured core for high-contrast."""
+        from PySide6.QtCore import QPointF
+        from PySide6.QtGui import QPen, QColor
+        from PySide6.QtCore import Qt
 
+        # Compute radius in *device* pixels irrespective of zoom so the marker
+        # stays constant size on-screen.
         view_scale = painter.worldTransform().m11()
-        px_half = SettingsService().vertex_cross_px() / max(view_scale, 1e-3)
-        if abs(px_half - self.CROSS_HALF) > 1e-2:
-            self.CROSS_HALF = px_half
+        r_core = 3  # px radius for coloured core
+        r_halo = r_core + 1  # halo 1-px bigger
+
+        if abs(self.CROSS_HALF - r_core) > 1e-2:
+            self.CROSS_HALF = r_core
             self._make_path()
+
+        # Halo (white outline)
+        painter.setBrush(Qt.NoBrush)
+        painter.setPen(QPen(Qt.white, 2))
+        painter.drawEllipse(QPointF(0, 0), r_halo, r_halo)
+
+        # Core (filled with layer colour)
+        colour_hex = getattr(self, "_colour_hex", None) or self._layer_pen_colour()
+        painter.setPen(Qt.black)
+        painter.setBrush(QColor(colour_hex))
+        painter.drawEllipse(QPointF(0, 0), r_core, r_core)
 
     # --- Z value -------------------------------------------------------
     def z(self) -> float:
@@ -246,6 +265,21 @@ class VertexItem(QObject, QGraphicsPathItem):
             except Exception:
                 pass
         return QColor(Qt.darkMagenta)
+
+    # ------------------------------------------------------------------
+    # Colour update helper – called by parent polyline when layer colour changes
+    # ------------------------------------------------------------------
+    def update_color(self, hex_colour: str):
+        """Refresh pens based on *hex_colour* coming from layer palette."""
+        from PySide6.QtGui import QColor
+
+        self._colour_hex = hex_colour
+        base = QColor(hex_colour)
+        width_px = SettingsService().vertex_line_thickness()
+        self._normal_pen = QPen(base.darker(130), width_px)
+        # keep hover colour unchanged (could customise)
+        self.setPen(self._normal_pen)
+        self.update()
 
     # --------------------------------------------------------------
     # Tooltip helper

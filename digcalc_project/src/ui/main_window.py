@@ -83,6 +83,9 @@ from .project_panel import ProjectPanel
 from .properties_dock import PropertiesDock
 from .visualization_panel import VisualizationPanel
 
+# --- NEW: Layer Legend Dock ---
+from digcalc_project.src.ui.docks.layer_legend_dock import LayerLegendDock
+
 logger = logging.getLogger(__name__)
 
 
@@ -190,6 +193,15 @@ class MainWindow(QMainWindow):
             self.pdf_service.documentLoaded.connect(
                 lambda page_count: self._update_scale_action_enabled(page_count > 0),
             )
+
+        # --- NEW: Layer Legend Dock ---
+        self.legend_dock = LayerLegendDock(project=None, parent=self)  # will set project later
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.legend_dock)
+        self.legend_dock.hide()
+
+        # Connect legend signals for auto show/hide and visibility toggles
+        self.legend_dock.visibleLayersChanged.connect(self._on_legend_layers_count)
+        self.legend_dock.layerVisibilityToggled.connect(self._on_layer_visibility_toggled)
 
     def _init_ui(self):
         """Initialize the UI components, including docked panels."""
@@ -1486,7 +1498,14 @@ class MainWindow(QMainWindow):
             self.logger.warning("Failed to refresh scale pill in _update_ui_for_project: %s", exc)
         # --- END NEW ---
         self.logger.debug("UI update complete.")
-    # --- End Restore ---
+        # --- NEW: Refresh legend dock ---
+        if hasattr(self, "legend_dock") and self.legend_dock:
+            try:
+                self.legend_dock._project = project  # noqa: SLF001
+                self.legend_dock.refresh()
+            except Exception:
+                pass
+        # --- END NEW ---
 
     # --- Restore Method to Update Window Title ---
     def _update_window_title(self):
@@ -2576,3 +2595,37 @@ class MainWindow(QMainWindow):
         self.scale_pill.setStyleSheet(style)
         self.logger.debug(f"Scale pill updated: Text='{text}', Style='{style}'")
     # --- END NEW ---
+
+    # ------------------------------------------------------------------
+    # Legend-dock helpers
+    # ------------------------------------------------------------------
+    def _on_legend_layers_count(self, count: int):
+        """Auto-show/auto-hide legend dock based on *count*."""
+        try:
+            if count == 0 and self.legend_dock.isVisible():
+                self.legend_dock.hide()
+            elif count >= 3 and not self.legend_dock.isVisible():
+                self.legend_dock.show()
+        except Exception:
+            pass
+
+    def _on_layer_visibility_toggled(self, layer_id: str, visible: bool):
+        """Propagate layer visibility to TracingScene."""
+        project = self.project_controller.get_current_project() if hasattr(self, "project_controller") else None
+        if not project:
+            return
+        lyr = project.get_layer(layer_id)
+        if not lyr:
+            return
+        scene = getattr(self.visualization_panel, "scene_2d", None)
+        if scene and hasattr(scene, "setLayerVisible"):
+            scene.setLayerVisible(lyr.name, visible)
+
+        if project:
+            # Update UI elements
+            if hasattr(self, "legend_dock") and self.legend_dock:
+                try:
+                    self.legend_dock._project = project  # noqa: SLF001
+                    self.legend_dock.refresh()
+                except Exception:
+                    pass

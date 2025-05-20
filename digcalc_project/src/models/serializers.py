@@ -4,7 +4,7 @@
 
 import json
 import logging
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from .project import Project  # Use relative import
 from .project_scale import ProjectScale
@@ -162,3 +162,45 @@ def from_dict(data: dict) -> Project:
     proj.traced_polylines = _load_polylines(data.get("polylines"))
 
     return proj
+
+# ---------------------------------------------------------------------------
+# Layer (de)serialisation helpers
+# ---------------------------------------------------------------------------
+
+if TYPE_CHECKING:  # pragma: no cover
+    # Avoid runtime import cycle; only needed for type checkers.
+    from .layer import Layer  # noqa: F401
+
+
+def layer_to_dict(layer: "Layer") -> dict:
+    """Serialize a :class:`Layer` to a plain dictionary.
+
+    Only the minimal stable fields are included so we can evolve the model
+    without breaking on-disk schema unnecessarily.
+    """
+    return {
+        "id": layer.id,
+        "name": layer.name,
+        "mode": layer.mode,
+        "line_color": layer.line_color,
+        "point_color": layer.point_color,
+        "visible": layer.visible,
+    }
+
+
+def layer_from_dict(data: dict) -> "Layer":
+    """Deserialize *data* into a :class:`Layer`.
+
+    Missing colour keys are tolerated for backwards compatibility with legacy
+    project files that pre-date coloured layers.
+    """
+    from .layer import Layer  # local import to avoid cycle at module import time
+
+    return Layer(
+        id=data["id"],
+        name=data["name"],
+        mode=data.get("mode", "entered"),
+        line_color=data.get("line_color", "#4DBBD5"),
+        point_color=data.get("point_color", data.get("line_color", "#4DBBD5")),
+        visible=data.get("visible", True),
+    )

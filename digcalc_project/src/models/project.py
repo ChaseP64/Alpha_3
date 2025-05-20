@@ -15,7 +15,7 @@ import os
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, TypedDict
+from typing import Any, Dict, List, Optional, Tuple, TypedDict, TYPE_CHECKING
 
 from .calculation import VolumeCalculation
 from .project_scale import ProjectScale  # NEW Pydantic model
@@ -83,6 +83,16 @@ class Project:
     # Dictionary to track revisions of layers (used for surface staleness)
     layer_revisions: Dict[str, int] = field(default_factory=lambda: defaultdict(int))
     # --- END NEW ---
+
+    # --- NEW: List of *Layer* objects ------------------------------------------------
+    # Stores a flat list of Layer instances used by the project.  Layer objects
+    # carry style (colour) and metadata.  Existing code that references
+    # `traced_polylines` by *name* continues to work – the two concepts are kept
+    # in sync by higher-level UI logic.
+    if TYPE_CHECKING:  # pragma: no cover
+        from .layer import Layer  # forward ref for type hints only
+
+    layers: list["Layer"] = field(default_factory=list)
 
     def __post_init__(self):
         self.logger = logging.getLogger(__name__)
@@ -258,6 +268,13 @@ class Project:
     def get_layers(self) -> List[str]:
         """Returns a list of layer names that contain traced polylines."""
         return list(self.traced_polylines.keys())
+
+    def get_layer(self, layer_id: str) -> Optional["Layer"]:
+        """Return the Layer with matching id from self.layers."""
+        for lyr in self.layers:
+            if getattr(lyr, "id", None) == layer_id:
+                return lyr
+        return None
 
     def _serialisable_polylines(self) -> TracedPolylinesType:
         """Return a JSON-safe copy (all points as lists)."""

@@ -12,8 +12,8 @@ from __future__ import annotations
 
 from typing import List
 
-from PySide6.QtCore import QObject, QPointF, Signal
-from PySide6.QtGui import QPainterPath, QPen
+from PySide6.QtCore import QObject, QPointF, Signal, Qt
+from PySide6.QtGui import QPainterPath, QPen, QColor
 from PySide6.QtWidgets import QGraphicsPathItem
 
 from digcalc_project.src.tools.spline import catmull_rom
@@ -29,6 +29,7 @@ class PolylineItem(QObject, QGraphicsPathItem):
         points: Initial list of vertex positions in *scene* coordinates.
         layer_pen: Pen used to draw the polyline.
         mode: Either ``"entered"`` (straight lines) or ``"interpolated"`` (future spline).
+        layer_id: Optional layer ID for the polyline.
 
     """
 
@@ -42,13 +43,20 @@ class PolylineItem(QObject, QGraphicsPathItem):
     # ------------------------------------------------------------------
     MODES = ("entered", "interpolated")
 
-    def __init__(self, points: List[QPointF], layer_pen: QPen, mode: str = "entered"):
+    def __init__(
+        self,
+        points: List[QPointF],
+        layer_pen: QPen,
+        mode: str = "entered",
+        layer_id: str | None = None,
+    ):
         # Ensure a valid mode is provided
         assert mode in self.MODES, f"Mode must be one of {self.MODES}, got {mode!r}"
         QObject.__init__(self)
         QGraphicsPathItem.__init__(self)
 
         self.mode: str = mode  # stored for later path rebuilds
+        self.layer_id: str | None = layer_id
         self._vertex_items: List[VertexItem] = []
         self.setPen(layer_pen)
 
@@ -166,6 +174,8 @@ class PolylineItem(QObject, QGraphicsPathItem):
                 path.lineTo(pt)
 
         self.setPath(path)
+        # Cache for custom paint() routine (avoids repeatedly walking path())
+        self._cached_path = path
 
     # ------------------------------------------------------------------
     # Qt housekeeping
@@ -186,6 +196,63 @@ class PolylineItem(QObject, QGraphicsPathItem):
         """Toggle between *entered* and *interpolated* display modes."""
         self.mode = "interpolated" if self.mode == "entered" else "entered"
         self._rebuild_path()
+
+    # ------------------------------------------------------------------
+    # Colour update helper (called when layer palette changes)
+    # ------------------------------------------------------------------
+    def update_color(self, hex_colour: str):
+        """Update the item's pen colour *in-place* and refresh vertices."""
+        import sys # For print
+        print(f"PolylineItem {self}: update_color CALLED with {hex_colour=}", flush=True, file=sys.stderr)
+        from PySide6.QtGui import QColor
+        
+        col = QColor(hex_colour)
+        current_pen = self.pen()
+
+        if current_pen.color() != col:
+            new_pen = QPen(current_pen) 
+            new_pen.setColor(col)
+            self.setPen(new_pen)
+            print(f"PolylineItem {self}: Inside update_color, after setPen, self.pen().color().name() is {self.pen().color().name()}", flush=True, file=sys.stderr)
+
+            for v in self._vertex_items:
+                setattr(v, "_colour_hex", hex_colour)
+            for v in self._vertex_items:
+                if hasattr(v, "update_color"):
+                    v.update_color(hex_colour)
+            self.update() 
+        else:
+            print(f"PolylineItem {self}: update_color - colors are SAME ({current_pen.color().name()} vs {col.name()}), no update.", flush=True, file=sys.stderr)
+
+    # ------------------------------------------------------------------
+    # Qt paint override – add black outline for contrast
+    # ------------------------------------------------------------------
+    def paint(self, painter, option, widget=None):  # noqa: D401
+        """Draw an outline + coloured stroke for high contrast.
+
+        We render two passes:
+
+        1. A slightly thicker black stroke that forms the halo/outline.
+        2. The actual layer-coloured stroke on top.
+        """
+        from PySide6.QtGui import QColor, QPen
+        from PySide6.QtCore import Qt
+
+        path = getattr(self, "_cached_path", None) or self.path()
+
+        # Foreground pen – derive width & colour from item pen
+        fg_pen: QPen = self.pen()
+        w = max(1, int(fg_pen.widthF() or 2))  # enforce ≥1
+
+        # 1) Outline (black)
+        pen_bg = QPen(Qt.black, w + 2, Qt.SolidLine, Qt.RoundCap, Qt.BevelJoin)
+        painter.setPen(pen_bg)
+        painter.drawPath(path)
+
+        # 2) Main coloured stroke (reuse fg_pen but ensure cosmetic caps)
+        pen_fg = QPen(QColor(fg_pen.color()), w, Qt.SolidLine, Qt.RoundCap, Qt.BevelJoin)
+        painter.setPen(pen_fg)
+        painter.drawPath(path)
 
 
 __all__ = ["PolylineItem"]

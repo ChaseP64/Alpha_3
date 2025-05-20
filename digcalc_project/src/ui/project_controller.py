@@ -103,19 +103,6 @@ class ProjectController(QObject):
          """Returns the currently active project."""
          return self.current_project
 
-    # ----------------------------------------------------------------------
-    # Backwards-compat: expose `.project` attribute used by older UI code
-    # ----------------------------------------------------------------------
-    @property
-    def project(self) -> Optional[Project]:
-        """Read-only alias for :pyattr:`current_project`.
-
-        Several UI classes still access ``self.project_controller.project``.
-        Providing this property avoids scattered refactors while we migrate
-        to the explicit :pyfunc:`get_current_project` API.
-        """
-        return self.current_project
-
     # --------------------------------------------------------------------------
     # Project Actions (Slots for MainWindow signals)
     # --------------------------------------------------------------------------
