@@ -57,7 +57,7 @@ from digcalc_project.src.ui.items.vertex_item import VertexItem
 
 # --- MODIFIED: Use TYPE_CHECKING for PolylineData ---
 if TYPE_CHECKING:
-    from ..models.project import PolylineData
+    from ..models.project import Project, PolylineData
     from .visualization_panel import VisualizationPanel
 else:
     # Provide a runtime fallback (e.g., dict or Any)
@@ -115,6 +115,7 @@ class TracingScene(QGraphicsScene):
         self.logger = logging.getLogger(__name__)
         self.parent_view = view # Store reference to the parent view
         self.panel = panel # Store reference to the panel
+        self.project: Optional['Project'] = None # Explicitly initialize project attribute
         # Settings access – used for tracing enable flag and elevation mode
         self._settings = SettingsService()
 
@@ -353,8 +354,12 @@ class TracingScene(QGraphicsScene):
 
         # ---------------- Pre-flight scale validation ----------------
         if event.button() == Qt.LeftButton:
-            proj = getattr(self, "project", None) or getattr(self.panel, "current_project", None)
-            if self._scale_invalid(proj):
+            # Use self.project directly, which is set by VisualizationPanel.set_project
+            proj_to_check = self.project # No need for getattr if always initialized
+            self.logger.info(f"[mousePressEvent] Using self.project: {proj_to_check}, Scale: {proj_to_check.scale if proj_to_check else 'No Project'}")
+
+            if self._scale_invalid(proj_to_check):
+                self.logger.warning("[mousePressEvent] _scale_invalid returned True. Showing QMessageBox.")
                 QMessageBox.warning(
                     self.views()[0],
                     "Scale Required",
@@ -362,6 +367,8 @@ class TracingScene(QGraphicsScene):
                     "Choose Tracing ▸ Calibrate Scale… or click the green scale pill.",
                 )
                 return  # Abort – do *not* start tracing
+            else:
+                self.logger.debug("[mousePressEvent] _scale_invalid returned False. Proceeding with trace.")
         # -------------------------------------------------------------
 
         # --- Tracing is Enabled ---
@@ -860,54 +867,38 @@ class TracingScene(QGraphicsScene):
     # Public helpers (cache invalidation & scale warning)
     # ------------------------------------------------------------------
     def invalidate_cache(self) -> None:
-        """Trigger a redraw / overlay refresh after scale updates.
+        """Invalidate any cached data, like spline samples, upon geometry change."""
+        for item in self.items():
+            if isinstance(item, PolylineItem):
+                item.invalidate_sample_cache()
+        self.logger.debug("Polyline sample caches invalidated.")
 
-        This helper used to be defined outside the TracingScene class by
-        mistake.  Relocating it here ensures callers like MainWindow and
-        unit-tests (scene.invalidate_cache()) always find the attribute.
-        """
-        try:
-            self._update_noscale_overlay()
-        finally:
-            # Always schedule a paint update even if overlay fails
-            self.update()
-
-    # ------------------------------------------------------------------
     def _show_scale_warning(self) -> None:
         """Show a non-modal warning that tracing requires a valid scale.
-
-        The dialog is suppressed when running under pytest to avoid GUI
-        hangs in headless environments.  The one-shot flag
-        ``self._scale_warn_shown`` is set here so repeated calls from
-        ``start_drawing`` or ``set_tracing_enabled`` do not spam the user.
+        This method is designed to be monkeypatched in tests to prevent UI popups.
         """
-        # Mark flag regardless of environment (tests assert on it)
-        self._scale_warn_shown = True
-
-        if os.getenv("PYTEST_CURRENT_TEST"):
-            # During pytest, avoid modal dialogs to prevent hangs
-            self.logger.info("[Test] Scale warning suppressed: invalid scale.")
+        if self._scale_warn_shown:
+            # self.logger.debug("_show_scale_warning: Already shown, skipping.")
             return
 
-        try:
-            parent = self.views()[0] if self.views() else None
-            msg = QMessageBox(
-                QMessageBox.Icon.Warning,
-                "Scale Required",
-                "Tracing is disabled until a valid scale is set.\n"
-                "Choose Tracing ▸ Calibrate Scale… or click the green scale pill.",
-                QMessageBox.StandardButton.Ok,
-                parent,
-            )
-            msg.setModal(False)
-            msg.show()
-        except Exception:
-            # Fail-safe: log but never crash the app if the dialog cannot show
-            self.logger.warning("Failed to show scale warning dialog", exc_info=True)
+        self.logger.warning("Scale not set. Tracing disabled until scale is calibrated.")
+        self._scale_warn_shown = True # Set flag *before* showing dialog
 
-    # ------------------------------------------------------------------
-    # Elevation-prompt workflow helpers (point/interpolate/line) – class-level
-    # ------------------------------------------------------------------
+        # Ensure this runs in the main thread if called from elsewhere, though unlikely here
+        # For QMessageBox, parent to the current view if possible.
+        try:
+            parent = self.parent_view # self.views()[0] if self.views() else None
+            # Use a more informative message
+            QMessageBox.information(
+                parent, # Parent widget
+                "Scale Required for Tracing",
+                "The project scale has not been set or is invalid. "
+                "Please calibrate the scale using 'Tracing > Calibrate Scale...' "
+                "or by clicking the scale indicator in the status bar before you can trace.",
+                QMessageBox.StandardButton.Ok
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to show scale warning dialog: {e}", exc_info=True)
 
     def _apply_elevation_workflow(self, poly_item: PolylineItem) -> None:
         """Run the elevation-prompt workflow for *poly_item* based on *self._elev_mode*."""
@@ -971,39 +962,61 @@ class TracingScene(QGraphicsScene):
         return initial_z, False
 
     def _ask_uniform_z(self) -> tuple[float, bool]:
-        """Prompt the user for a uniform elevation for the entire line."""
-        parent_widget = self.views()[0] if self.views() else None
-        dlg = ElevationDialog(parent_widget)
-        if dlg.exec():
-            return dlg.value(), True
-        return 0.0, False
+        """Prompt for uniform Z for all vertices in current polyline."""
+        # This could also be a custom dialog; using QInputDialog for simplicity.
+        z_val, ok = QInputDialog.getDouble(
+            self.parent_view, # Parent to the view
+            "Set Uniform Elevation",
+            "Enter elevation (Z value):",
+            0.0,  # Default value
+            -1_000_000,  # Min value
+            1_000_000,  # Max value
+            3,    # Decimals
+        )
+        return z_val, ok
 
     def set_elevation_mode(self, mode: str) -> None:
-        """Public setter used by MainWindow to update elevation-prompt mode live."""
-        if mode not in ("point", "interpolate", "line"):
-            self.logger.warning("Attempted to set invalid elevation mode: %s", mode)
-            return
+        """Set the elevation entry mode."""
         self._elev_mode = mode
-        self._prompt_mode = mode
-        self.logger.debug("TracingScene elevation mode set to '%s'", mode)
+        self._prompt_mode = mode # Keep alias updated
+        self._settings.set_tracing_elev_mode(mode)
+        self.logger.info(f"Tracing elevation mode set to: {mode}")
 
     # ------------------------------------------------------------------
     # Scale validation helper (inside class)
     # ------------------------------------------------------------------
-    def _scale_invalid(self, proj) -> bool:
-        """Return True when *proj* lacks a valid scale for tracing.
-
-        1. Missing project or scale.
-        2. PDF DPI differs from calibration DPI by > ±0.5.
+    def _scale_invalid(self, proj_arg) -> bool:
+        """Check if the project's scale is currently invalid for tracing.
+        Returns True if invalid, False if valid.
+        Also updates the visual no-scale overlay and shows a warning if invalid.
         """
-        if not proj or getattr(proj, "scale", None) is None:
-            return True
-        try:
-            dpi_at_cal = proj.scale.render_dpi_at_cal
-            pdf_dpi = proj.pdf_background_dpi
-            return abs(dpi_at_cal - pdf_dpi) > 0.5
-        except Exception:
-            return True
+        # proj_arg is the project passed in (expected to be self.project from calling context)
+        self.logger.info(f"[_scale_invalid] Received project: {proj_arg}, Scale: {proj_arg.scale if proj_arg else 'No Project'}, WPP_in: {proj_arg.scale.world_per_paper_in if proj_arg and proj_arg.scale else 'N/A'}, DPI: {proj_arg.scale.render_dpi_at_cal if proj_arg and proj_arg.scale else 'N/A'}")
+
+        scale_is_actually_invalid = True
+        if proj_arg and proj_arg.scale:
+            if (proj_arg.scale.world_per_paper_in is not None and
+                proj_arg.scale.world_per_paper_in > 0 and
+                proj_arg.scale.render_dpi_at_cal > 0):
+                scale_is_actually_invalid = False
+            else:
+                self.logger.debug(f"[_scale_invalid] Condition for valid scale FAILED. world_per_paper_in: {proj_arg.scale.world_per_paper_in}, render_dpi_at_cal: {proj_arg.scale.render_dpi_at_cal}")
+        elif proj_arg is None:
+            self.logger.debug("[_scale_invalid] Project is None.")
+        elif proj_arg.scale is None:
+            self.logger.debug("[_scale_invalid] Project.scale is None.")
+            
+        self.logger.debug(f"[_scale_invalid] scale_is_actually_invalid: {scale_is_actually_invalid}")
+        
+        if scale_is_actually_invalid:
+            # Only show the pop-up warning if it hasn't been shown before for this session or if scale became invalid again.
+            # The _show_scale_warning method itself has a _scale_warn_shown flag to prevent repeated popups for the same state.
+            self._show_scale_warning() 
+        
+        # Always update the visual overlay to reflect the current scale status.
+        self._update_noscale_overlay()
+        
+        return scale_is_actually_invalid
 
     # ------------------------------------------------------------------
     # Compatibility aliases for new API expected by MainWindow
@@ -1020,9 +1033,10 @@ class TracingScene(QGraphicsScene):
 
         # Early scale validation when turning *on* tracing
         if enable:
-            proj = getattr(self, "project", None) or getattr(self.panel, "current_project", None)
-            if self._scale_invalid(proj):
-                # Show identical banner used on click-time validation
+            # Use self.project directly, which is set by VisualizationPanel.set_project
+            proj_to_check = self.project # No need for getattr if always initialized
+            self.logger.info(f"[set_tracing_enabled] Using self.project: {proj_to_check}, Scale: {proj_to_check.scale if proj_to_check else 'No Project'}")
+            if self._scale_invalid(proj_to_check): 
                 self._show_scale_warning()
 
         self._tracing_enabled = enable
@@ -1096,27 +1110,27 @@ class TracingScene(QGraphicsScene):
         self.pageRectChanged.emit() # Emit signal after loading
 
     def dump_scene_state(self) -> LayerPolylineDict:
-        """Extracts finalized polylines and groups them by layer name.
-
+        """Serializes all finalized PolylineItems into a dictionary by layer.
+        This is for saving the project state.
         Returns:
-            LayerPolylineDict:
-                A dictionary where keys are layer names and values are lists of
-                polylines, each represented as a list of (x, y) tuples.
-
+            LayerPolylineDict: A dictionary where keys are layer names (str) and
+                               values are lists of polylines. Each polyline is a
+                               list of (x, y, z) tuples.
         """
-        polylines_by_layer: LayerPolylineDict = {}
+        state: LayerPolylineDict = {}
         for item in self.items():
-            if isinstance(item, QGraphicsPathItem):
-                layer_name = item.data(Qt.UserRole + 1)
-                points_data = item.data(Qt.UserRole + 2)
-                if isinstance(layer_name, str) and isinstance(points_data, list):
-                    if layer_name not in polylines_by_layer:
-                        polylines_by_layer[layer_name] = []
-                    # Ensure points_data contains tuples (it should from load/finalize)
-                    polyline_tuples = [(float(p[0]), float(p[1])) for p in points_data if len(p) == 2]
-                    polylines_by_layer[layer_name].append(polyline_tuples)
-        self.logger.info(f"Dumped scene state: {len(polylines_by_layer)} layers found.")
-        return polylines_by_layer
+            if isinstance(item, PolylineItem) and item.is_finalized():
+                layer_name = item.layer_name
+                # Ensure points are in world coordinates with Z values
+                # PolylineItem.points_3d() should provide this directly.
+                points_3d = item.points_3d() # This should be List[Tuple[float,float,float]]
+                # Convert to simple list of tuples for serialization if not already
+                # Assuming points_3d() already returns the correct serializable format
+                if layer_name not in state:
+                    state[layer_name] = []
+                state[layer_name].append(points_3d) # Add the list of 3D points
+        self.logger.debug(f"Dumped scene state with {sum(len(v) for v in state.values())} polylines across {len(state)} layers.")
+        return state
 
     def setLayerVisible(self, layer_name: str, visible: bool) -> None: # noqa: N802
         """Sets the visibility of all polyline items associated with a layer."""

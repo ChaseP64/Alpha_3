@@ -341,6 +341,7 @@ class VisualizationPanel(QWidget):
         # Keep the TracingScene aware of the active project for scale checks
         if hasattr(self, "scene_2d") and self.scene_2d:
             self.scene_2d.project = project
+            self.logger.info(f"[VisualizationPanel.set_project] self.scene_2d.project set to: {self.scene_2d.project} (Scale: {self.scene_2d.project.scale if self.scene_2d.project else 'No Project on scene_2d'})")
 
         if project:
             # Load PDF Background if available
@@ -582,49 +583,53 @@ class VisualizationPanel(QWidget):
             self.view_2d.viewport().update()
 
     def has_surfaces(self) -> bool:
-         """Checks if any 3D surfaces are loaded and visualization is possible."""
-         return HAS_3D and isinstance(self.view_3d, gl.GLViewWidget) and bool(self.surface_mesh_items)
+        """Check if any surfaces are currently loaded and visualized."""
+        return bool(self.surface_mesh_items)
 
     def set_tracing_mode(self, enabled: bool):
-         """Enables or disables the interactive tracing mode on the scene.
-         Also changes the view's drag mode and cursor accordingly.
-         """
-         # First, ensure the TracingScene knows whether tracing should be active.
-         # This flag gates mousePressEvent logic inside TracingScene, so we must
-         # update it BEFORE any start/stop-drawing calls.
-         self.scene_2d.set_tracing_enabled(enabled)
+        """Enable or disable tracing mode for the 2D view (TracingScene).
 
-         # Only allow enabling tracing if a PDF is loaded
-         if enabled and not self.pdf_renderer:
-             self.logger.warning("Cannot enable tracing: No PDF background is loaded.")
-             # Revert the tracing flag just set above – keep scene disabled.
-             self.scene_2d.set_tracing_enabled(False)
-             # Optionally force the action back to unchecked if called directly
-             # main_window = self.parent() # Need a way to access MainWindow if needed
-             # if main_window and hasattr(main_window, 'toggle_tracing_action'):
-             #     main_window.toggle_tracing_action.setChecked(False)
-             return
+        Args:
+            enabled (bool): True to enable tracing, False to disable.
+        """
+        self.logger.info(f"Setting tracing mode to: {'Enabled' if enabled else 'Disabled'}")
 
-         if enabled:
-              self.scene_2d.start_drawing()
-              self.logger.info("Tracing mode enabled.")
-              # Disable view dragging and set cross cursor
-              self.view_2d.setDragMode(QGraphicsView.DragMode.NoDrag)
-              # Ensure viewport can receive key events (for Ctrl+Z local undo).
-              self.view_2d.viewport().setFocusPolicy(Qt.StrongFocus)
-              self.view_2d.viewport().setCursor(Qt.CrossCursor)
-              # Ensure 2D view is visible
-              if not self.view_2d.isVisible():
-                  self.view_2d.setVisible(True)
-                  if HAS_3D: self.view_3d.setVisible(False)
-         else:
-              self.scene_2d.stop_drawing()
-              self.logger.info("Tracing mode disabled.")
-              # Restore view dragging and reset cursor
-              self.view_2d.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
-              # Use OpenHandCursor when ScrollHandDrag is active
-              self.view_2d.viewport().setCursor(Qt.OpenHandCursor)
-              # Reset cursor etc. <- covered by line above
+        if not self.scene_2d:
+            self.logger.error("Cannot set tracing mode: scene_2d is not initialized.")
+            return
+
+        # Pass to TracingScene to handle cursor, state, etc.
+        self.scene_2d.set_tracing_enabled(enabled)
+
+        if enabled:
+            # Ensure 2D view is active when tracing is enabled
+            self.show_2d_view()
+
+            # Check if scale is set when enabling tracing
+            # The TracingScene itself will show a warning if scale is not set
+            # when the user tries to place a point.
+            if self.current_project and (
+                self.current_project.scale is None
+                or not self.current_project.scale.world_per_paper_in
+                or self.current_project.scale.render_dpi_at_cal <= 0
+            ):
+                self.logger.warning(
+                    "Tracing enabled, but project scale is not set or invalid."
+                )
+                # TracingScene._show_scale_warning() will be triggered on mouse press if still invalid
+            else:
+                self.logger.info("Tracing enabled with valid project scale.")
+
+            # Set the cursor for the viewport of the QGraphicsView if desired
+            # self.view_2d.viewport().setCursor(Qt.CrossCursor)
+
+        else:
+            # Restore default cursor if needed
+            # self.view_2d.viewport().setCursor(Qt.ArrowCursor)
+            pass
+
+        # Update UI elements related to tracing mode if necessary (e.g., toolbar buttons)
+        # This might be handled by signals/slots connected to the MainWindow's action
 
     def load_and_display_polylines(self, polylines_by_layer: Dict[str, List[List[Tuple[float, float]]]]):
         """Loads polylines from a dictionary (grouped by layer) into the 2D scene.
@@ -782,133 +787,36 @@ class VisualizationPanel(QWidget):
     # --- Legacy Tracing Slots ---
     @Slot(list)
     def _on_legacy_polyline_finalized(self, points_qpointf: List[QPointF]):
-        """DEPRECATED: This slot should no longer be called as the connection
-        has been removed in _init_ui. Handling is now done in MainWindow.
-        """
-        self.logger.warning("DEPRECATED _on_legacy_polyline_finalized was called! This should not happen.")
-        # Prevent any residual execution
-        # ... (Original code removed for clarity) ...
-
-    def set_tracing_mode(self, enabled: bool):
-         """Enables or disables the interactive tracing mode on the scene.
-         Also changes the view's drag mode and cursor accordingly.
-         """
-         # First, ensure the TracingScene knows whether tracing should be active.
-         # This flag gates mousePressEvent logic inside TracingScene, so we must
-         # update it BEFORE any start/stop-drawing calls.
-         self.scene_2d.set_tracing_enabled(enabled)
-
-         # Only allow enabling tracing if a PDF is loaded
-         if enabled and not self.pdf_renderer:
-             self.logger.warning("Cannot enable tracing: No PDF background is loaded.")
-             # Revert the tracing flag just set above – keep scene disabled.
-             self.scene_2d.set_tracing_enabled(False)
-             # Optionally force the action back to unchecked if called directly
-             # main_window = self.parent() # Need a way to access MainWindow if needed
-             # if main_window and hasattr(main_window, 'toggle_tracing_action'):
-             #     main_window.toggle_tracing_action.setChecked(False)
-             return
-
-         if enabled:
-              self.scene_2d.start_drawing()
-              self.logger.info("Tracing mode enabled.")
-              # Disable view dragging and set cross cursor
-              self.view_2d.setDragMode(QGraphicsView.DragMode.NoDrag)
-              # Ensure viewport can receive key events (for Ctrl+Z local undo).
-              self.view_2d.viewport().setFocusPolicy(Qt.StrongFocus)
-              self.view_2d.viewport().setCursor(Qt.CrossCursor)
-              # Ensure 2D view is visible
-              if not self.view_2d.isVisible():
-                  self.view_2d.setVisible(True)
-                  if HAS_3D: self.view_3d.setVisible(False)
-         else:
-              self.scene_2d.stop_drawing()
-              self.logger.info("Tracing mode disabled.")
-              # Restore view dragging and reset cursor
-              self.view_2d.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
-              # Use OpenHandCursor when ScrollHandDrag is active
-              self.view_2d.viewport().setCursor(Qt.OpenHandCursor)
-              # Reset cursor etc. <- covered by line above
-
-    def load_and_display_polylines(self, polylines_by_layer: Dict[str, List[List[Tuple[float, float]]]]):
-        """Loads polylines from a dictionary (grouped by layer) into the 2D scene.
-
-        This replaces the previous `load_and_display_legacy_polylines`.
+        """Handles polyline finalization from the TracingScene (legacy path).
 
         Args:
-            polylines_by_layer: Dict where keys are layer names and values are lists of polylines.
-
-        """
-        # Clear existing lines first. Important!
-        # self.scene_2d.clear_finalized_polylines() # Clearing is now handled within load_polylines_with_layers
-        self.scene_2d.load_polylines_with_layers(polylines_by_layer)
-        self.logger.info(f"Requested TracingScene to load polylines for {len(polylines_by_layer)} layers.")
-
-    def clear_polylines_from_scene(self):
-        """Clears all finalized polylines from the 2D scene."""
-        self.scene_2d.clear_finalized_polylines()
-        self.logger.info("Cleared all finalized polylines from the 2D scene.")
-
-    @Slot()
-    def load_polylines_into_qml(self):
-        """Retrieves layered polyline data from the current project
-        and sends it to the QML tracing component.
-        Assumes a QML function like `loadPolylines(polylinesDict)` exists.
+            points_qpointf (List[QPointF]): List of QPointF vertices from the scene.
         """
         if not self.current_project:
-            self.logger.warning("Cannot load polylines into QML: No active project.")
+            self.logger.warning("Polyline finalized but no current project to add it to.")
             return
 
-        # Get the dictionary {layer_name: [polyline1, polyline2, ...]}
-        polylines_by_layer = self.current_project.traced_polylines
+        # Convert QPointF to a list of (float, float) tuples
+        polyline_coords: List[Tuple[float, float]] = [(pt.x(), pt.y()) for pt in points_qpointf]
 
-        # Ensure data format is suitable for QML (e.g., list of lists for points)
-        qml_formatted_data = {}
-        total_polylines = 0
-        for layer, polylines in polylines_by_layer.items():
-            formatted_polylines = []
-            for poly in polylines:
-                # Convert list of tuples [(x,y), ...] to list of lists [[x,y], ...]
-                formatted_poly = [[pt[0], pt[1]] for pt in poly]
-                formatted_polylines.append(formatted_poly)
-                total_polylines += 1
-            qml_formatted_data[layer] = formatted_polylines
+        # Determine the active layer (e.g., from a layer selector ComboBox)
+        # For now, using a placeholder or a default layer name
+        active_layer_name = self.active_layer_name # Using the attribute set by layer_selector
 
-        self.logger.info(f"Preparing to load {total_polylines} polylines across {len(qml_formatted_data)} layers into QML.")
+        self.logger.info(f"Legacy polyline finalized on layer '{active_layer_name}' with {len(polyline_coords)} points.")
 
-        # --- Log formatted data for verification ---
-        self.logger.debug(f"Formatted data for QML: {qml_formatted_data}") # <-- TEMPORARY LOG (Uncommented)
+        # Add to project model (ProjectController should handle this)
+        # This is a simplified placeholder. The ProjectController should be responsible
+        # for managing the current project and adding data to it.
+        # self.current_project.add_polyline_to_layer(active_layer_name, polyline_coords)
 
-        # --- Call the QML function ---
-        # try:
-        #     if self.qml_root_object and hasattr(self.qml_root_object, 'loadPolylines'):
-        #          # Assuming QML function accepts a dictionary/JS object
-        #          self.qml_root_object.loadPolylines(qml_formatted_data)
-        #          self.logger.info("Successfully sent polyline data to QML component.")
-        #     elif self.qml_root_object:
-        #          self.logger.error("QML root object found, but 'loadPolylines' method is missing.")
-        #     else:
-        #          self.logger.error("Cannot load polylines into QML: QML component not accessible.")
-        # except Exception as e:
-        #     self.logger.error(f"Error calling QML function 'loadPolylines': {e}", exc_info=True)
-        # Add user feedback if needed
+        # Emit a signal that MainWindow can connect to, to pass to ProjectController
+        # Example: self.polyline_added_to_project.emit(active_layer_name, polyline_coords)
 
-    # Add wheel event for zooming 2D view
-    def wheelEvent(self, event):
-        # Zooming functionality
-        if event.modifiers() & Qt.ControlModifier:
-            if not self.view_2d.isVisible():
-                super().wheelEvent(event)
-                return
-
-            zoom_factor = 1.15 # Adjust as needed
-            if event.angleDelta().y() > 0:
-                self.view_2d.scale(zoom_factor, zoom_factor)
-            else:
-                self.view_2d.scale(1.0 / zoom_factor, 1.0 / zoom_factor)
-            event.accept()
-        else:
-            super().wheelEvent(event)
+        # For now, directly log. Proper handling would involve ProjectController.
+        # In a more robust setup, VisualizationPanel would emit a signal, and MainWindow
+        # would connect that signal to a slot in ProjectController.
+        # Or, ProjectController could be passed to VisualizationPanel, though this can increase coupling.
 
     # --- NEW: Helper Methods ---
     def has_pdf(self) -> bool:

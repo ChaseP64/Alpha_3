@@ -10,12 +10,14 @@ Uses PyMuPDF (fitz) to load and render PDF pages as QImage objects.
 import logging
 import sys
 import typing  # Import typing
-from typing import List, Optional
+from typing import List, Optional, TypeAlias, Any
 
 # --- Dependency Handling ---
 # Check for PyMuPDF (fitz)
 if typing.TYPE_CHECKING:
-    import fitz  # Move import here
+    import fitz
+    from PySide6.QtGui import QImage  # ADDED FOR MYPY
+    from PySide6.QtWidgets import QApplication  # ADDED FOR MYPY (consistency)
 else:
     try:
         import fitz  # PyMuPDF - Requires `pip install PyMuPDF`
@@ -24,7 +26,7 @@ else:
         print("Please install it: pip install PyMuPDF", file=sys.stderr)
         fitz = None  # Indicate missing library
 
-# Check for PySide6
+# Check for PySide6 (this block handles runtime)
 try:
     from PySide6.QtGui import QImage
     from PySide6.QtWidgets import QApplication  # Needed for __main__ test
@@ -32,8 +34,16 @@ try:
 except ImportError:
     print("Error: PySide6 library not found.", file=sys.stderr)
     print("Please install it: pip install PySide6", file=sys.stderr)
-    QImage = None # Indicate missing library
-    QApplication = None # Indicate missing library
+    # Use a dummy *type* placeholder so static type checkers still consider QImage
+    # and QApplication valid in annotations, while runtime clearly signals the
+    # absence of the real Qt classes.
+    class _MissingQtType:  # pylint: disable=too-few-public-methods
+        """Placeholder type used when PySide6 is unavailable at runtime."""
+
+    # Define type aliases so that mypy recognises these names as *types* even
+    # though at runtime (when PySide6 is missing) they refer to a dummy class.
+    QImage: TypeAlias = _MissingQtType  # type: ignore[assignment]
+    QApplication: TypeAlias = _MissingQtType  # type: ignore[assignment]
 # --- End Dependency Handling ---
 
 
@@ -72,13 +82,13 @@ class PDFRenderer:
             FileNotFoundError: If the pdf_path does not exist.
 
         """
-        if fitz is None or QImage is None:
+        if fitz is None or QImage is _MissingQtType:
             raise PDFRendererError("Required libraries (PyMuPDF, PySide6) not available.")
 
         self.pdf_path: str = pdf_path
         self.dpi: int = dpi
         self.logger.info(f"PDFRenderer initialized with DPI: {self.dpi}")
-        self._rendered_pages: List[QImage] = []
+        self._rendered_pages: List[Any] = []
         self.doc = None
 
         # Placeholders for future calibration/alignment
@@ -147,14 +157,14 @@ class PDFRenderer:
         self.logger.info(f"Finished rendering. Stored {len(self._rendered_pages)} page images.")
 
 
-    def get_page_image(self, page_number: int) -> Optional[QImage]:
+    def get_page_image(self, page_number: int) -> Optional[Any]:
         """Retrieves the rendered QImage for a specific page.
 
         Args:
             page_number (int): The page number to retrieve (1-based index).
 
         Returns:
-            Optional[QImage]: The rendered QImage for the page, or None if the
+            Optional[Any]: The rendered QImage for the page, or None if the
                               page number is invalid or rendering failed for that page.
 
         """
@@ -193,7 +203,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     # Ensure libraries loaded for test execution
-    if fitz is None or QImage is None or QApplication is None:
+    if fitz is None or QImage is _MissingQtType or QApplication is _MissingQtType:
         sys.exit("Exiting: Required libraries not found.")
 
     # Need a QApplication instance for QImage handling, even if not showing GUI

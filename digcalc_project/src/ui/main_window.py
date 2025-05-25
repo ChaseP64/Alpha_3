@@ -982,6 +982,9 @@ class MainWindow(QMainWindow):
                     page_count = self.visualization_panel.pdf_renderer.get_page_count() if self.visualization_panel.pdf_renderer else 0
                     self.statusBar().showMessage(f"Loaded PDF background '{Path(filename).name}' ({page_count} pages).", 5000)
                     self.logger.info(f"Successfully loaded PDF background '{Path(filename).name}' with {page_count} pages.")
+                    # ADDED LOG: Confirm _update_ui_for_project is called
+                    self.logger.info(f"[on_load_pdf_background] SUCCESS: About to call _update_ui_for_project with project: {project.name if project else 'None'}")
+                    self._update_ui_for_project(project) # Update UI with the (potentially new) project
                 else:
                     # Loading failed (error already logged by visualization_panel)
                     raise PDFRendererError("Loading or rendering PDF background failed.") # Re-raise specific error for unified handling
@@ -1465,18 +1468,13 @@ class MainWindow(QMainWindow):
     # --- END NEW ---
  # --- Restore Method for Controller to Update UI ---
     def _update_ui_for_project(self, project: Optional[Project]):
-        """Updates various UI components based on the current project state.
-        Called by ProjectController when the project changes.
+        """Update all relevant UI components based on the (new) project state."""
+        self.logger.info(f"[_update_ui_for_project] Called with project: {project.name if project else 'None'}") # ADDED LOG
 
-        Args:
-            project: The new current project (or None).
+        self._update_window_title()
+        self._update_layer_tree() # project_panel.update_project_tree()
 
-        """
-        self.logger.debug(f"Updating UI for project: {project.name if project else 'None'}")
-        # Update UI elements
         if hasattr(self, "project_panel"): self.project_panel.set_project(project)
-        self._update_layer_tree() # Update layer tree
-        if hasattr(self, "visualization_panel"): self.visualization_panel.set_project(project)
         self._update_analysis_actions_state() # Update menu/toolbar item enabled state
         self._update_pdf_controls() # Update PDF controls based on project state
         self._update_window_title() # Update window title
@@ -1506,6 +1504,19 @@ class MainWindow(QMainWindow):
             except Exception:
                 pass
         # --- END NEW ---
+
+        if hasattr(self, "pdf_thumbnail_dock"):
+            if project and project.pdf_background_path:
+                self.pdf_thumbnail_dock.show()
+            else:
+                self.pdf_thumbnail_dock.hide()
+
+        # Update visualization panel with the project (this will load surfaces, PDF, etc.)
+        self.logger.info(f"[_update_ui_for_project] About to call self.visualization_panel.set_project with: {project.name if project else 'None'}") # ADDED LOG
+        self.visualization_panel.set_project(project)
+
+        # Update scale pill based on the project's scale status
+        self._update_scale_pill()
 
     # --- Restore Method to Update Window Title ---
     def _update_window_title(self):
@@ -2507,34 +2518,42 @@ class MainWindow(QMainWindow):
     def _on_scale_dialog_done(self, dlg: "ScaleCalibrationDialog", result: int):
         """Handle completion of ScaleCalibrationDialog launched modelessly."""
         from PySide6.QtWidgets import QDialog
+        self.logger.info(f"[_on_scale_dialog_done] Entered. Dialog result: {result}")
+
         if result != QDialog.DialogCode.Accepted:  # User cancelled
+            self.logger.info("[_on_scale_dialog_done] Dialog cancelled by user.")
             return
 
-        proj_scale = dlg.result_scale()
-        if proj_scale is None:
+        proj_scale_from_dialog = dlg.result_scale()
+        self.logger.info(f"[_on_scale_dialog_done] Scale from dialog: {proj_scale_from_dialog}")
+
+        if proj_scale_from_dialog is None:
+            self.logger.warning("[_on_scale_dialog_done] Dialog returned None for scale. Aborting.")
             return
 
         current_project = self.project_controller.get_current_project()
+        self.logger.info(f"[_on_scale_dialog_done] current_project (id: {id(current_project)}): {current_project}, current_project.scale (before): {getattr(current_project, 'scale', 'Not Set')}")
+
         if current_project is not None:
             try:
-                current_project.scale = proj_scale
+                current_project.scale = proj_scale_from_dialog
                 current_project.is_dirty = True
+                self.logger.info(f"[_on_scale_dialog_done] Assigned scale to current_project. current_project.scale (after): {current_project.scale}, is_dirty: {current_project.is_dirty}")
             except Exception as exc:
-                self.logger.error("Failed to set project scale: %s", exc)
+                self.logger.error(f"[_on_scale_dialog_done] Failed to set project scale: {exc}", exc_info=True)
+                # Even if assignment fails, update pill with current (likely old/None) scale state
+                self._update_scale_pill()
+                return # Return to avoid further operations with potentially inconsistent state
 
         # --- NEW: Refresh scale pill & tracing scene overlay ---
-        try:
-            self._update_scale_pill()
-            if hasattr(self.visualization_panel, "scene_2d") and hasattr(self.visualization_panel.scene_2d, "invalidate_cache"):
-                self.visualization_panel.scene_2d.invalidate_cache()
-        except Exception as exc:
-            self.logger.warning("Failed to refresh scale pill or scene after calibration: %s", exc)
-        # --- END NEW ---
+        self.logger.info("[_on_scale_dialog_done] About to call _update_scale_pill.")
+        self._update_scale_pill() # THIS IS WHERE IT SHOULD BE GREEN
+        # ... (invalidate_cache logic follows)
 
         # Settings already persisted by dialog
         try:
             self.statusBar().showMessage(
-                f"Scale set: 1 in = {proj_scale.world_per_in:.2f} {proj_scale.world_units}",
+                f"Scale set: 1 in = {proj_scale_from_dialog.world_per_in:.2f} {proj_scale_from_dialog.world_units}",
                 6000,
             )
             # Notify tracing scene so overlay disappears
@@ -2555,45 +2574,94 @@ class MainWindow(QMainWindow):
     # --- NEW: _update_scale_pill method ---
     def _update_scale_pill(self):
         """Updates the scale pill's text and color based on the current project scale."""
-        proj = getattr(self.project_controller, "project", None)
+        self.logger.debug("--- _update_scale_pill --- ENTER ---")
+        proj = self.project_controller.get_current_project()
+        self.logger.debug(f"  _update_scale_pill: Received proj (id: {id(proj)}): {proj}") # Log ID here
+
         text = "Scale: —"
-        # Default style with grey background
+        # Default style: grey
         style = "QLabel#scalePill { background-color: #888888; color: white; border-radius: 8px; padding: 2px 5px; }"
+        final_color_decision = "grey (default)"
 
-        if proj and proj.scale and self.pdf_service:
-            # Placeholder for proj.scale.to_short_str()
-            # This method should be implemented in your ProjectScale model
+        # Log initial states
+        vp_renderer = getattr(self.visualization_panel, 'pdf_renderer', None)
+        vp_renderer_dpi = getattr(vp_renderer, 'dpi', None) if vp_renderer else None
+        proj_scale = getattr(proj, 'scale', None) if proj else None
+        proj_scale_cal_dpi = getattr(proj_scale, 'render_dpi_at_cal', None) if proj_scale else None
+
+        self.logger.debug(f"  Initial proj: {proj}")
+        self.logger.debug(f"  Initial proj.scale: {proj_scale}")
+        self.logger.debug(f"  Initial proj.scale.render_dpi_at_cal: {proj_scale_cal_dpi}")
+        self.logger.debug(f"  Initial self.visualization_panel.pdf_renderer: {vp_renderer}")
+        self.logger.debug(f"  Initial self.visualization_panel.pdf_renderer.dpi: {vp_renderer_dpi}")
+
+        if proj and proj_scale: # Changed from proj.scale to proj_scale for clarity
+            # Format the scale text
             scale_str = "Unknown Scale"
-            if hasattr(proj.scale, "to_short_str") and callable(proj.scale.to_short_str):
+            if hasattr(proj_scale, "to_short_str") and callable(proj_scale.to_short_str):
                 try:
-                    scale_str = proj.scale.to_short_str()
+                    scale_str = proj_scale.to_short_str()
                 except Exception as e:
-                    self.logger.error(f"Error calling proj.scale.to_short_str(): {e}")
-            elif hasattr(proj.scale, "world_per_paper_in") and proj.scale.world_per_paper_in is not None:
-                scale_str = f"{proj.scale.world_per_paper_in:.2f} {proj.scale.world_units}/in"
-            elif hasattr(proj.scale, "ratio_denom") and proj.scale.ratio_denom is not None:
-                 scale_str = f"1 : {proj.scale.ratio_denom:.0f}"
-
-
+                    self.logger.error(f"Error calling proj_scale.to_short_str(): {e}")
+            elif hasattr(proj_scale, "world_per_paper_in") and proj_scale.world_per_paper_in is not None:
+                scale_str = f"{proj_scale.world_per_paper_in:.2f} {proj_scale.world_units}/in"
+            elif hasattr(proj_scale, "ratio_denom") and proj_scale.ratio_denom is not None:
+                 scale_str = f"1 : {proj_scale.ratio_denom:.0f}"
             text = f"Scale: {scale_str}"
 
-            current_render_dpi = getattr(self.pdf_service, "current_render_dpi", None)
-            if current_render_dpi is not None and proj.scale.render_dpi_at_cal is not None:
-                dpi_mismatch = abs(current_render_dpi - proj.scale.render_dpi_at_cal) > 0.5
-                if dpi_mismatch:
+            # Determine color based on DPI match
+            self.logger.debug("  Condition check for color change:")
+            self.logger.debug(f"    hasattr(self.visualization_panel, 'pdf_renderer'): {hasattr(self.visualization_panel, 'pdf_renderer')}")
+            self.logger.debug(f"    vp_renderer is not None: {vp_renderer is not None}")
+            self.logger.debug(f"    vp_renderer_dpi is not None: {vp_renderer_dpi is not None}")
+            self.logger.debug(f"    hasattr(proj_scale, 'render_dpi_at_cal'): {hasattr(proj_scale, 'render_dpi_at_cal')}") # Should be true if proj_scale exists
+            self.logger.debug(f"    proj_scale_cal_dpi is not None: {proj_scale_cal_dpi is not None}")
+
+            if (vp_renderer is not None and
+                vp_renderer_dpi is not None and
+                proj_scale_cal_dpi is not None): # Simpler check now that variables are pre-fetched
+
+                current_panel_render_dpi = vp_renderer_dpi
+                calibrated_dpi = proj_scale_cal_dpi
+
+                self.logger.debug(f"    Comparing DPIs: Panel DPI={current_panel_render_dpi}, Calibrated DPI={calibrated_dpi}")
+
+                if abs(current_panel_render_dpi - calibrated_dpi) > 0.5: # Mismatch threshold
                     # Red for DPI mismatch
                     style = "QLabel#scalePill { background-color: #D88080; color: white; border-radius: 8px; padding: 2px 5px; }"
+                    final_color_decision = "red (DPI mismatch)"
                 else:
-                    # Green for valid scale
+                    # Green for valid scale and matching DPI
                     style = "QLabel#scalePill { background-color: #80D880; color: black; border-radius: 8px; padding: 2px 5px; }"
+                    final_color_decision = "green (DPI match)"
             else:
-                # Could be grey if DPIs are not set, but defaults to grey anyway if this block is skipped
-                self.logger.warning("Cannot determine DPI mismatch for scale pill: DPI info missing.")
+                # Conditions for green/red not met.
+                # If proj_scale exists, text will show scale, but color remains grey.
+                final_color_decision = "grey (missing DPI info for comparison)"
+                self.logger.warning(
+                    f"Scale pill color remains {final_color_decision}: "
+                    f"vp_renderer={vp_renderer}, vp_renderer_dpi={vp_renderer_dpi}, "
+                    f"proj_scale_cal_dpi={proj_scale_cal_dpi}."
+                )
+        else:
+            if not proj:
+                self.logger.debug("  Project is None. Pill is grey.")
+            elif not proj_scale:
+                self.logger.debug("  Project.scale is None. Pill is grey.")
+            final_color_decision = "grey (no project or no scale)"
 
 
         self.scale_pill.setText(text)
+        # Try to force a style refresh
+        if hasattr(self.scale_pill, 'style') and callable(self.scale_pill.style):
+            current_style = self.scale_pill.style()
+            current_style.unpolish(self.scale_pill)
+            current_style.polish(self.scale_pill)
         self.scale_pill.setStyleSheet(style)
-        self.logger.debug(f"Scale pill updated: Text='{text}', Style='{style}'")
+        self.scale_pill.update() # Another attempt to force repaint
+
+        self.logger.info(f"Scale pill updated: Text='{text}', Color Decision='{final_color_decision}'")
+        self.logger.debug("--- _update_scale_pill --- EXIT ---")
     # --- END NEW ---
 
     # ------------------------------------------------------------------

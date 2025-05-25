@@ -10298,3 +10298,660 @@ AttributeError: 'TracingScene' object has no attribute '_apply_elevation_workflo
 2025-05-15 14:55:41,783 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
 2025-05-15 14:55:41,883 - digcalc_project.src.ui.main_window - INFO - Closing application.
 2025-05-15 14:55:41,893 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-24 17:20:32,569 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-24 17:20:32,600 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-24 17:20:37,248 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 17:20:37,248 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-24 17:20:37,249 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-24 17:20:37,249 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 17:20:37,250 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-24 17:20:37,251 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-24 17:20:41,809 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-24 17:20:41,836 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-24 17:20:41,892 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-24 17:20:41,892 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-24 17:20:41,892 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-05-24 17:20:49,544 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-24 17:20:58,439 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-05-24 17:20:58,440 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-24 17:21:00,386 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode disabled.
+2025-05-24 17:21:00,387 - digcalc_project.src.ui.main_window - INFO - Tracing mode disabled via MainWindow action.
+2025-05-24 17:21:05,232 - digcalc_project.src.ui.visualization_panel - INFO - Tracing mode enabled.
+2025-05-24 17:21:05,233 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-24 17:21:08,350 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-24 17:21:09,444 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 17:21:09,542 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-24 17:21:09,559 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-24 17:41:23,127 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-24 17:41:23,169 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-24 17:41:29,559 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 17:41:29,560 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-24 17:41:29,560 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-24 17:41:29,560 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 17:41:29,562 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-24 17:41:29,562 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-24 17:41:34,721 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-24 17:41:34,748 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-24 17:41:34,806 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-24 17:41:34,806 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-24 17:41:34,807 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-05-24 17:41:38,128 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-24 17:41:49,696 - digcalc_project.src.ui.visualization_panel - INFO - Setting tracing mode to: Enabled
+2025-05-24 17:41:52,014 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-24 17:41:52,695 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 17:41:52,831 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-24 17:41:52,848 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-24 17:47:15,250 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-24 17:47:15,287 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-24 17:47:24,361 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 17:47:24,361 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-24 17:47:24,361 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-24 17:47:24,361 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 17:47:24,363 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-24 17:47:24,363 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-24 17:47:28,983 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-24 17:47:29,010 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-24 17:47:29,063 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-24 17:47:29,063 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-24 17:47:29,064 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-05-24 17:47:54,456 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-24 17:48:02,919 - digcalc_project.src.ui.visualization_panel - INFO - Setting tracing mode to: Enabled
+2025-05-24 17:48:02,948 - digcalc_project.src.ui.visualization_panel - INFO - Tracing enabled with valid project scale.
+2025-05-24 17:48:02,948 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-24 17:48:15,008 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-24 17:48:16,481 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-24 17:48:17,999 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 17:48:18,104 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-24 17:48:18,120 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-24 17:55:22,356 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-24 17:55:22,403 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-24 17:55:27,621 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 17:55:27,621 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-24 17:55:27,621 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-24 17:55:27,621 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 17:55:27,623 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-24 17:55:27,623 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-24 17:55:31,948 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-24 17:55:31,974 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-24 17:55:32,030 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-24 17:55:32,030 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-24 17:55:32,030 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-05-24 17:55:37,338 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-24 17:55:44,271 - digcalc_project.src.ui.visualization_panel - INFO - Setting tracing mode to: Enabled
+2025-05-24 17:55:44,296 - digcalc_project.src.ui.visualization_panel - INFO - Tracing enabled with valid project scale.
+2025-05-24 17:55:44,296 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-24 17:55:59,813 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-24 17:56:00,933 - digcalc_project.src.ui.tracing_scene - WARNING - [mousePressEvent] _scale_invalid returned True. Showing QMessageBox.
+2025-05-24 17:56:04,274 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-24 17:56:05,124 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 17:56:05,202 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-24 17:56:05,221 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-24 17:58:45,845 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-24 17:58:45,881 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-24 17:58:49,478 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 17:58:49,478 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-24 17:58:49,478 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-24 17:58:49,479 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 17:58:49,480 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-24 17:58:49,481 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-24 17:58:53,833 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-24 17:58:53,859 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-24 17:58:53,914 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-24 17:58:53,915 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-24 17:58:53,915 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-05-24 17:58:56,525 - digcalc_project.src.ui.visualization_panel - INFO - Setting tracing mode to: Enabled
+2025-05-24 17:58:56,933 - digcalc_project.src.ui.visualization_panel - INFO - Tracing enabled with valid project scale.
+2025-05-24 17:58:56,934 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-24 17:59:02,928 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-24 17:59:07,002 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-24 17:59:10,362 - digcalc_project.src.ui.tracing_scene - WARNING - [mousePressEvent] _scale_invalid returned True. Showing QMessageBox.
+2025-05-24 17:59:12,115 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-24 17:59:14,193 - digcalc_project.src.ui.main_window - INFO - Close cancelled by user.
+2025-05-24 17:59:16,911 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-24 17:59:17,857 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 17:59:17,937 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-24 17:59:17,959 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-24 18:01:40,794 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-24 18:01:40,837 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-24 18:01:46,336 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:01:46,336 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-24 18:01:46,336 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-24 18:01:46,337 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:01:46,339 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-24 18:01:46,339 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-24 18:01:50,657 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-24 18:01:50,679 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-24 18:01:50,737 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-24 18:01:50,737 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-24 18:01:50,738 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-05-24 18:02:15,238 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-24 18:02:20,150 - digcalc_project.src.ui.visualization_panel - INFO - Setting tracing mode to: Enabled
+2025-05-24 18:02:20,151 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Project: None, Scale: No Project, WPP_in: N/A, DPI: N/A
+2025-05-24 18:02:20,182 - digcalc_project.src.ui.visualization_panel - INFO - Tracing enabled with valid project scale.
+2025-05-24 18:02:20,182 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-24 18:02:22,264 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Project: None, Scale: No Project, WPP_in: N/A, DPI: N/A
+2025-05-24 18:02:22,274 - digcalc_project.src.ui.tracing_scene - WARNING - [mousePressEvent] _scale_invalid returned True. Showing QMessageBox.
+2025-05-24 18:02:25,789 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-24 18:02:26,675 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:02:26,755 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-24 18:02:26,774 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-24 18:09:02,745 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-24 18:09:02,791 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-24 18:09:08,044 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:09:08,044 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-24 18:09:08,044 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-24 18:09:08,044 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:09:08,046 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-24 18:09:08,047 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-24 18:09:12,593 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-24 18:09:12,616 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-24 18:09:12,670 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-24 18:09:12,671 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-24 18:09:12,671 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-05-24 18:09:55,399 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-24 18:09:59,982 - digcalc_project.src.ui.visualization_panel - INFO - Setting tracing mode to: Enabled
+2025-05-24 18:09:59,983 - digcalc_project.src.ui.tracing_scene - INFO - [set_tracing_enabled] Using self.project: None, Scale: No Project
+2025-05-24 18:09:59,983 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: None, Scale: No Project, WPP_in: N/A, DPI: N/A
+2025-05-24 18:10:00,018 - digcalc_project.src.ui.visualization_panel - INFO - Tracing enabled with valid project scale.
+2025-05-24 18:10:00,019 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-24 18:10:02,006 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: None, Scale: No Project
+2025-05-24 18:10:02,006 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: None, Scale: No Project, WPP_in: N/A, DPI: N/A
+2025-05-24 18:10:02,017 - digcalc_project.src.ui.tracing_scene - WARNING - [mousePressEvent] _scale_invalid returned True. Showing QMessageBox.
+2025-05-24 18:10:03,654 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-24 18:10:04,483 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:10:04,574 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-24 18:10:04,589 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-24 18:12:06,697 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-24 18:12:06,737 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-24 18:13:44,044 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:13:44,045 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-24 18:13:44,045 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-24 18:13:44,045 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:13:44,047 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-24 18:13:44,047 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-24 18:13:48,287 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-24 18:13:48,304 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-24 18:13:48,356 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-24 18:13:48,356 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-24 18:13:48,357 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-05-24 18:15:15,242 - digcalc_project.src.ui.main_window - INFO - Load PDF background cancelled by user.
+2025-05-24 18:15:19,931 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-24 18:15:22,356 - digcalc_project.src.ui.visualization_panel - INFO - Setting tracing mode to: Enabled
+2025-05-24 18:15:22,357 - digcalc_project.src.ui.tracing_scene - INFO - [set_tracing_enabled] Using self.project: None, Scale: No Project
+2025-05-24 18:15:22,357 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: None, Scale: No Project, WPP_in: N/A, DPI: N/A
+2025-05-24 18:15:22,385 - digcalc_project.src.ui.visualization_panel - INFO - Tracing enabled with valid project scale.
+2025-05-24 18:15:22,385 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-24 18:15:24,596 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-24 18:15:25,564 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:15:25,646 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-24 18:15:25,662 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-24 18:17:01,556 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-24 18:17:01,595 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-24 18:17:05,707 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:17:05,707 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-24 18:17:05,708 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-24 18:17:05,708 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:17:05,710 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-24 18:17:05,710 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-24 18:17:09,914 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-24 18:17:09,933 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-24 18:17:09,985 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-24 18:17:09,985 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-24 18:17:09,985 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-05-24 18:17:12,125 - digcalc_project.src.ui.visualization_panel - INFO - Setting tracing mode to: Enabled
+2025-05-24 18:17:12,125 - digcalc_project.src.ui.tracing_scene - INFO - [set_tracing_enabled] Using self.project: None, Scale: No Project
+2025-05-24 18:17:12,125 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: None, Scale: No Project, WPP_in: N/A, DPI: N/A
+2025-05-24 18:17:12,535 - digcalc_project.src.ui.visualization_panel - INFO - Tracing enabled with valid project scale.
+2025-05-24 18:17:12,535 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-24 18:17:16,551 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-24 18:17:20,949 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-24 18:17:22,678 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: None, Scale: No Project
+2025-05-24 18:17:22,678 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: None, Scale: No Project, WPP_in: N/A, DPI: N/A
+2025-05-24 18:17:22,692 - digcalc_project.src.ui.tracing_scene - WARNING - [mousePressEvent] _scale_invalid returned True. Showing QMessageBox.
+2025-05-24 18:17:23,749 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: None, Scale: No Project
+2025-05-24 18:17:23,749 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: None, Scale: No Project, WPP_in: N/A, DPI: N/A
+2025-05-24 18:17:23,759 - digcalc_project.src.ui.tracing_scene - WARNING - [mousePressEvent] _scale_invalid returned True. Showing QMessageBox.
+2025-05-24 18:17:25,363 - digcalc_project.src.ui.visualization_panel - INFO - Setting tracing mode to: Disabled
+2025-05-24 18:17:25,363 - digcalc_project.src.ui.main_window - INFO - Tracing mode disabled via MainWindow action.
+2025-05-24 18:17:25,815 - digcalc_project.src.ui.visualization_panel - INFO - Setting tracing mode to: Enabled
+2025-05-24 18:17:25,815 - digcalc_project.src.ui.tracing_scene - INFO - [set_tracing_enabled] Using self.project: None, Scale: No Project
+2025-05-24 18:17:25,815 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: None, Scale: No Project, WPP_in: N/A, DPI: N/A
+2025-05-24 18:17:25,838 - digcalc_project.src.ui.visualization_panel - INFO - Tracing enabled with valid project scale.
+2025-05-24 18:17:25,838 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-24 18:17:26,013 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: None, Scale: No Project
+2025-05-24 18:17:26,014 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: None, Scale: No Project, WPP_in: N/A, DPI: N/A
+2025-05-24 18:17:26,025 - digcalc_project.src.ui.tracing_scene - WARNING - [mousePressEvent] _scale_invalid returned True. Showing QMessageBox.
+2025-05-24 18:17:29,589 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-24 18:17:30,512 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:17:30,593 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-24 18:17:30,607 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-24 18:19:59,310 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-24 18:19:59,350 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-24 18:20:07,876 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:20:07,876 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-24 18:20:07,877 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-24 18:20:07,877 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:20:07,879 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-24 18:20:07,879 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-24 18:20:12,213 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-24 18:20:12,238 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-24 18:20:12,294 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-24 18:20:12,295 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-24 18:20:12,295 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-05-24 18:20:12,295 - digcalc_project.src.ui.main_window - INFO - [on_load_pdf_background] SUCCESS: About to call _update_ui_for_project with project: Untitled Project
+2025-05-24 18:20:12,295 - digcalc_project.src.ui.main_window - INFO - [_update_ui_for_project] Called with project: Untitled Project
+2025-05-24 18:20:12,305 - digcalc_project.src.ui.main_window - INFO - [_update_ui_for_project] About to call self.visualization_panel.set_project with: Untitled Project
+2025-05-24 18:20:12,305 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-05-24 18:20:12,305 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-05-24 18:20:12,305 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:20:12,383 - digcalc_project.src.ui.main_window - WARNING - Cannot fit view: Scene rectangle is null or invalid.
+2025-05-24 18:20:12,405 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-24 18:20:12,405 - digcalc_project.src.ui.visualization_panel - INFO - [VisualizationPanel.set_project] self.scene_2d.project set to: <Project(name='Untitled Project', path='None', layers=0, polylines=0)> (Scale: None)
+2025-05-24 18:20:12,405 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-24 18:20:12,407 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-24 18:20:12,407 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:20:12,409 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-24 18:20:12,409 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-24 18:20:16,625 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-24 18:20:16,649 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-24 18:20:16,702 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-24 18:20:20,719 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-24 18:20:24,415 - digcalc_project.src.ui.visualization_panel - INFO - Setting tracing mode to: Enabled
+2025-05-24 18:20:24,415 - digcalc_project.src.ui.tracing_scene - INFO - [set_tracing_enabled] Using self.project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 20, 20, 719361)
+2025-05-24 18:20:24,415 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 20, 20, 719361), WPP_in: 0.01, DPI: 300.0
+2025-05-24 18:20:24,416 - digcalc_project.src.ui.visualization_panel - INFO - Tracing enabled with valid project scale.
+2025-05-24 18:20:24,416 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-24 18:20:25,407 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 20, 20, 719361)
+2025-05-24 18:20:25,407 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 20, 20, 719361), WPP_in: 0.01, DPI: 300.0
+2025-05-24 18:20:25,818 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 20, 20, 719361)
+2025-05-24 18:20:25,819 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 20, 20, 719361), WPP_in: 0.01, DPI: 300.0
+2025-05-24 18:20:26,142 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 20, 20, 719361)
+2025-05-24 18:20:26,142 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 20, 20, 719361), WPP_in: 0.01, DPI: 300.0
+2025-05-24 18:20:26,344 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 4 points on layer 'Existing Surface'.
+2025-05-24 18:20:26,344 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 4, Elevation: None, New Rev: 1).
+2025-05-24 18:20:26,345 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: None) to layer 'Existing Surface'.
+2025-05-24 18:20:26,591 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-24 18:20:26,591 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-24 18:20:29,694 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: <Project(name='Untitled Project*', path='None', layers=1, polylines=1)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 20, 20, 719361)
+2025-05-24 18:20:29,694 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project*', path='None', layers=1, polylines=1)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 20, 20, 719361), WPP_in: 0.01, DPI: 300.0
+2025-05-24 18:20:30,054 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: <Project(name='Untitled Project*', path='None', layers=1, polylines=1)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 20, 20, 719361)
+2025-05-24 18:20:30,054 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project*', path='None', layers=1, polylines=1)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 20, 20, 719361), WPP_in: 0.01, DPI: 300.0
+2025-05-24 18:20:30,314 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: <Project(name='Untitled Project*', path='None', layers=1, polylines=1)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 20, 20, 719361)
+2025-05-24 18:20:30,314 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project*', path='None', layers=1, polylines=1)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 20, 20, 719361), WPP_in: 0.01, DPI: 300.0
+2025-05-24 18:20:30,544 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: <Project(name='Untitled Project*', path='None', layers=1, polylines=1)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 20, 20, 719361)
+2025-05-24 18:20:30,546 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project*', path='None', layers=1, polylines=1)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 20, 20, 719361), WPP_in: 0.01, DPI: 300.0
+2025-05-24 18:20:30,879 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: <Project(name='Untitled Project*', path='None', layers=1, polylines=1)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 20, 20, 719361)
+2025-05-24 18:20:30,879 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project*', path='None', layers=1, polylines=1)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 20, 20, 719361), WPP_in: 0.01, DPI: 300.0
+2025-05-24 18:20:31,034 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Existing Surface'.
+2025-05-24 18:20:31,035 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 1, Points: 6, Elevation: None, New Rev: 2).
+2025-05-24 18:20:31,035 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 1, Elevation: None) to layer 'Existing Surface'.
+2025-05-24 18:20:31,285 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-24 18:20:31,286 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-24 18:20:34,216 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-24 18:20:35,471 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:20:35,552 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-24 18:20:35,570 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-24 18:38:10,500 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-24 18:38:10,536 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-24 18:38:16,708 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:38:16,709 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-24 18:38:16,709 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-24 18:38:16,709 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:38:16,711 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-24 18:38:16,711 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-24 18:38:21,749 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-24 18:38:21,777 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-24 18:38:21,846 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-24 18:38:21,847 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-24 18:38:21,847 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-05-24 18:38:21,847 - digcalc_project.src.ui.main_window - INFO - [on_load_pdf_background] SUCCESS: About to call _update_ui_for_project with project: Untitled Project
+2025-05-24 18:38:21,847 - digcalc_project.src.ui.main_window - INFO - [_update_ui_for_project] Called with project: Untitled Project
+2025-05-24 18:38:21,850 - digcalc_project.src.ui.main_window - INFO - [_update_ui_for_project] About to call self.visualization_panel.set_project with: Untitled Project
+2025-05-24 18:38:21,851 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-05-24 18:38:21,851 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-05-24 18:38:21,851 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:38:22,000 - digcalc_project.src.ui.main_window - WARNING - Cannot fit view: Scene rectangle is null or invalid.
+2025-05-24 18:38:22,016 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-24 18:38:22,016 - digcalc_project.src.ui.visualization_panel - INFO - [VisualizationPanel.set_project] self.scene_2d.project set to: <Project(name='Untitled Project', path='None', layers=0, polylines=0)> (Scale: None)
+2025-05-24 18:38:22,016 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-24 18:38:22,017 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-24 18:38:22,017 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:38:22,019 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-24 18:38:22,019 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-24 18:38:26,355 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-24 18:38:26,366 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-24 18:38:26,407 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-24 18:38:30,479 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-24 18:38:33,210 - digcalc_project.src.ui.visualization_panel - INFO - Setting tracing mode to: Enabled
+2025-05-24 18:38:33,210 - digcalc_project.src.ui.tracing_scene - INFO - [set_tracing_enabled] Using self.project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 38, 30, 478072)
+2025-05-24 18:38:33,211 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 38, 30, 478072), WPP_in: 0.01, DPI: 300.0
+2025-05-24 18:38:33,211 - digcalc_project.src.ui.visualization_panel - INFO - Tracing enabled with valid project scale.
+2025-05-24 18:38:33,211 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-24 18:38:33,620 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 38, 30, 478072)
+2025-05-24 18:38:33,620 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 38, 30, 478072), WPP_in: 0.01, DPI: 300.0
+2025-05-24 18:38:33,903 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 38, 30, 478072)
+2025-05-24 18:38:33,903 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 38, 30, 478072), WPP_in: 0.01, DPI: 300.0
+2025-05-24 18:38:34,136 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 38, 30, 478072)
+2025-05-24 18:38:34,136 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 38, 30, 478072), WPP_in: 0.01, DPI: 300.0
+2025-05-24 18:38:34,337 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 38, 30, 478072)
+2025-05-24 18:38:34,338 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 38, 30, 478072), WPP_in: 0.01, DPI: 300.0
+2025-05-24 18:38:34,492 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 5 points on layer 'Existing Surface'.
+2025-05-24 18:38:34,493 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 5, Elevation: None, New Rev: 1).
+2025-05-24 18:38:34,493 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: None) to layer 'Existing Surface'.
+2025-05-24 18:38:34,737 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-24 18:38:34,737 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-24 18:38:40,151 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-24 18:38:41,130 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:38:41,209 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-24 18:38:41,224 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-24 18:40:16,994 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-24 18:40:17,024 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-24 18:40:24,095 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:40:24,096 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-24 18:40:24,096 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-24 18:40:24,096 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:40:24,098 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-24 18:40:24,098 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-24 18:40:28,331 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-24 18:40:28,354 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-24 18:40:28,418 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-24 18:40:28,419 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-24 18:40:28,419 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-05-24 18:40:28,419 - digcalc_project.src.ui.main_window - INFO - [on_load_pdf_background] SUCCESS: About to call _update_ui_for_project with project: Untitled Project
+2025-05-24 18:40:28,419 - digcalc_project.src.ui.main_window - INFO - [_update_ui_for_project] Called with project: Untitled Project
+2025-05-24 18:40:28,422 - digcalc_project.src.ui.main_window - INFO - [_update_ui_for_project] About to call self.visualization_panel.set_project with: Untitled Project
+2025-05-24 18:40:28,422 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-05-24 18:40:28,422 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-05-24 18:40:28,422 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:40:28,504 - digcalc_project.src.ui.main_window - WARNING - Cannot fit view: Scene rectangle is null or invalid.
+2025-05-24 18:40:28,519 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-24 18:40:28,520 - digcalc_project.src.ui.visualization_panel - INFO - [VisualizationPanel.set_project] self.scene_2d.project set to: <Project(name='Untitled Project', path='None', layers=0, polylines=0)> (Scale: None)
+2025-05-24 18:40:28,520 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-24 18:40:28,520 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-24 18:40:28,520 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:40:28,522 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-24 18:40:28,522 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-24 18:40:32,711 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-24 18:40:32,728 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-24 18:40:32,777 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-24 18:41:15,299 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-24 18:41:19,931 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-24 18:41:20,948 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:41:21,036 - digcalc_project.src.ui.main_window - WARNING - Cannot fit view: Scene rectangle is null or invalid.
+2025-05-24 18:41:21,037 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-24 18:41:21,053 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-24 18:44:58,626 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-24 18:44:58,658 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-24 18:44:58,663 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 18:45:04,032 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:45:04,032 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-24 18:45:04,032 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-24 18:45:04,032 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:45:04,034 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-24 18:45:04,034 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-24 18:45:08,411 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-24 18:45:08,435 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-24 18:45:08,491 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-24 18:45:08,491 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-24 18:45:08,491 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-05-24 18:45:08,491 - digcalc_project.src.ui.main_window - INFO - [on_load_pdf_background] SUCCESS: About to call _update_ui_for_project with project: Untitled Project
+2025-05-24 18:45:08,492 - digcalc_project.src.ui.main_window - INFO - [_update_ui_for_project] Called with project: Untitled Project
+2025-05-24 18:45:08,494 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 18:45:08,494 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 18:45:08,494 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 18:45:08,495 - digcalc_project.src.ui.main_window - INFO - [_update_ui_for_project] About to call self.visualization_panel.set_project with: Untitled Project
+2025-05-24 18:45:08,495 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-05-24 18:45:08,495 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-05-24 18:45:08,495 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:45:08,578 - digcalc_project.src.ui.main_window - WARNING - Cannot fit view: Scene rectangle is null or invalid.
+2025-05-24 18:45:08,600 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-24 18:45:08,600 - digcalc_project.src.ui.visualization_panel - INFO - [VisualizationPanel.set_project] self.scene_2d.project set to: <Project(name='Untitled Project', path='None', layers=0, polylines=0)> (Scale: None)
+2025-05-24 18:45:08,601 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-24 18:45:08,601 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-24 18:45:08,601 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:45:08,604 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-24 18:45:08,604 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-24 18:45:13,319 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-24 18:45:13,336 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-24 18:45:13,389 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-24 18:45:13,389 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 18:45:13,390 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 18:45:20,310 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-24 18:45:20,314 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 18:45:23,229 - digcalc_project.src.ui.visualization_panel - INFO - Setting tracing mode to: Enabled
+2025-05-24 18:45:23,230 - digcalc_project.src.ui.tracing_scene - INFO - [set_tracing_enabled] Using self.project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 45, 20, 309192)
+2025-05-24 18:45:23,230 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 45, 20, 309192), WPP_in: 0.01, DPI: 300.0
+2025-05-24 18:45:23,230 - digcalc_project.src.ui.visualization_panel - INFO - Tracing enabled with valid project scale.
+2025-05-24 18:45:23,230 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-24 18:45:23,665 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 45, 20, 309192)
+2025-05-24 18:45:23,665 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 45, 20, 309192), WPP_in: 0.01, DPI: 300.0
+2025-05-24 18:45:23,896 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 45, 20, 309192)
+2025-05-24 18:45:23,896 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 45, 20, 309192), WPP_in: 0.01, DPI: 300.0
+2025-05-24 18:45:24,079 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 45, 20, 309192)
+2025-05-24 18:45:24,080 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 45, 20, 309192), WPP_in: 0.01, DPI: 300.0
+2025-05-24 18:45:24,271 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 45, 20, 309192)
+2025-05-24 18:45:24,272 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 45, 20, 309192), WPP_in: 0.01, DPI: 300.0
+2025-05-24 18:45:24,458 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 45, 20, 309192)
+2025-05-24 18:45:24,458 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 24, 23, 45, 20, 309192), WPP_in: 0.01, DPI: 300.0
+2025-05-24 18:45:24,598 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Existing Surface'.
+2025-05-24 18:45:24,599 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 6, Elevation: None, New Rev: 1).
+2025-05-24 18:45:24,599 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: None) to layer 'Existing Surface'.
+2025-05-24 18:45:24,849 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-24 18:45:24,849 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-24 18:45:27,228 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-24 18:45:28,222 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 18:45:28,301 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-24 18:45:28,319 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-24 19:12:30,402 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-24 19:12:30,434 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-24 19:12:30,442 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:12:49,224 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 19:12:49,224 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-24 19:12:49,224 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-24 19:12:49,224 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 19:12:49,226 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-24 19:12:49,226 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-24 19:12:53,447 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-24 19:12:53,471 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-24 19:12:53,526 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-24 19:12:53,527 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-24 19:12:53,527 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-05-24 19:12:53,527 - digcalc_project.src.ui.main_window - INFO - [on_load_pdf_background] SUCCESS: About to call _update_ui_for_project with project: Untitled Project
+2025-05-24 19:12:53,527 - digcalc_project.src.ui.main_window - INFO - [_update_ui_for_project] Called with project: Untitled Project
+2025-05-24 19:12:53,530 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:12:53,530 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:12:53,531 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:12:53,531 - digcalc_project.src.ui.main_window - INFO - [_update_ui_for_project] About to call self.visualization_panel.set_project with: Untitled Project
+2025-05-24 19:12:53,531 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-05-24 19:12:53,531 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-05-24 19:12:53,531 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 19:12:53,611 - digcalc_project.src.ui.main_window - WARNING - Cannot fit view: Scene rectangle is null or invalid.
+2025-05-24 19:12:53,627 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-24 19:12:53,627 - digcalc_project.src.ui.visualization_panel - INFO - [VisualizationPanel.set_project] self.scene_2d.project set to: <Project(name='Untitled Project', path='None', layers=0, polylines=0)> (Scale: None)
+2025-05-24 19:12:53,628 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-24 19:12:53,628 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-24 19:12:53,628 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 19:12:53,630 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-24 19:12:53,630 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-24 19:12:57,816 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-24 19:12:57,834 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-24 19:12:57,885 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-24 19:12:57,886 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:12:57,886 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:13:01,313 - digcalc_project.src.ui.visualization_panel - INFO - Setting tracing mode to: Enabled
+2025-05-24 19:13:01,313 - digcalc_project.src.ui.tracing_scene - INFO - [set_tracing_enabled] Using self.project: <Project(name='Untitled Project', path='None', layers=0, polylines=0)>, Scale: None
+2025-05-24 19:13:01,313 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project', path='None', layers=0, polylines=0)>, Scale: None, WPP_in: N/A, DPI: N/A
+2025-05-24 19:13:01,693 - digcalc_project.src.ui.visualization_panel - WARNING - Tracing enabled, but project scale is not set or invalid.
+2025-05-24 19:13:01,694 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-24 19:13:27,606 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-24 19:13:27,610 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:14:50,831 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-24 19:14:51,821 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 19:14:51,904 - digcalc_project.src.ui.main_window - WARNING - Cannot fit view: Scene rectangle is null or invalid.
+2025-05-24 19:14:51,904 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-24 19:14:51,921 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-24 19:16:10,541 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-24 19:16:10,591 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-24 19:16:10,595 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:16:19,404 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 19:16:19,404 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-24 19:16:19,404 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-24 19:16:19,404 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 19:16:19,406 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-24 19:16:19,406 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-24 19:16:23,595 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-24 19:16:23,612 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-24 19:16:23,664 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-24 19:16:23,664 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-24 19:16:23,664 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-05-24 19:16:23,664 - digcalc_project.src.ui.main_window - INFO - [on_load_pdf_background] SUCCESS: About to call _update_ui_for_project with project: Untitled Project
+2025-05-24 19:16:23,664 - digcalc_project.src.ui.main_window - INFO - [_update_ui_for_project] Called with project: Untitled Project
+2025-05-24 19:16:23,667 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:16:23,667 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:16:23,668 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:16:23,668 - digcalc_project.src.ui.main_window - INFO - [_update_ui_for_project] About to call self.visualization_panel.set_project with: Untitled Project
+2025-05-24 19:16:23,668 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-05-24 19:16:23,668 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-05-24 19:16:23,668 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 19:16:23,749 - digcalc_project.src.ui.main_window - WARNING - Cannot fit view: Scene rectangle is null or invalid.
+2025-05-24 19:16:23,760 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-24 19:16:23,760 - digcalc_project.src.ui.visualization_panel - INFO - [VisualizationPanel.set_project] self.scene_2d.project set to: <Project(name='Untitled Project', path='None', layers=0, polylines=0)> (Scale: None)
+2025-05-24 19:16:23,760 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-24 19:16:23,761 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-24 19:16:23,761 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 19:16:23,763 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-24 19:16:23,763 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-24 19:16:27,956 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-24 19:16:27,970 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-24 19:16:28,017 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-24 19:16:28,018 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:16:28,018 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:16:30,642 - digcalc_project.src.ui.visualization_panel - INFO - Setting tracing mode to: Enabled
+2025-05-24 19:16:30,642 - digcalc_project.src.ui.tracing_scene - INFO - [set_tracing_enabled] Using self.project: <Project(name='Untitled Project', path='None', layers=0, polylines=0)>, Scale: None
+2025-05-24 19:16:30,643 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project', path='None', layers=0, polylines=0)>, Scale: None, WPP_in: N/A, DPI: N/A
+2025-05-24 19:16:30,890 - digcalc_project.src.ui.visualization_panel - WARNING - Tracing enabled, but project scale is not set or invalid.
+2025-05-24 19:16:30,891 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-05-24 19:16:36,849 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-24 19:16:36,853 - digcalc_project.src.ui.main_window - INFO - [_on_scale_dialog_done] Entered. Dialog result: 1
+2025-05-24 19:16:36,853 - digcalc_project.src.ui.main_window - INFO - [_on_scale_dialog_done] Scale from dialog: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 25, 0, 16, 36, 848451)
+2025-05-24 19:16:36,853 - digcalc_project.src.ui.main_window - INFO - [_on_scale_dialog_done] current_project (id: 2361005942544): <Project(name='Untitled Project', path='None', layers=0, polylines=0)>, current_project.scale (before): input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 25, 0, 16, 36, 848451)
+2025-05-24 19:16:36,853 - digcalc_project.src.ui.main_window - INFO - [_on_scale_dialog_done] Assigned scale to current_project. current_project.scale (after): input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 25, 0, 16, 36, 848451), is_dirty: True
+2025-05-24 19:16:36,853 - digcalc_project.src.ui.main_window - INFO - [_on_scale_dialog_done] About to call _update_scale_pill.
+2025-05-24 19:16:36,854 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:16:38,268 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 25, 0, 16, 36, 848451)
+2025-05-24 19:16:38,268 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 25, 0, 16, 36, 848451), WPP_in: 0.01, DPI: 300.0
+2025-05-24 19:16:39,440 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 25, 0, 16, 36, 848451)
+2025-05-24 19:16:39,440 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 25, 0, 16, 36, 848451), WPP_in: 0.01, DPI: 300.0
+2025-05-24 19:16:39,640 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 25, 0, 16, 36, 848451)
+2025-05-24 19:16:39,640 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 25, 0, 16, 36, 848451), WPP_in: 0.01, DPI: 300.0
+2025-05-24 19:16:39,790 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 25, 0, 16, 36, 848451)
+2025-05-24 19:16:39,790 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 25, 0, 16, 36, 848451), WPP_in: 0.01, DPI: 300.0
+2025-05-24 19:16:39,956 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 25, 0, 16, 36, 848451)
+2025-05-24 19:16:39,956 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 25, 0, 16, 36, 848451), WPP_in: 0.01, DPI: 300.0
+2025-05-24 19:16:40,091 - digcalc_project.src.ui.tracing_scene - INFO - [mousePressEvent] Using self.project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 25, 0, 16, 36, 848451)
+2025-05-24 19:16:40,092 - digcalc_project.src.ui.tracing_scene - INFO - [_scale_invalid] Received project: <Project(name='Untitled Project*', path='None', layers=0, polylines=0)>, Scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 25, 0, 16, 36, 848451), WPP_in: 0.01, DPI: 300.0
+2025-05-24 19:16:40,222 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 7 points on layer 'Existing Surface'.
+2025-05-24 19:16:40,223 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 7, Elevation: None, New Rev: 1).
+2025-05-24 19:16:40,223 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, Elevation: None) to layer 'Existing Surface'.
+2025-05-24 19:16:40,476 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-05-24 19:16:40,476 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-05-24 19:16:42,126 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-24 19:16:43,044 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 19:16:43,127 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-24 19:16:43,145 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-24 19:20:59,370 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-24 19:20:59,406 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-24 19:20:59,411 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:21:08,286 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 19:21:08,287 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-24 19:21:08,287 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-24 19:21:08,287 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 19:21:08,289 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-24 19:21:08,289 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-24 19:21:12,485 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-24 19:21:12,506 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-24 19:21:12,561 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-24 19:21:12,562 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-24 19:21:12,562 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-05-24 19:21:12,562 - digcalc_project.src.ui.main_window - INFO - [on_load_pdf_background] SUCCESS: About to call _update_ui_for_project with project: Untitled Project
+2025-05-24 19:21:12,562 - digcalc_project.src.ui.main_window - INFO - [_update_ui_for_project] Called with project: Untitled Project
+2025-05-24 19:21:12,565 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:21:12,565 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:21:12,566 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:21:12,566 - digcalc_project.src.ui.main_window - INFO - [_update_ui_for_project] About to call self.visualization_panel.set_project with: Untitled Project
+2025-05-24 19:21:12,566 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-05-24 19:21:12,566 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-05-24 19:21:12,566 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 19:21:12,649 - digcalc_project.src.ui.main_window - WARNING - Cannot fit view: Scene rectangle is null or invalid.
+2025-05-24 19:21:12,662 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-24 19:21:12,662 - digcalc_project.src.ui.visualization_panel - INFO - [VisualizationPanel.set_project] self.scene_2d.project set to: <Project(name='Untitled Project', path='None', layers=0, polylines=0)> (Scale: None)
+2025-05-24 19:21:12,663 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-24 19:21:12,663 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-24 19:21:12,663 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 19:21:12,665 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-24 19:21:12,665 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-24 19:21:16,838 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-24 19:21:16,857 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-24 19:21:16,907 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-24 19:21:16,907 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:21:16,908 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:21:20,642 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-24 19:21:20,646 - digcalc_project.src.ui.main_window - INFO - [_on_scale_dialog_done] Entered. Dialog result: 1
+2025-05-24 19:21:20,646 - digcalc_project.src.ui.main_window - INFO - [_on_scale_dialog_done] Scale from dialog: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 25, 0, 21, 20, 641112)
+2025-05-24 19:21:20,646 - digcalc_project.src.ui.main_window - INFO - [_on_scale_dialog_done] current_project (id: 3072175944016): <Project(name='Untitled Project', path='None', layers=0, polylines=0)>, current_project.scale (before): input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 25, 0, 21, 20, 641112)
+2025-05-24 19:21:20,646 - digcalc_project.src.ui.main_window - INFO - [_on_scale_dialog_done] Assigned scale to current_project. current_project.scale (after): input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 25, 0, 21, 20, 641112), is_dirty: True
+2025-05-24 19:21:20,647 - digcalc_project.src.ui.main_window - INFO - [_on_scale_dialog_done] About to call _update_scale_pill.
+2025-05-24 19:21:20,647 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:21:31,313 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-24 19:21:32,196 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 19:21:32,279 - digcalc_project.src.ui.main_window - WARNING - Cannot fit view: Scene rectangle is null or invalid.
+2025-05-24 19:21:32,280 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-24 19:21:32,297 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-24 19:23:06,046 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-24 19:23:06,076 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-24 19:23:06,080 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:23:11,558 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 19:23:11,559 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-24 19:23:11,559 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-24 19:23:11,559 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 19:23:11,561 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-24 19:23:11,561 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-24 19:23:15,716 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-24 19:23:15,731 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-24 19:23:15,778 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-24 19:23:15,778 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-24 19:23:15,778 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-05-24 19:23:15,778 - digcalc_project.src.ui.main_window - INFO - [on_load_pdf_background] SUCCESS: About to call _update_ui_for_project with project: Untitled Project
+2025-05-24 19:23:15,778 - digcalc_project.src.ui.main_window - INFO - [_update_ui_for_project] Called with project: Untitled Project
+2025-05-24 19:23:15,781 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:23:15,781 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:23:15,781 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:23:15,781 - digcalc_project.src.ui.main_window - INFO - [_update_ui_for_project] About to call self.visualization_panel.set_project with: Untitled Project
+2025-05-24 19:23:15,782 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-05-24 19:23:15,782 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-05-24 19:23:15,782 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 19:23:15,862 - digcalc_project.src.ui.main_window - WARNING - Cannot fit view: Scene rectangle is null or invalid.
+2025-05-24 19:23:15,871 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-05-24 19:23:15,872 - digcalc_project.src.ui.visualization_panel - INFO - [VisualizationPanel.set_project] self.scene_2d.project set to: <Project(name='Untitled Project', path='None', layers=0, polylines=0)> (Scale: None)
+2025-05-24 19:23:15,872 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-05-24 19:23:15,872 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-05-24 19:23:15,873 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 19:23:15,875 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-05-24 19:23:15,875 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-05-24 19:23:20,080 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-05-24 19:23:20,093 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-05-24 19:23:20,137 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-05-24 19:23:20,138 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:23:20,139 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-24 19:25:32,732 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-05-24 19:25:32,736 - digcalc_project.src.ui.main_window - INFO - [_on_scale_dialog_done] Entered. Dialog result: 1
+2025-05-24 19:25:32,736 - digcalc_project.src.ui.main_window - INFO - [_on_scale_dialog_done] Scale from dialog: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 25, 0, 25, 32, 731436)
+2025-05-24 19:25:32,736 - digcalc_project.src.ui.main_window - INFO - [_on_scale_dialog_done] current_project (id: 1677629300880): <Project(name='Untitled Project', path='None', layers=0, polylines=0)>, current_project.scale (before): input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 25, 0, 25, 32, 731436)
+2025-05-24 19:25:32,737 - digcalc_project.src.ui.main_window - INFO - [_on_scale_dialog_done] Assigned scale to current_project. current_project.scale (after): input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 5, 25, 0, 25, 32, 731436), is_dirty: True
+2025-05-24 19:25:32,737 - digcalc_project.src.ui.main_window - INFO - [_on_scale_dialog_done] About to call _update_scale_pill.
+2025-05-24 19:25:32,737 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: 0.01 ft/in', Color Decision='green (DPI match)'
+2025-05-24 19:25:37,100 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-24 19:25:38,071 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-05-24 19:25:38,151 - digcalc_project.src.ui.main_window - WARNING - Cannot fit view: Scene rectangle is null or invalid.
+2025-05-24 19:25:38,152 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-24 19:25:38,170 - digcalc_project.src.main - INFO - Application exited with code 0
