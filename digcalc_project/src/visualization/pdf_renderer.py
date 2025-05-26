@@ -27,6 +27,10 @@ else:
         fitz = None  # Indicate missing library
 
 # Check for PySide6 (this block handles runtime)
+# Define _MissingQtType outside the try-except block so it's always defined.
+class _MissingQtType:  # pylint: disable=too-few-public-methods
+    """Placeholder type used when PySide6 is unavailable at runtime."""
+
 try:
     from PySide6.QtGui import QImage
     from PySide6.QtWidgets import QApplication  # Needed for __main__ test
@@ -37,8 +41,6 @@ except ImportError:
     # Use a dummy *type* placeholder so static type checkers still consider QImage
     # and QApplication valid in annotations, while runtime clearly signals the
     # absence of the real Qt classes.
-    class _MissingQtType:  # pylint: disable=too-few-public-methods
-        """Placeholder type used when PySide6 is unavailable at runtime."""
 
     # Define type aliases so that mypy recognises these names as *types* even
     # though at runtime (when PySide6 is missing) they refer to a dummy class.

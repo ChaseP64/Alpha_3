@@ -698,11 +698,29 @@ class TracingScene(QGraphicsScene):
         # Map scene-pixel coordinates → calibrated world coordinates.
         world_points: list[QPointF] = [QPointF(*self._scene_to_world(p)) for p in self._current_polyline_points]
 
-        pen = QPen(Qt.green, 0)  # TODO: Use layer-specific colour
+        # --- Determine initial pen and layer_id for the PolylineItem ---
+        layer_color_hex = self._get_layer_color_from_project(layer_name)
+        initial_pen: QPen
+        default_pen_width = self._finalized_polyline_pen.widthF() if self._finalized_polyline_pen else 2.0
+
+        if layer_color_hex:
+            color = QColor(layer_color_hex)
+            if color.isValid():
+                initial_pen = QPen(color, default_pen_width)
+                self.logger.debug(f"Using project layer color {layer_color_hex} for new polyline on layer '{layer_name}'.")
+            else:
+                self.logger.warning(f"Invalid color '{layer_color_hex}' for layer '{layer_name}'. Using default pen.")
+                initial_pen = QPen(self._finalized_polyline_pen.color(), default_pen_width) # Use default color, custom width
+        else:
+            self.logger.debug(f"No color defined for layer '{layer_name}'. Using default pen.")
+            initial_pen = QPen(self._finalized_polyline_pen.color(), default_pen_width) # Use default color, custom width
+        # --- End Determine initial pen ---
+
         poly_item = PolylineItem(
-            world_points,
-            pen,
+            points=world_points,
+            layer_pen=initial_pen,  # Pass the determined pen
             mode="interpolated" if getattr(self, "_current_mode", False) else "entered",
+            layer_id=layer_name  # Pass the layer_name as layer_id
         )
 
         # Make selectable & movable similar to previous behaviour
@@ -1308,55 +1326,94 @@ class TracingScene(QGraphicsScene):
     # ------------------------------------------------------------------
     # Layer-colour propagation
     # ------------------------------------------------------------------
-    def refresh_layer_item(self, layer_id: str):
-        """Repaint all scene items belonging to *layer_id* (polyline & vertices)."""
-        import sys # For printing to stderr
-        print(f"TracingScene.refresh_layer_item CALLED for layer_id: {layer_id}", flush=True, file=sys.stderr)
-        
-        items_found_for_layer = 0
-        for item in self.items():
-            if isinstance(item, PolylineItem):
-                item_layer_id = getattr(item, "layer_id", None)
-                # print(f"  Found PolylineItem {item}, its item_layer_id: {item_layer_id}", flush=True, file=sys.stderr)
-                if item_layer_id == layer_id:
-                    # print(f"    MATCH! item_layer_id == layer_id.", flush=True, file=sys.stderr)
-                    items_found_for_layer += 1
-                    colour_hex = None
-                    try:
-                        # print(f"      Attempting to get project...", flush=True, file=sys.stderr)
-                        proj = getattr(self, "project", None) or getattr(self.panel, "current_project", None)
-                        print(f"      Project object from panel: {proj} (type: {type(proj)})", flush=True, file=sys.stderr)
-                        if proj:
-                            # Assuming proj is a Project instance, directly call get_layer
-                            print(f"      Attempting to call proj.get_layer(layer_id='{layer_id}')", flush=True, file=sys.stderr)
-                            lyr = proj.get_layer(layer_id)
-                            print(f"      Layer object from project.get_layer: {lyr}", flush=True, file=sys.stderr)
-                            if lyr:
-                                colour_hex = lyr.line_color
-                                print(f"        Retrieved colour_hex '{colour_hex}' from layer '{lyr.name}'", flush=True, file=sys.stderr)
-                            else:
-                                print(f"        Layer with id {layer_id} NOT FOUND in project.", flush=True, file=sys.stderr)
-                        else:
-                            print("      Project object (proj) is None.", flush=True, file=sys.stderr)
-                    except AttributeError as ae:
-                        print(f"      !!! AttributeError: {ae} (Possibly proj is not a Project instance or get_layer is missing)", flush=True, file=sys.stderr)
-                        self.logger.error(f"AttributeError in refresh_layer_item: {ae}", exc_info=True)
-                    except Exception as e:
-                        print(f"      !!! EXCEPTION while getting layer/color: {e}", flush=True, file=sys.stderr)
-                        self.logger.error(f"Error retrieving color for layer {layer_id} in refresh_layer_item: {e}", exc_info=True)
-                    
-                    if colour_hex:
-                        # print(f"    Calling item.update_color('{colour_hex}') for item {item}", flush=True, file=sys.stderr)
-                        item.update_color(colour_hex)
-                    # else:
-                        # print(f"    Skipping item.update_color because colour_hex is STILL None for item {item}", flush=True, file=sys.stderr)
-                # else:
-                    # print(f"    NO MATCH. item_layer_id != layer_id.", flush=True, file=sys.stderr)
+    def refresh_layer_item(self, layer_id: str, target_item: Optional[PolylineItem] = None):
+        """Repaint all scene items belonging to *layer_id* (polyline & vertices).
 
-        if items_found_for_layer == 0:
-            print(f"TracingScene.refresh_layer_item: No items found OR MATCHED for layer_id {layer_id}", flush=True, file=sys.stderr)
-            self.logger.warning(f"TracingScene.refresh_layer_item: No items found for layer_id {layer_id}")
+        If target_item is provided, only that item is refreshed if its layer_id matches.
+        Otherwise, all items on the layer are refreshed.
+        """
+        import sys # For printing to stderr
+        print(f"TracingScene.refresh_layer_item CALLED for layer_id: {layer_id}, target_item: {target_item}", flush=True, file=sys.stderr)
+        
+        items_refreshed_count = 0
+
+        if target_item is not None:
+            item_layer_id = getattr(target_item, "layer_id", None)
+            if item_layer_id == layer_id:
+                print(f"  Refreshing TARGET_ITEM {target_item}, its item_layer_id: {item_layer_id}", flush=True, file=sys.stderr)
+                colour_hex = self._get_layer_color_from_project(layer_id)
+                if colour_hex:
+                    target_item.update_color(colour_hex)
+                    items_refreshed_count += 1
+                else:
+                    print(f"    Skipping target_item.update_color because colour_hex is None for layer {layer_id}", flush=True, file=sys.stderr)
+            else:
+                print(f"  TARGET_ITEM {target_item} (layer_id: {item_layer_id}) does not match requested layer_id: {layer_id}", flush=True, file=sys.stderr)
+        else:
+            # Original behavior: iterate all items if no specific target_item
+            print(f"  No target_item provided, iterating all scene items for layer_id: {layer_id}", flush=True, file=sys.stderr)
+            for item in self.items():
+                if isinstance(item, PolylineItem):
+                    item_layer_id = getattr(item, "layer_id", None)
+                    if item_layer_id == layer_id:
+                        print(f"    MATCH! Refreshing item {item}, its item_layer_id: {item_layer_id}", flush=True, file=sys.stderr)
+                        colour_hex = self._get_layer_color_from_project(layer_id)
+                        if colour_hex:
+                            item.update_color(colour_hex)
+                            items_refreshed_count += 1
+                        else:
+                            print(f"    Skipping item.update_color because colour_hex is None for layer {layer_id}", flush=True, file=sys.stderr)
+
+        if items_refreshed_count == 0:
+            print(f"TracingScene.refresh_layer_item: No items were refreshed for layer_id {layer_id} (target_item: {target_item})", flush=True, file=sys.stderr)
+            # Keep original warning for the general case, but be more specific if target_item was given
+            if target_item is None:
+                self.logger.warning(f"TracingScene.refresh_layer_item: No items found for layer_id {layer_id}")
+        else:
+            print(f"TracingScene.refresh_layer_item: Refreshed {items_refreshed_count} item(s) for layer_id {layer_id}", flush=True, file=sys.stderr)
+        
         self.update()
+
+    def _get_layer_color_from_project(self, layer_id: str) -> Optional[str]:
+        """Helper to retrieve the color for a given layer_id from the current project."""
+        # This internal helper consolidates the color retrieval logic
+        colour_hex = None
+        proj = None # Initialize to None
+        try:
+            # Try to get project from self.project first, then from panel
+            proj = getattr(self, "project", None) 
+            if proj is None:
+                proj = getattr(self.panel, "current_project", None)
+            
+            self.logger.debug(f"    [TracingScene._get_layer_color] Attempting to get color for layer_id: '{layer_id}'. Using Project ID: {id(proj) if proj else 'None'}")
+
+            if proj:
+                # proj.layers is a list of Layer objects
+                if hasattr(proj, 'layers') and isinstance(proj.layers, list):
+                    self.logger.debug(f"    [TracingScene._get_layer_color] Project has {len(proj.layers)} layers. Layer names: {[l.name for l in proj.layers if hasattr(l, 'name')]}")
+                else:
+                    self.logger.debug(f"    [TracingScene._get_layer_color] Project.layers is not a list or does not exist.")
+                
+                lyr = proj.get_layer(layer_id) # This uses project.get_layer(layer_id)
+                self.logger.debug(f"    [TracingScene._get_layer_color] Result of proj.get_layer('{layer_id}'): {lyr} (type: {type(lyr)})")
+                if lyr and hasattr(lyr, 'line_color'):
+                    colour_hex = lyr.line_color
+                    self.logger.debug(f"      [TracingScene._get_layer_color] Retrieved colour_hex '{colour_hex}' from layer '{lyr.name}' (id: {id(lyr)}). Layer object: {lyr}")
+                elif lyr:
+                    self.logger.warning(f"      [TracingScene._get_layer_color] Layer '{layer_id}' found (id: {id(lyr)}), but has no 'line_color' attribute or it's None. Layer object: {lyr}")
+                else:
+                    # Log available layer IDs if layer is not found
+                    available_layer_ids = [l.id for l in proj.layers if hasattr(l, 'id')] if hasattr(proj, 'layers') and isinstance(proj.layers, list) else "N/A"
+                    self.logger.warning(f"      [TracingScene._get_layer_color] Layer with id '{layer_id}' NOT FOUND in project (Project ID: {id(proj)}). Available layer IDs: {available_layer_ids}")
+            else:
+                self.logger.error("      [TracingScene._get_layer_color] Project object (proj) is None or not found.")
+        except AttributeError as ae:
+            # print(f"      !!! _get_layer_color: AttributeError: {ae}", flush=True, file=sys.stderr)
+            self.logger.error(f"AttributeError in _get_layer_color_from_project for layer {layer_id}: {ae}", exc_info=False) # Keep log lean
+        except Exception as e:
+            # print(f"      !!! _get_layer_color: EXCEPTION: {e}", flush=True, file=sys.stderr)
+            self.logger.error(f"Error retrieving color for layer {layer_id} in _get_layer_color_from_project: {e}", exc_info=False) # Keep log lean
+        return colour_hex
 
 # ------------------------------------------------------------------
 # Undo/Redo Command

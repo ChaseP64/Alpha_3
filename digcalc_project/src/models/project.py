@@ -20,9 +20,8 @@ from typing import Any, Dict, List, Optional, Tuple, TypedDict, TYPE_CHECKING
 from .calculation import VolumeCalculation
 from .project_scale import ProjectScale  # NEW Pydantic model
 from .region import Region
-
-# Use relative imports
 from .surface import Surface
+from .layer import Layer # ADDED: Runtime import for Layer
 
 # Configure logging for the module
 logger = logging.getLogger(__name__)
@@ -89,14 +88,10 @@ class Project:
     # carry style (colour) and metadata.  Existing code that references
     # `traced_polylines` by *name* continues to work – the two concepts are kept
     # in sync by higher-level UI logic.
-    if TYPE_CHECKING:  # pragma: no cover
-        from .layer import Layer  # forward ref for type hints only
-
     layers: list["Layer"] = field(default_factory=list)
 
     def __post_init__(self):
-        self.logger = logging.getLogger(__name__)
-        self.logger.debug(f"Project '{self.name}' initialized")
+        logger.debug(f"Project '{self.name}' initialized")
 
     @property
     def legacy_traced_polylines(self) -> List[List[Tuple[float, float]]]:
@@ -126,7 +121,7 @@ class Project:
 
         self.surfaces[surface.name] = surface # Use name as key
         self.modified_at = datetime.datetime.now()
-        self.logger.info(f"Surface '{surface.name}' added to project")
+        logger.info(f"Surface '{surface.name}' added to project")
 
     def remove_surface(self, surface_name: str) -> bool:
         """Remove a surface from the project by name.
@@ -141,9 +136,9 @@ class Project:
         if surface_name in self.surfaces:
             del self.surfaces[surface_name] # Remove by key
             self.modified_at = datetime.datetime.now()
-            self.logger.info(f"Surface '{surface_name}' removed from project")
+            logger.info(f"Surface '{surface_name}' removed from project")
             return True
-        self.logger.warning(f"Attempted to remove non-existent surface: '{surface_name}'")
+        logger.warning(f"Attempted to remove non-existent surface: '{surface_name}'")
         return False
 
     def get_surface(self, name: str) -> Optional[Surface]: # Renamed for clarity
@@ -189,7 +184,7 @@ class Project:
         self.calculations.append(calculation)
         self.modified_at = datetime.datetime.now()
         self.is_dirty = True
-        self.logger.info(f"Calculation '{calculation.name}' added to project")
+        logger.info(f"Calculation '{calculation.name}' added to project")
 
     def add_traced_polyline(
         self,
@@ -212,13 +207,13 @@ class Project:
         """
         # Validate the input dictionary
         if not isinstance(polyline, dict) or "points" not in polyline:
-            self.logger.warning(f"Invalid polyline data format provided for layer '{layer_name}'. Expected dict with 'points'. Skipping.")
+            logger.warning(f"Invalid polyline data format provided for layer '{layer_name}'. Expected dict with 'points'. Skipping.")
             return None # Failure
 
         points_list = polyline.get("points")
         # Ensure points_list is actually a list before checking length
         if not isinstance(points_list, list) or len(points_list) < 2:
-            self.logger.warning(f"Attempted to add polyline with invalid or < 2 points to layer '{layer_name}'. Skipping.")
+            logger.warning(f"Attempted to add polyline with invalid or < 2 points to layer '{layer_name}'. Skipping.")
             return None # Failure
 
         # Ensure elevation key exists, defaulting to None if missing
@@ -238,7 +233,30 @@ class Project:
         new_revision = self._bump_layer_revision(layer_name)
         # --- End Bump ---
 
-        self.logger.info(f"Added polyline to layer '{layer_name}' (Index: {new_index}, Points: {len(polyline_obj['points'])}, Elevation: {polyline_obj['elevation']}, New Rev: {new_revision}).")
+        logger.info(f"Added polyline to layer '{layer_name}' (Index: {new_index}, Points: {len(polyline_obj['points'])}, Elevation: {polyline_obj['elevation']}, New Rev: {new_revision}).")
+
+        # Ensure the layer object itself exists in self.layers
+        # Check if a layer with this name already exists
+        existing_layer = None
+        for layer_obj in self.layers:
+            if layer_obj.name == layer_name:
+                existing_layer = layer_obj
+                break
+        
+        if existing_layer is None:
+            # Create a new Layer object with default settings if it doesn't exist
+            # For now, using layer_name as id. Consider UUID if names aren't guaranteed unique by project.
+            new_layer = Layer(id=layer_name, name=layer_name)
+            self.layers.append(new_layer) # Append to the list
+            logger.info(f"[Project.add_traced_polyline] Created new Layer object: '{layer_name}' with default settings. ID(self): {id(self)}")
+            # ADDED LOG: Check actual line_color of the newly created layer object
+            logger.info(f"[Project.add_traced_polyline] Newly created Layer '{layer_name}' has line_color: {new_layer.line_color}")
+        else:
+            logger.debug(f"[Project.add_traced_polyline] Layer '{layer_name}' already exists. ID(self): {id(self)}")
+
+        if not isinstance(self.traced_polylines[layer_name], list):
+            logger.warning(f"Unexpected data type for layer '{layer_name}' polylines: {type(self.traced_polylines[layer_name])}")
+
         return new_index # Success, return index
 
     def remove_polyline(self, layer_name: str, polyline_index: int) -> bool:
@@ -250,12 +268,12 @@ class Project:
             new_revision = self._bump_layer_revision(layer_name)
             # --- End Bump ---
 
-            self.logger.info(f"Removed polyline at index {polyline_index} from layer '{layer_name}' (Elevation: {removed.get('elevation')}, New Rev: {new_revision}).")
+            logger.info(f"Removed polyline at index {polyline_index} from layer '{layer_name}' (Elevation: {removed.get('elevation')}, New Rev: {new_revision}).")
             if not self.traced_polylines[layer_name]: # Remove layer if empty
                 del self.traced_polylines[layer_name]
-                self.logger.info(f"Removed empty layer: '{layer_name}'")
+                logger.info(f"Removed empty layer: '{layer_name}'")
             return True
-        self.logger.warning(f"Could not remove polyline: Layer '{layer_name}' or index {polyline_index} not found.")
+        logger.warning(f"Could not remove polyline: Layer '{layer_name}' or index {polyline_index} not found.")
         return False
 
     def clear_traced_polylines(self):
@@ -263,7 +281,7 @@ class Project:
         if self.traced_polylines:
             self.traced_polylines.clear()
             self.is_dirty = True
-            self.logger.info("Cleared all traced polylines.")
+            logger.info("Cleared all traced polylines.")
 
     def get_layers(self) -> List[str]:
         """Returns a list of layer names that contain traced polylines."""
@@ -271,8 +289,8 @@ class Project:
 
     def get_layer(self, layer_id: str) -> Optional["Layer"]:
         """Return the Layer with matching id from self.layers."""
-        for lyr in self.layers:
-            if getattr(lyr, "id", None) == layer_id:
+        for lyr in self.layers: # Iterate through the list
+            if getattr(lyr, "id", None) == layer_id: # Check id attribute
                 return lyr
         return None
 
@@ -297,12 +315,12 @@ class Project:
         """Saves the project data to a file in JSON format."""
         save_path = filename or self.filepath
         if not save_path:
-            self.logger.error("Cannot save project: No filename provided and project has no associated file.")
+            logger.error("Cannot save project: No filename provided and project has no associated file.")
             return False
 
         self.filepath = save_path
         self.modified_at = datetime.datetime.now()
-        self.logger.info(f"Saving project '{self.name}' to {self.filepath}")
+        logger.info(f"Saving project '{self.name}' to {self.filepath}")
 
         try:
             scale_dict_data = None
@@ -336,17 +354,16 @@ class Project:
                 json.dump(data_to_save, f, indent=4)
 
             self.is_dirty = False # Mark as saved
-            self.logger.info("Project saved successfully.")
+            logger.info("Project saved successfully.")
             return True
 
         except Exception:
-            self.logger.exception(f"Failed to save project to {self.filepath}")
+            logger.exception(f"Failed to save project to {self.filepath}")
             return False
 
     @classmethod
     def load(cls, filename: str, pdf_service: Optional[Any] = None) -> Optional[Project]:
         """Loads a project from a JSON file."""
-        logger = logging.getLogger(__name__)
         migrated = False # Track if any migration occurred
 
         if not Path(filename).is_file():

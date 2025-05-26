@@ -1136,6 +1136,14 @@ class MainWindow(QMainWindow):
                 self.project_panel._update_tree()
                 self._update_layer_tree()
                 self.statusBar().showMessage(f"Polyline added to layer '{layer_name}' (Elev: {elevation})", 3000)
+                
+                # --- Explicitly refresh the visual item for the layer ---
+                if hasattr(self, "visualization_panel") and self.visualization_panel:
+                    # Pass the specific item to be refreshed
+                    self.logger.debug(f"[MainWindow._on_polyline_drawn] Calling refresh_layer_item for layer '{layer_name}'. Project ID for scene: {id(project)}")
+                    self.visualization_panel.scene_2d.refresh_layer_item(layer_name, target_item=item)
+                # --- End explicit refresh ---
+
                 # --- Trigger Rebuild ---
                 self._queue_surface_rebuilds_for_layer(layer_name)
                 # --- End Trigger ---
