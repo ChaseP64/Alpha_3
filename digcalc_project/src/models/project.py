@@ -213,13 +213,27 @@ class Project:
         points_list = polyline.get("points")
         # Ensure points_list is actually a list before checking length
         if not isinstance(points_list, list) or len(points_list) < 2:
-            logger.warning(f"Attempted to add polyline with invalid or < 2 points to layer '{layer_name}'. Skipping.")
-            return None # Failure
+            logger.warning(
+                "Attempted to add polyline with invalid or < 2 points to layer '%s'. Skipping.",
+                layer_name,
+            )
+            return None  # Failure
 
-        # Ensure elevation key exists, defaulting to None if missing
+        # ------------------------------------------------------------------
+        # Auto-detect uniform elevation when not explicitly provided.
+        # We consider a point tuple as (x, y) or (x, y, z).  A value of None or
+        # missing Z is ignored.  If every vertex has the *same* Z value we set
+        # polyline["elevation"] so downstream logic (legacy checks) still work.
+        # ------------------------------------------------------------------
+        elevation_val = polyline.get("elevation")
+        if elevation_val is None:
+            z_vals = {pt[2] for pt in points_list if isinstance(pt, (list, tuple)) and len(pt) >= 3 and pt[2] is not None}
+            if len(z_vals) == 1:
+                elevation_val = z_vals.pop()
+
         polyline_obj: PolylineData = {
             "points": points_list,
-            "elevation": polyline.get("elevation"), # Use get for safety
+            "elevation": elevation_val,
         }
 
         if layer_name not in self.traced_polylines:
@@ -307,7 +321,14 @@ class Project:
                 for poly_data in polys:
                     if isinstance(poly_data, dict) and "points" in poly_data and isinstance(poly_data["points"], list):
                         # Ensure points are lists of numbers [x, y]
-                        serializable_points = [[pt[0], pt[1]] for pt in poly_data["points"] if isinstance(pt, (list, tuple)) and len(pt) == 2]
+                        serializable_points = []
+                        for pt in poly_data["points"]:
+                            if not isinstance(pt, (list, tuple)):
+                                continue
+                            if len(pt) == 2:
+                                serializable_points.append([pt[0], pt[1]])
+                            elif len(pt) >= 3:
+                                serializable_points.append([pt[0], pt[1], pt[2]])
                         serializable_polys.append({
                             "points": serializable_points,
                             "elevation": poly_data.get("elevation"),

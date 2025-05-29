@@ -46,18 +46,50 @@ class SurfaceBuilder:
         for i, poly_dict in enumerate(polylines_data):
             try:
                 elevation = poly_dict.get("elevation")
-                points_2d = poly_dict.get("points")
-                if elevation is None or not points_2d:
-                    logger.warning(f"Skipping polyline {i} in layer '{layer_name}' due to missing elevation or points.")
+                points_seq = poly_dict.get("points")
+                if not points_seq:
+                    logger.warning(
+                        "Skipping polyline %d in layer '%s' due to missing points.",
+                        i,
+                        layer_name,
+                    )
                     continue
+
                 added_from_poly = 0
-                for x, y in points_2d:
-                    point_tuple = (float(x), float(y), float(elevation))
-                    if point_tuple not in unique_pts_check:
-                        points_3d.append(point_tuple)
-                        unique_pts_check.add(point_tuple)
-                        added_from_poly += 1
-                if added_from_poly > 0: logger.debug(f"Added {added_from_poly} unique vertices from polyline {i} (Elev: {elevation}).")
+
+                if elevation is not None:
+                    # Fast path – treat as constant‐Z polyline
+                    for x, y, *_ in points_seq:
+                        point_tuple = (float(x), float(y), float(elevation))
+                        if point_tuple not in unique_pts_check:
+                            points_3d.append(point_tuple)
+                            unique_pts_check.add(point_tuple)
+                            added_from_poly += 1
+                else:
+                    # Use per-vertex Z when available; skip vertices without Z
+                    for pt in points_seq:
+                        if len(pt) < 3 or pt[2] is None:
+                            continue
+                        x, y, z = pt[:3]
+                        point_tuple = (float(x), float(y), float(z))
+                        if point_tuple not in unique_pts_check:
+                            points_3d.append(point_tuple)
+                            unique_pts_check.add(point_tuple)
+                            added_from_poly += 1
+
+                if added_from_poly == 0:
+                    logger.warning(
+                        "Poly %d in layer '%s' had no usable elevation data; skipped.",
+                        i,
+                        layer_name,
+                    )
+                else:
+                    logger.debug(
+                        "Added %d unique vertices from polyline %d (layer '%s').",
+                        added_from_poly,
+                        i,
+                        layer_name,
+                    )
             except (TypeError, ValueError, KeyError) as e:
                 logger.warning(f"Skipping polyline {i} in layer '{layer_name}' due to data error: {e}", exc_info=True)
                 continue

@@ -95,7 +95,8 @@ def scale_from_dict(d: Optional[dict]) -> Optional[ProjectScale]:
         return None
     try:
         return ProjectScale(**d)
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Failed to create ProjectScale from dict: {d}. Error: {e}. Returning None.")
         return None
 
 def _load_surfaces(data: dict | None) -> dict[str, Surface]:

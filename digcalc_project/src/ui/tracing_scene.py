@@ -751,16 +751,32 @@ class TracingScene(QGraphicsScene):
         self.polyline_finalized.emit(world_points, poly_item)
 
         # ------------------------------------------------------------------
-        # Apply per-vertex Z values collected (point mode)
+        # Point-prompt mode – *use* the Z values the user provided **during**
+        # the click sequence instead of asking again.  This eliminates the
+        # duplicate round of dialogs that previously appeared after the line
+        # was finished.
         # ------------------------------------------------------------------
         if self._elev_mode == "point" and self._current_z_values:
-            main_win = self.parent_view.window() if self.parent_view else None
-            undo_stack = getattr(main_win, "undoStack", None) if main_win else None
-            for v, z in zip(poly_item.vertices(), self._current_z_values):
-                if undo_stack:
-                    undo_stack.push(EditVertexZCommand(v, z))
-                else:
-                    v.set_z(z)
+            verts = poly_item.vertices()
+            if len(verts) != len(self._current_z_values):
+                # Length mismatch should never happen, but guard defensively.
+                self.logger.warning(
+                    "Vertex/Z-list length mismatch in point-prompt mode (%d vs %d). "
+                    "Falling back to previous prompt behaviour.",
+                    len(verts),
+                    len(self._current_z_values),
+                )
+            else:
+                main_win = self.parent_view.window() if self.parent_view else None
+                undo_stack = getattr(main_win, "undoStack", None) if main_win else None
+
+                for v, z_val in zip(verts, self._current_z_values):
+                    if z_val is None:
+                        continue  # Skip unset vertices (user cancelled)
+                    if undo_stack:
+                        undo_stack.push(EditVertexZCommand(v, z_val))
+                    else:
+                        v.set_z(z_val)
 
         # Elevation workflow for modes other than *point* (handled above)
         # --------------------------------------------------------------
@@ -925,11 +941,18 @@ class TracingScene(QGraphicsScene):
         # ---------------- Point mode ----------------
         if mode == "point":
             if not undo_stack:
-                self.logger.warning("Undo stack unavailable – point-mode elevations will be applied directly.")
+                self.logger.warning(
+                    "Undo stack unavailable – point-mode elevations will be applied directly.",
+                )
+            last_z_val: float | None = None
             for v in vertices:
-                z, ok = self._ask_vertex_z(v.z())
+                # Default to the previous entered elevation when available.
+                initial = last_z_val if last_z_val is not None else v.z()
+                z, ok = self._ask_vertex_z(initial_z=initial)
                 if not ok:
+                    # Keep previous value (unchanged)
                     continue
+                last_z_val = z  # Remember for next vertex
                 if undo_stack:
                     undo_stack.push(EditVertexZCommand(v, z))
                 else:
