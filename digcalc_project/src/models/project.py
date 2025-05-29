@@ -246,11 +246,12 @@ class Project:
         if existing_layer is None:
             # Create a new Layer object with default settings if it doesn't exist
             # For now, using layer_name as id. Consider UUID if names aren't guaranteed unique by project.
-            new_layer = Layer(id=layer_name, name=layer_name)
+            # --- MODIFIED: Use next_default_colors for new layer ---
+            default_line_color, _ = Layer.next_default_colors()
+            new_layer = Layer(id=layer_name, name=layer_name, line_color=default_line_color)
+            # --- END MODIFIED ---
             self.layers.append(new_layer) # Append to the list
             logger.info(f"[Project.add_traced_polyline] Created new Layer object: '{layer_name}' with default settings. ID(self): {id(self)}")
-            # ADDED LOG: Check actual line_color of the newly created layer object
-            logger.info(f"[Project.add_traced_polyline] Newly created Layer '{layer_name}' has line_color: {new_layer.line_color}")
         else:
             logger.debug(f"[Project.add_traced_polyline] Layer '{layer_name}' already exists. ID(self): {id(self)}")
 
@@ -279,9 +280,12 @@ class Project:
     def clear_traced_polylines(self):
         """Removes all traced polylines from the project."""
         if self.traced_polylines:
-            self.traced_polylines.clear()
-            self.is_dirty = True
-            logger.info("Cleared all traced polylines.")
+            # Keep is_dirty and modified_at updates if you want clearing to be an undoable/savable action
+            # For now, let's assume clearing is a direct action and doesn't dirty the project unless polylines existed.
+            if any(self.traced_polylines.values()): # Only dirty if there was something to clear
+                self.is_dirty = True
+                self.modified_at = datetime.datetime.now()
+            self.traced_polylines.clear() 
 
     def get_layers(self) -> List[str]:
         """Returns a list of layer names that contain traced polylines."""
@@ -416,7 +420,8 @@ class Project:
                     # Pydantic will parse ISO string for calibrated_at to datetime automatically
                     project.scale = ProjectScale(**scale_data)
                 except Exception as e_scale:
-                    logger.error(f"Failed to load/parse new ProjectScale data: {e_scale}. Scale will be None.", exc_info=True)
+                    # If parsing fails, log it but continue with scale as None
+                    logging.getLogger(__name__).error(f"Failed to load/parse ProjectScale data: {e_scale}. Scale set to None.", exc_info=False)
                     project.scale = None
             else:
                 project.scale = None
@@ -492,7 +497,8 @@ class Project:
                     else:
                          logger.warning(f"Invalid data type for layer '{layer}' polylines: {type(polys)}. Skipping layer.")
             else:
-                 logger.warning(f"Traced polyline data found but is in an unexpected format: {type(polylines_raw)}")
+                # Keep this warning as it indicates a potentially corrupt file
+                logger.warning(f"Traced polyline data found but is in an unexpected format: {type(polylines_raw)}")
 
             project.traced_polylines = loaded_polylines_dict
 
@@ -558,9 +564,9 @@ def _migrate_project_scale_v1_to_v2(data: dict) -> dict:
     """Migrates old ProjectScale (dataclass-like dict) to new Pydantic ProjectScale structure."""
     logger.info("Attempting to migrate ProjectScale from v1 to v2 format.")
     scale_data_v1 = data.get("scale")
-    if not scale_data_v1 or not isinstance(scale_data_v1, dict):
-        logger.debug("No v1 scale data found or not a dict, skipping migration.")
-        return data # No old scale data to migrate
+    if not isinstance(scale_data_v1, dict):
+        # If no scale data or not a dict, nothing to migrate here for scale v1->v2
+        return data
 
     # Old fields: px_per_in, world_units, world_per_in
     # New fields: input_method, world_units, world_per_paper_in, ratio_numer, ratio_denom, render_dpi_at_cal, calibrated_at
@@ -618,7 +624,8 @@ def _migrate_v2_add_scale(data: dict, project_render_dpi: float | None) -> dict:
         )
         data["scale"] = scale_obj.dict(exclude_none=True)
     except Exception as exc:
-        logger.warning("Failed to convert legacy scale: %s", exc, exc_info=True)
+        # Keep this warning as it indicates a potential issue with legacy data conversion
+        logger.warning(f"Failed to convert legacy scale for world_per_in '{world_per_in}': {exc}", exc_info=False)
         data["scale"] = None
         data["flags"] = data.get("flags", []) + ["scale-invalid"]
 

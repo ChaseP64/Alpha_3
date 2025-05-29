@@ -21,6 +21,11 @@ from digcalc_project.src.tools.spline import sample as spline_sample
 
 from .vertex_item import VertexItem
 
+import logging
+
+# Module-level logger
+logger = logging.getLogger(__name__)
+
 
 class PolylineItem(QObject, QGraphicsPathItem):
     """Graphical polyline composed of draggable :class:`VertexItem` handles.
@@ -206,53 +211,48 @@ class PolylineItem(QObject, QGraphicsPathItem):
         print(f"PolylineItem {self}: update_color CALLED with {hex_colour=}", flush=True, file=sys.stderr)
         from PySide6.QtGui import QColor
         
-        col = QColor(hex_colour)
+        new_color = QColor(hex_colour)
+        if not new_color.isValid():
+            logger.warning(
+                "PolylineItem.update_color: Invalid new_color '%s' provided. Pen not updated.",
+                hex_colour,
+            )
+            return
+
+        # Create a new pen with the new color but retain existing width and style
         current_pen = self.pen()
 
-        if current_pen.color() != col:
-            new_pen = QPen(current_pen) 
-            new_pen.setColor(col)
-            self.setPen(new_pen)
-            print(f"PolylineItem {self}: Inside update_color, after setPen, self.pen().color().name() is {self.pen().color().name()}", flush=True, file=sys.stderr)
+        # DEBUG: Log current pen properties before update
+        logger.debug(
+            "PolylineItem.update_color (before): id=%s current_color=%s width=%.2f style=%s -> new_color=%s",
+            id(self),
+            current_pen.color().name(),
+            current_pen.widthF(),
+            current_pen.style(),
+            new_color.name(),
+        )
 
-            for v in self._vertex_items:
-                setattr(v, "_colour_hex", hex_colour)
-            for v in self._vertex_items:
-                if hasattr(v, "update_color"):
-                    v.update_color(hex_colour)
-            self.update() 
-        else:
-            print(f"PolylineItem {self}: update_color - colors are SAME ({current_pen.color().name()} vs {col.name()}), no update.", flush=True, file=sys.stderr)
+        new_pen = QPen(new_color, current_pen.widthF())  # Preserve width
+        new_pen.setStyle(current_pen.style())
 
-    # ------------------------------------------------------------------
-    # Qt paint override – add black outline for contrast
-    # ------------------------------------------------------------------
-    def paint(self, painter, option, widget=None):  # noqa: D401
-        """Draw an outline + coloured stroke for high contrast.
+        # Apply the new pen to the item
+        self.setPen(new_pen)
 
-        We render two passes:
+        # DEBUG: Log pen properties after update
+        logger.debug(
+            "PolylineItem.update_color (after): id=%s new_color=%s width=%.2f style=%s",
+            id(self),
+            self.pen().color().name(),
+            self.pen().widthF(),
+            self.pen().style(),
+        )
 
-        1. A slightly thicker black stroke that forms the halo/outline.
-        2. The actual layer-coloured stroke on top.
-        """
-        from PySide6.QtGui import QColor, QPen
-        from PySide6.QtCore import Qt
-
-        path = getattr(self, "_cached_path", None) or self.path()
-
-        # Foreground pen – derive width & colour from item pen
-        fg_pen: QPen = self.pen()
-        w = max(1, int(fg_pen.widthF() or 2))  # enforce ≥1
-
-        # 1) Outline (black)
-        pen_bg = QPen(Qt.black, w + 2, Qt.SolidLine, Qt.RoundCap, Qt.BevelJoin)
-        painter.setPen(pen_bg)
-        painter.drawPath(path)
-
-        # 2) Main coloured stroke (reuse fg_pen but ensure cosmetic caps)
-        pen_fg = QPen(QColor(fg_pen.color()), w, Qt.SolidLine, Qt.RoundCap, Qt.BevelJoin)
-        painter.setPen(pen_fg)
-        painter.drawPath(path)
+        for v in self._vertex_items:
+            setattr(v, "_colour_hex", hex_colour)
+        for v in self._vertex_items:
+            if hasattr(v, "update_color"):
+                v.update_color(hex_colour)
+        self.update() 
 
 
 __all__ = ["PolylineItem"]

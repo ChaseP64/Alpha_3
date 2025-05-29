@@ -261,7 +261,6 @@ class VisualizationPanel(QWidget):
     def _on_layer_changed(self, layer: str) -> None:
         """Update the active layer when the combo-box changes.
         """
-        self.logger.debug("Active tracing layer switched to %s", layer)
         self.active_layer_name = layer
 
     def _init_ui(self):
@@ -341,28 +340,17 @@ class VisualizationPanel(QWidget):
         # Keep the TracingScene aware of the active project for scale checks
         if hasattr(self, "scene_2d") and self.scene_2d:
             self.scene_2d.project = project
-            self.logger.info(f"[VisualizationPanel.set_project] self.scene_2d.project set to: {self.scene_2d.project} (Scale: {self.scene_2d.project.scale if self.scene_2d.project else 'No Project on scene_2d'})")
-
-        if project:
-            # Load PDF Background if available
-            if project.pdf_background_path and Path(project.pdf_background_path).is_file():
-                self.logger.debug(f"Loading PDF background from project: {project.pdf_background_path}, page {project.pdf_background_page}, dpi {project.pdf_background_dpi}")
-                try:
-                    # Call the updated load_pdf_background with initial page and dpi
+            # Log the project and scale after setting
+            if self.scene_2d.project:
+                # If the project has a PDF background, load it
+                if project.pdf_background_path:
                     self.load_pdf_background(
                         project.pdf_background_path,
                         initial_page=project.pdf_background_page,
                         dpi=project.pdf_background_dpi,
                     )
-                    # No need to call set_pdf_page here anymore
-                except Exception as e:
-                    self.logger.error(f"Failed to load PDF background from project: {e}", exc_info=True)
-                    # Optionally show a non-critical message to the user
-                    # QMessageBox.warning(self, "PDF Load Warning", f"Could not load PDF background image:\n{project.pdf_background_path}\n\nError: {e}")
-            elif project.pdf_background_path:
-                 self.logger.warning(f"PDF background path in project not found: {project.pdf_background_path}")
-            else:
-                 self.logger.debug("No PDF background path in project.")
+                else:
+                    self.logger.debug("No PDF background path in project.")
 
             # Load Surfaces
             if project.surfaces:

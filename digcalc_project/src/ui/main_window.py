@@ -276,17 +276,10 @@ class MainWindow(QMainWindow):
         if hasattr(self.visualization_panel, "scene_2d") and self.visualization_panel.scene_2d:
             self.visualization_panel.scene_2d.polyline_finalized.connect(self._on_polyline_drawn)
             self.visualization_panel.scene_2d.selectionChanged.connect(self._on_item_selected)
-            # --- NEW: Connect pageRectChanged for fitting view ---
             if hasattr(self.visualization_panel.scene_2d, "pageRectChanged"):
                 self.visualization_panel.scene_2d.pageRectChanged.connect(self._fit_view_to_scene)
-            else:
-                self.logger.warning("TracingScene does not have 'pageRectChanged' signal.")
-            # --- NEW: Connect padDrawn signal ---
             if hasattr(self.visualization_panel.scene_2d, "padDrawn"):
                 self.visualization_panel.scene_2d.padDrawn.connect(self._on_pad_drawn)
-            else:
-                self.logger.warning("TracingScene does not have 'padDrawn' signal.")
-            # --- END NEW ---
         else:
              self.logger.warning("Could not connect tracing scene signals: scene_2d not found or is None.")
 
@@ -1063,12 +1056,16 @@ class MainWindow(QMainWindow):
         """Slot connected to the toggle_tracing_action.
         Enables/disables tracing mode in the VisualizationPanel.
         """
-        if hasattr(self, "visualization_panel"):
-            self.visualization_panel.set_tracing_mode(checked)
-            self.logger.info(f"Tracing mode {'enabled' if checked else 'disabled'} via MainWindow action.")
-            self.toggle_trace_mode_action.setText("Disable Tracing" if checked else "Enable Tracing")
+        if self.visualization_panel:
+            # Enable/disable tracing in the VisualizationPanel
+            self.visualization_panel.set_tracing_enabled(checked)
+            # Update the action text so the user sees the current state
+            if hasattr(self, "toggle_trace_mode_action") and self.toggle_trace_mode_action:
+                new_text = "Disable Tracing" if checked else "Enable Tracing"
+                self.toggle_trace_mode_action.setText(new_text)
         else:
-            self.logger.warning("Cannot toggle tracing mode: VisualizationPanel not found.")
+            # This case should ideally not happen if UI is constructed correctly
+            QMessageBox.critical(self, "Error", "Visualization panel not available.")
 
     @Slot(QTreeWidgetItem, int)
     def _on_layer_visibility_changed(self, item: QTreeWidgetItem, column: int):
@@ -1077,7 +1074,7 @@ class MainWindow(QMainWindow):
             layer_name = item.text(0)
             is_visible = item.checkState(0) == Qt.Checked
             self.logger.debug(f"Layer '{layer_name}' visibility toggle -> {is_visible}")
-            if hasattr(self, "visualization_panel") and hasattr(self.visualization_panel, "scene_2d") and hasattr(self.visualization_panel.scene_2d, "setLayerVisible"):
+            if self.visualization_panel and self.visualization_panel.scene_2d and hasattr(self.visualization_panel.scene_2d, "setLayerVisible"):
                 self.visualization_panel.scene_2d.setLayerVisible(layer_name, is_visible)
             else:
                 self.logger.warning("Cannot toggle layer visibility: Visualization panel, scene_2d, or setLayerVisible method not found.")
@@ -1138,7 +1135,7 @@ class MainWindow(QMainWindow):
                 self.statusBar().showMessage(f"Polyline added to layer '{layer_name}' (Elev: {elevation})", 3000)
                 
                 # --- Explicitly refresh the visual item for the layer ---
-                if hasattr(self, "visualization_panel") and self.visualization_panel:
+                if self.visualization_panel:
                     # Pass the specific item to be refreshed
                     self.logger.debug(f"[MainWindow._on_polyline_drawn] Calling refresh_layer_item for layer '{layer_name}'. Project ID for scene: {id(project)}")
                     self.visualization_panel.scene_2d.refresh_layer_item(layer_name, target_item=item)
@@ -1411,7 +1408,7 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_view_2d(self):
         """Switch to the 2D (PDF/Tracing) view."""
-        if hasattr(self, "visualization_panel"):
+        if self.visualization_panel:
             self.logger.debug("Switching to 2D view.")
             self.visualization_panel.show_2d_view()
             self._update_view_actions_state() # Update check states
@@ -1421,7 +1418,7 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_view_3d(self):
         """Switch to the 3D (Terrain) view."""
-        if hasattr(self, "visualization_panel"):
+        if self.visualization_panel:
             self.logger.debug("Switching to 3D view.")
             self.visualization_panel.show_3d_view()
             self._update_view_actions_state() # Update check states
@@ -2055,7 +2052,7 @@ class MainWindow(QMainWindow):
     # --- Moved Helper Method ---
     def _trigger_layer_visibility_update(self, layer_name: str, visible: bool):
         """Helper to explicitly call the scene's visibility function."""
-        if hasattr(self, "visualization_panel") and hasattr(self.visualization_panel, "scene_2d") and hasattr(self.visualization_panel.scene_2d, "setLayerVisible"):
+        if self.visualization_panel and self.visualization_panel.scene_2d and hasattr(self.visualization_panel.scene_2d, "setLayerVisible"):
             self.visualization_panel.scene_2d.setLayerVisible(layer_name, visible)
         else:
             self.logger.warning("Cannot trigger visibility update: Missing components.")
@@ -2588,7 +2585,7 @@ class MainWindow(QMainWindow):
 
         text = "Scale: —"
         # Default style: grey
-        style = "QLabel#scalePill { background-color: #888888; color: white; border-radius: 8px; padding: 2px 5px; }"
+        style = "QLabel#scalePill { border-radius: 8px; padding: 2px 5px; }"
         final_color_decision = "grey (default)"
 
         # Log initial states

@@ -356,10 +356,8 @@ class TracingScene(QGraphicsScene):
         if event.button() == Qt.LeftButton:
             # Use self.project directly, which is set by VisualizationPanel.set_project
             proj_to_check = self.project # No need for getattr if always initialized
-            self.logger.info(f"[mousePressEvent] Using self.project: {proj_to_check}, Scale: {proj_to_check.scale if proj_to_check else 'No Project'}")
 
             if self._scale_invalid(proj_to_check):
-                self.logger.warning("[mousePressEvent] _scale_invalid returned True. Showing QMessageBox.")
                 QMessageBox.warning(
                     self.views()[0],
                     "Scale Required",
@@ -367,8 +365,6 @@ class TracingScene(QGraphicsScene):
                     "Choose Tracing ▸ Calibrate Scale… or click the green scale pill.",
                 )
                 return  # Abort – do *not* start tracing
-            else:
-                self.logger.debug("[mousePressEvent] _scale_invalid returned False. Proceeding with trace.")
         # -------------------------------------------------------------
 
         # --- Tracing is Enabled ---
@@ -589,7 +585,6 @@ class TracingScene(QGraphicsScene):
         # --- MODIFIED: Use stored panel reference ---
         if self.panel and hasattr(self.panel, "active_layer_name"):
             active_layer = self.panel.active_layer_name
-            self.logger.debug(f"Retrieved active layer: {active_layer}")
         else:
             self.logger.warning("Could not get active_layer_name: Panel reference or attribute missing.")
         # --- END MODIFIED ---
@@ -688,15 +683,16 @@ class TracingScene(QGraphicsScene):
             self._cancel_current_polyline()
             return
 
-        path = QPainterPath()
-        path.moveTo(self._current_polyline_points[0])
-        for point in self._current_polyline_points[1:]:
-            path.lineTo(point)
-
-        # Build PolylineItem using captured points (convert to world-units first)
         # ------------------------------------------------------------------
-        # Map scene-pixel coordinates → calibrated world coordinates.
-        world_points: list[QPointF] = [QPointF(*self._scene_to_world(p)) for p in self._current_polyline_points]
+        # Prepare two parallel point lists:
+        #   • scene_points – original *scene-pixel* coordinates for on-screen
+        #     drawing (QGraphicsScene expects these units).
+        #   • world_points – converted coordinates in *project* world units
+        #     stored as metadata for downstream calculations.
+        # ------------------------------------------------------------------
+
+        scene_points: list[QPointF] = list(self._current_polyline_points)  # draw with these
+        world_points: list[QPointF] = [QPointF(*self._scene_to_world(p)) for p in scene_points]  # meta only
 
         # --- Determine initial pen and layer_id for the PolylineItem ---
         layer_color_hex = self._get_layer_color_from_project(layer_name)
@@ -707,7 +703,6 @@ class TracingScene(QGraphicsScene):
             color = QColor(layer_color_hex)
             if color.isValid():
                 initial_pen = QPen(color, default_pen_width)
-                self.logger.debug(f"Using project layer color {layer_color_hex} for new polyline on layer '{layer_name}'.")
             else:
                 self.logger.warning(f"Invalid color '{layer_color_hex}' for layer '{layer_name}'. Using default pen.")
                 initial_pen = QPen(self._finalized_polyline_pen.color(), default_pen_width) # Use default color, custom width
@@ -717,7 +712,7 @@ class TracingScene(QGraphicsScene):
         # --- End Determine initial pen ---
 
         poly_item = PolylineItem(
-            points=world_points,
+            points=scene_points,
             layer_pen=initial_pen,  # Pass the determined pen
             mode="interpolated" if getattr(self, "_current_mode", False) else "entered",
             layer_id=layer_name  # Pass the layer_name as layer_id
@@ -896,10 +891,8 @@ class TracingScene(QGraphicsScene):
         This method is designed to be monkeypatched in tests to prevent UI popups.
         """
         if self._scale_warn_shown:
-            # self.logger.debug("_show_scale_warning: Already shown, skipping.")
             return
 
-        self.logger.warning("Scale not set. Tracing disabled until scale is calibrated.")
         self._scale_warn_shown = True # Set flag *before* showing dialog
 
         # Ensure this runs in the main thread if called from elsewhere, though unlikely here
@@ -916,7 +909,8 @@ class TracingScene(QGraphicsScene):
                 QMessageBox.StandardButton.Ok
             )
         except Exception as e:
-            self.logger.error(f"Failed to show scale warning dialog: {e}", exc_info=True)
+            # Log minimally if dialog fails, but don't spam during normal operation
+            logging.getLogger(__name__).error(f"Failed to show scale warning dialog: {e}", exc_info=False)
 
     def _apply_elevation_workflow(self, poly_item: PolylineItem) -> None:
         """Run the elevation-prompt workflow for *poly_item* based on *self._elev_mode*."""
@@ -998,7 +992,6 @@ class TracingScene(QGraphicsScene):
         self._elev_mode = mode
         self._prompt_mode = mode # Keep alias updated
         self._settings.set_tracing_elev_mode(mode)
-        self.logger.info(f"Tracing elevation mode set to: {mode}")
 
     # ------------------------------------------------------------------
     # Scale validation helper (inside class)
@@ -1008,28 +1001,16 @@ class TracingScene(QGraphicsScene):
         Returns True if invalid, False if valid.
         Also updates the visual no-scale overlay and shows a warning if invalid.
         """
-        # proj_arg is the project passed in (expected to be self.project from calling context)
-        self.logger.info(f"[_scale_invalid] Received project: {proj_arg}, Scale: {proj_arg.scale if proj_arg else 'No Project'}, WPP_in: {proj_arg.scale.world_per_paper_in if proj_arg and proj_arg.scale else 'N/A'}, DPI: {proj_arg.scale.render_dpi_at_cal if proj_arg and proj_arg.scale else 'N/A'}")
-
         scale_is_actually_invalid = True
         if proj_arg and proj_arg.scale:
             if (proj_arg.scale.world_per_paper_in is not None and
                 proj_arg.scale.world_per_paper_in > 0 and
                 proj_arg.scale.render_dpi_at_cal > 0):
                 scale_is_actually_invalid = False
-            else:
-                self.logger.debug(f"[_scale_invalid] Condition for valid scale FAILED. world_per_paper_in: {proj_arg.scale.world_per_paper_in}, render_dpi_at_cal: {proj_arg.scale.render_dpi_at_cal}")
-        elif proj_arg is None:
-            self.logger.debug("[_scale_invalid] Project is None.")
-        elif proj_arg.scale is None:
-            self.logger.debug("[_scale_invalid] Project.scale is None.")
-            
-        self.logger.debug(f"[_scale_invalid] scale_is_actually_invalid: {scale_is_actually_invalid}")
         
         if scale_is_actually_invalid:
             # Only show the pop-up warning if it hasn't been shown before for this session or if scale became invalid again.
-            # The _show_scale_warning method itself has a _scale_warn_shown flag to prevent repeated popups for the same state.
-            self._show_scale_warning() 
+            self._show_scale_warning()
         
         # Always update the visual overlay to reflect the current scale status.
         self._update_noscale_overlay()
@@ -1051,11 +1032,9 @@ class TracingScene(QGraphicsScene):
 
         # Early scale validation when turning *on* tracing
         if enable:
-            # Use self.project directly, which is set by VisualizationPanel.set_project
-            proj_to_check = self.project # No need for getattr if always initialized
-            self.logger.info(f"[set_tracing_enabled] Using self.project: {proj_to_check}, Scale: {proj_to_check.scale if proj_to_check else 'No Project'}")
-            if self._scale_invalid(proj_to_check): 
-                self._show_scale_warning()
+            proj_to_check = self.project
+            if self._scale_invalid(proj_to_check):
+                pass # self._show_scale_warning() # No longer needed here
 
         self._tracing_enabled = enable
 
@@ -1305,8 +1284,6 @@ class TracingScene(QGraphicsScene):
     def _show_scale_warning(self):
         """Show non-blocking scale warning, safe for headless tests."""
         if os.getenv("PYTEST_CURRENT_TEST"):
-            # During pytest, avoid modal dialogs to prevent hangs
-            self.logger.info("[Test] Scale warning suppressed: invalid scale.")
             return
         try:
             msg = QMessageBox(
@@ -1319,9 +1296,9 @@ class TracingScene(QGraphicsScene):
             )
             msg.setModal(False)
             msg.show()
-        except Exception:
-            # Log but do not crash
-            self.logger.warning("Failed to show scale warning dialog", exc_info=True)
+        except Exception as e:
+            # Log minimally, e.g., if no views are available
+            logging.getLogger(__name__).warning(f"Failed to show scale warning dialog: {e}", exc_info=False)
 
     # ------------------------------------------------------------------
     # Layer-colour propagation
@@ -1332,45 +1309,37 @@ class TracingScene(QGraphicsScene):
         If target_item is provided, only that item is refreshed if its layer_id matches.
         Otherwise, all items on the layer are refreshed.
         """
-        import sys # For printing to stderr
-        print(f"TracingScene.refresh_layer_item CALLED for layer_id: {layer_id}, target_item: {target_item}", flush=True, file=sys.stderr)
-        
         items_refreshed_count = 0
 
         if target_item is not None:
             item_layer_id = getattr(target_item, "layer_id", None)
             if item_layer_id == layer_id:
-                print(f"  Refreshing TARGET_ITEM {target_item}, its item_layer_id: {item_layer_id}", flush=True, file=sys.stderr)
                 colour_hex = self._get_layer_color_from_project(layer_id)
                 if colour_hex:
                     target_item.update_color(colour_hex)
                     items_refreshed_count += 1
                 else:
-                    print(f"    Skipping target_item.update_color because colour_hex is None for layer {layer_id}", flush=True, file=sys.stderr)
+                    pass
             else:
-                print(f"  TARGET_ITEM {target_item} (layer_id: {item_layer_id}) does not match requested layer_id: {layer_id}", flush=True, file=sys.stderr)
+                pass
         else:
             # Original behavior: iterate all items if no specific target_item
-            print(f"  No target_item provided, iterating all scene items for layer_id: {layer_id}", flush=True, file=sys.stderr)
             for item in self.items():
                 if isinstance(item, PolylineItem):
                     item_layer_id = getattr(item, "layer_id", None)
                     if item_layer_id == layer_id:
-                        print(f"    MATCH! Refreshing item {item}, its item_layer_id: {item_layer_id}", flush=True, file=sys.stderr)
                         colour_hex = self._get_layer_color_from_project(layer_id)
                         if colour_hex:
                             item.update_color(colour_hex)
                             items_refreshed_count += 1
                         else:
-                            print(f"    Skipping item.update_color because colour_hex is None for layer {layer_id}", flush=True, file=sys.stderr)
+                            pass
 
         if items_refreshed_count == 0:
-            print(f"TracingScene.refresh_layer_item: No items were refreshed for layer_id {layer_id} (target_item: {target_item})", flush=True, file=sys.stderr)
-            # Keep original warning for the general case, but be more specific if target_item was given
             if target_item is None:
                 self.logger.warning(f"TracingScene.refresh_layer_item: No items found for layer_id {layer_id}")
         else:
-            print(f"TracingScene.refresh_layer_item: Refreshed {items_refreshed_count} item(s) for layer_id {layer_id}", flush=True, file=sys.stderr)
+            pass
         
         self.update()
 
@@ -1385,20 +1354,14 @@ class TracingScene(QGraphicsScene):
             if proj is None:
                 proj = getattr(self.panel, "current_project", None)
             
-            self.logger.debug(f"    [TracingScene._get_layer_color] Attempting to get color for layer_id: '{layer_id}'. Using Project ID: {id(proj) if proj else 'None'}")
-
             if proj:
                 # proj.layers is a list of Layer objects
                 if hasattr(proj, 'layers') and isinstance(proj.layers, list):
-                    self.logger.debug(f"    [TracingScene._get_layer_color] Project has {len(proj.layers)} layers. Layer names: {[l.name for l in proj.layers if hasattr(l, 'name')]}")
-                else:
-                    self.logger.debug(f"    [TracingScene._get_layer_color] Project.layers is not a list or does not exist.")
+                    pass # No specific logging needed here for normal operation
                 
                 lyr = proj.get_layer(layer_id) # This uses project.get_layer(layer_id)
-                self.logger.debug(f"    [TracingScene._get_layer_color] Result of proj.get_layer('{layer_id}'): {lyr} (type: {type(lyr)})")
                 if lyr and hasattr(lyr, 'line_color'):
                     colour_hex = lyr.line_color
-                    self.logger.debug(f"      [TracingScene._get_layer_color] Retrieved colour_hex '{colour_hex}' from layer '{lyr.name}' (id: {id(lyr)}). Layer object: {lyr}")
                 elif lyr:
                     self.logger.warning(f"      [TracingScene._get_layer_color] Layer '{layer_id}' found (id: {id(lyr)}), but has no 'line_color' attribute or it's None. Layer object: {lyr}")
                 else:
@@ -1408,10 +1371,8 @@ class TracingScene(QGraphicsScene):
             else:
                 self.logger.error("      [TracingScene._get_layer_color] Project object (proj) is None or not found.")
         except AttributeError as ae:
-            # print(f"      !!! _get_layer_color: AttributeError: {ae}", flush=True, file=sys.stderr)
             self.logger.error(f"AttributeError in _get_layer_color_from_project for layer {layer_id}: {ae}", exc_info=False) # Keep log lean
         except Exception as e:
-            # print(f"      !!! _get_layer_color: EXCEPTION: {e}", flush=True, file=sys.stderr)
             self.logger.error(f"Error retrieving color for layer {layer_id} in _get_layer_color_from_project: {e}", exc_info=False) # Keep log lean
         return colour_hex
 
@@ -1511,11 +1472,3 @@ class SetPadElevationCommand(QUndoCommand):
     # --------------------------------------------------------------
     # Generic event filter to intercept vertex-item double-clicks
     # --------------------------------------------------------------
-
-# <<<CUT START - remove wrongly indented methods inside SetPadElevationCommand>>>
-
-# --------------------------------------------------------------
-#  (Removed nested eventFilter and _edit_vertex_elevation definitions)
-# --------------------------------------------------------------
-
-# <<<CUT END>>>

@@ -3,7 +3,7 @@
 import logging
 from typing import Any, Optional, Tuple
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, Slot
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -204,23 +204,19 @@ class PropertiesDock(QDockWidget):
         self._spline_sampling_spin.valueChanged.connect(self._update_smooth_sampling)
 
         # Elevation prompt mode
-        self._elev_mode_combo = QComboBox()
-        self._elev_mode_combo.setToolTip("How elevation is prompted for during polyline tracing.")
-        # Add items with user data
-        self._elev_mode_combo.addItem("Point-by-point", userData="point")
-        self._elev_mode_combo.addItem("First/last (interpolate)", userData="interpolate")
-        self._elev_mode_combo.addItem("Whole line", userData="line")
-
-        # Set initial value
-        current_mode = settings.tracing_elev_mode()
-        index = self._elev_mode_combo.findData(current_mode)
-        if index != -1:
-            self._elev_mode_combo.setCurrentIndex(index)
-        else: # Default to point-by-point if setting is somehow invalid
-             logger.warning(f"Invalid tracing_elev_mode '{current_mode}' in settings, defaulting.")
-             self._elev_mode_combo.setCurrentIndex(self._elev_mode_combo.findData("point"))
-
-        self._elev_mode_combo.currentIndexChanged.connect(self._update_tracing_mode)
+        self.tracing_elev_mode_combo = QComboBox()
+        self.tracing_elev_mode_combo.addItems(["Point", "Interpolate", "Line"])
+        current_mode_setting = settings.tracing_elev_mode()
+        # Ensure the mode from settings is valid before setting the combo box
+        valid_modes = [self.tracing_elev_mode_combo.itemText(i).lower() for i in range(self.tracing_elev_mode_combo.count())]
+        if current_mode_setting.lower() in valid_modes:
+            self.tracing_elev_mode_combo.setCurrentText(current_mode_setting.capitalize())
+        else:
+            # If invalid, default to "Point" and update settings to match
+            self.tracing_elev_mode_combo.setCurrentText("Point")
+            SettingsService().set_tracing_elev_mode("point")
+        self.tracing_elev_mode_combo.currentTextChanged.connect(self._on_tracing_elev_mode_changed)
+        form_layout.addRow("Elevation Mode:", self.tracing_elev_mode_combo)
 
         # --- Vertex cross size (px) ---
         self._vertex_size_spin = QSpinBox()
@@ -249,7 +245,6 @@ class PropertiesDock(QDockWidget):
         layout.addStretch()
 
         self.tabs.addTab(self.tracing_tab, "Tracing")
-        logger.debug("Tracing settings tab created.")
 
     def update_for_selection(self, item: Optional[Any]):
         """Updates the displayed properties based on the selected item type."""
@@ -453,15 +448,11 @@ class PropertiesDock(QDockWidget):
         SettingsService().set_smooth_sampling_ft(value)
         self.settingsChanged.emit()
 
-    def _update_tracing_mode(self, index: int):
-        """Update tracing elevation mode setting and emit signal."""
-        mode = self._elev_mode_combo.itemData(index)
-        if mode:
-            logger.debug(f"Updating tracing_elev_mode to: {mode}")
-            SettingsService().set_tracing_elev_mode(mode)
-            self.settingsChanged.emit()
-        else:
-             logger.error(f"Could not get user data for combo box index {index}")
+    @Slot(str)
+    def _on_tracing_elev_mode_changed(self, mode: str):
+        SettingsService().set_tracing_elev_mode(mode.lower())
+        # Emit a generic signal that some setting affecting project changed
+        self.settingsChanged.emit()
 
     def _update_vertex_size(self, value: int):
         """Update vertex cross size setting and emit signal."""
