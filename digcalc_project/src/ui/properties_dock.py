@@ -205,15 +205,19 @@ class PropertiesDock(QDockWidget):
 
         # Elevation prompt mode
         self.tracing_elev_mode_combo = QComboBox()
-        self.tracing_elev_mode_combo.addItems(["Point", "Interpolate", "Line"])
-        current_mode_setting = settings.tracing_elev_mode()
-        # Ensure the mode from settings is valid before setting the combo box
-        valid_modes = [self.tracing_elev_mode_combo.itemText(i).lower() for i in range(self.tracing_elev_mode_combo.count())]
-        if current_mode_setting.lower() in valid_modes:
-            self.tracing_elev_mode_combo.setCurrentText(current_mode_setting.capitalize())
+        # Populate with user-visible text and underlying mode identifier as itemData.
+        for mode_text in ("Point", "Interpolate", "Line"):
+            self.tracing_elev_mode_combo.addItem(mode_text, mode_text.lower())
+        current_mode_setting = settings.tracing_elev_mode().lower()
+        # Find index whose data matches stored mode
+        idx = self.tracing_elev_mode_combo.findData(current_mode_setting)
+        if idx >= 0:
+            self.tracing_elev_mode_combo.setCurrentIndex(idx)
         else:
-            # If invalid, default to "Point" and update settings to match
-            self.tracing_elev_mode_combo.setCurrentText("Point")
+            # Default to "point" if invalid and persist
+            default_idx = self.tracing_elev_mode_combo.findData("point")
+            if default_idx >= 0:
+                self.tracing_elev_mode_combo.setCurrentIndex(default_idx)
             SettingsService().set_tracing_elev_mode("point")
         self.tracing_elev_mode_combo.currentTextChanged.connect(self._on_tracing_elev_mode_changed)
         form_layout.addRow("Elevation Mode:", self.tracing_elev_mode_combo)
@@ -245,6 +249,13 @@ class PropertiesDock(QDockWidget):
         layout.addStretch()
 
         self.tabs.addTab(self.tracing_tab, "Tracing")
+
+        # ------------------------------------------------------------------
+        # Backwards-compat private alias – several unit tests reference the
+        # *old* attribute name ``_elev_mode_combo``.  Keep a reference so
+        # those tests continue to work until the next clean-up cycle.
+        # ------------------------------------------------------------------
+        self._elev_mode_combo = self.tracing_elev_mode_combo  # noqa: N806
 
     def update_for_selection(self, item: Optional[Any]):
         """Updates the displayed properties based on the selected item type."""

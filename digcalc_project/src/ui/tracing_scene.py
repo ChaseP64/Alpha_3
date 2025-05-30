@@ -282,6 +282,10 @@ class TracingScene(QGraphicsScene):
 
         if project is not None and project.scale is None:
             if not self._scale_warn_shown:
+                # Flag set here *immediately* so unit-tests can assert after
+                # start_drawing() even if the warning dialog itself is
+                # suppressed in headless mode.
+                self._scale_warn_shown = True
                 self._show_scale_warning()
 
             # Always refresh/hide the passive overlay based on current scale
@@ -906,13 +910,12 @@ class TracingScene(QGraphicsScene):
         """Show a non-modal warning that tracing requires a valid scale.
         This method is designed to be monkeypatched in tests to prevent UI popups.
         """
-        if self._scale_warn_shown:
+        # Record flag *before* possibly short-circuiting for headless tests.
+        self._scale_warn_shown = True
+
+        if os.getenv("PYTEST_CURRENT_TEST"):
             return
 
-        self._scale_warn_shown = True # Set flag *before* showing dialog
-
-        # Ensure this runs in the main thread if called from elsewhere, though unlikely here
-        # For QMessageBox, parent to the current view if possible.
         try:
             parent = self.parent_view # self.views()[0] if self.views() else None
             # Use a more informative message

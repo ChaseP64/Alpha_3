@@ -1,5 +1,6 @@
 from functools import cached_property
 from importlib import import_module
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QKeySequence
@@ -11,6 +12,12 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+# ----------------------------------------------------------------------------
+# Local imports
+# ----------------------------------------------------------------------------
+if TYPE_CHECKING:  # pragma: no cover
+    from digcalc_project.src.models.mesh_actor import MeshActor
 
 
 class PvDock(QDockWidget):
@@ -62,6 +69,16 @@ class PvDock(QDockWidget):
         # Actor handle for the displayed mesh so we can replace without
         # clearing the entire render window (helps avoid WGL driver bugs)
         self._current_actor = None
+
+        # ------------------------------------------------------------------
+        # MeshActor registry (Task 0 – foundation for actor-based 3-D view)
+        # ------------------------------------------------------------------
+        # Keyed by ``surface_name`` this dictionary stores the current
+        # MeshActor instances displayed in the scene.  Population and update
+        # logic will be added in subsequent tasks – for now we only expose
+        # the container so that other parts of the codebase can reference it
+        # safely without import-guard hacks.
+        self.mesh_actors: dict[str, "MeshActor"] = {}
 
         # 3-D viewport / fallback banner --------------------------------------
         if self._pv is None:

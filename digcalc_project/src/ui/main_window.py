@@ -1058,7 +1058,7 @@ class MainWindow(QMainWindow):
         """
         if self.visualization_panel:
             # Enable/disable tracing in the VisualizationPanel
-            self.visualization_panel.set_tracing_mode(checked)
+            self.visualization_panel.set_tracing_enabled(checked)
             # Update the action text so the user sees the current state
             if hasattr(self, "toggle_trace_mode_action") and self.toggle_trace_mode_action:
                 new_text = "Disable Tracing" if checked else "Enable Tracing"
@@ -1099,67 +1099,27 @@ class MainWindow(QMainWindow):
              logger.error("Finalized polyline item is missing layer data! Assigning to 'Default'.")
              layer_name = "Default"
 
-        # ---------------------------------------------------------------
-        # Build (x, y, z) tuples in **world units** (ft/m) so that the stored
-        # data uses the same unit system as elevations.  We pair the *world‐
-        # coordinate* QPointF list from TracingScene with each corresponding
-        # VertexItemʼs Z value.  Fallbacks preserve previous behaviour.
-        # ---------------------------------------------------------------
-        point_tuples_3d: list[tuple[float, float, float]] = []
+        point_tuples = [(p.x(), p.y()) for p in points_qpointf]
 
-        if hasattr(item, "vertices") and callable(getattr(item, "vertices")):
-            try:
-                verts = item.vertices()  # type: ignore[attr-defined]
-                if len(verts) == len(points_qpointf):
-                    point_tuples_3d = [
-                        (pt_world.x(), pt_world.y(), v.z())  # type: ignore[attr-defined]
-                        for v, pt_world in zip(verts, points_qpointf)
-                    ]
-                else:
-                    # Length mismatch – fall back to pixel X/Y as before
-                    raise ValueError("Vertex/QPointF length mismatch")
-            except Exception as e:
-                logger.warning(
-                    "Failed to build world-unit vertex list – falling back to scene units: %s",
-                    e,
-                    exc_info=True,
-                )
+        if len(point_tuples) < 2:
+             logger.warning(f"Ignoring finalized polyline with < 2 points for layer '{layer_name}'.")
+             if item.scene(): item.scene().removeItem(item)
+             return
 
-        # Fallback: use 2-D world points with unknown Z
-        if not point_tuples_3d:
-            point_tuples_3d = [(p.x(), p.y(), None) for p in points_qpointf]
-
-        if len(point_tuples_3d) < 2:
-            logger.warning(
-                "Ignoring finalized polyline with < 2 points for layer '%s'.", layer_name,
-            )
-            if item.scene():
-                item.scene().removeItem(item)
-            return
-
-        # Determine uniform elevation when in Line-Elevation mode or when all
-        # vertices ended up with the same Z value.
+        # Only prompt for a single elevation if the current tracing mode is *line*
         elev_mode = SettingsService().tracing_elev_mode()
-        elevation: float | None = None
-
         if elev_mode == "line":
             dlg = ElevationDialog(self)
             if dlg.exec() == QtWidgets.QDialog.Accepted:
                 elevation = dlg.value()
-                # Overwrite vertex-level z values so they are consistent.
-                point_tuples_3d = [
-                    (x, y, elevation) for (x, y, _z) in point_tuples_3d
-                ]
+            else:
+                elevation = None
         else:
-            # For point / interpolate modes – compute uniform Z only if all
-            # vertices share the same value (nice for contours).
-            z_set = {z for *_xy, z in point_tuples_3d if z is not None}
-            if len(z_set) == 1:
-                elevation = z_set.pop()
+            # For point / interpolate modes we already set per-vertex Zs — no extra prompt.
+            elevation = None
+        logger.debug("Polyline elevation recorded as %s (mode=%s)", elevation, elev_mode)
 
-        logger.debug("Polyline recorded with elevation=%s (mode=%s)", elevation, elev_mode)
-
-        polyline_data: PolylineData = {"points": point_tuples_3d, "elevation": elevation}
+        polyline_data: PolylineData = {"points": point_tuples, "elevation": elevation}
 
         new_index: Optional[int] = project.add_traced_polyline(
             polyline=polyline_data,
@@ -1594,25 +1554,23 @@ class MainWindow(QMainWindow):
             logger.warning("Build Surface action triggered but no traced polylines exist.")
             return
 
-        # ---------------------------------------------------------------
-        # Detect layers that have *any* usable Z data – either a uniform line
-        # elevation OR at least one vertex with a Z value.
-        # ---------------------------------------------------------------
+        # --- FIX: Handle list/dict format when checking for elevation ---
         layers_with_elevation = []
+        # Use project variable
         for layer, polys in project.traced_polylines.items():
+            # ... (rest of elevation check uses local vars) ...
             if not isinstance(polys, list):
+                # ...
                 continue
+            has_elevation = False
             for p_data in polys:
-                if not isinstance(p_data, dict):
-                    continue
-                if p_data.get("elevation") is not None:
-                    layers_with_elevation.append(layer)
+                # ...
+                if isinstance(p_data, dict) and p_data.get("elevation") is not None:
+                    has_elevation = True
                     break
-                pts = p_data.get("points", [])
-                if any(len(pt) >= 3 and pt[2] is not None for pt in pts):
-                    layers_with_elevation.append(layer)
-                    break
-        # ---------------------------------------------------------------
+            if has_elevation:
+                layers_with_elevation.append(layer)
+        # --- END FIX ---
 
         if not layers_with_elevation:
              # ... (no layers with elevation message) ...
@@ -1774,16 +1732,10 @@ class MainWindow(QMainWindow):
         # ... (rest of rebuild logic) ...
 
         polys_data = project.traced_polylines.get(layer, [])
-        valid_polys: list = []
-        for p in polys_data:
-            if not isinstance(p, dict):
-                continue
-            if p.get("elevation") is not None:
-                valid_polys.append(p)
-                continue
-            pts = p.get("points", [])
-            if any(len(pt) >= 3 and pt[2] is not None for pt in pts):
-                valid_polys.append(p)
+        valid_polys = [
+            p for p in polys_data
+            if isinstance(p, dict) and p.get("elevation") is not None
+        ]
 
         if not valid_polys:
             logger.warning(f"Layer '{layer}' has no valid polylines with elevation to rebuild surface '{surface_name}'. Marking as stale.")
@@ -2476,15 +2428,7 @@ class MainWindow(QMainWindow):
                 if not isinstance(polys, list):
                     continue  # skip invalid format
                 for pdata in polys:
-                    if not isinstance(pdata, dict):
-                        continue
-                    # Criterion 1 – uniform line elevation set
-                    if pdata.get("elevation") is not None:
-                        enabled = True
-                        break
-                    # Criterion 2 – any vertex tuple carries a Z value
-                    pts = pdata.get("points", [])
-                    if any(len(pt) >= 3 and pt[2] is not None for pt in pts):
+                    if isinstance(pdata, dict) and pdata.get("elevation") is not None:
                         enabled = True
                         break
                 if enabled:

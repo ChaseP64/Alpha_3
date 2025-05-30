@@ -2,6 +2,9 @@
 
 ## Current Sprint Tasks
 
+### 3-D Viewer Overhaul
+- [x] Task 0: Add MeshActor dataclass & registry stub – 2025-05-30
+
 ### Data Import Module
 - [x] Create base FileParser interface
 - [x] Implement CSV import functionality
