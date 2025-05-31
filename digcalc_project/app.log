@@ -12594,3 +12594,39 @@ ValueError: Interpolation requires at least 3 vertices
 2025-05-29 15:31:55,034 - digcalc_project.src.ui.main_window - INFO - Closing application.
 2025-05-29 15:31:55,084 - digcalc_project.src.main - INFO - Application exited with code 0
 2025-05-29 15:31:55,387 - root - ERROR - wglMakeCurrent failed in Clean(), error: 6
+2025-05-30 12:19:44,427 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-30 12:19:44,519 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-30 12:19:44,535 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-30 12:19:51,329 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-30 12:19:51,330 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-30 12:19:51,351 - digcalc_project.src.ui.main_window - INFO - Application quitting. Attempting to close PyVista plotter...
+2025-05-30 12:19:51,351 - digcalc_project.src.ui.main_window - INFO - PyVista plotter was not initialized, no cleanup needed.
+2025-05-30 12:19:51,352 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-30 12:22:55,168 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-30 12:22:55,198 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-30 12:22:55,203 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-30 12:23:04,744 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-30 12:23:04,744 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-30 12:23:04,772 - digcalc_project.src.ui.main_window - INFO - Application quitting. Attempting to close PyVista plotter...
+2025-05-30 12:23:04,772 - digcalc_project.src.ui.main_window - INFO - PyVista plotter was not initialized, no cleanup needed.
+2025-05-30 12:23:04,772 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-30 12:26:44,837 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-30 12:26:44,868 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-30 12:26:44,872 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-30 12:27:04,061 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-30 12:27:04,062 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-30 12:27:04,107 - root - ERROR - Frame buffer object was not initialized correctly.
+2025-05-30 12:27:04,107 - root - ERROR - The framebuffer is incomplete : FRAMEBUFFER_INCOMPLETE_ATTACHMENT
+2025-05-30 12:27:04,113 - root - ERROR - Frame buffer object was not initialized correctly.
+2025-05-30 12:27:04,114 - root - ERROR - The framebuffer is incomplete : FRAMEBUFFER_INCOMPLETE_ATTACHMENT
+2025-05-30 12:27:04,119 - digcalc_project.src.ui.main_window - INFO - Application quitting. Attempting to close PyVista plotter...
+2025-05-30 12:27:04,119 - digcalc_project.src.ui.main_window - INFO - PyVista plotter was not initialized, no cleanup needed.
+2025-05-30 12:27:04,119 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-05-30 12:40:13,111 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-05-30 12:40:13,150 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-05-30 12:40:13,154 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-05-30 12:40:27,000 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-05-30 12:40:27,000 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-05-30 12:40:27,037 - digcalc_project.src.ui.main_window - INFO - Application quitting. Attempting to close PyVista plotter...
+2025-05-30 12:40:27,038 - digcalc_project.src.ui.main_window - INFO - PyVista plotter was not initialized, no cleanup needed.
+2025-05-30 12:40:27,038 - digcalc_project.src.main - INFO - Application exited with code 0

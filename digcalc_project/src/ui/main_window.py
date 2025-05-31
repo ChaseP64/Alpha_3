@@ -40,6 +40,7 @@ from PySide6.QtWidgets import (
     QTreeWidgetItem,
     QVBoxLayout,
     QWidget,
+    QApplication, # Added for aboutToQuit
 )
 
 # from src.controllers.pdf_controller import PdfController # OLD
@@ -85,6 +86,8 @@ from .visualization_panel import VisualizationPanel
 
 # --- NEW: Layer Legend Dock ---
 from digcalc_project.src.ui.docks.layer_legend_dock import LayerLegendDock
+
+from .pv_plotter_singleton import get_plotter, _plotter as plotter_instance # Import for shutdown
 
 logger = logging.getLogger(__name__)
 
@@ -202,6 +205,11 @@ class MainWindow(QMainWindow):
         # Connect legend signals for auto show/hide and visibility toggles
         self.legend_dock.visibleLayersChanged.connect(self._on_legend_layers_count)
         self.legend_dock.layerVisibilityToggled.connect(self._on_layer_visibility_toggled)
+
+        # --- Connect application quit signal for plotter cleanup (Task 2 / PLAN.md) ---
+        app = QApplication.instance()
+        if app: # Should always exist in a running Qt app
+            app.aboutToQuit.connect(self._on_application_quit)
 
     def _init_ui(self):
         """Initialize the UI components, including docked panels."""
@@ -2702,3 +2710,19 @@ class MainWindow(QMainWindow):
                     self.legend_dock.refresh()
                 except Exception:
                     pass
+
+    # --- Plotter Cleanup on Application Quit (Task 2 / PLAN.md) ---
+    @Slot()
+    def _on_application_quit(self):
+        """Ensure the singleton PyVista plotter is closed cleanly on application exit."""
+        self.logger.info("Application quitting. Attempting to close PyVista plotter...")
+        # Access the module-level instance directly to check if it was created
+        # to avoid instantiating it here if it was never used.
+        if plotter_instance is not None:
+            try:
+                plotter_instance.close()
+                self.logger.info("PyVista plotter closed successfully.")
+            except Exception as e:
+                self.logger.error(f"Error closing PyVista plotter: {e}")
+        else:
+            self.logger.info("PyVista plotter was not initialized, no cleanup needed.")

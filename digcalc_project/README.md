@@ -40,6 +40,28 @@ DigCalc now lets you skip the two-point pick and simply **type the drawing's sca
 
 > **Tip:** If you ever change the PDF render DPI, the pill flips red and tracing is disabled until you recalibrate.
 
+## 🌄 3-D Viewer at a Glance
+
+DigCalc now ships with a production-grade 3-D window powered by **PyVista**:
+
+| Key | Feature |
+|-----|---------|
+| 📏 **HUD** | Orientation gizmo • scale bar • live XYZ read-out |
+| ✂ **Section Plane** | Drag the yellow plane to slice through strata interactively |
+| 🖱️ **Trackball / Fly** | Orbit, pan, zoom or click-to-fly (right-click) |
+| 🎚️ **Z-Exaggeration** | Slider ×1 – ×5 for flat sites |
+| ⚡ **Draft Mode** | One toggle drops AA/EDL for >60 fps on low GPUs |
+| 📷 **Screenshot** | One-click PNG export |
+| ★ **Bookmarks** | Save & recall camera presets per-project |
+| 🖌️ **Layer Sync** | Colors / visibility follow the 2-D Layer dock in real-time |
+
+<figure>
+  <img src="docs/gif/3d_viewer_overview.gif"
+       alt="Gif demo of DigCalc 3-D viewer: orbit, section-plane, z-slider, screenshot & draft toggle"
+       width="720">
+  <figcaption><b>Fig X.</b> Orbiting a three-strata site, slicing with the section plane, exaggerating Z, toggling Draft mode, and snapping a PNG.</figcaption>
+</figure>
+
 ## Installation
 
 ### Prerequisites

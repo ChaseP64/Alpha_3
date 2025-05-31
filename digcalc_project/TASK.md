@@ -4,6 +4,14 @@
 
 ### 3-D Viewer Overhaul
 - [x] Task 0: Add MeshActor dataclass & registry stub – 2025-05-30
+- [x] Task 1.1: Add pv_plotter_singleton helper – 2025-05-30
+- [x] Task 1.2: Refactor PvDock to use singleton plotter – 2025-05-30
+- [x] Task 2: Add explicit closeEvent + aboutToQuit cleanup – 2025-05-30
+- [x] Task 3: Mesh validation gate before add_mesh – 2025-05-30
+- [x] Task 4: Plot first surface with camera defaults (from PLAN.md) – 2025-05-30
+- [x] Task 4.1: Add surface_to_polydata utility and tests – 2025-05-30
+- [x] Task 4.2: Implement PvDock.load_project for initial surface display – 2025-05-30
+- [x] Task 4.3: GUI Test for first surface visibility and camera – 2025-05-30
 
 ### Data Import Module
 - [x] Create base FileParser interface

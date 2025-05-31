@@ -23,6 +23,22 @@ if src_dir.exists():
 
 print(f"Python path: {sys.path}")
 
+# Attempt to set PyVista to off-screen rendering for tests
+try:
+    import pyvista as pv
+    pv.global_vars.off_screen = True
+    print("PyVista off_screen mode set to True for tests.")
+except ImportError:
+    print("PyVista not found, off_screen mode not set.")
+except AttributeError: # For older PyVista versions that might use pv.OFF_SCREEN
+    try:
+        import pyvista as pv
+        pv.OFF_SCREEN = True
+        print("PyVista OFF_SCREEN mode set to True for tests (older API).")
+    except Exception as e:
+        print(f"Could not set PyVista off-screen mode (older API): {e}")
+except Exception as e:
+    print(f"Could not set PyVista off-screen mode: {e}")
 
 @pytest.fixture
 def temp_dir() -> Generator[str, None, None]:
