@@ -43,25 +43,24 @@ from PySide6.QtWidgets import (
 
 # Removed: from PySide6.QtPdf import QPdfDocument
 
-# Import visualization libraries
-try:
-    import pyqtgraph
-    import pyqtgraph.opengl as gl
-    from pyqtgraph.opengl import (
-        GLAxisItem,
-        GLGridItem,
-        GLLinePlotItem,
-        GLMeshItem,
-        GLViewWidget,
-    )
-    HAS_3D = True
-except ImportError:
-    HAS_3D = False
-    # Define dummy classes if needed for type hinting when HAS_3D is False
-    class GLViewWidget:
-        pass
-    class GLMeshItem:
-        pass
+# ---------------------------------------------------------------------------
+# Switch to PyVista-only rendering (pyqtgraph removed – Phase-B cleanup)
+# ---------------------------------------------------------------------------
+# All legacy ``pyqtgraph``/OpenGL widgets have been migrated to a shared
+# PyVista ``BackgroundPlotter`` accessed via ``get_plotter``.  We therefore
+# no longer import ``pyqtgraph`` or refer to ``gl.`` items inside this file.
+
+# NOTE: ``surface_to_polydata`` handles conversion from the project ``Surface``
+# datamodel into a VTK-compatible mesh.  All actor management now targets the
+# PyVista plotter.
+
+from digcalc_project.src.ui.pv_plotter_singleton import get_plotter  # singleton accessor
+from digcalc_project.src.utils.surface_to_polydata import surface_to_polydata
+
+# Stubs retained for minimal compile impact on any yet-to-be-refactored helpers.
+# GLViewWidget = QWidget  # type: ignore # Removed
+
+# ---------------------------------------------------------------------------
 
 # Local imports - Use relative paths
 from ..models.project import Project
@@ -204,9 +203,9 @@ class VisualizationPanel(QWidget):
 
         self.logger = logging.getLogger(__name__)
         # self.surfaces: Dict[str, Dict[str, Any]] = {} # Old storage
-        # --- NEW: Store mesh items directly ---
-        self.surface_mesh_items: Dict[str, gl.GLMeshItem] = {}
-        # --- END NEW ---
+        # Legacy dict kept for backward compatibility – values no longer use "gl.GLMeshItem"
+        # Replace type hint with Any to avoid mypy/runtime errors now that *gl* is a stub.
+        # self.surface_mesh_items: Dict[str, Any] = {} # Removed
         self.pdf_renderer: Optional[PDFRenderer] = None
         # --- REMOVE: _pymupdf_doc is managed by PDFRenderer ---
         # self._pymupdf_doc: Optional[fitz.Document] = None
@@ -240,7 +239,7 @@ class VisualizationPanel(QWidget):
 
         # --- Cut/Fill Map Attributes ---
         self._dz_image_item: Optional[QGraphicsPixmapItem] = None
-        self._dz_mesh_item: Optional[gl.GLMeshItem] = None # For 3D pyqtgraph mesh
+        # self._dz_mesh_item: Optional[gl.GLMeshItem] = None # For 3D pyqtgraph mesh # Removed
         self._cutfill_visible: bool = False
         # --- End Cut/Fill Map Attributes ---
 
@@ -256,6 +255,17 @@ class VisualizationPanel(QWidget):
 
         self.drawing_mode = DrawingMode.SELECT
         self.surface_colors: Dict[str, str] = {}
+        # --- Auto-switch flag for first surface ---
+        self._auto_switched_to_3d_tab: bool = False
+
+        # Map surface name → PyVista actor
+        self._surface_actors: Dict[str, Any] = {}
+        # 3-D cut/fill mesh no longer rendered here (handled in PvDock if needed)
+        # self._dz_mesh_item = None  # deprecated placeholder # Removed
+
+        # gl = _LegacyGLStub()  # type: ignore # Removed
+        # Legacy conditional constant (always True now that PyVista is required)
+        # HAS_3D = True # Removed
 
     @Slot(str)
     def _on_layer_changed(self, layer: str) -> None:
@@ -287,33 +297,17 @@ class VisualizationPanel(QWidget):
         # self.view_2d.setVisible(False) # Visibility managed by stack
         self.stacked_widget.addWidget(self.view_2d)
 
-        # REMOVED: Disconnect legacy signal handler
+        # --- NEW: PyVista 3-D Tab Container -----------------------------------
+        self.tab_3d_container = QWidget()
+        self.tab_3d_layout = QVBoxLayout(self.tab_3d_container)
+        self.tab_3d_layout.setContentsMargins(0, 0, 0, 0)
+        self.stacked_widget.addWidget(self.tab_3d_container)
+        # Alias kept so other modules referring to ``view_3d`` do not crash.
+        self.view_3d = self.tab_3d_container  # legacy compatibility
+        # ---------------------------------------------------------------------
 
-        # --- 3D View / Placeholder ---
-        if HAS_3D:
-            self.view_3d = GLViewWidget()
-            # ... setup grid, axis ...
-            grid = GLGridItem()
-            grid.setSize(x=100, y=100, z=0)
-            grid.setSpacing(x=10, y=10, z=10)
-            self.view_3d.addItem(grid)
-            axis = GLAxisItem()
-            axis.setSize(x=20, y=20, z=20)
-            self.view_3d.addItem(axis)
-            # self.view_3d.setVisible(False) # Visibility managed by stack
-            self.stacked_widget.addWidget(self.view_3d)
-            self.logger.debug("3D view initialized and added to stack")
-        else:
-            # Create and add the placeholder QLabel to the stack
-            self.view_3d = QLabel("3D visualization not available.\nPlease install pyqtgraph and PyOpenGL.")
-            self.view_3d.setAlignment(Qt.AlignCenter)
-            self.view_3d.setStyleSheet("background-color: #f0f0f0; padding: 20px;")
-            # self.view_3d.setVisible(False) # Visibility managed by stack
-            self.stacked_widget.addWidget(self.view_3d)
-            self.logger.warning("3D visualization libraries not available, placeholder added to stack")
-
-        # Set initial view (e.g., default to 3D/placeholder)
-        self.stacked_widget.setCurrentWidget(self.view_3d)
+        # Start in 2-D view by default
+        self.stacked_widget.setCurrentWidget(self.view_2d)
 
         self.logger.debug("VisualizationPanel UI initialized with QStackedWidget")
 
@@ -406,132 +400,82 @@ class VisualizationPanel(QWidget):
         Args: surface: Surface to display
         Returns: bool: True if update was initiated, False otherwise
         """
-        if not HAS_3D or not isinstance(self.view_3d, gl.GLViewWidget):
-            error_msg = "3D visualization libraries not available or view not initialized"
-            self.logger.warning(f"Cannot display surface: {error_msg}")
+        # Rely exclusively on PyVista – no legacy 3-D widget requirements
+
+        try:
+            get_plotter()  # Ensure plotter can be constructed
+        except Exception as e_plot:
+            error_msg = f"PyVista BackgroundPlotter unavailable: {e_plot}"
+            self.logger.warning(error_msg)
             self.surface_visualization_failed.emit(surface.name, error_msg)
             return False
 
-        if not surface or not surface.points or not surface.triangles:
-            error_msg = "Surface has no points or triangles for rendering"
-            self.logger.warning(f"Cannot display surface '{surface.name}': {error_msg}")
-            self.surface_visualization_failed.emit(surface.name if surface else "Unknown", error_msg)
-            return False # Cannot proceed without points/triangles
+        name = surface.name or "Unnamed"
 
-        try:
-            self.show_3d_view() # Ensure 3D view is visible
-            self.logger.info(f"Displaying/Updating surface: {surface.name}...")
-            self.update_surface_mesh(surface) # Call the new update method
-
-            # Adjust view every time a surface is displayed/updated
-            self._adjust_view_to_surface(surface)
-
-            # No separate logging here, update_surface_mesh handles it
-            return True # Indicate update was attempted
-
-        except Exception as e:
-            error_msg = f"Visualization error: {e!s}"
-            self.logger.exception(f"Error displaying surface '{surface.name}': {e}")
-            self.surface_visualization_failed.emit(surface.name, error_msg)
-            return False
-
-    def update_surface_mesh(self, surface: Surface):
-        """Adds or replaces the GLMeshItem for the given surface in the 3D view.
-        """
-        if not HAS_3D or not isinstance(self.view_3d, gl.GLViewWidget):
-            self.logger.warning("Cannot update surface mesh: 3D view not available.")
-            return
-
-        name = surface.name
-        if not name:
-             self.logger.error("Cannot update surface mesh: Surface name is missing.")
-             return
-
-        self.logger.info(f"Attempting to update/create mesh for surface: {name}")
-
-        # Remove existing mesh item if it exists
-        if name in self.surface_mesh_items:
-            old_mesh = self.surface_mesh_items[name]
-            if old_mesh in self.view_3d.items:
-                 self.view_3d.removeItem(old_mesh)
-                 self.logger.debug(f"Removed existing mesh item for '{name}'.")
-            else:
-                 # This can happen if the view was cleared externally
-                 self.logger.warning(f"Mesh item for '{name}' in dict but not found in view items for removal.")
-            # Always remove from dict if key exists
-            del self.surface_mesh_items[name]
-
-        # Create new mesh data and item
-        mesh_data = None
-        try:
-            mesh_data = self._create_mesh_data(surface)
-        except Exception as e_data:
-            self.logger.error(f"Error calling _create_mesh_data for surface '{name}': {e_data}", exc_info=True)
-            # Emit failure signal if appropriate?
-            self.surface_visualization_failed.emit(name, f"Failed to generate mesh data: {e_data}")
-            return # Exit if data creation fails
-
-        if mesh_data:
+        # Remove existing actor if present
+        if name in self._surface_actors:
             try:
-                new_mesh = gl.GLMeshItem(
-                    vertexes=mesh_data["vertices"],
-                    faces=mesh_data["faces"],
-                    faceColors=mesh_data["colors"],
-                    smooth=True,
-                    drawEdges=True,
-                    edgeColor=(0, 0, 0, 0.5),
-                )
-                # --- Explicitly set visible ---
-                new_mesh.setVisible(True)
-                # --- End Set Visible ---
-                self.view_3d.addItem(new_mesh)
-                self.surface_mesh_items[name] = new_mesh # Store new item
-                self.logger.debug(f"Added/Updated mesh item for '{name}'.")
-            except Exception as e_mesh:
-                 self.logger.exception(f"Error creating GLMeshItem for surface '{name}': {e_mesh}")
-                 # Ensure entry is removed if creation failed after removal
-                 if name in self.surface_mesh_items:
-                     del self.surface_mesh_items[name]
-                 self.surface_visualization_failed.emit(name, f"Failed to create 3D mesh: {e_mesh}")
-        else:
-            self.logger.error(f"Failed to create mesh data for surface '{name}' during update.")
-            # Ensure entry is removed if creation failed after removal
-            if name in self.surface_mesh_items:
-                 del self.surface_mesh_items[name]
-            self.surface_visualization_failed.emit(name, "Failed to generate mesh data")
+                plotter = get_plotter()
+                plotter.remove_actor(self._surface_actors[name])  # type: ignore[attr-defined]
+            except Exception:
+                pass
+            del self._surface_actors[name]
+
+        # Build PolyData
+        try:
+            poly = surface_to_polydata(surface)
+        except Exception as exc:
+            self.logger.error("surface_to_polydata failed for '%s': %s", name, exc)
+            self.surface_visualization_failed.emit(name, str(exc))
+            return False
+
+        # Add mesh to plotter
+        try:
+            actor = plotter.add_mesh(poly, name=name)
+            self._surface_actors[name] = actor
+        except Exception as exc:
+            self.logger.error("Failed to add mesh for '%s': %s", name, exc)
+            self.surface_visualization_failed.emit(name, str(exc))
+            return False
+
+        # Optionally reset camera when first actor added
+        if len(self._surface_actors) == 1:
+            try:
+                plotter.camera_position = "iso"
+                plotter.reset_camera()
+            except Exception:
+                pass
+        # Success logged implicitly by plotter
+        return True
 
     def _remove_surface_visualization(self, surface_name: str):
         """Remove a surface's mesh item."""
-        if surface_name not in self.surface_mesh_items:
-            self.logger.debug(f"Attempted to remove non-existent surface visualization: '{surface_name}'")
+        actor = self._surface_actors.pop(surface_name, None)
+        if actor is None:
+            self.logger.debug("No actor to remove for surface '%s'", surface_name)
             return
-
-        mesh_item = self.surface_mesh_items.pop(surface_name) # Remove from dict and get item
-        if HAS_3D and isinstance(self.view_3d, gl.GLViewWidget):
-            if mesh_item in self.view_3d.items:
-                 self.view_3d.removeItem(mesh_item)
-                 self.logger.debug(f"Removed mesh item for surface: {surface_name}")
-            else:
-                 # Can happen if view was cleared externally
-                 self.logger.warning(f"Mesh item for '{surface_name}' not found in view items during removal.")
-        else:
-             self.logger.warning("Cannot remove mesh item: 3D view not available or not initialized.")
+        try:
+            plotter = get_plotter()
+            plotter.remove_actor(actor)  # type: ignore[attr-defined]
+            self.logger.debug("Removed PyVista actor for '%s'", surface_name)
+        except Exception as exc:
+            self.logger.warning("Failed removing actor for '%s': %s", surface_name, exc)
 
     @Slot(Surface, bool)
     def set_surface_visibility(self, surface: Surface, visible: bool):
         """Set the visibility of a surface's mesh."""
-        if not surface or surface.name not in self.surface_mesh_items:
-            # Log only if surface exists but not in visualized items
-            if surface and surface.name:
-                 self.logger.warning(f"Cannot set visibility for surface '{surface.name}': Mesh item not found.")
+        actor = self._surface_actors.get(surface.name)
+        if actor is None:
+            self.logger.debug("set_surface_visibility – no actor for '%s'", surface.name)
             return
-
-        mesh_item = self.surface_mesh_items[surface.name]
-        if hasattr(mesh_item, "setVisible"):
-             mesh_item.setVisible(visible)
-             self.logger.debug(f"Surface '{surface.name}' mesh visibility set to {visible}")
-        else:
-             self.logger.error(f"Mesh item for '{surface.name}' does not have setVisible method.")
+        try:
+            actor.SetVisibility(visible)
+        except Exception:
+            try:
+                # fallback for PyVista-wrapped actor API
+                actor.visible = visible  # type: ignore[attr-defined]
+            except Exception as exc:
+                self.logger.error("Could not toggle visibility for '%s': %s", surface.name, exc)
 
     def clear_all(self):
         """Clears surfaces, PDF background, traced lines, and cut/fill map."""
@@ -540,28 +484,25 @@ class VisualizationPanel(QWidget):
         self.clear_polylines_from_scene()
         self.clear_cutfill_map() # Added call to clear cut/fill map
 
-        # Clear 3D surfaces
-        if HAS_3D and isinstance(self.view_3d, gl.GLViewWidget):
-            # Use list of keys to avoid RuntimeError: dictionary changed size during iteration
-            for surface_name in list(self.surface_mesh_items.keys()):
-                self._remove_surface_visualization(surface_name)
-        # Ensure the dictionary is empty after attempts
-        if self.surface_mesh_items:
-             self.logger.warning("surface_mesh_items not empty after clear_all loop. Force clearing.")
-             # Force remove remaining items from view just in case
-             if HAS_3D and isinstance(self.view_3d, gl.GLViewWidget):
-                  for item in self.surface_mesh_items.values():
-                       if item in self.view_3d.items:
-                            self.view_3d.removeItem(item)
-             self.surface_mesh_items.clear()
+        # Clear PyVista actors
+        try:
+            plotter = get_plotter()
+            plotter.clear_actors()
+        except Exception:
+            pass
+        self._surface_actors.clear()
+        # remove legacy mesh item dict if exists
+        # if hasattr(self, "surface_mesh_items"): # Removed
+        #     self.surface_mesh_items.clear() # Removed
 
         # Reset the view camera position if 3D view exists
-        if hasattr(self, "view_3d") and isinstance(self.view_3d, gl.GLViewWidget):
-            try:
-                 self.view_3d.setCameraPosition(distance=100, elevation=30, azimuth=45)
-                 self.view_3d.update()
-            except Exception as cam_e:
-                 self.logger.warning(f"Could not reset camera position: {cam_e}")
+        # Removed legacy pyqtgraph camera reset:
+        # if hasattr(self, "view_3d") and isinstance(self.view_3d, gl.GLViewWidget):
+        #     try:
+        #          self.view_3d.setCameraPosition(distance=100, elevation=30, azimuth=45)
+        #          self.view_3d.update()
+        #     except Exception as cam_e:
+        #          self.logger.warning(f"Could not reset camera position: {cam_e}")
 
         # Clear project reference
         self.current_project = None
@@ -570,9 +511,12 @@ class VisualizationPanel(QWidget):
         if hasattr(self, "view_2d"):
             self.view_2d.viewport().update()
 
+        # Reset auto-switch so a new project triggers it again
+        self._auto_switched_to_3d_tab = False
+
     def has_surfaces(self) -> bool:
         """Check if any surfaces are currently loaded and visualized."""
-        return bool(self.surface_mesh_items)
+        return bool(self._surface_actors)
 
     def set_tracing_mode(self, enabled: bool):
         """Enable or disable tracing mode for the 2D view (TracingScene).
@@ -825,98 +769,60 @@ class VisualizationPanel(QWidget):
 
     # --- NEW: View Switching Methods ---
     def show_2d_view(self):
-        """Shows the 2D view (PDF/Tracing) and hides the 3D view."""
-        self.logger.debug("Switching to 2D view.")
-        self.stacked_widget.setCurrentWidget(self.view_2d)
-        # No need to call raise_() with QStackedWidget
+        """Switch to the 2-D (PDF / tracing) view and release the PyVista interactor."""
+        self.logger.debug("Switching to 2-D view.")
+        # If the PyVista interactor is currently embedded in our 3-D tab, detach it so PvDock can re-use it.
+        try:
+            from digcalc_project.src.ui.pv_plotter_singleton import get_plotter
+            plotter = get_plotter()
+            if plotter and plotter.interactor.parent() is self.tab_3d_container:
+                self.tab_3d_layout.removeWidget(plotter.interactor)
+                plotter.interactor.setParent(None)
+        except Exception as exc:  # pragma: no cover – defensive stub
+            self.logger.debug("No plotter to detach when switching to 2-D: %s", exc)
 
-    def show_3d_view(self):
-        """Shows the 3D view (Terrain) and hides the 2D view."""
-        if not HAS_3D or not isinstance(self.view_3d, gl.GLViewWidget):
-            self.logger.warning("Attempted to switch to 3D view, but it is unavailable.")
-            # Explicitly set the placeholder if it's the current view_3d widget
-            if isinstance(self.view_3d, QLabel):
-                self.stacked_widget.setCurrentWidget(self.view_3d)
-            else:
-                # Fallback if something unexpected happened (e.g., HAS_3D changed)
-                # Defaulting to 2D might be safer here?
-                self.stacked_widget.setCurrentWidget(self.view_2d)
+        self.stacked_widget.setCurrentWidget(self.view_2d)
+
+    def show_pyvista_in_tab(self):
+        """Embed the singleton PyVista interactor into the dedicated 3-D tab and show it."""
+        self.logger.debug("Activating PyVista 3-D tab view.")
+        try:
+            from digcalc_project.src.ui.pv_plotter_singleton import get_plotter
+            plotter = get_plotter()
+        except Exception as exc:  # pragma: no cover
+            self.logger.error("Unable to obtain PyVista BackgroundPlotter: %s", exc)
+            QMessageBox.critical(self, "3-D Viewer Error", f"PyVista plotter not available:\n{exc}")
             return
-        self.logger.debug("Switching to 3D view.")
-        self.stacked_widget.setCurrentWidget(self.view_3d)
-        # No need to call raise_() with QStackedWidget
+
+        # Detach from previous parent (PvDock or other)
+        if plotter.interactor.parent() is not None:
+            old_parent = plotter.interactor.parent()
+            try:
+                old_parent.layout().removeWidget(plotter.interactor)  # type: ignore[attr-defined]
+            except Exception:
+                pass  # Non-critical
+            plotter.interactor.setParent(None)
+
+        # Re-parent into our tab and show
+        self.tab_3d_layout.addWidget(plotter.interactor)
+        plotter.interactor.show()
+        self.stacked_widget.setCurrentWidget(self.tab_3d_container)
+
+    # Keep legacy API working by forwarding show_3d_view → show_pyvista_in_tab
+    def show_3d_view(self):
+        """Backward-compat wrapper that now shows the PyVista tab."""
+        self.show_pyvista_in_tab()
 
     # --- Update Existing Methods ---
-    def _adjust_view_to_surface(self, surface: Surface):
-         if not HAS_3D or not isinstance(self.view_3d, gl.GLViewWidget) or not surface or not surface.points:
-             return
-         # ... rest of adjust logic using np ...
-         try:
-            points_list = list(surface.points.values())
-            if not points_list: return # No points to adjust to
+    # Removed deprecated method _adjust_view_to_surface
+    # def _adjust_view_to_surface(self, surface: Surface):  # noqa: D401 – deprecated
+    #     """No-op shim retained for backward compatibility (pyqtgraph era)."""
+    #     return  # Camera handled by PyVista
 
-            x_vals = [p.x for p in points_list]
-            y_vals = [p.y for p in points_list]
-            z_vals = [p.z for p in points_list]
-
-            center_x = (min(x_vals) + max(x_vals))/2
-            center_y = (min(y_vals) + max(y_vals))/2
-            center_z = (min(z_vals) + max(z_vals))/2
-
-            size = max(max(x_vals) - min(x_vals), max(y_vals) - min(y_vals), max(z_vals) - min(z_vals), 1)
-            distance = size * 2 # Adjust multiplier as needed
-
-            center_vec = pyqtgraph.Vector(center_x, center_y, center_z)
-
-            self.view_3d.setCameraPosition(
-                pos=center_vec,  # Use 'pos' argument for the target position
-                distance=distance,
-                elevation=30,
-                azimuth=45,
-            )
-
-            self.logger.debug(f"Adjusted 3D view pos={center_vec}, distance={distance}")
-         except Exception as e:
-            self.logger.error(f"Error adjusting 3D view: {e}", exc_info=True)
-
-    def _create_mesh_data(self, surface: Surface) -> Optional[Dict[str, Any]]:
-         if not HAS_3D or not surface.triangles or not surface.points:
-             return None
-         # ... rest of mesh creation using np ...
-         try:
-            points_list = list(surface.points.values())
-            points_id_map = {p.id: i for i, p in enumerate(points_list)}
-            vertices = np.array([[p.x, p.y, p.z] for p in points_list])
-            faces = []
-            # ... face creation loop ...
-            for tri_id, triangle in surface.triangles.items():
-                try:
-                    i1 = points_id_map[triangle.p1.id]
-                    i2 = points_id_map[triangle.p2.id]
-                    i3 = points_id_map[triangle.p3.id]
-                    faces.append([i1, i2, i3])
-                except (KeyError, AttributeError) as e:
-                    self.logger.warning(f"Invalid triangle ID {tri_id} in surface {surface.name}: {e}")
-                    continue
-
-            if not faces: return None
-            faces = np.array(faces)
-            # ... color calculation ...
-            z_min = np.min(vertices[:, 2])
-            z_max = np.max(vertices[:, 2])
-            z_range = max(z_max - z_min, 0.1)
-            colors = np.zeros((len(faces), 4))
-            # ... color loop ...
-            for i, face in enumerate(faces):
-                z_avg = np.mean(vertices[face, 2])
-                t = np.clip((z_avg - z_min) / z_range, 0, 1)
-                # Simple blue-red gradient
-                colors[i] = [t, 0, 1-t, 0.7] # R, G, B, Alpha
-
-            return {"vertices": vertices, "faces": faces, "colors": colors}
-         except Exception as e:
-             self.logger.exception(f"Error creating mesh data: {e}")
-             return None
+    # Removed deprecated method _create_mesh_data
+    # def _create_mesh_data(self, surface: Surface) -> Optional[Dict[str, Any]]:
+    #     """Deprecated stub – pyqtgraph mesh-building removed."""
+    #     return None
 
     # Add methods related to 2D scene interaction if needed
     def clear_polylines_from_scene(self):
@@ -1119,16 +1025,9 @@ class VisualizationPanel(QWidget):
             self._dz_image_item.setVisible(on)
             self.logger.debug(f"2D cut/fill item visibility set to: {self._dz_image_item.isVisible()}")
 
-        if HAS_3D and self._dz_mesh_item:
-            self._dz_mesh_item.setVisible(on)
-            # Log the action, not the state (as isVisible() is missing)
-            self.logger.debug(f"Called 3D cut/fill item setVisible({on})")
-
         # Force redraw/update of the views
         if self.view_2d:
             self.view_2d.viewport().update()
-        if HAS_3D and isinstance(self.view_3d, gl.GLViewWidget):
-             self.view_3d.update()
 
     def update_cutfill_map(self, dz: np.ndarray, gx: np.ndarray, gy: np.ndarray):
         """Update or create the cut/fill map visualization.
@@ -1189,64 +1088,7 @@ class VisualizationPanel(QWidget):
 
             self._dz_image_item.setVisible(self._cutfill_visible)
 
-            # --- 3D Colored Mesh (pyqtgraph.opengl.GLMeshItem) ---
-            if HAS_3D and isinstance(self.view_3d, gl.GLViewWidget):
-                # Create mesh vertices (X, Y, Z) on Z=0 plane
-                xx, yy = np.meshgrid(gx, gy)
-                zz = np.zeros_like(xx)
-
-                # Ensure shapes match for vertices and colors
-                if xx.shape[0] != dz.shape[0] or xx.shape[1] != dz.shape[1]:
-                     self.logger.warning(f"Shape mismatch: meshgrid ({xx.shape}), dz ({dz.shape}). Cannot create 3D mesh.")
-                else:
-                    verts = np.vstack([xx.ravel(), yy.ravel(), zz.ravel()]).T
-
-                    # Create faces (triangles) for the grid
-                    rows, cols = dz.shape
-                    faces = []
-                    for r in range(rows - 1):
-                        for c in range(cols - 1):
-                            p1 = r * cols + c
-                            p2 = p1 + 1
-                            p3 = (r + 1) * cols + c
-                            p4 = p3 + 1
-                            faces.append([p1, p2, p4])
-                            faces.append([p1, p4, p3])
-                    faces = np.array(faces, dtype=np.uint32)
-
-                    # Create vertex colors from dz_to_rgba
-                    vertex_colors_uint8 = dz_to_rgba(dz)
-                    if vertex_colors_uint8.shape[0] != rows or vertex_colors_uint8.shape[1] != cols:
-                         raise ValueError("Color array shape does not match dz grid shape after processing")
-                    vertex_colors_float = vertex_colors_uint8.reshape(-1, 4) / 255.0
-
-                    if verts.shape[0] != vertex_colors_float.shape[0]:
-                        raise ValueError(f"Vertex count ({verts.shape[0]}) does not match color count ({vertex_colors_float.shape[0]}) for 3D mesh")
-
-                    # Create or update the GLMeshItem
-                    if not self._dz_mesh_item:
-                        self._dz_mesh_item = gl.GLMeshItem(
-                            vertexes=verts,
-                            faces=faces,
-                            vertexColors=vertex_colors_float,
-                            smooth=False, # Flat shading for grid cells
-                            shader="shaded",
-                            glOptions="translucent", # Use translucent for potential blending
-                        )
-                        self.view_3d.addItem(self._dz_mesh_item)
-                        self.logger.debug("Created new 3D cut/fill mesh item.")
-                    else:
-                        self._dz_mesh_item.setMeshData(
-                            vertexes=verts,
-                            faces=faces,
-                            vertexColors=vertex_colors_float,
-                        )
-                        self.logger.debug("Updated existing 3D cut/fill mesh item.")
-
-                    self._dz_mesh_item.setVisible(self._cutfill_visible)
-            elif HAS_3D and not isinstance(self.view_3d, gl.GLViewWidget):
-                 self.logger.warning("Cannot create 3D cut/fill mesh: view_3d is not a GLViewWidget.")
-            # No warning if HAS_3D is False
+            # 3-D cut/fill visualisation removed in PyVista refactor – handled elsewhere if needed.
 
             self.logger.info("Cut/fill map updated successfully.")
 
@@ -1266,115 +1108,12 @@ class VisualizationPanel(QWidget):
                      self.logger.warning(f"Error removing 2D map item (might be deleted): {e}")
             self._dz_image_item = None
 
-        if HAS_3D and self._dz_mesh_item:
-            if isinstance(self.view_3d, gl.GLViewWidget) and self._dz_mesh_item in self.view_3d.items:
-                 try:
-                      self.view_3d.removeItem(self._dz_mesh_item)
-                 except Exception as e:
-                      self.logger.warning(f"Error removing 3D mesh item: {e}")
-            self._dz_mesh_item = None
         # Visibility state (_cutfill_visible) is managed by the action/MainWindow
 
     # --- End Cut/Fill Map Methods ---
 
-    # --- Update clear_all ---
-    def clear_all(self):
-        """Clears surfaces, PDF background, traced lines, and cut/fill map."""
-        self.logger.info("Clearing all visualization data.")
-        self.clear_pdf_background()
-        self.clear_polylines_from_scene()
-        self.clear_cutfill_map() # Added call to clear cut/fill map
-
-        # Clear 3D surfaces
-        if HAS_3D and isinstance(self.view_3d, gl.GLViewWidget):
-            # Use list of keys to avoid RuntimeError: dictionary changed size during iteration
-            for surface_name in list(self.surface_mesh_items.keys()):
-                self._remove_surface_visualization(surface_name)
-        # Ensure the dictionary is empty after attempts
-        if self.surface_mesh_items:
-             self.logger.warning("surface_mesh_items not empty after clear_all loop. Force clearing.")
-             # Force remove remaining items from view just in case
-             if HAS_3D and isinstance(self.view_3d, gl.GLViewWidget):
-                  for item in self.surface_mesh_items.values():
-                       if item in self.view_3d.items:
-                            self.view_3d.removeItem(item)
-             self.surface_mesh_items.clear()
-
-        # Reset the view camera position if 3D view exists
-        if hasattr(self, "view_3d") and isinstance(self.view_3d, gl.GLViewWidget):
-            try:
-                 self.view_3d.setCameraPosition(distance=100, elevation=30, azimuth=45)
-                 self.view_3d.update()
-            except Exception as cam_e:
-                 self.logger.warning(f"Could not reset camera position: {cam_e}")
-
-        # Clear project reference
-        self.current_project = None
-
-        # Reset camera/view
-        if hasattr(self, "view_2d"):
-            self.view_2d.viewport().update()
-
-    # --- Add is_surface_visible method ---
-    def is_surface_visible(self, surface_name: str) -> bool:
-        """Checks if the mesh item for a given surface name exists and is visible.
-
-        Args:
-            surface_name: The name of the surface to check.
-
-        Returns:
-            True if the surface mesh exists and is visible, False otherwise.
-
-        """
-        mesh_item = self.surface_mesh_items.get(surface_name)
-        if mesh_item:
-            # Check if the item has isVisible method, default to True if not (should exist)
-            is_visible = getattr(mesh_item, "isVisible", lambda: True)()
-            self.logger.debug(f"Checking visibility for surface '{surface_name}': {is_visible}")
-            return is_visible
-        self.logger.debug(f"Checking visibility for non-existent surface '{surface_name}': False")
-        return False # Surface mesh doesn't exist
-    # --- End Add ---
-
     # --- NEW: Helper to adjust view to a list of Point3D objects ---
-    def _adjust_view_to_points(self, points: List[Point3D]):
-        """Adjusts the 3D camera view to encompass a list of Point3D objects."""
-        if not HAS_3D or not isinstance(self.view_3d, gl.GLViewWidget) or not points:
-            return
-
-        try:
-            x_coords = [p.x for p in points]
-            y_coords = [p.y for p in points]
-            z_coords = [p.z for p in points]
-
-            if not x_coords: # Handle case where points might be empty after filtering
-                self.logger.warning("_adjust_view_to_points called with empty point list after filtering.")
-                return
-
-            min_x, max_x = min(x_coords), max(x_coords)
-            min_y, max_y = min(y_coords), max(y_coords)
-            min_z, max_z = min(z_coords), max(z_coords)
-
-            center_x = (min_x + max_x) / 2
-            center_y = (min_y + max_y) / 2
-            center_z = (min_z + max_z) / 2
-
-            # Calculate max dimension for distance scaling
-            size_x = max_x - min_x
-            size_y = max_y - min_y
-            size_z = max_z - min_z
-            max_dim = max(size_x, size_y, size_z, 1.0) # Ensure at least 1.0
-            distance = max_dim * 2.0 # Adjust multiplier as needed
-
-            center_vec = pyqtgraph.Vector(center_x, center_y, center_z)
-
-            self.view_3d.setCameraPosition(
-                pos=center_vec,      # Set the center point the camera looks at
-                distance=distance,   # Set the distance from the center point
-                elevation=30,        # Keep default elevation angle
-                azimuth=45,           # Keep default azimuth angle
-            )
-            self.logger.debug(f"Adjusted 3D view to combined bounds: Center={center_vec}, ApproxDistance={distance:.2f}")
-        except Exception as e:
-            self.logger.error(f"Error adjusting 3D view to points: {e}", exc_info=True)
-    # --- END NEW HELPER ---
+    # Removed deprecated method _adjust_view_to_points
+    # def _adjust_view_to_points(self, points: List[Point3D]):  # noqa: D401 – deprecated
+    #     """No-op (legacy). Camera bounding now handled by PyVista plotter."""
+    #     return

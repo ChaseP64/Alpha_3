@@ -49,7 +49,11 @@ class PvDock(QDockWidget):
     """
 
     def __init__(self, main_window):
-        super().__init__("3-D View", main_window)
+        # Qt requires QWidget parent; some tests pass MagicMock. Use None in that case.
+        if not isinstance(main_window, QWidget):
+            super().__init__("3-D View")
+        else:
+            super().__init__("3-D View", main_window)
         self.main = main_window
         self.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
 
@@ -338,7 +342,7 @@ class PvDock(QDockWidget):
         def _avg_z(surf):
             return _np.mean([v[2] for v in surf.vertices]) if getattr(surf, "vertices", None) else 0.0
 
-        ordered_surfs = sorted(project.surfaces.values(), key=_avg_z, reverse=True)
+        ordered_surfs = sorted(project.surfaces.items(), key=lambda kv: _avg_z(kv[1]), reverse=True)
 
         # Simple fallback colour palette if project doesn\'t provide colours
         fallback_palette = [
@@ -347,9 +351,7 @@ class PvDock(QDockWidget):
             "#B0C4DE",  # slate blue (clay)
             "#708090",  # grey (rock)
         ]
-        layer_color_map = {
-            surf.name: fallback_palette[idx % len(fallback_palette)] for idx, surf in enumerate(ordered_surfs)
-        }
+        layer_color_map = {name: fallback_palette[i % len(fallback_palette)] for i, (name, _s) in enumerate(ordered_surfs)}
 
         BASE_OPACITY = 1.0
         STEP = 0.3
@@ -357,25 +359,25 @@ class PvDock(QDockWidget):
         self.mesh_actors.clear()
         self._current_actor = None
 
-        for idx, surf in enumerate(ordered_surfs):
+        for idx, (surf_name, surf) in enumerate(ordered_surfs):
             opacity = max(0.1, BASE_OPACITY - idx * STEP)
 
             try:
                 mesh = surface_to_polydata(surf)
                 self._validate_polydata(mesh)
             except ValueError as err:
-                print(f"Skipping surface '{surf.name}': {err}")
+                print(f"Skipping surface '{surf_name}': {err}")
                 continue
 
             ma = MeshActor(
-                surface_name=surf.name,
+                surface_name=surf_name,
                 mesh=mesh,
                 color=None,  # Will convert below
                 opacity=opacity,
             )
             # QColor import lazily
             from PySide6.QtGui import QColor  # type: ignore
-            ma.color = QColor(layer_color_map.get(surf.name, fallback_palette[0]))
+            ma.color = QColor(layer_color_map.get(surf_name, fallback_palette[0]))
 
             self.add_actor(ma)
             # Set the first (top) actor as current_actor for toggle logic
@@ -389,8 +391,9 @@ class PvDock(QDockWidget):
             self.plotter.enable_parallel_projection()
 
         # Update combobox selection to reflect the loaded surface
-        if self.surf_cb.findText(ordered_surfs[0].name) != -1:
-            self.surf_cb.setCurrentText(ordered_surfs[0].name)
+        first_name = ordered_surfs[0][0] if ordered_surfs else None
+        if first_name and self.surf_cb.findText(first_name) != -1:
+            self.surf_cb.setCurrentText(first_name)
         elif self.surf_cb.count() > 0:
             self.surf_cb.setCurrentIndex(0) # Fallback to first item if name not found
 
@@ -437,6 +440,48 @@ class PvDock(QDockWidget):
         """
         self.hide()
         event.ignore() # Ignore the event to prevent widget deletion
+
+    def showEvent(self, event):
+        """Ensure the singleton PyVista interactor is embedded in this dock when shown."""
+        super().showEvent(event)
+        try:
+            from digcalc_project.src.ui.pv_plotter_singleton import get_plotter
+            plotter = get_plotter()
+        except Exception:
+            return
+
+        # If the interactor already belongs to us, nothing to do.
+        if plotter.interactor.parent() is self:
+            return
+
+        # Detach from previous parent (e.g., tab container) if necessary.
+        old_parent = plotter.interactor.parent()
+        if old_parent is not None:
+            try:
+                # Attempt to remove from the old parent layout gracefully.
+                old_layout = old_parent.layout()
+                if old_layout is not None:
+                    old_layout.removeWidget(plotter.interactor)
+            except Exception:
+                pass
+            plotter.interactor.setParent(None)
+
+        # Embed into this dock.
+        self.setWidget(plotter.interactor)
+        plotter.interactor.show()
+
+    def hideEvent(self, event):
+        """Detach the PyVista interactor so that it can be re-parented elsewhere."""
+        try:
+            from digcalc_project.src.ui.pv_plotter_singleton import get_plotter
+            plotter = get_plotter()
+            if plotter.interactor.parent() is self:
+                # Remove from layout but keep widget alive (parentless).
+                self.setWidget(QWidget())  # lightweight placeholder
+                plotter.interactor.setParent(None)
+        except Exception:
+            pass
+        super().hideEvent(event)
 
     # ------------------------------------------------------------------
     #   Mesh validation helper (Task 3)
@@ -487,11 +532,19 @@ class PvDock(QDockWidget):
 
         try:
             mesh_copy = mesh.copy(deep=True)
-            decimated = mesh_copy.decimate_pro(
-                target_reduction=DECIMATE_RATIO,
-                preserve_topology=True,
-                splitting=False,
-            )
+            try:
+                decimated = mesh_copy.decimate_pro(
+                    target_reduction=DECIMATE_RATIO,
+                    preserve_topology=True,
+                    splitting=False,
+                )
+            except TypeError:
+                # Older PyVista versions expect 'reduction' instead of 'target_reduction'
+                decimated = mesh_copy.decimate_pro(
+                    reduction=DECIMATE_RATIO,
+                    preserve_topology=True,
+                    splitting=False,
+                )
             # Provide feedback for manual smoke-tests
             print(
                 f"[PvDock] Decimated mesh from {mesh.n_faces} to {decimated.n_faces} faces",

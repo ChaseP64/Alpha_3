@@ -486,7 +486,8 @@ class MainWindow(QMainWindow):
 
         # View mode actions (2D/3D)
         self.view_2d_action = QAction("View &2D", self, checkable=True)
-        self.view_3d_action = QAction("View &3D", self, checkable=True)
+        # Renamed: This action now activates the PyVista tab-based 3-D view
+        self.view_3d_action = QAction("3D View (Tab)", self, checkable=True)
         self.view_action_group = QActionGroup(self)
         self.view_action_group.addAction(self.view_2d_action)
         self.view_action_group.addAction(self.view_3d_action)
@@ -1060,20 +1061,22 @@ class MainWindow(QMainWindow):
              total = self.visualization_panel.pdf_renderer.get_page_count() if self.visualization_panel.pdf_renderer else 0
              self.statusBar().showMessage(f"Showing PDF page {page_number}/{total}", 3000)
 
+    @Slot(bool)
     def on_toggle_tracing_mode(self, checked: bool):
-        """Slot connected to the toggle_tracing_action.
-        Enables/disables tracing mode in the VisualizationPanel.
-        """
-        if self.visualization_panel:
-            # Enable/disable tracing in the VisualizationPanel
-            self.visualization_panel.set_tracing_enabled(checked)
-            # Update the action text so the user sees the current state
-            if hasattr(self, "toggle_trace_mode_action") and self.toggle_trace_mode_action:
-                new_text = "Disable Tracing" if checked else "Enable Tracing"
-                self.toggle_trace_mode_action.setText(new_text)
-        else:
-            # This case should ideally not happen if UI is constructed correctly
-            QMessageBox.critical(self, "Error", "Visualization panel not available.")
+        """Slot for the toggle tracing mode action."""
+        if not self.visualization_panel:
+            logger.error("Toggle tracing called but visualization panel is not available.")
+            return
+
+        # Corrected method call
+        self.visualization_panel.set_tracing_mode(checked)
+
+        # Update the action's checked state if necessary (it might already be correct)
+        # self.toggle_trace_mode_action.setChecked(checked) # Usually handled by action group or signal
+
+        logger.info(f"Tracing mode {'enabled' if checked else 'disabled'} via MainWindow action.")
+        # Potentially update other UI elements if tracing mode affects them
+        # For example, enable/disable certain tools or options
 
     @Slot(QTreeWidgetItem, int)
     def _on_layer_visibility_changed(self, item: QTreeWidgetItem, column: int):
@@ -1425,13 +1428,17 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def on_view_3d(self):
-        """Switch to the 3D (Terrain) view."""
+        """Switch to the 3-D tab in VisualizationPanel (PyVista)."""
         if self.visualization_panel:
-            self.logger.debug("Switching to 3D view.")
-            self.visualization_panel.show_3d_view()
-            self._update_view_actions_state() # Update check states
+            self.logger.debug("Switching to 3-D tab view (PyVista).")
+            # Directly invoke the new method that embeds the singleton plotter in the tab
+            if hasattr(self.visualization_panel, "show_pyvista_in_tab"):
+                self.visualization_panel.show_pyvista_in_tab()
+            else:
+                self.logger.error("VisualizationPanel is missing show_pyvista_in_tab().")
+            self._update_view_actions_state()
         else:
-            self.logger.error("Cannot switch to 3D view: VisualizationPanel not found.")
+            self.logger.error("Cannot switch to 3-D view: VisualizationPanel not found.")
 
     def _update_view_actions_state(self):
         """Updates the enabled and checked state of the view toggle actions (2D/3D)
