@@ -1110,13 +1110,6 @@ class MainWindow(QMainWindow):
              logger.error("Finalized polyline item is missing layer data! Assigning to 'Default'.")
              layer_name = "Default"
 
-        point_tuples = [(p.x(), p.y()) for p in points_qpointf]
-
-        if len(point_tuples) < 2:
-             logger.warning(f"Ignoring finalized polyline with < 2 points for layer '{layer_name}'.")
-             if item.scene(): item.scene().removeItem(item)
-             return
-
         # Only prompt for a single elevation if the current tracing mode is *line*
         elev_mode = SettingsService().tracing_elev_mode()
         if elev_mode == "line":
@@ -1125,12 +1118,32 @@ class MainWindow(QMainWindow):
                 elevation = dlg.value()
             else:
                 elevation = None
+            # For line mode, points remain 2D in the main data, elevation is separate
+            point_tuples_for_storage = [(p.x(), p.y()) for p in points_qpointf]
         else:
-            # For point / interpolate modes we already set per-vertex Zs — no extra prompt.
-            elevation = None
-        logger.debug("Polyline elevation recorded as %s (mode=%s)", elevation, elev_mode)
+            # For point / interpolate modes, we already set per-vertex Zs in TracingScene.
+            # The 'item' (PolylineItem) should now have vertices with Z-coordinates.
+            elevation = None # Top-level elevation is None for these modes
+            try:
+                # 'item' is the QGraphicsPathItem which should be our PolylineItem
+                if hasattr(item, 'vertices') and callable(item.vertices):
+                    poly_item_vertices = item.vertices() # These are VertexItem instances
+                    point_tuples_for_storage = [(v.x(), v.y(), v.z()) for v in poly_item_vertices]
+                    if not point_tuples_for_storage: # Fallback if vertices() is empty or not as expected
+                         logger.warning(f"PolylineItem for layer '{layer_name}' returned no vertices. Storing 2D points.")
+                         point_tuples_for_storage = [(p.x(), p.y()) for p in points_qpointf]
+                else:
+                    logger.warning(f"PolylineItem for layer '{layer_name}' does not have 'vertices' method. Storing 2D points.")
+                    point_tuples_for_storage = [(p.x(), p.y()) for p in points_qpointf]
+            except Exception as e:
+                logger.error(f"Error retrieving 3D points from PolylineItem for layer '{layer_name}': {e}. Storing 2D points.", exc_info=True)
+                point_tuples_for_storage = [(p.x(), p.y()) for p in points_qpointf]
 
-        polyline_data: PolylineData = {"points": point_tuples, "elevation": elevation}
+        logger.debug("Polyline elevation recorded as %s (mode=%s)", elevation, elev_mode)
+        logger.debug(f"Points for storage (first 3): {point_tuples_for_storage[:3]}")
+
+
+        polyline_data: PolylineData = {"points": point_tuples_for_storage, "elevation": elevation}
 
         new_index: Optional[int] = project.add_traced_polyline(
             polyline=polyline_data,
@@ -1287,6 +1300,7 @@ class MainWindow(QMainWindow):
                 new_revision = project._bump_layer_revision(layer_name) # Call project helper
 
                 logger.info(f"Updated elevation for polyline (Layer: {layer_name}, Index: {index}) to {new_elevation}. New layer revision: {new_revision}")
+                self._update_build_surface_action_state() # Add this call
                 self.statusBar().showMessage(f"Elevation updated for {layer_name} polyline {index}.", 3000)
                 if self._selected_scene_item and \
                    self._selected_scene_item.data(0) == layer_name and \
@@ -1614,15 +1628,31 @@ class MainWindow(QMainWindow):
             try:
                 # Use project variable
                 polylines_to_build = project.traced_polylines.get(selected_layer, [])
-                # Filter again here to ensure only dicts with elevation go to builder
-                # Re-assign the real value here
-                valid_polys_for_build = [
-                    p for p in polylines_to_build
-                    if isinstance(p, dict) and p.get("elevation") is not None
-                ]
-                # Check the filtered list, not the original
+                
+                # Filter polylines: include if they have a top-level elevation 
+                # OR if their points are 3D.
+                temp_valid_polys = []
+                for p_data in polylines_to_build:
+                    if not isinstance(p_data, dict):
+                        continue
+                    
+                    # Condition 1: Top-level elevation exists
+                    if p_data.get("elevation") is not None:
+                        temp_valid_polys.append(p_data)
+                        continue # Polyline is valid, no need to check points
+                    
+                    # Condition 2: Points list contains 3D coordinates
+                    points = p_data.get("points")
+                    if isinstance(points, list) and points:
+                        first_point = points[0]
+                        if isinstance(first_point, (list, tuple)) and len(first_point) == 3:
+                            if isinstance(first_point[2], (int, float)): # Check if Z is a number
+                                temp_valid_polys.append(p_data)
+                
+                valid_polys_for_build = temp_valid_polys
+                
                 if not valid_polys_for_build:
-                    raise SurfaceBuilderError(f"Layer '{selected_layer}' has no polylines with elevation data suitable for building.")
+                    raise SurfaceBuilderError(f"Layer '{selected_layer}' has no polylines with suitable elevation data for building.")
 
                 # Use project variable
                 current_layer_rev = project.layer_revisions.get(selected_layer, 0)
@@ -1636,9 +1666,9 @@ class MainWindow(QMainWindow):
                 surface.name = surface_name
                 # Use project variable
                 project.add_surface(surface)
-                # --- ADD THIS LINE ---
-                self.visualization_panel.update_surface_mesh(surface) # Add the surface to the 3D view
-                # --- END ADD ---
+                # --- CHANGE THIS LINE ---
+                self.visualization_panel.display_surface(surface) # Use display_surface
+                # --- END CHANGE ---
                 # ... (rest of UI updates and error handling) ...
 
                 if hasattr(self, "project_panel"):
@@ -1654,9 +1684,11 @@ class MainWindow(QMainWindow):
                 if hasattr(self.project_controller, "surfaces_rebuilt"):
                     self.project_controller.surfaces_rebuilt.emit()
 
-                # Update visualization - Use update_surface_mesh (defined in Part 4)
-                if hasattr(self.visualization_panel, "update_surface_mesh"):
-                    self.visualization_panel.update_surface_mesh(surface)
+                # Update visualization - Use display_surface (defined in Part 4)
+                # --- CHANGE THIS LINE --- 
+                if hasattr(self.visualization_panel, "display_surface"):
+                    self.visualization_panel.display_surface(surface)
+                # --- END CHANGE ---
 
             except SurfaceBuilderError as e:
                  logger.error(f"Surface build failed: {e}", exc_info=True)
@@ -1771,11 +1803,11 @@ class MainWindow(QMainWindow):
             project.surfaces[surface_name] = new_surf
             project.is_modified = True
 
-            # Update visualization - Use update_surface_mesh (defined in Part 4)
-            if hasattr(self.visualization_panel, "update_surface_mesh"):
-                self.visualization_panel.update_surface_mesh(new_surf)
+            # Update visualization - Use display_surface (defined in Part 4)
+            if hasattr(self.visualization_panel, "display_surface"):
+                self.visualization_panel.display_surface(new_surf)
             else:
-                 logger.error("VisualizationPanel does not have 'update_surface_mesh' method.")
+                 logger.error("VisualizationPanel does not have 'display_surface' method.")
 
             # Update project panel
             if hasattr(self.project_panel, "_update_tree_item_text"): # Check if method exists
@@ -2439,13 +2471,25 @@ class MainWindow(QMainWindow):
 
         if project and getattr(project, "traced_polylines", None):
             # Iterate over layers and look for at least one polyline with elevation
-            for polys in project.traced_polylines.values():
-                if not isinstance(polys, list):
-                    continue  # skip invalid format
-                for pdata in polys:
-                    if isinstance(pdata, dict) and pdata.get("elevation") is not None:
-                        enabled = True
-                        break
+            for polys_in_layer in project.traced_polylines.values(): # Renamed for clarity
+                if not isinstance(polys_in_layer, list):
+                    continue  # skip invalid format for this layer
+                for pdata in polys_in_layer:
+                    if isinstance(pdata, dict):
+                        # Condition 1: Top-level elevation exists
+                        if pdata.get("elevation") is not None:
+                            enabled = True
+                            break
+                        # Condition 2: Points list contains 3D coordinates
+                        points = pdata.get("points")
+                        if isinstance(points, list) and points:
+                            # Check the first point to infer if it's 3D
+                            first_point = points[0]
+                            if isinstance(first_point, (list, tuple)) and len(first_point) == 3:
+                                # Further check if the third element (Z) is a number
+                                if isinstance(first_point[2], (int, float)):
+                                    enabled = True
+                                    break
                 if enabled:
                     break
 

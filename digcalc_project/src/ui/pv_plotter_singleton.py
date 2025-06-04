@@ -26,6 +26,7 @@ Returns:
 # ---------------------------------------------------------------------------
 import os
 from typing import Optional, TYPE_CHECKING
+import logging
 
 if TYPE_CHECKING:  # pragma: no cover – only needed for type checkers
     from pyvistaqt import BackgroundPlotter
@@ -38,7 +39,7 @@ _plotter: Optional["BackgroundPlotter"] = None
 # ---------------------------------------------------------------------------
 
 from types import SimpleNamespace  # moved to module scope so both branches share it
-from PySide6.QtWidgets import QWidget  # lightweight import
+from PySide6.QtWidgets import QWidget, QApplication  # lightweight import
 
 
 class _HeadlessPlotter:  # pylint: disable=too-few-public-methods
@@ -187,6 +188,7 @@ def _create_plotter() -> "BackgroundPlotter":  # pragma: no cover – runtime si
     and unit-tests.  This keeps 3-D dependent code paths testable without the
     heavy VTK stack.
     """
+    logger = logging.getLogger(__name__)
 
     # ------------------------------------------------------------------
     # Prefer stub when running in CI / test mode -----------------------
@@ -194,23 +196,47 @@ def _create_plotter() -> "BackgroundPlotter":  # pragma: no cover – runtime si
     if os.getenv("PYVISTA_OFF_SCREEN", "false").lower() == "true" or os.getenv(
         "PYTEST_CURRENT_TEST"
     ):
+        logger.info("CI/Test environment detected. Using HeadlessPlotter.")
         return _HeadlessPlotter()  # type: ignore[return-value]
 
     # ------------------------------------------------------------------
     # Attempt real BackgroundPlotter. On *any* failure, fall back to stub.
     # ------------------------------------------------------------------
+    plotter: Optional["BackgroundPlotter"] = None
+
     try:
         from pyvistaqt import BackgroundPlotter  # local import – heavyweight
+        from PySide6.QtWidgets import QApplication # ADD THIS IMPORT
 
-        plotter = BackgroundPlotter(show=False)
+        logger.debug("Attempting to create real pyvistaqt.BackgroundPlotter...")
+        
+        # --- EXPLICITLY GET APP INSTANCE ---
+        app_instance = QApplication.instance()
+        if app_instance is None:
+            logger.warning(
+                "QApplication.instance() is None during _create_plotter. "
+                "This is unexpected when the main application is running."
+            )
+            # Fallback or raise, but BackgroundPlotter(app=None) might still work
+            # if an app is later created or if it can operate headlessly before attaching.
+        # --- END EXPLICIT GET ---
+
+        plotter = BackgroundPlotter(show=False, app=app_instance) # MODIFY THIS LINE
+        logger.debug("Real BackgroundPlotter created. Configuring...")
+
         if hasattr(plotter, "enable_anti_aliasing"):
             plotter.enable_anti_aliasing()
         if hasattr(plotter, "enable_trackball_style"):
             plotter.enable_trackball_style()
+        logger.info("Real BackgroundPlotter configured and returning.")
         return plotter  # pragma: no cover – real backend path
 
-    except Exception:
-        # Any failure (including VTK OpenGL init) → stub.
+    except Exception as e:
+        logger.error(
+            f"Failed to initialize real PyVista BackgroundPlotter: {e}",
+            exc_info=True
+        )
+        logger.warning("Falling back to HeadlessPlotter due to PyVista initialization error.")
         return _HeadlessPlotter()  # type: ignore[return-value]
 
 

@@ -7,7 +7,7 @@ import numpy as np
 import pyvista as pv
 
 if TYPE_CHECKING: # pragma: no cover
-    from digcalc_project.src.models.surface import Surface # Assumed path
+    from digcalc_project.src.models.surface import Surface, Point3D # Assumed path
 
 logger = logging.getLogger(__name__)
 
@@ -23,47 +23,56 @@ def surface_to_polydata(surf: "Surface") -> pv.PolyData:
         A ``pyvista.PolyData`` representation of the surface.
 
     Raises:
-        ValueError: If the surface has no vertices or if vertex/triangle
+        ValueError: If the surface has no points or if point/triangle
                     data is inconsistent.
     """
-    if surf.vertices is None or len(surf.vertices) == 0:
-        logger.error(f"Surface '{surf.name}' has no vertices.")
-        raise ValueError(f"Surface '{surf.name}' has no vertices")
+    if not surf.points:
+        logger.error(f"Surface '{surf.name}' has no points.")
+        raise ValueError(f"Surface '{surf.name}' has no points")
 
-    points = np.asarray(surf.vertices, dtype=float)
-    if points.ndim != 2 or points.shape[1] != 3:
+    # Extract vertices and create a mapping from point ID to index
+    point_list: list[Point3D] = list(surf.points.values())
+    vertex_coordinates = np.array([[p.x, p.y, p.z] for p in point_list], dtype=float)
+    
+    if vertex_coordinates.ndim != 2 or vertex_coordinates.shape[1] != 3:
         logger.error(
-            f"Surface '{surf.name}' vertices have incorrect shape: {points.shape}. Expected (N, 3)."
+            f"Surface '{surf.name}' vertex coordinates have incorrect shape: {vertex_coordinates.shape}. Expected (N, 3)."
         )
         raise ValueError(
-            f"Surface '{surf.name}' vertices must be a list of (x,y,z) tuples or Nx3 array"
+            f"Surface '{surf.name}' vertex coordinates must be a list of (x,y,z) tuples or Nx3 array"
         )
+    
+    # Ensure points are C-contiguous for PyVista compatibility
+    vertex_coordinates = np.ascontiguousarray(vertex_coordinates)
 
-    # Ensure points are C-contiguous for PyVista compatibility, especially if coming from odd sources
-    points = np.ascontiguousarray(points)
+    point_id_to_index_map = {p.id: i for i, p in enumerate(point_list)}
 
     if surf.triangles:
-        try:
-            # Each triangle is (idx1, idx2, idx3). Prepend with 3 for PyVista format.
-            # Ensure triangles are valid indices into points array
-            max_idx = np.max(surf.triangles)
-            if max_idx >= len(points):
+        face_list = []
+        for tri_id, triangle in surf.triangles.items():
+            try:
+                idx1 = point_id_to_index_map[triangle.p1.id]
+                idx2 = point_id_to_index_map[triangle.p2.id]
+                idx3 = point_id_to_index_map[triangle.p3.id]
+                face_list.extend([3, idx1, idx2, idx3])
+            except KeyError as e:
                 logger.error(
-                    f"Surface '{surf.name}' has triangle vertex index {max_idx} out of bounds "
-                    f"for {len(points)} vertices."
+                    f"Triangle '{tri_id}' in surface '{surf.name}' references a point ID ('{e.args[0]}') that is not in the surface's points dictionary."
                 )
-                raise ValueError("Triangle index out of bounds for surface vertices.")
-            
-            # PyVista expects a 1D array: [3, p0_idx, p1_idx, p2_idx, 3, p3_idx, p4_idx, p5_idx, ...]
-            faces = np.hstack([[3, *tri] for tri in surf.triangles]).astype(np.int_)
-            mesh = pv.PolyData(points, faces=faces)
-        except Exception as e:
-            logger.exception(
-                f"Error processing triangles for surface '{surf.name}'. Triangles: {surf.triangles[:5]}..."
-            ) # Log first few triangles
-            raise ValueError(f"Could not construct mesh from triangles: {e}")
+                raise ValueError(f"Inconsistent triangle data: Point ID {e} not found in surface points.")
+            except AttributeError as e: # Should not happen if types are correct
+                 logger.error(f"Error accessing point IDs for triangle '{tri_id}': {e}", exc_info=True)
+                 raise ValueError(f"Malformed Triangle object or Point3D reference: {e}")
+
+
+        if not face_list:
+            logger.warning(f"Surface '{surf.name}' has triangles defined, but no valid faces could be constructed. Creating point cloud.")
+            mesh = pv.PolyData(vertex_coordinates)
+        else:
+            faces_array = np.array(face_list, dtype=np.int_)
+            mesh = pv.PolyData(vertex_coordinates, faces=faces_array)
     else:
         logger.info(f"Surface '{surf.name}' has no triangles, creating point cloud.")
-        mesh = pv.PolyData(points)
+        mesh = pv.PolyData(vertex_coordinates)
 
     return mesh 

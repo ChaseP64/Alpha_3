@@ -403,11 +403,11 @@ class VisualizationPanel(QWidget):
         # Rely exclusively on PyVista – no legacy 3-D widget requirements
 
         try:
-            get_plotter()  # Ensure plotter can be constructed
-        except Exception as e_plot:
-            error_msg = f"PyVista BackgroundPlotter unavailable: {e_plot}"
-            self.logger.warning(error_msg)
-            self.surface_visualization_failed.emit(surface.name, error_msg)
+            plotter = get_plotter()
+        except Exception as gpe:
+            err_msg = f"Unable to obtain PyVista plotter: {gpe}"
+            self.logger.error(err_msg)
+            self.surface_visualization_failed.emit(surface.name, err_msg)
             return False
 
         name = surface.name or "Unnamed"
@@ -415,7 +415,6 @@ class VisualizationPanel(QWidget):
         # Remove existing actor if present
         if name in self._surface_actors:
             try:
-                plotter = get_plotter()
                 plotter.remove_actor(self._surface_actors[name])  # type: ignore[attr-defined]
             except Exception:
                 pass
