@@ -403,11 +403,12 @@ class VisualizationPanel(QWidget):
         # Rely exclusively on PyVista – no legacy 3-D widget requirements
 
         try:
+            # Obtain the singleton plotter instance once and reuse it throughout the method
             plotter = get_plotter()
-        except Exception as gpe:
-            err_msg = f"Unable to obtain PyVista plotter: {gpe}"
-            self.logger.error(err_msg)
-            self.surface_visualization_failed.emit(surface.name, err_msg)
+        except Exception as e_plot:
+            error_msg = f"PyVista BackgroundPlotter unavailable: {e_plot}"
+            self.logger.warning(error_msg)
+            self.surface_visualization_failed.emit(surface.name, error_msg)
             return False
 
         name = surface.name or "Unnamed"
@@ -849,10 +850,15 @@ class VisualizationPanel(QWidget):
         self.logger.debug("Clearing PDF background and related items.")
         # --- FIX: Close the renderer, which handles the doc ---
         if self.pdf_renderer:
-            try:
-                self.pdf_renderer.close()
-            except Exception as e:
-                self.logger.error(f"Error closing PDF renderer: {e}", exc_info=True)
+            # Some unit-tests stub pdf_renderer with a simple object lacking .close()
+            if hasattr(self.pdf_renderer, "close"):
+                try:
+                    self.pdf_renderer.close()
+                except Exception as e:
+                    self.logger.error(f"Error closing PDF renderer: {e}", exc_info=True)
+            else:
+                # Gracefully skip when the stub has no close method
+                self.logger.debug("pdf_renderer stub has no 'close' attribute; skipping cleanup.")
         self.pdf_renderer = None
         # --- REMOVE: Doc managed by renderer ---
         # self._pymupdf_doc = None

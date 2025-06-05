@@ -15,7 +15,7 @@ import os
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, TypedDict, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, Tuple, TypedDict, TYPE_CHECKING, Union
 
 from .calculation import VolumeCalculation
 from .project_scale import ProjectScale  # NEW Pydantic model
@@ -39,7 +39,7 @@ def _migrate_v1_to_v2(data: dict) -> dict:
 
 # Type alias for clarity on the new polyline data structure
 class PolylineData(TypedDict):
-    points: List[Tuple[float, float]]
+    points: List[Union[Tuple[float, float], Tuple[float, float, float]]]
     elevation: Optional[float]
 
 # Type alias for the main storage structure
@@ -195,7 +195,7 @@ class Project:
 
         Args:
             polyline (PolylineData): The polyline data dictionary containing
-                                     'points' (List[Tuple[float, float]]) and
+                                     'points' (List[Union[Tuple[float, float], Tuple[float, float, float]]]) and
                                      'elevation' (Optional[float]).
             layer_name (str, optional): The name of the layer to add the polyline to.
                                         Defaults to "Existing Surface".
@@ -219,35 +219,60 @@ class Project:
             )
             return None  # Failure
 
-        # ------------------------------------------------------------------
-        # Auto-detect uniform elevation when not explicitly provided.
-        # We consider a point tuple as (x, y) or (x, y, z).  A value of None or
-        # missing Z is ignored.  If every vertex has the *same* Z value we set
-        # polyline["elevation"] so downstream logic (legacy checks) still work.
-        # ------------------------------------------------------------------
-        elevation_val = polyline.get("elevation")
-        if elevation_val is None:
-            z_vals = {pt[2] for pt in points_list if isinstance(pt, (list, tuple)) and len(pt) >= 3 and pt[2] is not None}
-            if len(z_vals) == 1:
-                elevation_val = z_vals.pop()
+        elevation_val = polyline.get("elevation") # Will be None if MainWindow sent 3D points
+        # This logic correctly infers a uniform elevation if all Zs in 3D points are the same
+        # and leaves elevation_val as None if Zs are different or points are 2D.
+        if elevation_val is None and points_list:
+            first_point_for_z_check = points_list[0]
+            if isinstance(first_point_for_z_check, (list, tuple)) and len(first_point_for_z_check) == 3:
+                z_values_in_points = {pt[2] for pt in points_list if isinstance(pt, (list, tuple)) and len(pt) == 3 and pt[2] is not None}
+                if len(z_values_in_points) == 1:
+                    elevation_val = z_values_in_points.pop()
 
-        polyline_obj: PolylineData = {
-            "points": points_list,
-            "elevation": elevation_val,
+        polyline_obj_to_store: PolylineData = {
+            "points": points_list, # This list now contains 3D tuples from MainWindow
+            "elevation": elevation_val, # Uniform elevation, or None if Z is per-vertex or N/A
         }
 
         if layer_name not in self.traced_polylines:
             self.traced_polylines[layer_name] = []
 
-        self.traced_polylines[layer_name].append(polyline_obj)
+        self.traced_polylines[layer_name].append(polyline_obj_to_store)
         self.modified_at = datetime.datetime.now()
         new_index = len(self.traced_polylines[layer_name]) - 1
 
-        # --- Bump Revision ---
         new_revision = self._bump_layer_revision(layer_name)
-        # --- End Bump ---
 
-        logger.info(f"Added polyline to layer '{layer_name}' (Index: {new_index}, Points: {len(polyline_obj['points'])}, Elevation: {polyline_obj['elevation']}, New Rev: {new_revision}).")
+        # Improved logging for Z data
+        z_desc = "Unknown Z"
+        stored_points = polyline_obj_to_store.get("points", [])
+        stored_uniform_elev = polyline_obj_to_store.get("elevation")
+
+        if stored_points:
+            first_pt = stored_points[0]
+            if isinstance(first_pt, (list, tuple)) and len(first_pt) == 3:
+                if stored_uniform_elev is not None:
+                    z_desc = f"Uniform Z: {stored_uniform_elev} (all points at this Z)"
+                else:
+                    # Check if all Zs are actually 0.0 or a mix
+                    all_zs = {pt[2] for pt in stored_points if isinstance(pt, (list, tuple)) and len(pt) == 3 and pt[2] is not None}
+                    if not all_zs: # No Z values or all are None
+                         z_desc = "2D points, Z assumed 0.0"
+                    elif len(all_zs) == 1:
+                         # This case should have been caught by elevation_val logic above, but for safety:
+                         z_desc = f"Uniform Z: {all_zs.pop()} (all points at this Z)"
+                    else:
+                         z_desc = "Per-vertex Z"
+            elif stored_uniform_elev is not None: # 2D points with uniform elevation
+                z_desc = f"Uniform Z: {stored_uniform_elev}"
+            else: # 2D points, no uniform elevation
+                z_desc = "2D points, Z assumed 0.0"
+        elif stored_uniform_elev is not None: # No points but has elevation? Unlikely. 
+             z_desc = f"Uniform Z: {stored_uniform_elev} (no points?)"
+
+        logger.info(
+            f"Added polyline to layer '{layer_name}' (Index: {new_index}, Points: {len(stored_points)}, Elev: {z_desc}, New Rev: {new_revision})."
+        )
 
         # Ensure the layer object itself exists in self.layers
         # Check if a layer with this name already exists

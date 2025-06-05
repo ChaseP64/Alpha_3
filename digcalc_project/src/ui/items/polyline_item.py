@@ -10,7 +10,7 @@ in real-time.  The item supports two *mode*s (for future use):
 
 from __future__ import annotations
 
-from typing import List
+from typing import List, Tuple
 
 from PySide6.QtCore import QObject, QPointF, Signal, Qt
 from PySide6.QtGui import QPainterPath, QPen, QColor
@@ -93,6 +93,15 @@ class PolylineItem(QObject, QGraphicsPathItem):
         coordinates.
         """
         return self._vertex_items
+
+    def get_vertices_scene_3d(self) -> List[Tuple[float, float, float]]:
+        """Returns a list of (x, y, z) tuples for each vertex in SCENE coordinates."""
+        scene_3d_points = []
+        for vertex_item in self._vertex_items:
+            scene_pos: QPointF = vertex_item.scenePos()
+            z_val: float = vertex_item.z()
+            scene_3d_points.append((scene_pos.x(), scene_pos.y(), z_val))
+        return scene_3d_points
 
     # ------------------------------------------------------------------
     # Evaluation helpers

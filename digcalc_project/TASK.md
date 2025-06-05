@@ -50,6 +50,8 @@
 - [ ] Fix issues with LandXML parser tests
 - [x] 2025-05-10 Disable tracing at startup to prevent accidental tracing before user enables mode
 - [x] 2025-05-16 Fix pytest failures related to ScaleCalibrationDialog, ProjectScale, and VisualizationPanel mocks (TypeError, ValidationError, C++ object deletion)
+- [x] 2025-06-05 Fix UnboundLocalError in VisualizationPanel.display_surface (plotter variable)
+- [x] 2025-06-05 Update surface_to_polydata to support legacy vertex/triangle lists and pass all unit tests
 
 ## Next Steps
 1. **Fix Remaining Test Issues**:

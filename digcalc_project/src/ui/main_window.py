@@ -1091,90 +1091,70 @@ class MainWindow(QMainWindow):
                 self.logger.warning("Cannot toggle layer visibility: Visualization panel, scene_2d, or setLayerVisible method not found.")
 
     @Slot(list, QGraphicsPathItem)
-    def _on_polyline_drawn(self, points_qpointf: list, item: QGraphicsPathItem):
+    def _on_polyline_drawn(self, world_points_3d: list, item: QGraphicsPathItem):
         """Handles the polyline_finalized signal from TracingScene.
-        Prompts for elevation and adds the polyline data to the project.
+
+        The received 'world_points_3d' are List[Tuple[float, float, float]]
+        with Z-values already determined by the TracingScene's elevation workflow.
+        Adds the polyline data (now always 3D) to the project.
         Stores the final index back into the QGraphicsPathItem.
         """
-        # Get project from controller first
         project = self.project_controller.get_current_project()
         if not project:
             logger.warning("Polyline drawn but no active project.")
             if item.scene(): item.scene().removeItem(item)
             return
 
-        # --- FIX: Use correct key to get layer name ---
         layer_name = item.data(Qt.UserRole + 1) # Key used in _finalize_current_polyline
-        # --- END FIX ---
         if layer_name is None:
              logger.error("Finalized polyline item is missing layer data! Assigning to 'Default'.")
              layer_name = "Default"
 
-        # Only prompt for a single elevation if the current tracing mode is *line*
-        elev_mode = SettingsService().tracing_elev_mode()
-        if elev_mode == "line":
-            dlg = ElevationDialog(self)
-            if dlg.exec() == QtWidgets.QDialog.Accepted:
-                elevation = dlg.value()
-            else:
-                elevation = None
-            # For line mode, points remain 2D in the main data, elevation is separate
-            point_tuples_for_storage = [(p.x(), p.y()) for p in points_qpointf]
-        else:
-            # For point / interpolate modes, we already set per-vertex Zs in TracingScene.
-            # The 'item' (PolylineItem) should now have vertices with Z-coordinates.
-            elevation = None # Top-level elevation is None for these modes
-            try:
-                # 'item' is the QGraphicsPathItem which should be our PolylineItem
-                if hasattr(item, 'vertices') and callable(item.vertices):
-                    poly_item_vertices = item.vertices() # These are VertexItem instances
-                    point_tuples_for_storage = [(v.x(), v.y(), v.z()) for v in poly_item_vertices]
-                    if not point_tuples_for_storage: # Fallback if vertices() is empty or not as expected
-                         logger.warning(f"PolylineItem for layer '{layer_name}' returned no vertices. Storing 2D points.")
-                         point_tuples_for_storage = [(p.x(), p.y()) for p in points_qpointf]
-                else:
-                    logger.warning(f"PolylineItem for layer '{layer_name}' does not have 'vertices' method. Storing 2D points.")
-                    point_tuples_for_storage = [(p.x(), p.y()) for p in points_qpointf]
-            except Exception as e:
-                logger.error(f"Error retrieving 3D points from PolylineItem for layer '{layer_name}': {e}. Storing 2D points.", exc_info=True)
-                point_tuples_for_storage = [(p.x(), p.y()) for p in points_qpointf]
+        # The world_points_3d argument is now always List[Tuple[float, float, float]]
+        # The old logic distinguishing elevation_mode to format points is removed.
+        point_tuples_for_storage = world_points_3d
 
-        logger.debug("Polyline elevation recorded as %s (mode=%s)", elevation, elev_mode)
+        # The 'elevation' field in PolylineData is for a single, uniform elevation.
+        # Since Z is now per-vertex in point_tuples_for_storage, this can be None.
+        # Project.add_traced_polyline will need to handle points with Z-values.
+        active_elevation_value_for_log = None # For logging, as the old 'elevation' var is gone.
+
+        logger.debug(
+            f"Polyline received with {len(point_tuples_for_storage)} 3D points for layer '{layer_name}'."
+        )
         logger.debug(f"Points for storage (first 3): {point_tuples_for_storage[:3]}")
 
-
-        polyline_data: PolylineData = {"points": point_tuples_for_storage, "elevation": elevation}
+        polyline_data_for_project: PolylineData = {
+            "points": point_tuples_for_storage, # This is List[Tuple[float,float,float]]
+            "elevation": None  # Uniform elevation is None; Z is in points
+        }
 
         new_index: Optional[int] = project.add_traced_polyline(
-            polyline=polyline_data,
+            polyline=polyline_data_for_project,
             layer_name=layer_name,
         )
 
         if new_index is not None:
             try:
-                item.setData(1, new_index)
-                self.logger.info(f"Added traced polyline (Index: {new_index}, Elevation: {elevation}) to layer '{layer_name}'.")
+                item.setData(1, new_index) # Store project index on the scene item
+                self.logger.info(
+                    f"Added traced polyline (Index: {new_index}, with per-vertex elevation) to layer '{layer_name}'."
+                )
                 self.project_panel._update_tree()
                 self._update_layer_tree()
-                self.statusBar().showMessage(f"Polyline added to layer '{layer_name}' (Elev: {elevation})", 3000)
+                self.statusBar().showMessage(f"Polyline with per-vertex Z added to layer '{layer_name}'.", 3000)
                 
-                # --- Explicitly refresh the visual item for the layer ---
                 if self.visualization_panel:
-                    # Pass the specific item to be refreshed
-                    self.logger.debug(f"[MainWindow._on_polyline_drawn] Calling refresh_layer_item for layer '{layer_name}'. Project ID for scene: {id(project)}")
+                    self.logger.debug(f"[MainWindow._on_polyline_drawn] Calling refresh_layer_item for layer '{layer_name}'.")
                     self.visualization_panel.scene_2d.refresh_layer_item(layer_name, target_item=item)
-                # --- End explicit refresh ---
 
-                # --- Trigger Rebuild ---
                 self._queue_surface_rebuilds_for_layer(layer_name)
-                # --- End Trigger ---
             except Exception as e:
                  logger.error(f"Error updating UI/logging after adding polyline (Index: {new_index}, Layer: '{layer_name}'): {e}", exc_info=True)
         else:
              self.logger.error(f"Failed to add traced polyline to layer '{layer_name}' in project (add_traced_polyline returned None).")
-             if item.scene(): item.scene().removeItem(item) # Clean up scene item
+             if item.scene(): item.scene().removeItem(item)
              QMessageBox.warning(self, "Error", f"Could not add polyline to project layer '{layer_name}'.")
-        # --- END FIX ---
 
     @Slot(QGraphicsItem)
     def _on_item_selected(self, item: Optional[QGraphicsItem]):

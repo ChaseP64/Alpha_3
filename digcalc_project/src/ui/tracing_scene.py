@@ -747,59 +747,67 @@ class TracingScene(QGraphicsScene):
         # Track as the currently selected polyline
         self._selected_polyline = poly_item
 
-        self.logger.info(
-            f"Finalized polyline with {len(self._current_polyline_points)} points on layer '{layer_name}'.",
-        )
-
-        # Emit finalized signal with *world* coordinates
-        self.polyline_finalized.emit(world_points, poly_item)
-
-        # ------------------------------------------------------------------
-        # Point-prompt mode – *use* the Z values the user provided **during**
-        # the click sequence instead of asking again.  This eliminates the
-        # duplicate round of dialogs that previously appeared after the line
-        # was finished.
-        # ------------------------------------------------------------------
+        # --- Apply Z-values to poly_item BEFORE emitting the signal ---
+        # Point-prompt mode: apply Z-values collected during point clicks
         if self._elev_mode == "point" and self._current_z_values:
             verts = poly_item.vertices()
             if len(verts) != len(self._current_z_values):
-                # Length mismatch should never happen, but guard defensively.
                 self.logger.warning(
                     "Vertex/Z-list length mismatch in point-prompt mode (%d vs %d). "
                     "Falling back to previous prompt behaviour.",
                     len(verts),
                     len(self._current_z_values),
                 )
+                # Fallback: trigger the standard elevation workflow if point mode pre-collection failed
+                try:
+                    self._apply_elevation_workflow(poly_item)
+                except Exception as exc:
+                    self.logger.error(f"Fallback elevation workflow failed: {exc}", exc_info=True)
             else:
                 main_win = self.parent_view.window() if self.parent_view else None
                 undo_stack = getattr(main_win, "undoStack", None) if main_win else None
-
                 for v, z_val in zip(verts, self._current_z_values):
-                    if z_val is None:
-                        continue  # Skip unset vertices (user cancelled)
+                    if z_val is None: # User might have cancelled for a specific point
+                        continue
                     if undo_stack:
                         undo_stack.push(EditVertexZCommand(v, z_val))
                     else:
                         v.set_z(z_val)
-
-        # Elevation workflow for modes other than *point* (handled above)
-        # --------------------------------------------------------------
-        if self._elev_mode != "point":
+        # Elevation workflow for modes other than *point* (e.g., interpolate, line)
+        # or if point mode Z value pre-collection was not applicable/failed
+        elif self._elev_mode != "point": # Catches other modes, or if point mode didn't run above
             try:
                 self._apply_elevation_workflow(poly_item)
             except Exception as exc:
-                self.logger.error("Elevation workflow failed: %s", exc, exc_info=True)
+                self.logger.error(f"Elevation workflow failed: {exc}", exc_info=True)
+        # --- END Apply Z-values ---
 
-        # --- NEW: Emit padDrawn if polyline belongs to "pads" layer and is closed ---
+        self.logger.info(
+            f"Finalized polyline with {len(self._current_polyline_points)} points on layer '{layer_name}'."
+        )
+
+        # --- Prepare 3D world points for the signal ---
+        scene_3d_points = poly_item.get_vertices_scene_3d() # List[Tuple[float, float, float]]
+        world_3d_points = []
+        for sx, sy, sz in scene_3d_points:
+            # Convert scene X,Y to world X,Y; keep Z as is (already world Z from elevation workflow)
+            world_x, world_y = self._scene_to_world(QPointF(sx, sy))
+            world_3d_points.append((world_x, world_y, sz))
+        # --- END Prepare 3D world points ---
+
+        # Emit finalized signal with 3D *world* coordinates and the item
+        self.polyline_finalized.emit(world_3d_points, poly_item)
+
+        # --- Emit padDrawn if polyline belongs to "pads" layer and is closed ---
+        # This uses the original 2D world_points for its contract.
         try:
-            # Convert QPointF list to plain tuples for emission (world units)
-            points_2d = [(p.x(), p.y()) for p in world_points]
-            if layer_name.lower() == "pads" and self._path_is_closed(points_2d):
-                self.logger.debug("padDrawn emitted for closed pad on 'pads' layer with %d vertices", len(points_2d))
-                self.padDrawn.emit(points_2d)
+            pad_points_2d = [(p.x(), p.y()) for p in world_points] # world_points is original 2D list
+            if layer_name.lower() == "pads" and self._path_is_closed(pad_points_2d):
+                self.logger.debug("padDrawn emitted for closed pad on 'pads' layer with %d vertices", len(pad_points_2d))
+                self.padDrawn.emit(pad_points_2d)
         except Exception as e:
-            self.logger.error("Failed to evaluate/emit padDrawn: %s", e, exc_info=True)
-        # --- END NEW ---
+            self.logger.error(f"Failed to evaluate/emit padDrawn: {e}", exc_info=True)
+        # --- END Emit padDrawn ---
 
         self._reset_drawing_state()
 
