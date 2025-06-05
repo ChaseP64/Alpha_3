@@ -13669,3 +13669,135 @@ AttributeError: 'VisualizationPanel' object has no attribute 'update_surface_mes
 2025-06-05 12:28:26,678 - digcalc_project.src.ui.main_window - INFO - Application quitting. Attempting to close PyVista plotter...
 2025-06-05 12:28:26,679 - digcalc_project.src.ui.main_window - INFO - PyVista plotter was not initialized, no cleanup needed.
 2025-06-05 12:28:26,679 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-06-05 12:37:41,204 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-05 12:37:41,237 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-05 12:37:41,241 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-06-05 12:37:52,389 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-05 12:37:52,389 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-05 12:37:52,389 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-05 12:37:52,389 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-05 12:37:52,389 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-05 12:37:52,389 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-05 12:37:55,821 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-05 12:37:55,837 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-05 12:37:56,349 - digcalc_project.src.ui.pv_plotter_singleton - INFO - Real BackgroundPlotter configured and returning.
+2025-06-05 12:37:56,349 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-05 12:37:56,349 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-05 12:37:56,349 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-06-05 12:37:56,349 - digcalc_project.src.ui.main_window - INFO - [on_load_pdf_background] SUCCESS: About to call _update_ui_for_project with project: Untitled Project
+2025-06-05 12:37:56,349 - digcalc_project.src.ui.main_window - INFO - [_update_ui_for_project] Called with project: Untitled Project
+2025-06-05 12:37:56,349 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-06-05 12:37:56,354 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-06-05 12:37:56,354 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-06-05 12:37:56,354 - digcalc_project.src.ui.main_window - INFO - [_update_ui_for_project] About to call self.visualization_panel.set_project with: Untitled Project
+2025-06-05 12:37:56,354 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-06-05 12:37:56,354 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-06-05 12:37:56,354 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-05 12:37:56,421 - digcalc_project.src.ui.main_window - WARNING - Cannot fit view: Scene rectangle is null or invalid.
+2025-06-05 12:37:56,429 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-05 12:37:56,429 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-05 12:37:56,429 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-05 12:37:56,430 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-05 12:37:56,431 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-05 12:37:56,431 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-05 12:37:59,849 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-05 12:37:59,862 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-05 12:37:59,903 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-05 12:37:59,903 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-06-05 12:37:59,903 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-06-05 12:38:14,815 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-06-05 12:38:14,829 - digcalc_project.src.ui.main_window - INFO - [_on_scale_dialog_done] Entered. Dialog result: 1
+2025-06-05 12:38:14,829 - digcalc_project.src.ui.main_window - INFO - [_on_scale_dialog_done] Scale from dialog: input_method='direct_entry' world_units='ft' world_per_paper_in=20.0 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 6, 5, 17, 38, 14, 815805)
+2025-06-05 12:38:14,829 - digcalc_project.src.ui.main_window - INFO - [_on_scale_dialog_done] current_project (id: 1835595865168): <Project(name='Untitled Project', path='None', layers=0, polylines=0)>, current_project.scale (before): input_method='direct_entry' world_units='ft' world_per_paper_in=20.0 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 6, 5, 17, 38, 14, 815805)
+2025-06-05 12:38:14,829 - digcalc_project.src.ui.main_window - INFO - [_on_scale_dialog_done] Assigned scale to current_project. current_project.scale (after): input_method='direct_entry' world_units='ft' world_per_paper_in=20.0 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 6, 5, 17, 38, 14, 815805), is_dirty: True
+2025-06-05 12:38:14,829 - digcalc_project.src.ui.main_window - INFO - [_on_scale_dialog_done] About to call _update_scale_pill.
+2025-06-05 12:38:14,829 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: 20.00 ft/in', Color Decision='green (DPI match)'
+2025-06-05 12:38:19,712 - digcalc_project.src.ui.visualization_panel - INFO - Setting tracing mode to: Enabled
+2025-06-05 12:38:19,712 - digcalc_project.src.ui.visualization_panel - INFO - Tracing enabled with valid project scale.
+2025-06-05 12:38:19,712 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-06-05 12:38:24,339 - digcalc_project.src.ui.tracing_scene - WARNING -       [TracingScene._get_layer_color] Layer with id 'Existing Surface' NOT FOUND in project (Project ID: 1835595865168). Available layer IDs: []
+2025-06-05 12:38:27,694 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 8 points on layer 'Existing Surface'.
+2025-06-05 12:38:27,694 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 8, Elev: Uniform Z: 100.0 (all points at this Z), New Rev: 1).
+2025-06-05 12:38:27,694 - digcalc_project.src.models.project - INFO - [Project.add_traced_polyline] Created new Layer object: 'Existing Surface' with default settings. ID(self): 1835595865168
+2025-06-05 12:38:27,694 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, with per-vertex elevation) to layer 'Existing Surface'.
+2025-06-05 12:38:27,937 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-06-05 12:38:27,937 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-06-05 12:38:34,150 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 10 points on layer 'Existing Surface'.
+2025-06-05 12:38:34,150 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 1, Points: 10, Elev: Uniform Z: 50.0 (all points at this Z), New Rev: 2).
+2025-06-05 12:38:34,150 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 1, with per-vertex elevation) to layer 'Existing Surface'.
+2025-06-05 12:38:34,396 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-06-05 12:38:34,396 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-06-05 12:38:41,660 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 9 points on layer 'Existing Surface'.
+2025-06-05 12:38:41,660 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 2, Points: 9, Elev: Uniform Z: 0.0 (all points at this Z), New Rev: 3).
+2025-06-05 12:38:41,660 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 2, with per-vertex elevation) to layer 'Existing Surface'.
+2025-06-05 12:38:41,913 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Existing Surface'}
+2025-06-05 12:38:41,913 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Existing Surface'}.
+2025-06-05 12:38:54,414 - digcalc_project.src.ui.tracing_scene - WARNING -       [TracingScene._get_layer_color] Layer with id 'Proposed Surface' NOT FOUND in project (Project ID: 1835595865168). Available layer IDs: ['Existing Surface']
+2025-06-05 12:38:56,991 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 9 points on layer 'Proposed Surface'.
+2025-06-05 12:38:56,991 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Proposed Surface' (Index: 0, Points: 9, Elev: Uniform Z: 0.0 (all points at this Z), New Rev: 1).
+2025-06-05 12:38:56,991 - digcalc_project.src.models.project - INFO - [Project.add_traced_polyline] Created new Layer object: 'Proposed Surface' with default settings. ID(self): 1835595865168
+2025-06-05 12:38:56,991 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 0, with per-vertex elevation) to layer 'Proposed Surface'.
+2025-06-05 12:38:57,241 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Proposed Surface'}
+2025-06-05 12:38:57,241 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Proposed Surface'}.
+2025-06-05 12:39:07,964 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 11 points on layer 'Proposed Surface'.
+2025-06-05 12:39:07,964 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Proposed Surface' (Index: 1, Points: 11, Elev: Uniform Z: 100.0 (all points at this Z), New Rev: 2).
+2025-06-05 12:39:07,964 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 1, with per-vertex elevation) to layer 'Proposed Surface'.
+2025-06-05 12:39:08,216 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Proposed Surface'}
+2025-06-05 12:39:08,216 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Proposed Surface'}.
+2025-06-05 12:39:18,143 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 8 points on layer 'Proposed Surface'.
+2025-06-05 12:39:18,143 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Proposed Surface' (Index: 2, Points: 8, Elev: Uniform Z: 75.0 (all points at this Z), New Rev: 3).
+2025-06-05 12:39:18,143 - digcalc_project.src.ui.main_window - INFO - Added traced polyline (Index: 2, with per-vertex elevation) to layer 'Proposed Surface'.
+2025-06-05 12:39:18,398 - digcalc_project.src.ui.main_window - INFO - Processing rebuild queue for layers: {'Proposed Surface'}
+2025-06-05 12:39:18,398 - digcalc_project.src.ui.main_window - INFO - Finished processing rebuild queue. Rebuilt 0 surfaces derived from {'Proposed Surface'}.
+2025-06-05 12:39:25,015 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (3 polylines).
+2025-06-05 12:39:25,015 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 27 unique 3D points with elevation from layer 'Existing Surface'.
+2025-06-05 12:39:25,015 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-06-05 12:39:25,015 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface' (Rev: 3).
+2025-06-05 12:39:25,015 - digcalc_project.src.models.project - INFO - Surface 'Existing Surface_Surface' added to project
+2025-06-05 12:39:32,602 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Proposed Surface' (3 polylines).
+2025-06-05 12:39:32,602 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 28 unique 3D points with elevation from layer 'Proposed Surface'.
+2025-06-05 12:39:32,602 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Proposed Surface_Surface'...
+2025-06-05 12:39:32,602 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Proposed Surface_Surface' from layer 'Proposed Surface' (Rev: 3).
+2025-06-05 12:39:32,602 - digcalc_project.src.models.project - INFO - Surface 'Proposed Surface_Surface' added to project
+2025-06-05 12:40:24,290 - digcalc_project.src.ui.main_window - INFO - Starting volume calculation: Existing='Existing Surface_Surface', Proposed='Proposed Surface_Surface', Resolution=5.0
+2025-06-05 12:40:24,290 - digcalc_project.src.core.calculations.volume_calculator - WARNING - calculate_surface_to_surface is deprecated, use calculate_grid_method
+2025-06-05 12:40:24,290 - digcalc_project.src.core.calculations.volume_calculator - INFO - Starting grid method volume calculation between 'Existing Surface_Surface' and 'Proposed Surface_Surface'. Grid resolution: 5.0
+2025-06-05 12:40:24,290 - digcalc_project.src.core.calculations.volume_calculator - INFO - Interpolating surface 'Existing Surface_Surface' (Existing)...
+2025-06-05 12:40:24,308 - digcalc_project.src.core.calculations.volume_calculator - INFO - Interpolating surface 'Proposed Surface_Surface' (Proposed)...
+2025-06-05 12:40:24,308 - digcalc_project.src.core.calculations.volume_calculator - INFO - Applying stripping depths based on regions...
+2025-06-05 12:40:24,320 - digcalc_project.src.core.calculations.volume_calculator - INFO - Finished applying stripping depths.
+2025-06-05 12:40:24,320 - digcalc_project.src.core.calculations.volume_calculator - INFO - Calculating differences for 553 valid grid points.
+2025-06-05 12:40:24,320 - digcalc_project.src.core.calculations.volume_calculator - INFO - Grid Volume Calculation Complete: Cut=258314.545, Fill=447356.948, Net=189042.403
+2025-06-05 12:40:24,320 - digcalc_project.src.ui.main_window - INFO - Volume calculation successful: Cut=258314.55, Fill=447356.95, Net=189042.40
+2025-06-05 12:40:43,840 - digcalc_project.src.ui.main_window - INFO - Starting volume calculation: Existing='Existing Surface_Surface', Proposed='Proposed Surface_Surface', Resolution=20.0
+2025-06-05 12:40:43,840 - digcalc_project.src.core.calculations.volume_calculator - WARNING - calculate_surface_to_surface is deprecated, use calculate_grid_method
+2025-06-05 12:40:43,840 - digcalc_project.src.core.calculations.volume_calculator - INFO - Starting grid method volume calculation between 'Existing Surface_Surface' and 'Proposed Surface_Surface'. Grid resolution: 20.0
+2025-06-05 12:40:43,840 - digcalc_project.src.core.calculations.volume_calculator - INFO - Interpolating surface 'Existing Surface_Surface' (Existing)...
+2025-06-05 12:40:43,841 - digcalc_project.src.core.calculations.volume_calculator - INFO - Interpolating surface 'Proposed Surface_Surface' (Proposed)...
+2025-06-05 12:40:43,843 - digcalc_project.src.core.calculations.volume_calculator - INFO - Applying stripping depths based on regions...
+2025-06-05 12:40:43,843 - digcalc_project.src.core.calculations.volume_calculator - INFO - Finished applying stripping depths.
+2025-06-05 12:40:43,843 - digcalc_project.src.core.calculations.volume_calculator - INFO - Calculating differences for 33 valid grid points.
+2025-06-05 12:40:43,843 - digcalc_project.src.core.calculations.volume_calculator - INFO - Grid Volume Calculation Complete: Cut=178108.473, Fill=479046.812, Net=300938.339
+2025-06-05 12:40:43,843 - digcalc_project.src.ui.main_window - INFO - Volume calculation successful: Cut=178108.47, Fill=479046.81, Net=300938.34
+2025-06-05 12:42:12,074 - root - ERROR - FrameBufferObject should have been deleted in ReleaseGraphicsResources().
+2025-06-05 12:42:12,074 - root - ERROR - ColorTexture should have been deleted in ReleaseGraphicsResources().
+2025-06-05 12:42:12,076 - root - ERROR - DepthTexture should have been deleted in ReleaseGraphicsResources().
+2025-06-05 12:42:12,076 - root - ERROR - FrameBufferObject should have been deleted in ReleaseGraphicsResources().
+2025-06-05 12:42:12,076 - root - ERROR - ColorTexture should have been deleted in ReleaseGraphicsResources().
+2025-06-05 12:42:12,076 - root - ERROR - FrameBufferObject should have been deleted in ReleaseGraphicsResources().
+2025-06-05 12:42:12,076 - root - ERROR - ColorTexture should have been deleted in ReleaseGraphicsResources().
+2025-06-05 12:42:12,076 - root - ERROR - ColorTexture should have been deleted in ReleaseGraphicsResources().
+2025-06-05 12:42:13,315 - root - ERROR - FrameBufferObject should have been deleted in ReleaseGraphicsResources().
+2025-06-05 12:42:13,315 - root - ERROR - ColorTexture should have been deleted in ReleaseGraphicsResources().
+2025-06-05 12:42:13,315 - root - ERROR - DepthTexture should have been deleted in ReleaseGraphicsResources().
+2025-06-05 12:42:13,315 - root - ERROR - FrameBufferObject should have been deleted in ReleaseGraphicsResources().
+2025-06-05 12:42:13,315 - root - ERROR - ColorTexture should have been deleted in ReleaseGraphicsResources().
+2025-06-05 12:42:13,315 - root - ERROR - FrameBufferObject should have been deleted in ReleaseGraphicsResources().
+2025-06-05 12:42:13,315 - root - ERROR - ColorTexture should have been deleted in ReleaseGraphicsResources().
+2025-06-05 12:42:13,315 - root - ERROR - ColorTexture should have been deleted in ReleaseGraphicsResources().
+2025-06-05 12:42:43,409 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-06-05 12:42:44,581 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-05 12:42:44,654 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-06-05 12:42:44,710 - digcalc_project.src.ui.main_window - INFO - Application quitting. Attempting to close PyVista plotter...
+2025-06-05 12:42:44,711 - digcalc_project.src.ui.main_window - INFO - PyVista plotter was not initialized, no cleanup needed.
+2025-06-05 12:42:44,711 - digcalc_project.src.main - INFO - Application exited with code 0

@@ -263,8 +263,16 @@ class PvDock(QDockWidget):
             if self._current_actor is not None:
                 try: self._current_actor.SetVisibility(False)
                 except Exception: pass
+            
             disp_mesh = self._prepare_display_mesh(mesh)
-            self._current_actor = self.plotter.add_mesh(disp_mesh, scalars="dz", cmap="RdYlGn_r")
+            
+            # Check if 'dz' scalars exist for cut/fill coloring
+            if 'dz' in disp_mesh.point_data:
+                self._current_actor = self.plotter.add_mesh(disp_mesh, scalars="dz", cmap="RdYlGn_r")
+            else:
+                # Fallback to coloring by Z-height for single surfaces
+                self._current_actor = self.plotter.add_mesh(disp_mesh, cmap="terrain")
+
             try:
                 self._current_actor.SetScale(1.0, 1.0, getattr(self, "z_factor", 1.0))
             except Exception:
@@ -272,7 +280,11 @@ class PvDock(QDockWidget):
         except Exception as exc:
             print(f"3-D view fallback due to error hiding actor: {exc}")
             self.plotter.clear()
-            self._current_actor = self.plotter.add_mesh(mesh, scalars="dz", cmap="RdYlGn_r")
+            # Apply same logic in fallback
+            if 'dz' in mesh.point_data:
+                self._current_actor = self.plotter.add_mesh(mesh, scalars="dz", cmap="RdYlGn_r")
+            else:
+                self._current_actor = self.plotter.add_mesh(mesh, cmap="terrain")
 
         if not getattr(self, "_axes_added", False):
             try:
@@ -302,9 +314,20 @@ class PvDock(QDockWidget):
     def _toggle_wire(self, on: bool) -> None:
         """Toggle between wire-frame and shaded surface representation."""
         if self._current_actor:
-            representation = "wireframe" if on else "surface"
-            self._current_actor.prop.representation = representation
-            # Force a render to see the change immediately if plotter doesn't auto-update on actor prop change
+            # The .style attribute is the correct modern PyVista API
+            # for 'wireframe' or 'surface'
+            style = "wireframe" if on else "surface"
+            try:
+                self._current_actor.prop.style = style
+            except AttributeError:
+                # Fallback for older PyVista versions, though style is preferred
+                representation = "wireframe" if on else "surface"
+                try:
+                    self._current_actor.prop.representation = representation
+                except Exception as e:
+                    print(f"Failed to set wireframe: {e}")
+
+            # Force a render to see the change immediately if plotter doesn't auto-update
             self.plotter.render()
 
     # ------------------------------------------------------------------
