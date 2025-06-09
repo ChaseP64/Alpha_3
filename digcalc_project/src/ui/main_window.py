@@ -2770,23 +2770,6 @@ class MainWindow(QMainWindow):
         else:
             self.logger.info("PyVista plotter was not initialized, no cleanup needed.")
 
-    # --- NEW: Strata Manager Dock (Phase 1-1) ---
-    from digcalc_project.src.ui.docks.strata_manager_dock import StrataManagerDock
-    self.strata_manager_dock = StrataManagerDock(self)
-    self.addDockWidget(Qt.LeftDockWidgetArea, self.strata_manager_dock)
-    self.strata_manager_dock.hide()
-    # --- END NEW ---
-
-    # -- Borehole tool toggle connection --
-    if hasattr(self, "borehole_tool_action"):
-        self.borehole_tool_action.toggled.connect(
-            lambda on: self.visualization_panel.set_borehole_mode(on)
-        )
-        # Auto-reset toggle after pick
-        self.visualization_panel.boreholePointPicked.connect(
-            lambda _x, _y: self.borehole_tool_action.setChecked(False)
-        )
-
     # ------------------------------------------------------------------
     # Borehole placement handler
     # ------------------------------------------------------------------

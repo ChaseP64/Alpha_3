@@ -37,6 +37,7 @@ from PySide6.QtWidgets import (
     QMenu,
     QMessageBox,
     QRubberBand,
+    QToolTip,
 )
 
 from digcalc_project.src.exceptions import NoScaleError
@@ -1419,6 +1420,27 @@ class TracingScene(QGraphicsScene):
         except Exception as e:
             self.logger.error(f"Error retrieving color for layer {layer_id} in _get_layer_color_from_project: {e}", exc_info=False) # Keep log lean
         return colour_hex
+
+    # ------------------------------------------------------------------
+    # Hover tooltips for boreholes
+    # ------------------------------------------------------------------
+    def hoverMoveEvent(self, event):  # type: ignore[override]
+        super().hoverMoveEvent(event)
+        item = self.itemAt(event.scenePos(), self.views()[0].transform()) if self.views() else None
+        if item and item.data(0):
+            bh = item.data(0)
+            try:
+                from digcalc_project.src.models.strata_models import BoreholeLog
+                if isinstance(bh, BoreholeLog):
+                    lines = [f"BH-{bh.id:02d}"]
+                    for ld in bh.layers:
+                        mat_name = self._panel.current_project.strata.materials[ld.material_id-1].name if getattr(self._panel.current_project,'strata',None) else "Mat"
+                        lines.append(f"{mat_name} {ld.top_z:.0f}–{ld.bottom_z:.0f} ft")
+                    QToolTip.showText(event.screenPos(), "\n".join(lines))
+                    return
+            except Exception:
+                pass
+        QToolTip.hideText()
 
 # ------------------------------------------------------------------
 # Undo/Redo Command

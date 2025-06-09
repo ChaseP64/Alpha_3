@@ -58,6 +58,8 @@ class AddBoreholeCommand(QUndoCommand):
         )
         self._item.setPen(pen)
         self._item.setBrush(brush)
+        # Attach BoreholeLog so scene can show tooltips
+        self._item.setData(0, self._bh)  # role 0
         self._scene.addItem(self._item)
 
     # ------------------------------------------------------------------

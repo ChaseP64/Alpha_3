@@ -50,6 +50,13 @@ class StrataManagerDock(QDockWidget):
         act_add = QAction("Add…", self)
         act_add.triggered.connect(self._on_add_material)
         tb.addAction(act_add)
+        # Export / Import buttons
+        act_exp = QAction("Export…", self)
+        act_imp = QAction("Import…", self)
+        act_exp.triggered.connect(self._export_csv)
+        act_imp.triggered.connect(self._import_csv)
+        tb.addAction(act_exp)
+        tb.addAction(act_imp)
         mat_layout.addWidget(tb)
 
         # Table
@@ -117,4 +124,36 @@ class StrataManagerDock(QDockWidget):
             self.bh_table.setItem(row, 0, QTableWidgetItem(str(bh.id)))
             self.bh_table.setItem(row, 1, QTableWidgetItem(f"{bh.x:.2f}"))
             self.bh_table.setItem(row, 2, QTableWidgetItem(f"{bh.y:.2f}"))
-            self.bh_table.setItem(row, 3, QTableWidgetItem(str(len(bh.layers)))) 
+            self.bh_table.setItem(row, 3, QTableWidgetItem(str(len(bh.layers))))
+
+    # ------------------------------------------------------------------
+    # CSV helpers
+    # ------------------------------------------------------------------
+    def _export_csv(self):
+        if not self._stack:
+            return
+        from PySide6.QtWidgets import QFileDialog
+        path, _ = QFileDialog.getSaveFileName(self, "Export Boreholes", "boreholes.csv", "CSV Files (*.csv)")
+        if not path:
+            return
+        from digcalc_project.src.services.borehole_csv_io import save_csv
+        save_csv(path, self._stack)
+
+    def _import_csv(self):
+        if not self._stack:
+            return
+        from PySide6.QtWidgets import QFileDialog, QMessageBox
+        path, _ = QFileDialog.getOpenFileName(self, "Import Boreholes", "", "CSV Files (*.csv)")
+        if not path:
+            return
+        from digcalc_project.src.services.borehole_csv_io import load_csv
+        added, skipped = load_csv(path, self._stack)
+        if added:
+            # wrap in undo command group
+            from PySide6.QtGui import QUndoCommand
+            group = QUndoCommand(f"Import Boreholes ({added} rows)")
+            # Simply mark stack dirty; full per-row undo not needed now
+            self.undo_stack.push(group)
+        self.refresh_materials(); self.refresh_boreholes()
+        if skipped:
+            QMessageBox.information(self, "Import", f"{skipped} rows skipped due to errors.") 
