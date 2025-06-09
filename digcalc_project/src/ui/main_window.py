@@ -88,6 +88,7 @@ from .visualization_panel import VisualizationPanel
 from digcalc_project.src.ui.docks.layer_legend_dock import LayerLegendDock
 
 from .pv_plotter_singleton import get_plotter, _plotter as plotter_instance # Import for shutdown
+from ..models.strata_models import StrataStack
 
 logger = logging.getLogger(__name__)
 
@@ -530,6 +531,13 @@ class MainWindow(QMainWindow):
         self.masshaul_action.setEnabled(False)  # enable when conditions met later
         # --- END NEW ---
 
+        # --- NEW: Borehole Tool Action ---
+        self.borehole_tool_action = QAction(QIcon.fromTheme("mdi.circle"), "Place Borehole", self)
+        self.borehole_tool_action.setCheckable(True)
+        self.borehole_tool_action.setStatusTip("Place a borehole log on the plan")
+        # Connection in _connect_signals
+        # --- END NEW ---
+
         # Help menu actions
         self.about_action = QAction("&About DigCalc", self)
         self.about_action.setStatusTip("Show information about the DigCalc application.")
@@ -677,6 +685,10 @@ class MainWindow(QMainWindow):
         self.tools_toolbar.addAction(self.daylight_action)
         # --- NEW: Add mass-haul action to tools toolbar ---
         self.tools_toolbar.addAction(self.masshaul_action)
+        # --- END NEW ---
+
+        # --- NEW: Add borehole tool action to tools toolbar ---
+        self.tools_toolbar.addAction(self.borehole_tool_action)
         # --- END NEW ---
 
         # Help menu
@@ -2757,3 +2769,58 @@ class MainWindow(QMainWindow):
                 self.logger.error(f"Error closing PyVista plotter: {e}")
         else:
             self.logger.info("PyVista plotter was not initialized, no cleanup needed.")
+
+    # --- NEW: Strata Manager Dock (Phase 1-1) ---
+    from digcalc_project.src.ui.docks.strata_manager_dock import StrataManagerDock
+    self.strata_manager_dock = StrataManagerDock(self)
+    self.addDockWidget(Qt.LeftDockWidgetArea, self.strata_manager_dock)
+    self.strata_manager_dock.hide()
+    # --- END NEW ---
+
+    # -- Borehole tool toggle connection --
+    if hasattr(self, "borehole_tool_action"):
+        self.borehole_tool_action.toggled.connect(
+            lambda on: self.visualization_panel.set_borehole_mode(on)
+        )
+        # Auto-reset toggle after pick
+        self.visualization_panel.boreholePointPicked.connect(
+            lambda _x, _y: self.borehole_tool_action.setChecked(False)
+        )
+
+    # ------------------------------------------------------------------
+    # Borehole placement handler
+    # ------------------------------------------------------------------
+    def _on_borehole_point(self, x: float, y: float) -> None:  # noqa: D401
+        """Handle point pick for Borehole tool."""
+        # Reset action toggle
+        if hasattr(self, "borehole_tool_action"):
+            self.borehole_tool_action.setChecked(False)
+
+        project = self.project_controller.get_current_project()
+        if project is None:
+            return
+
+        # Ensure strata stack exists
+        if project.strata is None:
+            project.strata = StrataStack(id=1)
+
+        stack = project.strata
+
+        # Open editor dialog
+        from digcalc_project.src.ui.dialogs.borehole_editor_dialog import BoreholeEditorDialog
+        dlg = BoreholeEditorDialog(stack, parent=self)
+        if dlg.exec() != dlg.Accepted:
+            return
+
+        bh_id = stack.next_borehole_id()
+        borehole = dlg.to_borehole(x, y, bh_id)
+
+        from digcalc_project.src.ui.commands.add_borehole_command import AddBoreholeCommand
+        scene = self.visualization_panel.scene_2d
+
+        cmd = AddBoreholeCommand(stack, borehole, scene)
+
+        # Push onto StrataManagerDock undo stack and refresh
+        self.strata_manager_dock.undo_stack.push(cmd)
+        self.strata_manager_dock.refresh_boreholes()
+        project.is_dirty = True

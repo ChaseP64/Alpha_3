@@ -36,6 +36,7 @@ if TYPE_CHECKING:  # pragma: no cover
 MAX_FACES_FOR_FULL_RENDER = 500_000
 DECIMATE_RATIO = 0.75  # keep 25 % of faces
 
+# TYPE_CHECKING import for static analysers only
 if TYPE_CHECKING:
     import pyvista as pv  # noqa: F401
 

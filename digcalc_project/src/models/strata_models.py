@@ -58,6 +58,9 @@ class LayerDepth:
     top_z: float      # elevation (ft) of layer *top*
     bottom_z: float   # elevation (ft) of layer *base*
 
+    def __hash__(self):
+        return hash((self.material_id, self.top_z, self.bottom_z))
+
     def to_dict(self) -> dict:
         return {
             "material_id": self.material_id,
@@ -102,6 +105,43 @@ class BoreholeLog:
             uuid=d.get("uuid", str(_uuid.uuid4())),
             layers=[LayerDepth.from_dict(ld) for ld in d.get("layers", [])],
         )
+
+    # ------------------------------------------------------------------
+    # Layer management helpers
+    # ------------------------------------------------------------------
+
+    def _validate_contiguous(self, new_layers: List[LayerDepth]) -> None:
+        """Raise ValueError if *new_layers* are non-contiguous or invalid."""
+        if not new_layers:
+            return
+
+        # Sort by top_z descending (highest elevation first)
+        ordered = sorted(new_layers, key=lambda ld: ld.top_z, reverse=True)
+        for i, ld in enumerate(ordered):
+            if ld.bottom_z >= ld.top_z:
+                raise ValueError("Layer bottom_z must be < top_z (positive thickness)")
+            if i == 0:
+                continue
+            prev = ordered[i - 1]
+            # Allow small FP tolerance
+            if abs(prev.bottom_z - ld.top_z) > 1e-6:
+                raise ValueError("Layers are not contiguous (gap or overlap detected)")
+
+    # ------------------------------------------------------------------
+    def add_layer(self, layer: LayerDepth) -> None:
+        """Append *layer* after validating thickness & contiguity."""
+        self._validate_contiguous(self.layers + [layer])
+        self.layers.append(layer)
+
+    # ------------------------------------------------------------------
+    def remove_layer(self, idx: int) -> LayerDepth | None:
+        """Remove layer at *idx* if valid and keep contiguity."""
+        if 0 <= idx < len(self.layers):
+            removed = self.layers.pop(idx)
+            # Re-validate remaining stack
+            self._validate_contiguous(self.layers)
+            return removed
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -194,4 +234,44 @@ class StrataStack:
             materials=[Material.from_dict(md) for md in d.get("materials", [])],
             boreholes=[BoreholeLog.from_dict(bd) for bd in d.get("boreholes", [])],
             surfaces=[StrataSurface.from_dict(sd) for sd in d.get("surfaces", [])],
-        ) 
+        )
+
+    # ------------------------------------------------------------------
+    # Convenience mutators (used by UI command layer)
+    # ------------------------------------------------------------------
+
+    def next_material_id(self) -> int:
+        """Return the next available integer *id* for a new material."""
+        used = {m.id for m in self.materials}
+        i = 1
+        while i in used:
+            i += 1
+        return i
+
+    # ------------------------------------------------------------------
+    def add_material(self, material: Material) -> None:
+        """Append *material* ensuring ``id`` uniqueness."""
+        if any(m.id == material.id for m in self.materials):
+            # Assign next free id silently
+            material.id = self.next_material_id()
+        self.materials.append(material)
+
+    # ------------------------------------------------------------------
+    def remove_material(self, mat_id: int) -> Material | None:
+        """Remove material by *id* and return it or *None* if not found."""
+        for idx, m in enumerate(self.materials):
+            if m.id == mat_id:
+                return self.materials.pop(idx)
+        return None
+
+    # ------------------------------------------------------------------
+    # Borehole helpers
+    # ------------------------------------------------------------------
+
+    def next_borehole_id(self) -> int:
+        """Return next available borehole integer id."""
+        used = {bh.id for bh in self.boreholes}
+        i = 1
+        while i in used:
+            i += 1
+        return i 

@@ -351,6 +351,16 @@ class TracingScene(QGraphicsScene):
             self.logger.debug("Scene mousePress ignored: View is manually panning.")
             return
 
+        panel = self._panel  # VisualizationPanel
+
+        # Borehole tool click handling
+        if panel.drawing_mode.name == "BOREHOLE" and event.button() == Qt.LeftButton:
+            scene_pos = event.scenePos()
+            panel.boreholePointPicked.emit(scene_pos.x(), scene_pos.y())
+            # exit borehole mode (handled by panel or caller)
+            event.accept()
+            return
+
         if not self._tracing_enabled:
             # If tracing is disabled, allow the base class/view to handle selection/panning etc.
             super().mousePressEvent(event)

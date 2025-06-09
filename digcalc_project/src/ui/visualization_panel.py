@@ -80,6 +80,7 @@ logger = logging.getLogger(__name__)
 class DrawingMode(enum.Enum):
     SELECT = 0
     TRACE = 1
+    BOREHOLE = 2
     # Add other modes as needed
 
 class InteractiveGraphicsView(QGraphicsView):
@@ -191,6 +192,8 @@ class VisualizationPanel(QWidget):
     surface_visualization_failed = Signal(str, str)  # (surface name, error message)
     # Signal to indicate polyline data needs to be sent TO QML
     request_polylines_load_to_qml = Signal()
+    # Borehole picking signal
+    boreholePointPicked = Signal(float, float)  # x, y world coords
 
     def __init__(self, parent=None):
         """Initialize the visualization panel.
@@ -1122,3 +1125,16 @@ class VisualizationPanel(QWidget):
     # def _adjust_view_to_points(self, points: List[Point3D]):  # noqa: D401 – deprecated
     #     """No-op (legacy). Camera bounding now handled by PyVista plotter."""
     #     return
+
+    # ------------------------------------------------------------------
+    # Borehole mode helpers
+    # ------------------------------------------------------------------
+
+    def set_borehole_mode(self, enabled: bool) -> None:
+        """Enable or disable Borehole placement mode."""
+        if enabled:
+            self.drawing_mode = DrawingMode.BOREHOLE
+            self.view_2d.setCursor(Qt.CrossCursor)
+        else:
+            self.drawing_mode = DrawingMode.SELECT
+            self.view_2d.setCursor(Qt.ArrowCursor)
