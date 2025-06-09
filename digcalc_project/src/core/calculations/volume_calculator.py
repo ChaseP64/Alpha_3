@@ -247,19 +247,26 @@ class VolumeCalculator:
     def _create_grid(self, bbox: Tuple[float, float, float, float], resolution: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Creates grid coordinates and flattened points."""
         min_x, min_y, max_x, max_y = bbox
-        # Use cell centers for coordinate arrays? Or edges? Let's use edges/arange.
-        epsilon = resolution * 1e-6
-        # gx corresponds to columns (X), gy corresponds to rows (Y)
-        gx = np.arange(min_x, max_x + epsilon, resolution)
-        gy = np.arange(min_y, max_y + epsilon, resolution)
+        # We want *cell centres* spaced at "resolution" such that the grid
+        # represents exactly the rectangle [min_x, max_x) × [min_y, max_y)
+        # with *integer* number of cells.  Using ``np.arange`` **without** the
+        # inclusive +epsilon avoids double-counting the far edge.  Rounding
+        # guards against floating-point drift.
+
+        # Compute number of whole cells that fit in each direction.
+        nx = int(np.floor((max_x - min_x) / resolution))
+        ny = int(np.floor((max_y - min_y) / resolution))
+        # Generate coordinate arrays for *cell centres*.
+        gx = min_x + (np.arange(nx) + 0.5) * resolution
+        gy = min_y + (np.arange(ny) + 0.5) * resolution
 
         if len(gx) == 0 or len(gy) == 0:
             self.logger.warning(f"Grid dimensions are zero for bbox {bbox} and resolution {resolution}. Returning empty grid.")
             return np.array([]), np.array([]), np.empty((0, 2))
 
-        # Create meshgrid for flattened points (consistent with previous logic)
+        # Create meshgrid centred cells
         grid_x_mesh, grid_y_mesh = np.meshgrid(gx, gy)
-        grid_points = np.vstack([grid_x_mesh.ravel(), grid_y_mesh.ravel()]).T
+        grid_points = np.column_stack((grid_x_mesh.ravel(), grid_y_mesh.ravel()))
         self.logger.debug(f"Created grid with {len(gy)} Y-coords, {len(gx)} X-coords. Total points: {grid_points.shape[0]}")
         # Return 1D coordinate arrays AND the 2D flattened points
         return gx, gy, grid_points

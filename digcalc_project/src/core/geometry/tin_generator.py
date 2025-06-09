@@ -5,13 +5,13 @@ This module provides functionality to generate TIN surfaces from point clouds.
 """
 
 import logging
-from typing import List
+from typing import List, Sequence, Union
 
 import numpy as np
 
 # Use the actual Delaunay implementation
 try:
-    from scipy.spatial import Delaunay, QhullError
+    from scipy.spatial import Delaunay
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
@@ -53,7 +53,10 @@ class TINGenerator:
         if not HAS_SCIPY:
             raise RuntimeError("SciPy library is required for TIN generation but is not installed.")
 
-        surface = Surface(name, Surface.SURFACE_TYPE_TIN)
+        # Surface initializer signature is Surface(name, points=None, triangles=None, ...)
+        # so we only provide the name here.  The surface type constant is kept on
+        # the class for reference but not required at construction time.
+        surface = Surface(name)
 
         # Add points to the surface (ensures unique points by ID in the surface dict)
         # We use a temp dict to handle potential duplicates in the input list
@@ -75,56 +78,84 @@ class TINGenerator:
              # Return surface with points but no triangles
              return surface
 
-        # Prepare unique points for Delaunay (expects 2D array of coordinates)
-        try:
-            xy_coords = np.array([[p.x, p.y] for p in unique_points_list])
+        # Extract XY coordinates for triangulation
+        xy_coords_full = np.array([[p.x, p.y] for p in unique_points_list])
 
-            # --- Check for collinearity or duplicate XYs before triangulation ---
-            # Scipy's Delaunay handles duplicates, but explicit check might be informative
-            unique_xy, unique_indices = np.unique(xy_coords, axis=0, return_index=True)
+        # ------------------------------------------------------------------
+        # Deduplicate identical XY coordinates *before* triangulation.
+        # SciPy's Delaunay can handle duplicates, but removing them here
+        #   1. avoids Qhull warnings, and
+        #   2. guarantees predictable simplex indices for unit-tests.
+        # We keep the *first* occurrence of each unique XY pair and later
+        # map simplex indices back to the corresponding Point3D objects.
+        # ------------------------------------------------------------------
+        unique_xy, unique_indices = np.unique(xy_coords_full, axis=0, return_index=True)
 
-            if len(unique_xy) < 3:
-                # This condition catches cases where all unique XY points are collinear or fewer than 3 exist
-                self.logger.warning(f"Cannot generate TIN for '{name}': requires at least 3 non-collinear unique XY locations, found {len(unique_xy)}.")
-                return surface # Return surface with points but no triangles
-
-            # Perform Delaunay triangulation on the full set of unique XY coordinates
-            # It's generally safe to use the full unique_points_list XYs here if len >= 3
-            self.logger.debug(f"Performing Delaunay triangulation on {len(xy_coords)} unique points.")
-            delaunay = Delaunay(xy_coords) # Use xy_coords corresponding to unique_points_list
-
-            # Simplices gives the indices into the *input* points array (xy_coords)
-            simplices = delaunay.simplices
-
-            self.logger.info(f"Delaunay triangulation completed for '{name}', found {len(simplices)} simplices (triangles).")
-
-            # Create Triangle objects using the original Point3D objects
-            for simplex in simplices:
-                # Get the original Point3D objects corresponding to the simplex indices
-                try:
-                    # Indices from simplex refer to the order in unique_points_list
-                    p1 = unique_points_list[simplex[0]]
-                    p2 = unique_points_list[simplex[1]]
-                    p3 = unique_points_list[simplex[2]]
-
-                    # Add the triangle to the surface (add_triangle also adds points if missing)
-                    surface.add_triangle(Triangle(p1, p2, p3))
-                except IndexError:
-                     self.logger.error(f"Simplex index out of bounds for surface '{name}'. Simplex: {simplex}. Points count: {len(unique_points_list)}")
-                     continue # Skip this triangle
-
-        except QhullError as qe:
-            # QhullError often occurs for degenerate input (e.g., all points collinear)
-            self.logger.error(f"Delaunay triangulation failed for '{name}': {qe}. Input points might be degenerate (e.g., collinear). Surface will have points but no triangles.", exc_info=False) # Set exc_info=False for cleaner logs unless debugging Qhull
-            # Return surface with points but no triangles - this is often acceptable
+        if len(unique_xy) < 3:
+            # All XY points are collinear or we have <3 unique locations – no TIN.
+            self.logger.warning(
+                f"Cannot generate TIN for '{name}': requires at least 3 non-collinear unique XY locations, "
+                f"found {len(unique_xy)}.")
             return surface
-        except Exception as e:
-             # Catch other potential errors during triangulation or processing
-             self.logger.exception(f"An unexpected error occurred during TIN generation for '{name}': {e}")
-             # Raise a runtime error to indicate a more serious failure
-             raise RuntimeError(f"TIN generation failed unexpectedly: {e}") from e
+
+        # Create a list of Point3D objects matching the deduplicated XY order.
+        points_unique = [unique_points_list[i] for i in unique_indices]
+
+        # Perform Delaunay triangulation on the deduplicated coordinates.
+        self.logger.debug(
+            f"Performing Delaunay triangulation on {len(points_unique)} unique points.")
+        delaunay = Delaunay(unique_xy)
+
+        simplices = delaunay.simplices
+
+        self.logger.info(
+            f"Delaunay triangulation completed for '{name}', found {len(simplices)} simplices (triangles).")
+
+        # Build Triangle objects – indices reference rows in *points_unique*.
+        for simplex in simplices:
+            try:
+                p1 = points_unique[simplex[0]]
+                p2 = points_unique[simplex[1]]
+                p3 = points_unique[simplex[2]]
+
+                surface.add_triangle(Triangle(p1, p2, p3))
+            except IndexError:
+                # Should not happen, but guard just in case.
+                self.logger.error(
+                    f"Simplex index out of bounds for surface '{name}'. Simplex: {simplex}. "
+                    f"Points count: {len(points_unique)}")
+                continue
 
         self.logger.info(f"Generated TIN surface '{name}' with {len(surface.points)} points and {len(surface.triangles)} triangles.")
         return surface
 
     # Removed the placeholder _create_sample_triangles method
+
+# ==================================================================================================
+# Public convenience helper
+# --------------------------------------------------------------------------------------------------
+
+def generate_tin(points: Union[np.ndarray, Sequence[Sequence[float]]], name: str = "TIN Surface") -> Surface:
+    """Generate a :class:`digcalc_project.src.models.surface.Surface` from raw XYZ points.
+
+    This is a thin wrapper around :class:`TINGenerator` that accepts an *N×3* NumPy
+    array (or any similar sequence) and returns a populated :class:`Surface`.
+
+    Args:
+        points: Array-like with shape (n, 3) containing *x, y, z* coordinates.
+        name:   Optional surface name.
+
+    Returns:
+        Surface: A surface object containing the input points and Delaunay triangles.
+    """
+
+    points_np = np.asarray(points, dtype=float)
+    if points_np.ndim != 2 or points_np.shape[1] != 3:
+        raise ValueError("points must be a 2-D array-like with shape (n, 3)")
+
+    # Convert to Point3D list.
+    pts: list[Point3D] = [Point3D(float(x), float(y), float(z)) for x, y, z in points_np]
+
+    generator = TINGenerator()
+    surface = generator.generate_from_points(pts, name=name)
+    return surface

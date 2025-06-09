@@ -9,6 +9,7 @@ from typing import Optional, TYPE_CHECKING
 from .project import Project  # Use relative import
 from .project_scale import ProjectScale
 from .surface import Surface
+from .strata_models import StrataStack
 
 logger = logging.getLogger(__name__)
 
@@ -138,6 +139,10 @@ def to_dict(project: Project) -> dict:
         # Keep other sections minimal for now – can be expanded later.
         "surfaces": {n: s.to_dict() for n, s in project.surfaces.items()},
         "polylines": project._serialisable_polylines(),
+        # ------------------------------------------------------------------
+        # Stratigraphy (optional)
+        # ------------------------------------------------------------------
+        "strata": strata_to_dict(project.strata),
     }
 
 def from_dict(data: dict) -> Project:
@@ -155,6 +160,7 @@ def from_dict(data: dict) -> Project:
     proj = Project(
         name=data.get("name", "Untitled"),
         scale=scale_obj,
+        strata=strata_from_dict(data.get("strata")),
     )
 
     # Attach surfaces / polylines using the Project API to maintain invariants
@@ -204,3 +210,35 @@ def layer_from_dict(data: dict) -> "Layer":
         point_color=data.get("point_color", data.get("line_color", "#4DBBD5")),
         visible=data.get("visible", True),
     )
+
+# ---------------------------------------------------------------------------
+# Strata (de)serialisation helpers
+# ---------------------------------------------------------------------------
+
+def strata_to_dict(stack: "StrataStack | None") -> dict | None:
+    """Return mapping suitable for JSON output or *None* if no stack."""
+    return stack.to_dict() if stack else None
+
+def strata_from_dict(d: dict | None) -> "StrataStack | None":
+    """Inverse of :pyfunc:`strata_to_dict` with best-effort legacy tolerance."""
+    if d is None:
+        return None
+
+    # Legacy fallback – if *d* is a list we assume it contains *BoreholeLog*
+    # dictionaries only (pre-stack schema).  Wrap in a minimal StrataStack.
+    if isinstance(d, list):
+        try:
+            from .strata_models import BoreholeLog, StrataStack  # local import
+
+            boreholes = [BoreholeLog.from_dict(bd) for bd in d]
+            return StrataStack(id=0, boreholes=boreholes)
+        except Exception as exc:  # pragma: no cover – corrupt legacy data
+            logger.warning("Failed to migrate legacy borehole list to StrataStack: %s", exc)
+            return None
+
+    # Standard path – defer to StrataStack factory.
+    try:
+        return StrataStack.from_dict(d)
+    except Exception as exc:
+        logger.warning("Invalid strata payload – ignored. Error: %s", exc)
+        return None

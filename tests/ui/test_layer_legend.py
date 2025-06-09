@@ -57,7 +57,7 @@ def test_layer_legend_visibility_toggle(qapp):
     # Connect legend signal to scene visibility
     legend.layerVisibilityToggled.connect(
         lambda lid, vis: scene.setLayerVisible(
-            next(l.name for l in proj.layers if l.id == lid), vis,
+            next(layer.name for layer in proj.layers if layer.id == lid), vis,
         ),
     )
 

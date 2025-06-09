@@ -36,16 +36,22 @@ if TYPE_CHECKING:  # pragma: no cover
 MAX_FACES_FOR_FULL_RENDER = 500_000
 DECIMATE_RATIO = 0.75  # keep 25 % of faces
 
+if TYPE_CHECKING:
+    import pyvista as pv  # noqa: F401
+
+
+# -----------------------------------------------------------------------------
+# PvDock – 3-D view panel
+# -----------------------------------------------------------------------------
+
+
 class PvDock(QDockWidget):
-    """3-D view dock embedding a PyVistaQt interactor.
+    """3-D view dock embedding a PyVista interactor.
 
-    Displays a surface in 3-D, supports wire-frame toggling, multi-sample anti-aliasing,
-    orientation gizmo, and cut/fill colour-map.  PyVista is imported lazily so that the
-    application can still start without the 3-D dependencies.  If PyVista (or
-    PyVistaQt) is not available a friendly banner is shown guiding the user to install
-    the optional extra::
-
-        pip install "digcalc[3d]"
+    Provides wire-frame toggle, section-plane clipping, Z-exaggeration, draft
+    quality mode, screenshot, and bookmark helpers.  PyVista is imported
+    lazily; the application can start without the 3-D stack installed (those
+    features will then be unavailable).
     """
 
     def __init__(self, main_window):

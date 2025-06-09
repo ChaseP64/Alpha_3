@@ -131,7 +131,7 @@ class LayerLegendDock(QDockWidget):
         """Forward eye-toggle to listeners and re-emit layer count."""
         self.layerVisibilityToggled.emit(layer_id, visible)
         if self._project:
-            count = sum(1 for l in self._project.layers if l.visible)
+            count = sum(1 for layer in self._project.layers if layer.visible)
             self.visibleLayersChanged.emit(count)
 
     # ------------------------------------------------------------------

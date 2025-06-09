@@ -50,3 +50,29 @@ def temp_dir() -> Generator[str, None, None]:
     """
     with tempfile.TemporaryDirectory() as tmp_dir:
         yield tmp_dir
+
+# ---------------------------------------------------------------------------
+# Fixture helpers – sample boreholes / project (Phase 0-5)
+# ---------------------------------------------------------------------------
+
+from digcalc_project.src.models.project import Project  # local import after sys.path tweaks
+
+
+@pytest.fixture
+def sample_boreholes_csv_path() -> Path:
+    """Absolute path to *sample_boreholes.csv* test fixture."""
+    return Path(__file__).parent / "fixtures" / "sample_boreholes.csv"
+
+
+@pytest.fixture
+def sample_project_json_path() -> Path:
+    """Absolute path to *sample_project.json* test fixture."""
+    return Path(__file__).parent / "fixtures" / "sample_project.json"
+
+
+@pytest.fixture
+def sample_project(sample_project_json_path: Path) -> Project:
+    """Loaded :class:`Project` object from sample JSON fixture."""
+    proj = Project.load(str(sample_project_json_path))
+    assert proj is not None, "Failed to load sample project fixture"
+    return proj

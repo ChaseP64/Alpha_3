@@ -22,6 +22,7 @@ from .project_scale import ProjectScale  # NEW Pydantic model
 from .region import Region
 from .surface import Surface
 from .layer import Layer # ADDED: Runtime import for Layer
+from .strata_models import StrataStack  # NEW import
 
 # Configure logging for the module
 logger = logging.getLogger(__name__)
@@ -66,6 +67,7 @@ class Project:
     calculations: List[VolumeCalculation] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
     regions: list[Region] = field(default_factory=list)
+    strata: "Optional[StrataStack]" = None  # NEW – stratigraphy data
     scale: Optional[ProjectScale] = None  # Updated to new ProjectScale
     # Flags for project-level state (e.g., legacy scale invalid)
     flags: List[str] = field(default_factory=list)
@@ -398,6 +400,7 @@ class Project:
                 "traced_polylines": self._serialisable_polylines(),
                 "layer_revisions": dict(self.layer_revisions), # Convert defaultdict
                 "flags": self.flags,
+                "strata": self.strata.to_dict() if self.strata else None,
             }
 
             with open(self.filepath, "w") as f:
@@ -566,6 +569,17 @@ class Project:
 
             # --- Load Regions ---
             project.regions = [Region.from_dict(r) for r in data.get("regions", [])]
+
+            # --- Load Strata (optional) ---
+            strata_data = data.get("strata")
+            if strata_data is not None:
+                try:
+                    project.strata = StrataStack.from_dict(strata_data)
+                except Exception as e_str:
+                    logger.warning(f"Failed to parse strata data in project file: {e_str}")
+                    project.strata = None
+            else:
+                project.strata = None
 
             project.is_dirty = migrated # Mark modified if migration happened
             logger.info(f"Project loaded from {filename}")

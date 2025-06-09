@@ -1400,7 +1400,7 @@ class TracingScene(QGraphicsScene):
                     self.logger.warning(f"      [TracingScene._get_layer_color] Layer '{layer_id}' found (id: {id(lyr)}), but has no 'line_color' attribute or it's None. Layer object: {lyr}")
                 else:
                     # Log available layer IDs if layer is not found
-                    available_layer_ids = [l.id for l in proj.layers if hasattr(l, 'id')] if hasattr(proj, 'layers') and isinstance(proj.layers, list) else "N/A"
+                    available_layer_ids = [layer.id for layer in proj.layers if hasattr(layer, 'id')] if hasattr(proj, 'layers') and isinstance(proj.layers, list) else []
                     self.logger.warning(f"      [TracingScene._get_layer_color] Layer with id '{layer_id}' NOT FOUND in project (Project ID: {id(proj)}). Available layer IDs: {available_layer_ids}")
             else:
                 self.logger.error("      [TracingScene._get_layer_color] Project object (proj) is None or not found.")
