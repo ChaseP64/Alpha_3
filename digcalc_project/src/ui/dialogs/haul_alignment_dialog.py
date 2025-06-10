@@ -15,7 +15,10 @@ from PySide6.QtWidgets import (
     QDoubleSpinBox,
     QFormLayout,
     QVBoxLayout,
+    QCheckBox,
 )
+
+from digcalc_project.src.models.project import Project
 
 __all__ = ["HaulAlignmentDialog"]
 
@@ -24,6 +27,7 @@ class HaulAlignmentDialog(QDialog):
     """Dialog for entering mass-haul alignment parameters.
 
     Args:
+        project:        The project object.
         default_interval: Initial station interval (ft).
         default_free:     Initial free-haul distance (ft).
         parent:           Parent widget.
@@ -32,6 +36,7 @@ class HaulAlignmentDialog(QDialog):
 
     def __init__(
         self,
+        project: Project,
         default_interval: float = 100.0,
         default_free: float = 500.0,
         parent: Optional[QDialog] = None,
@@ -58,12 +63,19 @@ class HaulAlignmentDialog(QDialog):
         self.free.setSuffix(" ft")
         self.free.setValue(default_free)
 
+        self.by_material_checkbox = QCheckBox(self)
+        self.by_material_checkbox.setText("Plot by Material")
+        if not project or not project.strata or not project.strata.surfaces:
+            self.by_material_checkbox.setEnabled(False)
+            self.by_material_checkbox.setToolTip("No strata surfaces have been generated for this project.")
+        
         # ------------------------------------------------------------
         # Layout
         # ------------------------------------------------------------
         form = QFormLayout()
         form.addRow("Station interval:", self.interval)
         form.addRow("Free-haul distance:", self.free)
+        form.addRow(self.by_material_checkbox)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self)
         buttons.accepted.connect(self.accept)
@@ -79,4 +91,8 @@ class HaulAlignmentDialog(QDialog):
     def values(self) -> Tuple[float, float]:
         """Return *(station_interval, free_haul_distance)* in feet."""
         return self.interval.value(), self.free.value()
+
+    def plot_by_material(self) -> bool:
+        """Return whether the 'Plot by Material' checkbox is checked."""
+        return self.by_material_checkbox.isChecked()
 

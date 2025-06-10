@@ -208,6 +208,11 @@ class MainWindow(QMainWindow):
         # Connect legend signals for auto show/hide and visibility toggles
         self.legend_dock.visibleLayersChanged.connect(self._on_legend_layers_count)
         self.legend_dock.layerVisibilityToggled.connect(self._on_layer_visibility_toggled)
+        # NEW: connect strata-contour toggle to TracingScene
+        if hasattr(self.legend_dock, "strataContourModeChanged"):
+            self.legend_dock.strataContourModeChanged.connect(
+                lambda enabled: getattr(self.visualization_panel.scene_2d, "set_strata_contour_mode", lambda *_: None)(enabled)
+            )
 
         # --- Connect application quit signal for plotter cleanup (Task 2 / PLAN.md) ---
         app = QApplication.instance()
@@ -558,6 +563,13 @@ class MainWindow(QMainWindow):
         self.about_action.setStatusTip("Show information about the DigCalc application.")
         # Connection in _connect_signals
 
+        # Settings menu
+        if hasattr(self, "menu_bar"):
+            self.settings_menu = self.menu_bar.addMenu("Settings")
+            self.strata_settings_action = QAction("Strata…", self)
+            self.strata_settings_action.triggered.connect(self._on_strata_settings)
+            self.settings_menu.addAction(self.strata_settings_action)
+
     def _create_menus(self):
         """Create the main menu bar."""
         self.menu_bar = self.menuBar()
@@ -650,6 +662,12 @@ class MainWindow(QMainWindow):
         # Analysis menu
         self.analysis_menu = self.menu_bar.addMenu("Analysis")
         self.analysis_menu.addAction(self.calculate_volume_action)
+
+        # Settings menu
+        self.settings_menu = self.menu_bar.addMenu("Settings")
+        self.strata_settings_action = QAction("Strata…", self)
+        self.strata_settings_action.triggered.connect(self._on_strata_settings)
+        self.settings_menu.addAction(self.strata_settings_action)
 
         # ------------------------------------------------------------------
         # Tracing menu (new)
@@ -1153,7 +1171,9 @@ class MainWindow(QMainWindow):
 
         polyline_data_for_project: PolylineData = {
             "points": point_tuples_for_storage, # This is List[Tuple[float,float,float]]
-            "elevation": None  # Uniform elevation is None; Z is in points
+            "elevation": None,  # Uniform elevation is None; Z is in points
+            "is_strata": bool(item.data(Qt.UserRole + 4) or False),
+            "material_id": item.data(Qt.UserRole + 5),
         }
 
         new_index: Optional[int] = project.add_traced_polyline(
@@ -2836,3 +2856,13 @@ class MainWindow(QMainWindow):
             # If the QAction was already deleted (e.g. window closed) simply
             # ignore – this situation can occur in unit-test teardowns.
             pass
+
+    def _on_strata_settings(self):
+        """Open the Strata settings dialog."""
+        try:
+            from .dialogs.strata_settings_dialog import StrataSettingsDialog
+        except Exception as exc:
+            self.logger.error("Failed to import StrataSettingsDialog: %s", exc)
+            return
+        dlg = StrataSettingsDialog(self)
+        dlg.exec()

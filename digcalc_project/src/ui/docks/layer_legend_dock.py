@@ -11,6 +11,8 @@ visibleLayersChanged(int)
     can auto-show / hide the dock depending on count.
 layerVisibilityToggled(str, bool)
     layer_id, new_visible – forwarded to scene.
+strataContourModeChanged(bool)
+    NEW signal
 """
 
 from PySide6.QtCore import Qt, Signal
@@ -23,6 +25,8 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QPushButton,
+    QVBoxLayout,
+    QCheckBox,
 )
 
 from digcalc_project.src.models.layer import Layer
@@ -96,15 +100,31 @@ class LayerLegendDock(QDockWidget):
 
     visibleLayersChanged = Signal(int)
     layerVisibilityToggled = Signal(str, bool)  # layer_id, visible
+    strataContourModeChanged = Signal(bool)  # NEW signal
 
     def __init__(self, project, parent: QWidget | None = None):
         super().__init__("Legend", parent)
         self.setObjectName("LayerLegendDock")
         self._project = project
 
-        self._list = QListWidget(self)
+        # Main container widget for the dock
+        container = QWidget(self)
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setSpacing(4)
+
+        # --- NEW: Strata Contour checkbox ---
+        self._chk_strata = QCheckBox("Strata-Contour", container)
+        self._chk_strata.setToolTip("When enabled, newly drawn polylines are flagged as strata contours.")
+        self._chk_strata.toggled.connect(self.strataContourModeChanged)
+        layout.addWidget(self._chk_strata, 0, Qt.AlignLeft)
+
+        # List widget for legend rows
+        self._list = QListWidget(container)
         self._list.setSpacing(2)
-        self.setWidget(self._list)
+        layout.addWidget(self._list, 1)
+
+        self.setWidget(container)
 
         self.refresh()
 

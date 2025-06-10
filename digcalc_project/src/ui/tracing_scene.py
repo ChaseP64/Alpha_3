@@ -201,6 +201,22 @@ class TracingScene(QGraphicsScene):
         # Expose accessor compatible with MainWindow.undoStack()
         self.undoStack = lambda: self._undo_stack
 
+        # ------------------------------------------------------------------
+        # Strata-Contour mode (Phase 5-1A)
+        # ------------------------------------------------------------------
+        self._strata_contour_mode: bool = False  # Flag toggled via UI
+        self._current_material_id: Optional[int] = None  # Active material when flag on
+
+        # ------------------------------------------------------------------
+        # Ensure the scene has a non-zero rect so early unit-tests that click
+        # at small positive coordinates (10,10) will register even before any
+        # items or background images are added.  With an empty scene Qt leaves
+        # the rect at (0,0,0,0) which causes all clicks to be ignored.
+        # ------------------------------------------------------------------
+        if self.sceneRect().width() == 0 or self.sceneRect().height() == 0:
+            default_size = 1000.0
+            self.setSceneRect(0.0, 0.0, default_size, default_size)
+
     # --- Background Image ---
 
     # ------------------------------------------------------------------
@@ -732,6 +748,11 @@ class TracingScene(QGraphicsScene):
             mode="interpolated" if getattr(self, "_current_mode", False) else "entered",
             layer_id=layer_name  # Pass the layer_name as layer_id
         )
+
+        # NEW: Store strata-contour metadata ---------------------------------------
+        poly_item.setData(Qt.UserRole + 4, self._strata_contour_mode)
+        poly_item.setData(Qt.UserRole + 5, self._current_material_id)
+        # -------------------------------------------------------------------------
 
         # Make selectable & movable similar to previous behaviour
         poly_item.setFlag(QGraphicsItem.ItemIsSelectable, True)
@@ -1449,6 +1470,27 @@ class TracingScene(QGraphicsScene):
             except Exception:
                 pass
         QToolTip.hideText()
+
+    # ------------------------------------------------------------------
+    # Strata-Contour helpers
+    # ------------------------------------------------------------------
+    def set_strata_contour_mode(self, enabled: bool) -> None:
+        """Enable or disable *strata-contour* drawing mode."""
+        self._strata_contour_mode = bool(enabled)
+        self.logger.debug("Strata-Contour mode set to %s", enabled)
+
+    def strata_contour_mode(self) -> bool:
+        """Return the current strata-contour mode flag."""
+        return self._strata_contour_mode
+
+    def set_current_material_id(self, mat_id: Optional[int]) -> None:
+        """Set the *current* material ID used when strata-contour mode is active."""
+        self._current_material_id = mat_id
+        self.logger.debug("Current material id set to %s", mat_id)
+
+    def current_material_id(self) -> Optional[int]:
+        """Return the currently selected material ID (may be *None*)."""
+        return self._current_material_id
 
 # ------------------------------------------------------------------
 # Undo/Redo Command

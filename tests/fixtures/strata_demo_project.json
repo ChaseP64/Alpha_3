@@ -1,0 +1,67 @@
+{
+  "version": 2,
+  "name": "Strata Demo",
+  "description": "Minimal demo project for regression test",
+  "created_at": "2025-01-01T00:00:00",
+  "modified_at": "2025-01-01T00:00:00",
+  "author": "fixture",
+  "surfaces": {
+    "Existing": {
+      "name": "Existing",
+      "surface_type": "TIN",
+      "id": "s-existing",
+      "points": {
+        "p1": {"x": 0, "y": 0, "z": 15, "id": "p1"},
+        "p2": {"x": 1, "y": 0, "z": 15, "id": "p2"},
+        "p3": {"x": 0, "y": 1, "z": 15, "id": "p3"},
+        "p4": {"x": 1, "y": 1, "z": 15, "id": "p4"}
+      },
+      "triangles": {},
+      "metadata": {},
+      "source_layer_name": null,
+      "source_layer_revision": null
+    },
+    "Proposed": {
+      "name": "Proposed",
+      "surface_type": "TIN",
+      "id": "s-proposed",
+      "points": {
+        "q1": {"x": 0, "y": 0, "z": 5, "id": "q1"},
+        "q2": {"x": 1, "y": 0, "z": 5, "id": "q2"},
+        "q3": {"x": 0, "y": 1, "z": 5, "id": "q3"},
+        "q4": {"x": 1, "y": 1, "z": 5, "id": "q4"}
+      },
+      "triangles": {},
+      "metadata": {},
+      "source_layer_name": null,
+      "source_layer_revision": null
+    }
+  },
+  "calculations": [],
+  "regions": [],
+  "metadata": {},
+  "scale": null,
+  "pdf_background_path": null,
+  "pdf_background_page": 1,
+  "pdf_background_dpi": 150,
+  "traced_polylines": {},
+  "layer_revisions": {},
+  "flags": [],
+  "strata": {
+    "id": 1,
+    "uuid": "stack-1",
+    "default_opacity": 0.5,
+    "grid_metadata": {"x_min": 0, "y_min": 0, "cell_size": 1},
+    "materials": [
+      {"id": 1, "name": "Dirt", "colour": "#663300", "default_opacity": 1.0, "visible": true, "uuid": "mat-dirt"},
+      {"id": 2, "name": "Clay", "colour": "#cc9966", "default_opacity": 1.0, "visible": true, "uuid": "mat-clay"},
+      {"id": 3, "name": "Rock", "colour": "#999999", "default_opacity": 1.0, "visible": true, "uuid": "mat-rock"}
+    ],
+    "boreholes": [],
+    "surfaces": [
+      {"id": 1, "name": "Dirt Top", "material_id": 1, "default_opacity": 0.5, "grid_metadata": {"x_min": 0, "y_min": 0, "cell_size": 1}, "grid_data": [[10,10],[10,10]]},
+      {"id": 2, "name": "Clay Top", "material_id": 2, "default_opacity": 0.5, "grid_metadata": {"x_min": 0, "y_min": 0, "cell_size": 1}, "grid_data": [[5,5],[5,5]]},
+      {"id": 3, "name": "Rock Top", "material_id": 3, "default_opacity": 0.5, "grid_metadata": {"x_min": 0, "y_min": 0, "cell_size": 1}, "grid_data": [[0,0],[0,0]]}
+    ]
+  }
+} 

@@ -13,7 +13,7 @@ be unit-tested in isolation.
 
 import math
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 import numpy as np
 from shapely.geometry import LineString, Point
@@ -46,7 +46,7 @@ class HaulStation:
     cumulative: float
 
 
-class HaulStationList(list[HaulStation]):
+class HaulStationList(List[HaulStation]):
     """Custom list that can carry extra metadata like *overhaul*.
 
     Python's builtin *list* type cannot have attributes assigned directly
@@ -56,7 +56,7 @@ class HaulStationList(list[HaulStation]):
     """
 
     # Attribute is added dynamically inside *build_mass_haul*.
-    overhaul_yd_station: float | None = None
+    overhaul_yd_station: Optional[float] = None
 
 
 # ---------------------------------------------------------------------------

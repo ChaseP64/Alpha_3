@@ -155,6 +155,11 @@ class PDFReportGenerator:
             if "net_volume" in calculation.results:
                 f.write(f"Net Volume: {calculation.results['net_volume']:.2f} cubic units\n")
 
+            if hasattr(calculation, "material_volumes") and calculation.material_volumes:
+                f.write("\nCUT BY MATERIAL:\n")
+                for mat_name, vol in calculation.material_volumes.items():
+                    f.write(f"{mat_name}: {vol:.2f} cu yd\n")
+
     def _create_dummy_surface_report(self, surface: Surface,
                                    output_file: str) -> None:
         """Create a dummy surface report text file for the skeleton implementation.

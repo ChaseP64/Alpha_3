@@ -4,13 +4,17 @@
 This module provides functionality to calculate volumes between surfaces.
 """
 
+from __future__ import annotations  # Postpone evaluation of annotations (PEP 563)
+
 import logging
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, List, Optional, TYPE_CHECKING
 
 import numpy as np
+import numpy.typing as npt
 
 from ...models.calculation import SliceResult
 from ...models.project import Project
+from ...models.strata_models import StrataStack
 
 # Use relative import
 from ...models.surface import Surface
@@ -24,11 +28,40 @@ except ImportError:
     logging.getLogger(__name__).warning("SciPy not found. Grid interpolation will not work.")
 try:
     from shapely.errors import GEOSException
-    from shapely.geometry import Point, Polygon
+    from shapely.geometry import Point, Polygon, LineString
 except ImportError:
-    Point, Polygon, GEOSException = None, None, None
-    logging.getLogger(__name__).warning("Shapely not found. Region-based stripping will not work.")
+    logging.getLogger(__name__).warning("Shapely not found. Region-based stripping will not work. Using stub geometry classes for type checking.")
 
+    class _GeometryStub:  # minimal stand-in so type annotations remain valid
+        """Fallback stub used when Shapely is not installed (runtime only)."""
+
+        def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: D401 – trivial stub
+            pass
+
+    Point = _GeometryStub  # type: ignore
+    Polygon = _GeometryStub  # type: ignore
+    LineString = _GeometryStub  # type: ignore
+
+    class GEOSException(Exception):
+        """Stub replacement for Shapely's GEOSException."""
+
+        pass
+
+from digcalc_project.src.core.calculations.mass_haul import HaulStation
+
+__all__ = [
+    "VolumeCalculator",
+    "calculate_mass_haul_by_material"
+]
+
+# ---------------------------------------------------------------------------
+# Optional static-only imports – these are evaluated *only* by type checkers
+# so we avoid a hard runtime dependency on Shapely (DigCalc can run without
+# it).  ``from __future__ import annotations`` above ensures the annotations
+# remain as strings at runtime.
+# ---------------------------------------------------------------------------
+if TYPE_CHECKING:  # pragma: no cover
+    from shapely.geometry import LineString  # noqa: F401 – used for type hints only
 
 class VolumeCalculator:
     """Calculator for volumes between surfaces."""
@@ -374,3 +407,106 @@ class VolumeCalculator:
             slices.append(SliceResult(z, z_top, cut, fill))
             z = z_top
         return slices
+
+    def calculate_mass_haul_by_material(
+        self,
+        surface_ref: Surface,
+        surface_diff: Surface,
+        alignment: LineString,
+        station_interval: float,
+        strata_stack: StrataStack,
+    ) -> Tuple[List[HaulStation], Dict[str, npt.NDArray[Any]]]:
+        """
+        Calculates mass haul, breaking down cut volumes by material type.
+        """
+        import math
+
+        if not strata_stack or not strata_stack.surfaces:
+            raise ValueError("Strata stack with generated surfaces is required.")
+
+        length = alignment.length
+        n_stations = int(math.ceil(length / station_interval)) + 1
+        
+        # Initialize per-station total cut/fill and per-material cut
+        total_cuts = np.zeros(n_stations, dtype=float)
+        total_fills = np.zeros(n_stations, dtype=float)
+        
+        materials = {mat.id: mat for mat in strata_stack.materials}
+        material_cuts = {mat.name: np.zeros(n_stations, dtype=float) for mat in materials.values()}
+        
+        # Build a lookup for the diff surface
+        diff_lookup = {(p.x, p.y): p for p in surface_diff.points.values()}
+
+        # Pre-sort strata surfaces shallowest to deepest
+        sorted_strata_surfaces = sorted(strata_stack.surfaces, key=lambda s: s.id)
+
+        for p_ref in surface_ref.points.values():
+            key = (p_ref.x, p_ref.y)
+            p_diff = diff_lookup.get(key)
+            if not p_diff:
+                continue
+
+            station_dist = alignment.project(Point(p_ref.x, p_ref.y))
+            station_idx = int(station_dist // station_interval)
+            if station_idx >= n_stations:
+                station_idx = n_stations - 1
+            
+            dz = p_diff.z - p_ref.z
+            if dz > 0:
+                total_fills[station_idx] += dz
+            elif dz < 0:
+                total_cut_depth = -dz
+                total_cuts[station_idx] += total_cut_depth
+
+                # Distribute the cut depth across material layers
+                cut_remaining_at_point = total_cut_depth
+                
+                # Find the elevation of strata layers at this point
+                strata_tops = [(s, self._get_value_from_grid(s.grid_data, s.grid_metadata, p_ref.x, p_ref.y)) for s in sorted_strata_surfaces]
+                
+                for i, (surface, top_z) in enumerate(strata_tops):
+                    if top_z is None or not np.isfinite(top_z) or cut_remaining_at_point <= 0:
+                        continue
+                    
+                    # Find the bottom of the current layer
+                    bottom_z = -np.inf
+                    if i + 1 < len(strata_tops):
+                        next_surface, next_top_z = strata_tops[i+1]
+                        if next_top_z is not None and np.isfinite(next_top_z):
+                            bottom_z = next_top_z
+
+                    layer_thickness = top_z - bottom_z
+                    cut_in_this_layer = min(cut_remaining_at_point, layer_thickness)
+                    
+                    material = materials.get(surface.material_id)
+                    if material:
+                        material_cuts[material.name][station_idx] += cut_in_this_layer
+                    
+                    cut_remaining_at_point -= cut_in_this_layer
+        
+        # Build results
+        haul_stations = []
+        cumulative = 0.0
+        for i in range(n_stations):
+            cumulative += total_fills[i] - total_cuts[i]
+            haul_stations.append(HaulStation(station=i * station_interval, cut=total_cuts[i], fill=total_fills[i], cumulative=cumulative))
+
+        # Calculate cumulative volumes for each material for stackplot
+        cumulative_material_volumes = {name: np.cumsum(volumes) for name, volumes in material_cuts.items()}
+
+        return haul_stations, cumulative_material_volumes
+
+    # Need to re-add this helper function as it's not in this class
+    def _get_value_from_grid(self, grid: npt.NDArray[Any], meta: dict, x: float, y: float) -> Optional[float]:
+        """Gets an interpolated value from a grid at a given XY coordinate using nearest-neighbor."""
+        if 'x_min' not in meta or 'y_min' not in meta or 'cell_size' not in meta or meta['cell_size'] == 0:
+            return None
+        col = (x - meta['x_min']) / meta['cell_size']
+        row = (y - meta['y_min']) / meta['cell_size']
+        r_idx, c_idx = int(round(row)), int(round(col))
+        if not (0 <= r_idx < grid.shape[0] and 0 <= c_idx < grid.shape[1]):
+            return None
+        return grid[r_idx, c_idx]
+
+    # Add to __all__
+    # __all__.append("calculate_mass_haul_by_material")

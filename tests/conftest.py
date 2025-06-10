@@ -45,3 +45,29 @@ def mocker(monkeypatch):
                 return dummy
 
         return _StubMocker(monkeypatch)
+
+
+# ---------------------------------------------------------------------------
+# Lightweight *benchmark* fixture (fallback when pytest-benchmark is absent)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def benchmark():
+    """Minimal stand-in for *pytest-benchmark*'s fixture.
+
+    The real plugin provides rich statistical analysis; for our purposes we
+    only need to measure *wall-clock* runtime once so that unit-tests can
+    assert the algorithm completes within a rough threshold.  We therefore
+    implement a simple timer around the supplied callable and return the
+    elapsed seconds as a float.
+    """
+
+    import time
+
+    def _runner(func, *args, **kwargs):  # type: ignore[override]
+        t0 = time.perf_counter()
+        func(*args, **kwargs)
+        return time.perf_counter() - t0
+
+    return _runner

@@ -62,6 +62,40 @@ DigCalc now ships with a production-grade 3-D window powered by **PyVista**:
   <figcaption><b>Fig X.</b> Orbiting a three-strata site, slicing with the section plane, exaggerating Z, toggling Draft mode, and snapping a PNG.</figcaption>
 </figure>
 
+## Generate Strata from Contours
+
+Phase&nbsp;5 introduced *contour-based strata generation* — an alternative to borehole logs for defining material boundaries.
+
+1. Enable **Strata-Contour** in the *Layer Legend* dock (left).  Any closed polyline you trace will now be flagged as a contour for the *current material* (selected in the Strata Manager).
+2. Trace or import closed polylines for each material.  They may overlap; DigCalc always keeps the **lowest Z** at any XY when blending with borehole interpolation.
+3. Click **Generate Surfaces** in the Strata Manager.  The engine will:
+   * triangulate your contour rings (Shapely-powered)
+   * blend / trim them with IDW borehole grids
+   * write *.npz* caches for fast reloads
+4. View results in 3-D or as a heat-map overlay.
+
+> ℹ️  Open *Settings ▸ Strata…* to fine-tune IDW power, search radius, and maximum grid cell size.
+
+### New Settings
+
+| Setting | Location | Default | Notes |
+|---------|----------|---------|-------|
+| **IDW Power** | Settings ▸ Strata… | 2 | Higher = steeper influence fall-off. |
+| **Search Radius** (ft/m) | Settings ▸ Strata… | 150 ft | Samples beyond this distance are ignored. |
+| **Max Grid Cell** (ft/m) | Settings ▸ Strata… | 1 ft | Upper bound for adaptive grid resolution. |
+
+![Strata Settings Dialog](docs/img/strata_settings_dialog.png)
+
+---
+
+### Quick Demo (GIFs in *docs/gif*)
+
+| Feature | Preview |
+|---------|---------|
+| 2-D Strata Heat-map Toggle | ![heatmap](docs/gif/strata_heatmap_toggle.gif) |
+| 3-D Layer Cake & Section Plane | ![3-D strata](docs/gif/strata_layers_3d.gif) |
+| Per-Material Report Export | ![report](docs/gif/material_report.gif) |
+
 ## Installation
 
 ### Prerequisites

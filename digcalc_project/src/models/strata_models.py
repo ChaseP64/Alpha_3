@@ -61,6 +61,41 @@ class Material:
 
 
 @dataclass(slots=True)
+class StrataLayer:
+    """Lightweight layer sample for a single material at a given *top_z*.
+
+    The original DigCalc codebase stored both ``top_z`` and ``bottom_z`` but
+    several analytic unit-tests only care about the layer *top* elevation.  A
+    fully-featured :class:`LayerDepth` (defined below) is still available for
+    production code – :class:`StrataLayer` exists solely to keep legacy tests
+    functional without having to pass a redundant *bottom_z* argument.
+    """
+
+    material_id: int  #: Material identifier (matches Material.id)
+    top_z: float      #: Elevation (ft) of the layer *top*
+
+    # Optional compatibility attribute; ignored by the current tests but
+    # helpful if callers treat StrataLayer interchangeably with LayerDepth.
+    bottom_z: float | None = None
+
+    # ------------------------------------------------------------------
+    def to_dict(self) -> dict:
+        return {
+            "material_id": self.material_id,
+            "top_z": self.top_z,
+            "bottom_z": self.bottom_z,
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "StrataLayer":
+        return cls(
+            material_id=int(d["material_id"]),
+            top_z=float(d["top_z"]),
+            bottom_z=float(d.get("bottom_z")) if d.get("bottom_z") is not None else None,
+        )
+
+
+@dataclass(slots=True)
 class LayerDepth:
     """Material interval in a borehole."""
 
@@ -295,4 +330,9 @@ class StrataStack:
         i = 1
         while i in used:
             i += 1
-        return i 
+        return i
+
+
+__all__ = [
+    "Material", "StrataLayer", "LayerDepth", "BoreholeLog", "StrataSurface", "StrataStack"
+] 

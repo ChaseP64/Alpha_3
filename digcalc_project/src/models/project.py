@@ -42,6 +42,8 @@ def _migrate_v1_to_v2(data: dict) -> dict:
 class PolylineData(TypedDict):
     points: List[Union[Tuple[float, float], Tuple[float, float, float]]]
     elevation: Optional[float]
+    is_strata: bool
+    material_id: Optional[str]
 
 # Type alias for the main storage structure
 TracedPolylinesType = Dict[str, List[PolylineData]]
@@ -192,6 +194,8 @@ class Project:
         self,
         polyline: PolylineData, # Expect only the dictionary format now
         layer_name: str = "Existing Surface",
+        revision_map: Optional[Dict[str, int]] = None,
+        strata: Optional[StrataStack] = None, # Add strata parameter
     ) -> Optional[int]: # Return index on success, None on failure
         """Adds a traced polyline (as a PolylineData dictionary) to the specified layer.
 
@@ -231,9 +235,17 @@ class Project:
                 if len(z_values_in_points) == 1:
                     elevation_val = z_values_in_points.pop()
 
+        # Ensure defaults for new fields if they are missing
+        if "is_strata" not in polyline:
+            polyline["is_strata"] = False
+        if "material_id" not in polyline:
+            polyline["material_id"] = None
+
         polyline_obj_to_store: PolylineData = {
-            "points": points_list, # This list now contains 3D tuples from MainWindow
-            "elevation": elevation_val, # Uniform elevation, or None if Z is per-vertex or N/A
+            "points": points_list,
+            "elevation": elevation_val,
+            "is_strata": polyline.get("is_strata", False),
+            "material_id": polyline.get("material_id"),
         }
 
         if layer_name not in self.traced_polylines:
@@ -273,7 +285,9 @@ class Project:
              z_desc = f"Uniform Z: {stored_uniform_elev} (no points?)"
 
         logger.info(
-            f"Added polyline to layer '{layer_name}' (Index: {new_index}, Points: {len(stored_points)}, Elev: {z_desc}, New Rev: {new_revision})."
+            "Added polyline to layer '%s' (Index: %s, Points: %s, Elev: %s, New Rev: %s, Strata: %s).",
+            layer_name, new_index, len(stored_points), z_desc, new_revision,
+            polyline_obj_to_store.get('is_strata')
         )
 
         # Ensure the layer object itself exists in self.layers
@@ -359,6 +373,8 @@ class Project:
                         serializable_polys.append({
                             "points": serializable_points,
                             "elevation": poly_data.get("elevation"),
+                            "is_strata": poly_data.get("is_strata"),
+                            "material_id": poly_data.get("material_id"),
                         })
             serializable_data[layer] = serializable_polys
         return serializable_data

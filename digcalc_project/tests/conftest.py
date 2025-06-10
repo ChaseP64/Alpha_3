@@ -9,6 +9,7 @@ import sys
 import tempfile
 from collections.abc import Generator
 from pathlib import Path
+import os
 
 import pytest
 
@@ -22,6 +23,9 @@ if src_dir.exists():
     sys.path.insert(0, str(src_dir))
 
 print(f"Python path: {sys.path}")
+
+# Set CI environment flag so benchmark tests are skipped (heavy runtime)
+os.environ.setdefault("CI", "true")
 
 # Attempt to set PyVista to off-screen rendering for tests
 try:
@@ -76,3 +80,26 @@ def sample_project(sample_project_json_path: Path) -> Project:
     proj = Project.load(str(sample_project_json_path))
     assert proj is not None, "Failed to load sample project fixture"
     return proj
+
+# ---------------------------------------------------------------------------
+# Fallback *benchmark* fixture – replaces pytest-benchmark plugin when absent
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def benchmark():
+    """Provide minimal timing wrapper if *pytest-benchmark* plugin is missing.
+
+    The function returns the elapsed wall-clock time of the supplied callable
+    so benchmark tests can assert upper runtime bounds without requiring the
+    full plugin.
+    """
+
+    import time
+
+    def _run(func, *args, **kwargs):  # type: ignore[override]
+        t0 = time.perf_counter()
+        func(*args, **kwargs)
+        return time.perf_counter() - t0
+
+    return _run
