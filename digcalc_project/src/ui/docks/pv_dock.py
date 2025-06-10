@@ -5,7 +5,7 @@ from importlib import import_module
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction, QKeySequence, QCloseEvent
+from PySide6.QtGui import QAction, QKeySequence, QCloseEvent, QColor
 from PySide6.QtWidgets import (
     QComboBox,
     QDockWidget,
@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
 # Local imports
 # ----------------------------------------------------------------------------
 from ..pv_plotter_singleton import get_plotter
+from digcalc_project.src.utils.array_cache import load_grid
 
 if TYPE_CHECKING:  # pragma: no cover
     from digcalc_project.src.models.mesh_actor import MeshActor
@@ -40,6 +41,11 @@ DECIMATE_RATIO = 0.75  # keep 25 % of faces
 if TYPE_CHECKING:
     import pyvista as pv  # noqa: F401
 
+import logging
+import os
+import numpy as np
+
+logger = logging.getLogger(__name__)
 
 # -----------------------------------------------------------------------------
 # PvDock – 3-D view panel
@@ -115,6 +121,13 @@ class PvDock(QDockWidget):
         self.draft_chk.toggled.connect(self._apply_quality_mode)
         title_bar_layout.addWidget(self.draft_chk)
 
+        # --- NEW: Strata visibility toggle (Task 3-2) ---
+        self.strata_chk = QCheckBox("Show Strata")
+        self.strata_chk.setToolTip("Toggle visibility of strata layers")
+        self.strata_chk.setChecked(True)
+        self.strata_chk.toggled.connect(self._set_strata_visibility)
+        title_bar_layout.addWidget(self.strata_chk)
+
         # --- NEW: Screenshot & Bookmark buttons (Task 10-A) -----------------
         self.btn_snap = QToolButton(title_bar_widget)
         self.btn_snap.setText("📷")
@@ -166,6 +179,7 @@ class PvDock(QDockWidget):
 
         # MeshActor registry
         self.mesh_actors: dict[str, "MeshActor"] = {}
+        self.strata_actors: dict[int, "pv.Actor"] = {}
 
         # State holders for section-plane tool
         self._plane_widget = None  # type: ignore
@@ -188,7 +202,7 @@ class PvDock(QDockWidget):
             if hasattr(pc, "project_loaded"): pc.project_loaded.connect(self.load_project)
 
         # --- NEW: Connect layer-dock signals for sync with 3-D actors (Task 7-A) ---
-        for dock_name in ("layer_dock", "legend_dock"):
+        for dock_name in ("layer_dock", "legend_dock", "strata_manager_dock"):
             dock_obj = getattr(main_window, dock_name, None)
             if dock_obj is None:
                 continue
@@ -204,6 +218,17 @@ class PvDock(QDockWidget):
             if hasattr(dock_obj, "layerColorChanged"):
                 try:
                     dock_obj.layerColorChanged.connect(self._on_layer_color)
+                except Exception:
+                    pass
+            # Strata signals
+            if hasattr(dock_obj, "materialColorChanged"):
+                try:
+                    dock_obj.materialColorChanged.connect(self._on_strata_color_changed)
+                except Exception:
+                    pass
+            if hasattr(dock_obj, "materialVisibilityChanged"):
+                try:
+                    dock_obj.materialVisibilityChanged.connect(self._on_strata_visibility_changed)
                 except Exception:
                     pass
 
@@ -341,100 +366,110 @@ class PvDock(QDockWidget):
     #   Project-signal handlers
     # ------------------------------------------------------------------
     def load_project(self, project) -> None:
-        """Load the first surface of a project with specific defaults."""
-        self.mesh_actors.clear()
-        self.plotter.clear()  # Wipe entire scene as per user snippet
-
-        if not project or not hasattr(project, "surfaces") or not project.surfaces:
-            self.surf_cb.clear()
+        """Load all visual components of a project into the 3-D view."""
+        # For now, this just re-points the surface loader at the first surface.
+        # Future: load all layers, boreholes, etc.
+        self._populate_combo()
+        if self.surf_cb.count() > 0:
+            self._load_surface(self.surf_cb.currentText())
+        else:
+            self.plotter.clear()  # Clear everything if no surfaces
             self._current_actor = None
-            self.hide()
-            self.plotter.reset_camera() # Reset camera for empty scene
+        
+        self._render_strata_surfaces(project)
+
+        # Reset camera to frame the new content
+        self.plotter.reset_camera()
+
+    def _render_strata_surfaces(self, project) -> None:
+        """Loads and renders strata surfaces from cached grid files."""
+        # Clear existing strata actors
+        for actor in self.strata_actors.values():
+            self.plotter.remove_actor(actor)
+        self.strata_actors.clear()
+
+        if not project or not project.strata or not project.strata.surfaces:
             return
 
-        self.show() # Ensure dock is visible if it was hidden
+        cache_dir = os.path.join(project.get_cache_dir(), "strata")
+        
+        for surface in sorted(project.strata.surfaces, key=lambda s: s.id):
+            material = project.strata.get_material(surface.material_id)
+            if not material:
+                continue
+            
+            mat_name = material.name.replace(" ", "_")
+            filename = f"strata_cache_{project.id}_{mat_name}.npz"
+            path = os.path.join(cache_dir, filename)
 
-        # Populate the combobox with the new project's surfaces
-        # This assumes project_controller.get_current_project() now returns this 'project'
-        # or that _populate_combo can work with the main controller state.
-        self._populate_combo()
-
-        # Use the correct import path
-        from digcalc_project.src.utils.surface_to_polydata import surface_to_polydata
-
-        # ------------------------------------------------------------------
-        #   Task 5 – Opacity ladder for multi-strata
-        # ------------------------------------------------------------------
-        import numpy as _np  # local heavy import
-        from digcalc_project.src.models.mesh_actor import MeshActor
-
-        # Determine ordering – shallowest (highest Z) first
-        def _avg_z(surf):
-            return _np.mean([v[2] for v in surf.vertices]) if getattr(surf, "vertices", None) else 0.0
-
-        ordered_surfs = sorted(project.surfaces.items(), key=lambda kv: _avg_z(kv[1]), reverse=True)
-
-        # Simple fallback colour palette if project doesn\'t provide colours
-        fallback_palette = [
-            "#A67C52",  # brown
-            "#D1B280",  # lighter brown
-            "#B0C4DE",  # slate blue (clay)
-            "#708090",  # grey (rock)
-        ]
-        layer_color_map = {name: fallback_palette[i % len(fallback_palette)] for i, (name, _s) in enumerate(ordered_surfs)}
-
-        BASE_OPACITY = 1.0
-        STEP = 0.3
-
-        self.mesh_actors.clear()
-        self._current_actor = None
-
-        for idx, (surf_name, surf) in enumerate(ordered_surfs):
-            opacity = max(0.1, BASE_OPACITY - idx * STEP)
-
-            try:
-                mesh = surface_to_polydata(surf)
-                self._validate_polydata(mesh)
-            except ValueError as err:
-                print(f"Skipping surface '{surf_name}': {err}")
+            if not os.path.exists(path):
+                logger.warning(f"Strata cache file not found: {path}")
                 continue
 
-            ma = MeshActor(
-                surface_name=surf_name,
-                mesh=mesh,
-                color=None,  # Will convert below
-                opacity=opacity,
-            )
-            # QColor import lazily
-            from PySide6.QtGui import QColor  # type: ignore
-            ma.color = QColor(layer_color_map.get(surf_name, fallback_palette[0]))
+            try:
+                grid_data, meta = load_grid(path)
+                
+                # Reconstruct grid coordinates from metadata
+                x_coords = np.arange(meta['x_min'], meta['x_min'] + meta['cell_size'] * grid_data.shape[1], meta['cell_size'])
+                y_coords = np.arange(meta['y_min'], meta['y_min'] + meta['cell_size'] * grid_data.shape[0], meta['cell_size'])
+                
+                # Ensure coordinate arrays match grid dimensions
+                x_coords = x_coords[:grid_data.shape[1]]
+                y_coords = y_coords[:grid_data.shape[0]]
 
-            self.add_actor(ma)
-            # Set the first (top) actor as current_actor for toggle logic
-            if self._current_actor is None:
-                self._current_actor = ma.actor
+                xx, yy = np.meshgrid(x_coords, y_coords)
 
-        # After adding all actors, reset camera once
-        if self.plotter.renderer.actors:
-            self.plotter.camera_position = "iso"
-            self.plotter.reset_camera(bounds=self.plotter.renderer.bounds)
-            self.plotter.enable_parallel_projection()
+                # Create a pyvista structured grid
+                mesh = pv.StructuredGrid(xx, yy, grid_data)
+                mesh.active_scalars_name = "Elevation"
+                
+                actor = self.plotter.add_mesh(
+                    mesh,
+                    color=material.colour,
+                    name=f"Strata: {material.name}"
+                )
+                self.strata_actors[material.id] = actor
 
-        # Update combobox selection to reflect the loaded surface
-        first_name = ordered_surfs[0][0] if ordered_surfs else None
-        if first_name and self.surf_cb.findText(first_name) != -1:
-            self.surf_cb.setCurrentText(first_name)
-        elif self.surf_cb.count() > 0:
-            self.surf_cb.setCurrentIndex(0) # Fallback to first item if name not found
+            except Exception as e:
+                logger.exception(f"Failed to load or render strata surface from {path}: {e}")
+        
+        # Apply initial visibility and opacity based on checkbox state
+        self._set_strata_visibility(self.strata_chk.isChecked())
 
-        # --- Task 6-A: ensure section-plane widget exists ---
-        self._ensure_plane_widget()
+    def _set_strata_visibility(self, visible: bool):
+        """Toggles visibility and opacity ladder for strata actors."""
+        if not self.strata_actors:
+            return
 
-        # --- Task 11-C: sync legend after actors are ready ---
-        self._sync_plotter_legend()
+        if not visible:
+            for actor in self.strata_actors.values():
+                actor.SetVisibility(False)
+            self.plotter.render()
+            return
+
+        # When turning on, apply opacity ladder
+        proj = self.main.project_controller.get_current_project()
+        if not proj or not proj.strata or not proj.strata.surfaces:
+            return
+
+        # Sort surfaces shallowest to deepest (assuming ID is the order)
+        sorted_surfaces = sorted(proj.strata.surfaces, key=lambda s: s.id)
+        
+        opacities = [1.0, 0.7, 0.5]  # The opacity ladder
+        
+        for i, surface in enumerate(sorted_surfaces):
+            actor = self.strata_actors.get(surface.material_id)
+            if actor:
+                # Use a default low opacity if the ladder doesn't cover all layers
+                opacity = opacities[i] if i < len(opacities) else 0.3
+                actor.GetProperty().SetOpacity(opacity)
+                actor.SetVisibility(True)
+        
+        self.plotter.render()
 
     def _on_surfaces_rebuilt(self):
-        """Refresh combo and ensure a visible mesh afterwards."""
+        """Callback for when project surfaces are modified."""
+        # For now, just re-populate the combo box and load the active one.
         old_selection = self.surf_cb.currentText()
         current_idx = self.surf_cb.currentIndex()
         self.surf_cb.blockSignals(True)
@@ -776,8 +811,6 @@ class PvDock(QDockWidget):
     # ------------------------------------------------------------------
     def _on_layer_color(self, layer_id: str, new_hex: str):  # noqa: ANN001
         """Update mesh actor colour in response to layer colour edits."""
-        from PySide6.QtGui import QColor  # Local import to avoid heavy Qt early
-
         new_qcolor = QColor(new_hex)
         for ma in self.mesh_actors.values():
             if ma.surface_name == layer_id:
@@ -962,3 +995,17 @@ class PvDock(QDockWidget):
                 self.plotter._digcalc_legend_actor = None  # type: ignore[attr-defined]
 
         self.plotter.render()
+
+    def _on_strata_color_changed(self, material_id: int, new_hex: str):
+        """Updates the color of a specific strata actor."""
+        actor = self.strata_actors.get(material_id)
+        if actor:
+            actor.GetProperty().SetColor(QColor(new_hex).getRgbF()[:3])
+            self.plotter.render()
+
+    def _on_strata_visibility_changed(self, material_id: int, visible: bool):
+        """Updates the visibility of a specific strata actor."""
+        actor = self.strata_actors.get(material_id)
+        if actor:
+            actor.SetVisibility(visible)
+            self.plotter.render()

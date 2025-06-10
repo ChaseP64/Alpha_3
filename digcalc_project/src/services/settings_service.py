@@ -41,6 +41,7 @@ class SettingsService(Singleton):
             "idw_power": 2,
             "idw_radius_ft": 150,
             "default_cell_size_ft": 1,
+            "rmse_threshold": 0.5,
         },
         "performance": {
             "max_threads": -1,
@@ -145,6 +146,10 @@ class SettingsService(Singleton):
     @property
     def strata_default_cell_size(self) -> float:
         return float(self.get_strata_setting("default_cell_size_ft", 1.0))
+
+    @property
+    def strata_rmse_threshold(self) -> float:
+        return float(self.get_strata_setting("rmse_threshold", 0.5))
 
     def get_ui_setting(self, key: str, default=None):
         return self.get("user_interface", key, default)

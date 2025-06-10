@@ -10,6 +10,7 @@ import enum  # Add import
 import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+import os
 
 import numpy as np
 from PySide6 import QtWidgets
@@ -39,6 +40,7 @@ from PySide6.QtWidgets import (
     QStackedWidget,
     QVBoxLayout,
     QWidget,
+    QToolBar,
 )
 
 # Removed: from PySide6.QtPdf import QPdfDocument
@@ -56,6 +58,7 @@ from PySide6.QtWidgets import (
 
 from digcalc_project.src.ui.pv_plotter_singleton import get_plotter  # singleton accessor
 from digcalc_project.src.utils.surface_to_polydata import surface_to_polydata
+from digcalc_project.src.utils.array_cache import load_grid
 
 # Stubs retained for minimal compile impact on any yet-to-be-refactored helpers.
 # GLViewWidget = QWidget  # type: ignore # Removed
@@ -246,6 +249,10 @@ class VisualizationPanel(QWidget):
         self._cutfill_visible: bool = False
         # --- End Cut/Fill Map Attributes ---
 
+        # --- Strata Heatmap Attributes ---
+        self.heatmap_items: Dict[int, QGraphicsPixmapItem] = {}
+        self.strata_heatmap_action: Optional[QtWidgets.QAction] = None
+
         # Initialize UI components
         self._init_ui()
 
@@ -253,6 +260,7 @@ class VisualizationPanel(QWidget):
         self.surface_visualization_failed.connect(self._on_visualization_failed)
         # Connect the request signal to the actual loading method
         self.request_polylines_load_to_qml.connect(self.load_polylines_into_qml)
+        self._connect_strata_signals()
 
         self.logger.debug("VisualizationPanel initialized")
 
@@ -312,7 +320,26 @@ class VisualizationPanel(QWidget):
         # Start in 2-D view by default
         self.stacked_widget.setCurrentWidget(self.view_2d)
 
+        # --- Toolbar ---
+        toolbar = QtWidgets.QToolBar("Visualization")
+        self.strata_heatmap_action = toolbar.addAction("Show Strata Heatmap")
+        self.strata_heatmap_action.setCheckable(True)
+        self.strata_heatmap_action.toggled.connect(self._toggle_strata_heatmap)
+        layout.addWidget(toolbar)
+
         self.logger.debug("VisualizationPanel UI initialized with QStackedWidget")
+
+    def _connect_strata_signals(self):
+        """Connect to signals from the StrataManagerDock."""
+        # This assumes main_window has a reference to strata_manager_dock
+        main_window = self.parent()
+        while main_window and not hasattr(main_window, 'strata_manager_dock'):
+            main_window = main_window.parent()
+
+        if hasattr(main_window, 'strata_manager_dock'):
+            strata_dock = main_window.strata_manager_dock
+            strata_dock.materialColorChanged.connect(self._on_strata_color_changed)
+            strata_dock.materialVisibilityChanged.connect(self._on_strata_visibility_changed)
 
     def set_project(self, project: Optional[Project]):
         """Sets the current project for the visualization panel and updates the display.
@@ -398,6 +425,9 @@ class VisualizationPanel(QWidget):
             # Set a default view (e.g., empty 3D)
             self.show_3d_view()
 
+        if self.strata_heatmap_action.isChecked():
+            self._toggle_strata_heatmap(True)
+
     def display_surface(self, surface: Surface) -> bool:
         """Display a surface in the 3D view. This now calls update_surface_mesh.
         Args: surface: Surface to display
@@ -481,11 +511,12 @@ class VisualizationPanel(QWidget):
                 self.logger.error("Could not toggle visibility for '%s': %s", surface.name, exc)
 
     def clear_all(self):
-        """Clears surfaces, PDF background, traced lines, and cut/fill map."""
+        """Clears all visual elements from both 2D and 3D views."""
         self.logger.info("Clearing all visualization data.")
         self.clear_pdf_background()
         self.clear_polylines_from_scene()
-        self.clear_cutfill_map() # Added call to clear cut/fill map
+        self.clear_cutfill_map()
+        self._toggle_strata_heatmap(False) # Clear heatmaps
 
         # Clear PyVista actors
         try:
@@ -1106,7 +1137,7 @@ class VisualizationPanel(QWidget):
             self.clear_cutfill_map() # Clear any partial state
 
     def clear_cutfill_map(self):
-        """Remove the cut/fill map visualizations from both views."""
+        """Removes the cut/fill map from the 2D and 3D views."""
         self.logger.debug("Clearing cut/fill map visualization.")
         if self._dz_image_item:
             if self.scene_2d and self._dz_image_item in self.scene_2d.items():
@@ -1138,3 +1169,84 @@ class VisualizationPanel(QWidget):
         else:
             self.drawing_mode = DrawingMode.SELECT
             self.view_2d.setCursor(Qt.ArrowCursor)
+
+    def _toggle_strata_heatmap(self, enabled: bool):
+        """Shows or hides the strata heat-map overlays in the 2D view."""
+        # First, clear any existing items
+        for item in self.heatmap_items.values():
+            if item.scene():
+                self.scene_2d.removeItem(item)
+        self.heatmap_items.clear()
+
+        if not enabled or not self.current_project or not self.current_project.strata:
+            return
+
+        cache_dir = os.path.join(self.current_project.get_cache_dir(), "strata")
+        
+        for surface in sorted(self.current_project.strata.surfaces, key=lambda s: s.id, reverse=True):
+            material = self.current_project.strata.get_material(surface.material_id)
+            if not material:
+                continue
+
+            mat_name = material.name.replace(" ", "_")
+            filename = f"strata_cache_{self.current_project.id}_{mat_name}.npz"
+            path = os.path.join(cache_dir, filename)
+
+            if not os.path.exists(path):
+                continue
+            
+            try:
+                grid_data, meta = load_grid(path)
+                q_image = self._create_heatmap_image(grid_data, material.colour)
+                pixmap = QPixmap.fromImage(q_image)
+                
+                item = QGraphicsPixmapItem(pixmap)
+                item.setPos(meta['x_min'], meta['y_min'])
+                
+                # Use a transform to scale the pixmap correctly based on cell size
+                transform = QTransform().scale(meta['cell_size'], meta['cell_size'])
+                item.setTransform(transform)
+
+                item.setZValue(-2) # Below breaklines (Z=-1) and other items
+                item.setOpacity(0.3) # As per task spec
+
+                self.scene_2d.addItem(item)
+                self.heatmap_items[material.id] = item
+                
+            except Exception as e:
+                logger.exception(f"Failed to create heatmap for material '{material.name}': {e}")
+    
+    def _create_heatmap_image(self, grid_data: np.ndarray, color_hex: str) -> QImage:
+        """Creates a QImage from grid data, coloring valid data points."""
+        from PySide6.QtGui import QColor
+
+        color = QColor(color_hex)
+        r, g, b = color.red(), color.green(), color.blue()
+        
+        height, width = grid_data.shape
+        # Create an RGBA image buffer, initialized to fully transparent
+        buffer = np.zeros((height, width, 4), dtype=np.uint8)
+        
+        # Find where grid data is valid (not NaN)
+        valid_mask = ~np.isnan(grid_data)
+        
+        # Set the color for valid data points
+        buffer[valid_mask] = [r, g, b, 255] # Full opacity within the image itself
+        
+        # QImage expects (height, width, 4) data for RGBA
+        return QImage(buffer.data, width, height, QImage.Format.Format_RGBA8888)
+
+    def _on_strata_color_changed(self, material_id: int, new_hex: str):
+        """Updates the color of a specific heatmap item."""
+        item = self.heatmap_items.get(material_id)
+        # This is inefficient as it re-reads from disk. A better way would be to just
+        # update the pixmap, but that requires re-applying the color to the image data.
+        # For now, we just re-create it.
+        if item and self.strata_heatmap_action.isChecked():
+            self._toggle_strata_heatmap(True) # Just refresh all heatmaps
+
+    def _on_strata_visibility_changed(self, material_id: int, visible: bool):
+        """Updates the visibility of a specific heatmap item."""
+        item = self.heatmap_items.get(material_id)
+        if item:
+            item.setVisible(visible)

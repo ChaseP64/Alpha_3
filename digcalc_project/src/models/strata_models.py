@@ -32,6 +32,9 @@ class Material:
     name: str
     colour: str = "#CCCCCC"  # hex RGB for UI legend
     density_pcft: Optional[float] = None  # pcf (lbs/ft³)
+    default_opacity: float = 1.0
+    visible: bool = True
+    uuid: str = field(default_factory=lambda: str(_uuid.uuid4()))
 
     def to_dict(self) -> dict:
         return {
@@ -39,6 +42,9 @@ class Material:
             "name": self.name,
             "colour": self.colour,
             "density_pcft": self.density_pcft,
+            "default_opacity": self.default_opacity,
+            "visible": self.visible,
+            "uuid": self.uuid,
         }
 
     @classmethod
@@ -48,6 +54,9 @@ class Material:
             name=d["name"],
             colour=d.get("colour", "#CCCCCC"),
             density_pcft=d.get("density_pcft"),
+            default_opacity=float(d.get("default_opacity", 1.0)),
+            visible=bool(d.get("visible", True)),
+            uuid=d.get("uuid", str(_uuid.uuid4())),
         )
 
 

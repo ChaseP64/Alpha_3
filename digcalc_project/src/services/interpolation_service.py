@@ -9,11 +9,14 @@ from __future__ import annotations
 import logging
 import time
 from typing import TYPE_CHECKING, Any, Callable, List, Protocol, Tuple
+import os
 
 import numpy as np
+from PyQt6.QtCore import QThread, pyqtSignal
 
 from ..models.strata_models import StrataSurface
 from ..services.settings_service import SettingsService
+from ..utils.array_cache import save_grid
 
 # --------------------------------------------------------------------------
 # Optional SciPy import for performance
@@ -49,7 +52,7 @@ class IStrataInterpolator(Protocol):
         stack: StrataStack,
         existing_surface: Surface,
         progress_cb: ProgressCallback | None = None,
-    ) -> List[StrataSurface]:
+    ) -> Tuple[List[StrataSurface], float]:
         ...
 
 
@@ -75,27 +78,39 @@ class IDWInterpolator:
         stack: StrataStack,
         existing_surface: Surface,
         progress_cb: ProgressCallback | None = None,
-    ) -> List[StrataSurface]:
+    ) -> Tuple[List[StrataSurface], float]:
         """Generate one interpolated StrataSurface per material layer."""
         if not stack.boreholes or not stack.materials:
             self._logger.warning("Cannot generate strata surfaces: no boreholes or materials.")
-            return []
+            return [], 0.0
 
         t0 = time.monotonic()
         total_materials = len(stack.materials)
         surfaces = []
+        all_squared_errors = []
 
         for i, material in enumerate(stack.materials):
             if progress_cb:
                 progress_cb(int(i / total_materials * 100))
 
             points, values = self._get_points_for_material(stack, material.id)
-            if points is None or len(points) < 3:
+            if points is None or values is None or len(points) < 3:
                 self._logger.warning(f"Skipping material '{material.name}': needs at least 3 points.")
                 continue
 
             grid, metadata = self._create_interpolated_grid(project, existing_surface, points, values)
             
+            # --- RMSE Calculation ---
+            squared_errors = []
+            for point, value in zip(points, values):
+                interpolated_z = self._get_value_from_grid(grid, metadata, point[0], point[1])
+                if interpolated_z is not None and np.isfinite(interpolated_z):
+                    squared_errors.append((interpolated_z - value) ** 2)
+            
+            if squared_errors:
+                all_squared_errors.extend(squared_errors)
+            # --- End RMSE Calculation ---
+
             surface = StrataSurface(
                 id=i + 1,
                 material_id=material.id,
@@ -106,9 +121,10 @@ class IDWInterpolator:
 
         if progress_cb:
             progress_cb(100)
-            
-        self._logger.info(f"Generated {len(surfaces)} strata surfaces in {time.monotonic() - t0:.2f}s.")
-        return surfaces
+
+        overall_rmse = np.sqrt(np.mean(all_squared_errors)) if all_squared_errors else 0.0
+        self._logger.info(f"Generated {len(surfaces)} strata surfaces in {time.monotonic() - t0:.2f}s with RMSE: {overall_rmse:.4f}")
+        return surfaces, overall_rmse
 
     def _get_points_for_material(self, stack: StrataStack, material_id: int) -> Tuple[np.ndarray | None, np.ndarray | None]:
         """Extracts XY points and Z values for a given material from boreholes."""
@@ -126,6 +142,21 @@ class IDWInterpolator:
             return None, None
             
         return np.array(points), np.array(values)
+
+    def _get_value_from_grid(self, grid: np.ndarray, meta: dict, x: float, y: float) -> float | None:
+        """Gets an interpolated value from a grid at a given XY coordinate using nearest-neighbor."""
+        if 'x_min' not in meta or 'y_min' not in meta or 'cell_size' not in meta or meta['cell_size'] == 0:
+            return None
+
+        col = (x - meta['x_min']) / meta['cell_size']
+        row = (y - meta['y_min']) / meta['cell_size']
+
+        r_idx, c_idx = int(round(row)), int(round(col))
+
+        if not (0 <= r_idx < grid.shape[0] and 0 <= c_idx < grid.shape[1]):
+            return None
+            
+        return grid[r_idx, c_idx]
 
     def _calculate_adaptive_cell_size(self, project: Project) -> float:
         """Determines grid cell size."""
@@ -226,4 +257,53 @@ class IDWInterpolator:
             weights = 1.0 / d_masked**power
             z_values[i] = np.sum(weights * v_masked) / np.sum(weights)
             
-        return z_values 
+        return z_values
+
+
+class StrataJob(QThread):
+    """Asynchronous worker for running strata interpolation."""
+    progress = pyqtSignal(int)
+    finished = pyqtSignal(list, float)  # surfaces, rmse
+
+    def __init__(self, interpolator: IStrataInterpolator, project: 'Project', stack: 'StrataStack', existing_surface: 'Surface', cache_dir: str):
+        super().__init__()
+        self._interpolator = interpolator
+        self._project = project
+        self._stack = stack
+        self._existing_surface = existing_surface
+        self._cache_dir = cache_dir
+        self._logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+
+    def run(self):
+        """Execute the interpolation and emit results."""
+        self._logger.info("Starting asynchronous strata generation job.")
+        try:
+            surfaces, rmse = self._interpolator.generate_surfaces(
+                self._project, self._stack, self._existing_surface, self.progress.emit
+            )
+            self._write_caches(surfaces)
+            self.finished.emit(surfaces, rmse)
+            self._logger.info(f"Asynchronous strata generation job finished successfully with RMSE: {rmse:.4f}")
+        except Exception as e:
+            self._logger.exception(f"Strata generation job failed: {e}")
+            self.finished.emit([], -1.0)
+
+    def _write_caches(self, surfaces: List[StrataSurface]):
+        """Saves generated surface grids to compressed .npz files."""
+        if not os.path.exists(self._cache_dir):
+            os.makedirs(self._cache_dir)
+            self._logger.info(f"Created cache directory: {self._cache_dir}")
+
+        for surface in surfaces:
+            # Find the material name for a more descriptive filename
+            material = next((m for m in self._stack.materials if m.id == surface.material_id), None)
+            mat_name = material.name.replace(" ", "_") if material else f"unknown_mat_{surface.material_id}"
+            
+            # Using project UUID and material name to ensure unique cache file
+            filename = f"strata_cache_{self._project.id}_{mat_name}.npz"
+            path = os.path.join(self._cache_dir, filename)
+            
+            try:
+                save_grid(path, surface.grid_data, surface.grid_metadata)
+            except Exception as e:
+                self._logger.error(f"Failed to write cache file {path}: {e}") 
