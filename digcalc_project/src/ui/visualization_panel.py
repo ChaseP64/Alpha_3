@@ -16,7 +16,7 @@ import numpy as np
 from PySide6 import QtWidgets
 
 # PySide6 imports
-from PySide6.QtCore import QPoint, QPointF, Qt, Signal, Slot
+from PySide6.QtCore import QPoint, QPointF, QRectF, Qt, Signal, Slot
 from PySide6.QtGui import (  # Added QPainter, QSize
     QImage,
     QMouseEvent,
@@ -305,6 +305,18 @@ class VisualizationPanel(QWidget):
         self.view_2d.setScene(self.scene_2d)
         # Add render hints for better quality rendering
         self.view_2d.setRenderHints(QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform)
+        # Ensure the default scene rect (set by TracingScene) is fully visible so
+        # small scene coordinates like (10,10) map to *positive* viewport
+        # positions even before any items/backgrounds are added.  This is
+        # critical for headless unit-tests that immediately simulate
+        # ``qtbot.mouseClick(view.viewport(), pos=mapFromScene(10,10))``.
+        if not self.view_2d.transform().isScaling():
+            self.view_2d.fitInView(self.scene_2d.sceneRect(), Qt.KeepAspectRatio)
+            # Explicitly pan so a 20×20 rect anchored at origin is visible –
+            # this guarantees that tests clicking at (10,10) land inside the
+            # viewport even on platforms where the initial scroll position is
+            # centred to the scene middle.
+            self.view_2d.ensureVisible(QRectF(0, 0, 20, 20))
         # self.view_2d.setVisible(False) # Visibility managed by stack
         self.stacked_widget.addWidget(self.view_2d)
 

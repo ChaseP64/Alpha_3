@@ -372,6 +372,7 @@ class TracingScene(QGraphicsScene):
 
         # Borehole tool click handling
         if panel.drawing_mode.name == "BOREHOLE" and event.button() == Qt.LeftButton:
+            self.logger.info("Borehole mode click at (%.2f, %.2f)", event.scenePos().x(), event.scenePos().y())
             scene_pos = event.scenePos()
             panel.boreholePointPicked.emit(scene_pos.x(), scene_pos.y())
             # exit borehole mode (handled by panel or caller)
