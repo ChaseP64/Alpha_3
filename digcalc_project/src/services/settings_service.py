@@ -31,224 +31,123 @@ class SettingsService(Singleton):
 
     _path: Path = Path.home() / ".digcalc" / "settings.json"
 
-    _defaults: dict[str, Any] = {
-        "slice_thickness_ft": 0.5,
-        "default_strip_depth_ft": 0.0,
-        "free_haul_distance_ft": 500.0,
-        "default_slice_thickness_ft": 0.5,
-        # Whether newly drawn polylines default to *smooth* (spline) mode.
-        "smooth_default": False,
-        # Tracing elevation prompt mode: "point", "interpolate", "line"
-        "tracing_elev_mode": "point",
-        # Whether tracing is enabled by default (Ctrl-T toggles)
-        "tracing_enabled": True,
-        # Catmull / B-spline resampling density in feet
-        "smooth_sampling_ft": 1.0,
-        # Minimum allowed spacing (ft) between resampled spline points when
-        # compression is enabled (T-6 optimisation phase).
-        "smooth_min_spacing_ft": 0.01,
-        # Maximum number of points returned by spline sampling before further
-        # compression / decimation kicks in.
-        "smooth_max_points": 20000,
-        # Vertex drawing preferences
-        "vertex_cross_px": 6,  # Half-length of crosshair in screen pixels
-        "vertex_hover_colour": "#ffff00",  # Hover colour (Qt yellow)
-        "vertex_line_thickness": 0,  # Cosmetic pen (0 = hairline)
-        # --- NEW: last used scale for PDF calibration ---
-        "last_scale_world_units": "ft",
-        "last_scale_world_per_in": 20.0,
+    _DEFAULTS: dict[str, Any] = {
+        "user_interface": {
+            "theme": "light",
+            "show_splash_screen": True,
+            "recent_files_max": 10,
+        },
+        "strata": {
+            "idw_power": 2,
+            "idw_radius_ft": 150,
+            "default_cell_size_ft": 1,
+        },
+        "performance": {
+            "max_threads": -1,
+            "use_gpu_acceleration": True,
+        },
+        "tracing": {
+            "snap_sensitivity_px": 10,
+            "angle_snap_degrees": 15,
+            "background_opacity": 0.5,
+            "smooth_default": False,
+            "tracing_elev_mode": "point",
+            "tracing_enabled": True,
+            "smooth_sampling_ft": 1.0,
+            "smooth_min_spacing_ft": 0.01,
+            "smooth_max_points": 20000,
+        },
+        "units": {
+            "default_length": "ft",
+            "default_area": "sqft",
+            "default_volume": "cuyd",
+        },
+        "calibration": {
+            "last_scale_world_units": "ft",
+            "last_scale_world_per_in": 20.0,
+        },
+        "legacy": {
+            "slice_thickness_ft": 0.5,
+            "default_strip_depth_ft": 0.0,
+            "free_haul_distance_ft": 500.0,
+            "default_slice_thickness_ft": 0.5,
+            "vertex_cross_px": 6,
+            "vertex_hover_colour": "#ffff00",
+            "vertex_line_thickness": 0,
+        },
     }
 
-    # ------------------------------------------------------------------
     def __init__(self) -> None:
-        # Guard – only run once due to Singleton inheritance
-        if getattr(self, "_initialized", False):  # type: ignore[attr-defined]
+        if getattr(self, "_initialized", False):
             return
 
-        # Ensure directory exists
         try:
             self._path.parent.mkdir(parents=True, exist_ok=True)
-        except Exception as exc:  # pragma: no cover – path issues
+        except Exception as exc:
             logger.warning("Cannot create settings directory %s: %s", self._path.parent, exc)
 
-        # Merge defaults with loaded file
-        self._data: dict[str, Any] = {**self._defaults, **self._load()}
-        self._initialized = True  # type: ignore[attr-defined]
+        self._settings: dict[str, Any] = self._load()
+        self._initialized = True
 
-    # ------------------------------------------------------------------
     def _load(self) -> dict[str, Any]:
-        """Read JSON file if it exists; return dict or empty on failure."""
+        """Read JSON file, merge with defaults, and return."""
         if not self._path.exists():
-            return {}
+            return self._DEFAULTS.copy()
         try:
             with self._path.open("r", encoding="utf-8") as fp:
-                data = json.load(fp)
-            # Only keep keys we recognise – ignore unknowns
-            return {k: data[k] for k in self._defaults.keys() if k in data}
-        except Exception as exc:  # pragma: no cover – corrupt file etc.
+                loaded_settings = json.load(fp)
+            # Merge loaded settings into defaults to ensure all keys exist
+            settings = self._DEFAULTS.copy()
+            for key, value in loaded_settings.items():
+                if isinstance(value, dict) and isinstance(settings.get(key), dict):
+                    settings[key].update(value)
+                else:
+                    settings[key] = value
+            return settings
+        except Exception as exc:
             logger.error("Failed to load settings file %s: %s", self._path, exc)
-            return {}
+            return self._DEFAULTS.copy()
 
-    # ------------------------------------------------------------------
-    def get(self, key: str, default: Any | None = None) -> Any | None:
-        """Return setting *key* or *default* if missing."""
-        return self._data.get(key, default)
+    def get(self, group: str, key: str, default: Any | None = None) -> Any | None:
+        """Return setting `key` from `group` or `default` if missing."""
+        return self._settings.get(group, {}).get(key, default)
 
-    # ------------------------------------------------------------------
-    def set(self, key: str, value: Any) -> None:
-        """Update setting value in memory. Call :pymeth:`save` to persist."""
-        self._data[key] = value
+    def set(self, group: str, key: str, value: Any) -> None:
+        """Update setting value in memory. Call `save` to persist."""
+        if group not in self._settings:
+            self._settings[group] = {}
+        self._settings[group][key] = value
+        self.save()
 
-    # ------------------------------------------------------------------
     def save(self) -> None:
-        """Write current settings to JSON file, creating directories as needed."""
+        """Write current settings to JSON file."""
         try:
-            self._path.parent.mkdir(parents=True, exist_ok=True)
             with self._path.open("w", encoding="utf-8") as fp:
-                json.dump(self._data, fp, indent=2)
+                json.dump(self._settings, fp, indent=4)
             logger.info("Settings saved to %s", self._path)
-        except Exception as exc:  # pragma: no cover – disk full etc.
+        except Exception as exc:
             logger.error("Failed to save settings to %s: %s", self._path, exc)
 
-    # --- Convenience Accessors ---
-    def strip_depth_default(self) -> float:
-        """Get the default stripping depth in feet."""
-        # Ensure we return a float, defaulting to the class default if needed
-        return float(self.get("default_strip_depth_ft", self._defaults["default_strip_depth_ft"]))
+    # --------------------------------------------------------------------------
+    # Convenience Accessors
+    # --------------------------------------------------------------------------
+    def get_strata_setting(self, key: str, default=None):
+        return self.get("strata", key, default)
 
-    def set_strip_depth_default(self, value: float) -> None:
-        """Set the default stripping depth in feet."""
-        self.set("default_strip_depth_ft", float(value))
-        self.save() # Persist immediately?
+    @property
+    def strata_idw_power(self) -> int:
+        return int(self.get_strata_setting("idw_power", 2))
 
-    def slice_thickness_default(self) -> float:
-        """Get the default slice thickness in feet."""
-        return float(self.get("default_slice_thickness_ft", self._defaults["default_slice_thickness_ft"]))
+    @property
+    def strata_idw_radius(self) -> float:
+        return float(self.get_strata_setting("idw_radius_ft", 150.0))
 
-    def set_slice_thickness_default(self, val: float) -> None:
-        """Set the default slice thickness in feet."""
-        self.set("default_slice_thickness_ft", float(val))
-        self.save()
+    @property
+    def strata_default_cell_size(self) -> float:
+        return float(self.get_strata_setting("default_cell_size_ft", 1.0))
 
-    # ------------------------------------------------------------------
-    # Spline smoothing preference
-    # ------------------------------------------------------------------
-    def smooth_default(self) -> bool:
-        """Return the user's default preference for *smooth* polyline tracing."""
-        return bool(self.get("smooth_default", self._defaults["smooth_default"]))
+    def get_ui_setting(self, key: str, default=None):
+        return self.get("user_interface", key, default)
 
-    def set_smooth_default(self, val: bool) -> None:
-        """Persist the default polyline smoothing preference."""
-        self.set("smooth_default", bool(val))
-        self.save()
-
-    # ------------------------------------------------------------------
-    # Tracing elevation workflow preferences
-    # ------------------------------------------------------------------
-    def tracing_elev_mode(self) -> str:
-        """Return current elevation prompt mode (``"point"``, ``"interpolate"``, or ``"line"``)."""
-        return str(self.get("tracing_elev_mode", self._defaults["tracing_elev_mode"]))
-
-    def set_tracing_elev_mode(self, mode: str) -> None:
-        """Persist the elevation prompt mode preference."""
-        assert mode in ("point", "interpolate", "line"), "Invalid tracing elevation mode"
-        self.set("tracing_elev_mode", mode)
-        self.save()
-
-    def tracing_enabled(self) -> bool:
-        """Return whether tracing is globally enabled."""
-        return bool(self.get("tracing_enabled", self._defaults["tracing_enabled"]))
-
-    def set_tracing_enabled(self, flag: bool) -> None:
-        """Set global tracing enable flag and persist."""
-        self.set("tracing_enabled", bool(flag))
-        self.save()
-
-    # ------------------------------------------------------------------
-    # Spline density (smooth sampling) preference
-    # ------------------------------------------------------------------
-    def smooth_sampling_ft(self) -> float:
-        """Return current resample spacing in feet for spline sampling."""
-        return float(self.get("smooth_sampling_ft", self._defaults["smooth_sampling_ft"]))
-
-    def set_smooth_sampling_ft(self, val: float) -> None:
-        """Persist spline resample spacing in feet."""
-        self.set("smooth_sampling_ft", float(val))
-        self.save()
-
-    # ------------------------------------------------------------------
-    # Spline sample compression preferences
-    # ------------------------------------------------------------------
-    def smooth_min_spacing_ft(self) -> float:
-        """Return minimum spacing (ft) allowed between sampled spline points."""
-        return float(self.get("smooth_min_spacing_ft", self._defaults["smooth_min_spacing_ft"]))
-
-    def smooth_max_points(self) -> int:
-        """Return maximum allowed number of sampled points before compression."""
-        return int(self.get("smooth_max_points", self._defaults["smooth_max_points"]))
-
-    # ------------------------------------------------------------------
-    # Vertex drawing preferences
-    # ------------------------------------------------------------------
-    def vertex_cross_px(self) -> int:
-        """Return half-length of vertex crosshair in screen pixels."""
-        return int(self.get("vertex_cross_px", self._defaults["vertex_cross_px"]))
-
-    def set_vertex_cross_px(self, val: int) -> None:
-        self.set("vertex_cross_px", int(val))
-        self.save()
-
-    def vertex_hover_colour(self) -> str:
-        """Return colour string for vertex hover state (#RRGGBB)."""
-        return str(self.get("vertex_hover_colour", self._defaults["vertex_hover_colour"]))
-
-    def set_vertex_hover_colour(self, colour: str) -> None:
-        self.set("vertex_hover_colour", str(colour))
-        self.save()
-
-    def vertex_line_thickness(self) -> int:
-        """Return pen width (0 for cosmetic hairline)."""
-        return int(self.get("vertex_line_thickness", self._defaults["vertex_line_thickness"]))
-
-    def set_vertex_line_thickness(self, width: int) -> None:
-        self.set("vertex_line_thickness", int(width))
-        self.save()
-
-    # ------------------------------------------------------------------
-    # Spline / smoothing preference helpers …
-    # ------------------------------------------------------------------
-
-    # ==================================================================
-    #  Plan-Scale - remember the most-recent calibration
-    # ==================================================================
-    def last_scale(self) -> tuple[str, float]:
-        """Return the last scale the user confirmed in *Calibrate Scale…*.
-
-        Returns
-        -------
-        (units, world_per_in)
-            ``units``  – ``"ft"`` or ``"m"``  
-            ``world_per_in`` – numeric (e.g. 20.0 ⇒ "20 ft per inch")
-
-        """
-        units = self.get("last_scale_world_units",
-                         self._defaults["last_scale_world_units"])
-        val   = float(self.get("last_scale_world_per_in",
-                               self._defaults["last_scale_world_per_in"]))
-        return units, val
-
-    def set_last_scale(self, units: str, val: float) -> None:
-        """Persist the *most recently confirmed* plan scale.
-
-        Parameters
-        ----------
-        units
-            ``"ft"`` or ``"m"``
-        val
-            Real-world length per inch on paper (e.g. 20 → "1" = 20 ft")
-
-        """
-        assert units in ("ft", "m"), "units must be 'ft' or 'm'"
-        self.set("last_scale_world_units", units)
-        self.set("last_scale_world_per_in", float(val))
-        self.save()
+    def theme(self) -> str:
+        return self.get_ui_setting("theme", "light")

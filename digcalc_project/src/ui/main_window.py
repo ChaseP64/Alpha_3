@@ -194,9 +194,11 @@ class MainWindow(QMainWindow):
         self._update_scale_action_enabled(False)
         # --- Connect PdfService signal to update scale action ---
         if hasattr(self, "pdf_service") and self.pdf_service:
-            self.pdf_service.documentLoaded.connect(
-                lambda page_count: self._update_scale_action_enabled(page_count > 0),
-            )
+            # Use a *bound* Qt slot instead of an anonymous lambda so that the
+            # connection is automatically severed when the MainWindow instance
+            # is deleted, preventing callbacks to dangling objects in later
+            # tests.
+            self.pdf_service.documentLoaded.connect(self._on_document_loaded)
 
         # --- NEW: Layer Legend Dock ---
         self.legend_dock = LayerLegendDock(project=None, parent=self)  # will set project later
@@ -374,6 +376,19 @@ class MainWindow(QMainWindow):
             self.trace_line_action.triggered.connect(lambda _checked=False: self._set_tracing_elev_mode("line"))
 
         self.logger.debug("Finished connecting MainWindow signals.")
+
+        # ------------------------------------------------------------------
+        # Borehole tool – toggle + point-picked flow
+        # ------------------------------------------------------------------
+        if hasattr(self, "borehole_tool_action") and self.borehole_tool_action:
+            # Toggle Borehole placement mode in VisualizationPanel
+            self.borehole_tool_action.toggled.connect(
+                self.visualization_panel.set_borehole_mode,
+            )
+
+        # Relay signal from VisualizationPanel → MainWindow handler
+        if hasattr(self.visualization_panel, "boreholePointPicked"):
+            self.visualization_panel.boreholePointPicked.connect(self._on_borehole_point)
 
     def _create_actions(self):
         """Create actions for menus and toolbars."""
@@ -2120,21 +2135,9 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------
     @Slot()
     def _fit_view_to_scene(self):
-        """Fits the 2D view to the current scene rectangle (Placeholder)."""
-        self.logger.debug("Fitting view to scene requested (Placeholder)." )
-        if hasattr(self.visualization_panel, "view_2d") and \
-           hasattr(self.visualization_panel, "scene_2d") and \
-           self.visualization_panel.view_2d and \
-           self.visualization_panel.scene_2d:
-            view = self.visualization_panel.view_2d
-            scene = self.visualization_panel.scene_2d
-            scene_rect = scene.sceneRect()
-
-            if not scene_rect.isNull() and scene_rect.isValid():
-                self.logger.debug(f"Fitting view to scene rect: {scene_rect}")
-                view.fitInView(scene_rect, Qt.KeepAspectRatio)
-            else:
-                self.logger.warning("Cannot fit view: Scene rectangle is null or invalid.")
+        """Zooms the 2-D view to show the entire scene contents."""
+        if hasattr(self.visualization_panel, "view_2d") and self.visualization_panel.view_2d:
+            self.visualization_panel.view_2d.fitInView(self.visualization_panel.scene_2d.sceneRect(), Qt.KeepAspectRatio)
         else:
             self.logger.warning("Cannot fit view: 2D view or scene not available.")
 
@@ -2792,7 +2795,7 @@ class MainWindow(QMainWindow):
         # Open editor dialog
         from digcalc_project.src.ui.dialogs.borehole_editor_dialog import BoreholeEditorDialog
         dlg = BoreholeEditorDialog(stack, parent=self)
-        if dlg.exec() != dlg.Accepted:
+        if dlg.exec() != QDialog.DialogCode.Accepted:
             return
 
         bh_id = stack.next_borehole_id()
@@ -2803,7 +2806,33 @@ class MainWindow(QMainWindow):
 
         cmd = AddBoreholeCommand(stack, borehole, scene)
 
-        # Push onto StrataManagerDock undo stack and refresh
-        self.strata_manager_dock.undo_stack.push(cmd)
-        self.strata_manager_dock.refresh_boreholes()
-        project.is_dirty = True
+        # If the dock is available, use its undo stack; otherwise execute immediately
+        dock = getattr(self, "strata_manager_dock", None)
+        if dock and hasattr(dock, "undo_stack"):
+            dock.undo_stack.push(cmd)
+            if hasattr(dock, "refresh_boreholes"):
+                dock.refresh_boreholes()
+        else:
+            # Headless/unit-test path – redo immediately so the symbol appears
+            cmd.redo()
+        
+
+    # ------------------------------------------------------------------
+    # PdfService callback – enable/disable Scale… action
+    # ------------------------------------------------------------------
+    @Slot(int)
+    def _on_document_loaded(self, page_count: int):
+        """Slot connected to PdfService.documentLoaded(int).
+
+        Ensures the Tracing ▸ Scale… action is enabled only when a PDF with at
+        least one page is loaded.  Using a bound Qt slot (rather than a lambda)
+        means the connection is automatically dropped when the MainWindow is
+        destroyed, preventing stray signal emissions from referencing deleted
+        QAction objects in subsequent tests.
+        """
+        try:
+            self._update_scale_action_enabled(page_count > 0)
+        except RuntimeError:
+            # If the QAction was already deleted (e.g. window closed) simply
+            # ignore – this situation can occur in unit-test teardowns.
+            pass

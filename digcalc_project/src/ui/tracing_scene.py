@@ -352,7 +352,7 @@ class TracingScene(QGraphicsScene):
             self.logger.debug("Scene mousePress ignored: View is manually panning.")
             return
 
-        panel = self._panel  # VisualizationPanel
+        panel = self.panel  # VisualizationPanel
 
         # Borehole tool click handling
         if panel.drawing_mode.name == "BOREHOLE" and event.button() == Qt.LeftButton:
@@ -886,6 +886,9 @@ class TracingScene(QGraphicsScene):
 
         have_scale = project_scale is not None
 
+        # In headless CI test runs, still create the overlay (tests assert its
+        # presence) but ensure it does not intercept mouse events.
+
         # Show banner when *no* scale is set
         if not have_scale:
             if self._noscale_item is None:
@@ -893,6 +896,11 @@ class TracingScene(QGraphicsScene):
                 txt.setBrush(self._NOSCALE_COLOR)
                 txt.setZValue(self._NOSCALE_Z)
                 txt.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+                # Ensure the overlay banner does **not** intercept mouse clicks which
+                # would otherwise block the sceneʼs own mousePressEvent and prevent
+                # warning dialogs from being triggered in headless tests.
+                txt.setAcceptedMouseButtons(Qt.NoButton)
+                txt.setFlag(QGraphicsItem.ItemIsSelectable, False)
                 self.addItem(txt)
                 self._noscale_item = txt
 
@@ -1434,7 +1442,7 @@ class TracingScene(QGraphicsScene):
                 if isinstance(bh, BoreholeLog):
                     lines = [f"BH-{bh.id:02d}"]
                     for ld in bh.layers:
-                        mat_name = self._panel.current_project.strata.materials[ld.material_id-1].name if getattr(self._panel.current_project,'strata',None) else "Mat"
+                        mat_name = self.panel.current_project.strata.materials[ld.material_id-1].name if getattr(self.panel.current_project,'strata',None) else "Mat"
                         lines.append(f"{mat_name} {ld.top_z:.0f}–{ld.bottom_z:.0f} ft")
                     QToolTip.showText(event.screenPos(), "\n".join(lines))
                     return

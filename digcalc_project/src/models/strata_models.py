@@ -16,6 +16,7 @@ import uuid as _uuid
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
+import numpy as np
 from .surface import Surface
 
 
@@ -159,7 +160,11 @@ class StrataSurface:
     uuid: str = field(default_factory=lambda: str(_uuid.uuid4()))
     name: str = ""
     material_id: Optional[int] = None  # dominant material above surface
+    # Either a full *Surface* object or a simple NumPy grid.  For early-stage
+    # algorithm unit-tests we store the raw array directly to avoid heavy
+    # Surface dependencies.
     surface: Optional[Surface] = None  # optional mesh/grid
+    grid_data: "np.ndarray | None" = None
     default_opacity: float = 0.5
     grid_metadata: Dict[str, float] = field(default_factory=dict)  # e.g. spacing
 
@@ -173,6 +178,7 @@ class StrataSurface:
             "default_opacity": self.default_opacity,
             "grid_metadata": self.grid_metadata,
             "surface": self.surface.to_dict() if self.surface else None,
+            "grid_data": self.grid_data.tolist() if self.grid_data is not None else None,
         }
 
     # ------------------------------------------------------------------
@@ -182,12 +188,18 @@ class StrataSurface:
 
         surf_data = d.get("surface")
         surf_obj = Surface.from_dict(surf_data) if surf_data else None
+
+        grid = None
+        if (gd := d.get("grid_data")) is not None:
+            grid = np.array(gd, dtype=float)
+
         return cls(
             id=int(d["id"]),
             uuid=d.get("uuid", str(_uuid.uuid4())),
             name=d.get("name", ""),
             material_id=d.get("material_id"),
             surface=surf_obj,
+            grid_data=grid,
             default_opacity=float(d.get("default_opacity", 0.5)),
             grid_metadata=d.get("grid_metadata", {}),
         )
