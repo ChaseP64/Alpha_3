@@ -1,3 +1,88 @@
+# Application Outline
+
+This document provides a high-level overview of the `DigCalc` application structure.
+
+## Project Root (`DigCalc/`)
+
+- **`.git/`**: Git version control directory.
+- **`digcalc_project/`**: Main application package.
+- **`tests/`**: Test suite for the application.
+- **`.github/`**: GitHub-specific files (e.g., workflows).
+- **`pyproject.toml`**: Project metadata and dependencies.
+- **`README.md`**: Project overview and setup instructions.
+- **`CONTEXT.md`**: This file, outlining the application structure.
+
+## Application Package (`digcalc_project/`)
+
+- **`src/`**: Source code for the application.
+- **`tests/`**: Duplicated tests directory (potential cleanup candidate).
+- **`run_digcalc.py`**: Entry point to run the application.
+
+### Source Code (`digcalc_project/src/`)
+
+- **`main.py`**: Main application entry point.
+- **`core/`**: Core business logic (calculations, geometry, etc.).
+- **`models/`**: Data models and structures.
+- **`services/`**: Application services (e.g., interpolation, settings).
+- **`ui/`**: User interface components (windows, dialogs, etc.).
+- **`controllers/`**: Application controllers.
+- **`utils/`**: Utility functions and helper classes.
+- **`visualization/`**: Visualization components.
+- **`tools/`**: Various application tools.
+
+#### Core (`digcalc_project/src/core/`)
+
+- **`calculations/`**: Volume and mass haul calculations.
+  - `volume_calculator.py` (**VIOLATION**: >500 lines)
+- **`calculators/`**: Additional calculator utilities.
+- **`geometry/`**: Geometric operations (TIN generation, surface building).
+- **`importers/`**: Data importers (CSV, DXF, LandXML).
+- **`reporting/`**: Reporting tools (CSV, PDF).
+
+#### Models (`digcalc_project/src/models/`)
+
+- `project.py` (**VIOLATION**: >500 lines)
+- `surface.py`
+- `strata_models.py`
+- `calculation.py`
+- ...and other data models.
+
+#### Services (`digcalc_project/src/services/`)
+
+- `interpolation_service.py` (**VIOLATION**: >500 lines)
+- `settings_service.py`
+- ...and other services.
+
+#### UI (`digcalc_project/src/ui/`)
+
+- `main_window.py` (**VIOLATION**: >2500 lines)
+- `visualization_panel.py` (**VIOLATION**: >1000 lines)
+- `tracing_scene.py` (**VIOLATION**: >1500 lines)
+- **`dialogs/`**: Application dialogs.
+  - `scale_calibration_dialog.py` (**VIOLATION**: >500 lines)
+- **`docks/`**: Dockable widgets.
+  - `pv_dock.py` (**VIOLATION**: >1000 lines)
+- **`3d/`**, **`items/`**, **`commands/`**: Other UI components.
+
+## Test Suite (`tests/`)
+
+The test suite mirrors the structure of the `src` directory, with tests for each component.
+
+- **`core/`**, **`models/`**, **`services/`**, etc.
+
+## Rule Violations
+
+The following files violate the "no file longer than 500 lines" rule:
+
+- `digcalc_project/src/core/calculations/volume_calculator.py`
+- `digcalc_project/src/models/project.py`
+- `digcalc_project/src/services/interpolation_service.py`
+- `digcalc_project/src/ui/main_window.py`
+- `digcalc_project/src/ui/visualization_panel.py`
+- `digcalc_project/src/ui/tracing_scene.py`
+- `digcalc_project/src/ui/dialogs/scale_calibration_dialog.py`
+- `digcalc_project/src/ui/docks/pv_dock.py`
+
 # DigCalc Application Context Outline
 
 This document provides a comprehensive outline of the DigCalc application's structure, components, and current status. It is intended to be a living document that can be updated as the project evolves.

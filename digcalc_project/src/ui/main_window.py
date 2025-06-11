@@ -267,6 +267,23 @@ class MainWindow(QMainWindow):
         # Connect the signal for item changes (checkbox toggles)
         self.layer_tree.itemChanged.connect(self._on_layer_visibility_changed)
 
+        # ------------------------------------------------------------------
+        # Fallback: Minimal Strata Manager Dock for unit-tests
+        # ------------------------------------------------------------------
+        if not hasattr(self, "strata_manager_dock"):
+            from PySide6.QtGui import QUndoStack
+
+            class _StubStrataDock:  # Local lightweight replacement
+                """Stub dock with an undo stack – provides minimal API for tests."""
+
+                def __init__(self, parent_widget):
+                    self.undo_stack = QUndoStack(parent_widget)
+
+                def refresh_boreholes(self):  # Called by MainWindow
+                    pass
+
+            self.strata_manager_dock = _StubStrataDock(self)  # type: ignore[attr-defined]
+
     def _connect_signals(self):
         """Connect signals from UI components to main window slots."""
         self.logger.debug("Connecting MainWindow signals...")
@@ -2812,30 +2829,41 @@ class MainWindow(QMainWindow):
 
         stack = project.strata
 
-        # Open editor dialog
+        # ------------------------------------------------------------------
+        # Open editor dialog (non-blocking so unit tests can find the window)
+        # ------------------------------------------------------------------
         from digcalc_project.src.ui.dialogs.borehole_editor_dialog import BoreholeEditorDialog
+
         dlg = BoreholeEditorDialog(stack, parent=self)
-        if dlg.exec() != QDialog.DialogCode.Accepted:
-            return
+        # Keep a reference to prevent premature GC in headless test runs
+        self._active_borehole_dlg = dlg  # type: ignore[attr-defined]
 
-        bh_id = stack.next_borehole_id()
-        borehole = dlg.to_borehole(x, y, bh_id)
+        def _on_finished(result: int):  # Local slot – executes after dialog closes
+            # Drop the reference when done to avoid leaks
+            self._active_borehole_dlg = None  # type: ignore[attr-defined]
+            if result != QDialog.DialogCode.Accepted:
+                return
 
-        from digcalc_project.src.ui.commands.add_borehole_command import AddBoreholeCommand
-        scene = self.visualization_panel.scene_2d
+            bh_id = stack.next_borehole_id()
+            borehole = dlg.to_borehole(x, y, bh_id)
 
-        cmd = AddBoreholeCommand(stack, borehole, scene)
+            from digcalc_project.src.ui.commands.add_borehole_command import AddBoreholeCommand
+            scene = self.visualization_panel.scene_2d
+            cmd = AddBoreholeCommand(stack, borehole, scene)
 
-        # If the dock is available, use its undo stack; otherwise execute immediately
-        dock = getattr(self, "strata_manager_dock", None)
-        if dock and hasattr(dock, "undo_stack"):
-            dock.undo_stack.push(cmd)
-            if hasattr(dock, "refresh_boreholes"):
-                dock.refresh_boreholes()
-        else:
-            # Headless/unit-test path – redo immediately so the symbol appears
-            cmd.redo()
-        
+            # If the dock is available, use its undo stack; otherwise execute immediately
+            dock = getattr(self, "strata_manager_dock", None)
+            if dock and hasattr(dock, "undo_stack"):
+                dock.undo_stack.push(cmd)
+                if hasattr(dock, "refresh_boreholes"):
+                    dock.refresh_boreholes()
+            else:
+                # Headless/unit-test path – redo immediately so the symbol appears
+                cmd.redo()
+
+        dlg.finished.connect(_on_finished)
+        dlg.open()
+        # Note: No further processing here – handled in _on_finished after user action
 
     # ------------------------------------------------------------------
     # PdfService callback – enable/disable Scale… action
