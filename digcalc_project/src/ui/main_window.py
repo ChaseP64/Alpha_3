@@ -268,6 +268,24 @@ class MainWindow(QMainWindow):
         self.layer_tree.itemChanged.connect(self._on_layer_visibility_changed)
 
         # ------------------------------------------------------------------
+        # Strata Manager Dock (materials, boreholes, generate surfaces)
+        # ------------------------------------------------------------------
+        try:
+            from digcalc_project.src.ui.docks.strata_manager_dock import StrataManagerDock
+            self.strata_manager_dock = StrataManagerDock(self)  # type: ignore[attr-defined]
+            self.addDockWidget(Qt.RightDockWidgetArea, self.strata_manager_dock)
+
+            # Add toggle action to View ▸ Docks menu if it exists
+            view_menu = getattr(self, "view_menu", None)
+            if view_menu is not None:
+                act = self.strata_manager_dock.toggleViewAction()
+                act.setText("Strata Manager")
+                view_menu.addAction(act)
+        except Exception as exc:
+            # Could not instantiate (missing heavy deps in headless); will fall back
+            self.logger.warning("StrataManagerDock unavailable – using stub (%s)", exc)
+
+        # ------------------------------------------------------------------
         # Fallback: Minimal Strata Manager Dock for unit-tests
         # ------------------------------------------------------------------
         if not hasattr(self, "strata_manager_dock"):
@@ -2829,9 +2847,22 @@ class MainWindow(QMainWindow):
 
         stack = project.strata
 
+        # Ensure there is at least one material so the editor combo-box isn't empty.
+        if not getattr(stack, "materials", []):
+            try:
+                from digcalc_project.src.models.strata_models import Material
+
+                default_mat = Material(id=1, name="Material 1")
+                stack.materials.append(default_mat)
+                # Mark project dirty if API available
+                if hasattr(project, "mark_dirty"):
+                    project.mark_dirty()
+            except Exception:
+                # Fallback: leave materials empty; dialog will disable OK via validation
+                pass
+
         # ------------------------------------------------------------------
         # Open editor dialog (non-blocking so unit tests can find the window)
-        # ------------------------------------------------------------------
         from digcalc_project.src.ui.dialogs.borehole_editor_dialog import BoreholeEditorDialog
 
         dlg = BoreholeEditorDialog(stack, parent=self)
