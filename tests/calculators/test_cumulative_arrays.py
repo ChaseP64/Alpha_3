@@ -20,10 +20,12 @@ def test_build_cumulative_arrays_flat_layers():
         _make_flat_surface(3, 20.0),
     ]
 
-    stack = StrataStack(materials=[material1, material2, material3], boreholes=[])
+    stack = StrataStack(id=1, materials=[material1, material2, material3], boreholes=[])
     stack.surfaces = surfaces  # Attach generated surfaces
 
-    top_z, bottom_z = build_cumulative_arrays(stack, base_grid=1.0)
+    top_z, bottom_z = build_cumulative_arrays(stack, base_grid=np.zeros((5,5)))
 
+    # For stacked flat layers: top_z should equal the shallowest surface (0.0)
+    # and bottom_z the deepest (20.0)
     assert np.allclose(top_z, 0.0)
     assert np.allclose(bottom_z, 20.0) 

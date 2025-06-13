@@ -508,5 +508,8 @@ class VolumeCalculator:
             return None
         return grid[r_idx, c_idx]
 
-    # Add to __all__
-    # __all__.append("calculate_mass_haul_by_material")
+# Expose helper via tiny wrapper (avoids descriptor in type context)
+
+def calculate_mass_haul_by_material(*args, **kwargs):  # type: ignore[override]
+    """Module-level alias that forwards to :meth:`VolumeCalculator.calculate_mass_haul_by_material`."""
+    return VolumeCalculator.calculate_mass_haul_by_material(*args, **kwargs)

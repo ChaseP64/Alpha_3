@@ -313,3 +313,12 @@ class SettingsService(Singleton):
 
     def set_strip_depth_default(self, depth_ft: float) -> None:
         self.set("legacy", "default_strip_depth_ft", float(depth_ft))
+
+    # Backward-compatibility helper for older unit-tests – historically this was a method.
+    def smooth_min_spacing_ft(self) -> float:  # noqa: D401 – simple accessor
+        """Return minimum point spacing (ft) used by Polyline sampling compression."""
+        return float(self.get("tracing", "smooth_min_spacing_ft", 0.01))
+
+    def smooth_max_points(self) -> int:
+        """Return maximum number of points allowed in compressed polyline."""
+        return int(self.get("tracing", "smooth_max_points", 20000))

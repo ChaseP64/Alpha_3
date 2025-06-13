@@ -16,6 +16,9 @@ from digcalc_project.src.models.strata_models import StrataStack, StrataSurface
 _module: ModuleType = import_module("digcalc_project.src.core.calculations.volume_calculator")
 VolumeCalculator = _module.VolumeCalculator  # type: ignore[attr-defined]
 
+# Re-export additional helpers so external imports keep working.
+calculate_mass_haul_by_material = _module.calculate_mass_haul_by_material  # type: ignore[attr-defined]
+
 # Export list
 __all__ = ["VolumeCalculator"]
 
@@ -138,3 +141,5 @@ def calculate_material_cut(existing_z: _np.ndarray, proposed_z: _np.ndarray, str
         vol_by_mat[surf.material_id] += float(_np.nansum(cut_here) * cell_area)
         cut_remaining = cut_remaining - cut_here
     return vol_by_mat 
+
+__all__.append("calculate_mass_haul_by_material") 

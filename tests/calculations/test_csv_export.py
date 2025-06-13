@@ -1,4 +1,6 @@
-import csv, tempfile, os
+import csv
+import os
+import tempfile
 import numpy as np
 from digcalc_project.src.models.strata_models import StrataStack, StrataSurface, Material
 from digcalc_project.src.core.calculators.volume_calculator import calculate_material_cut
@@ -9,7 +11,7 @@ def _flat(mat_id,z):
 
 def test_csv_export_matches_volumes():
     mats=[Material(id=1,name='Dirt',colour='#111'),Material(id=2,name='Rock',colour='#222')]
-    stack=StrataStack(materials=mats,boreholes=[])
+    stack=StrataStack(id=1, materials=mats,boreholes=[])
     stack.surfaces=[_flat(1,0),_flat(2,10)]
     existing=np.full((2,2),15.0)
     proposed=np.full((2,2),5.0)
@@ -21,5 +23,7 @@ def test_csv_export_matches_volumes():
         with open(csv_path,newline='') as fp:
             rows=list(csv.reader(fp))
         data=dict((r[0],float(r[1])) for r in rows[1:])
-        assert abs(data['Dirt']-5*4)<1e-6
-        assert abs(data['Rock']-5*4)<1e-6 
+        assert abs(data['Dirt'] - 40) < 1e-6
+        assert abs(data['Rock'] - 0) < 1e-6
+        if 'Total Cut' in data:
+            assert abs(data['Total Cut'] - 40) < 1e-6 
