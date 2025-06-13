@@ -14018,3 +14018,63 @@ ValueError: Interpolation requires at least 3 vertices
 2025-06-12 14:58:13,515 - digcalc_project.src.ui.main_window - INFO - Application quitting. Attempting to close PyVista plotter...
 2025-06-12 14:58:13,515 - digcalc_project.src.ui.main_window - INFO - PyVista plotter was not initialized, no cleanup needed.
 2025-06-12 14:58:13,515 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-06-12 20:52:34,647 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-12 20:52:34,775 - digcalc_project.src.ui.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\chase\AppData\Roaming\Python\Python311\site-packages\PySide6\QtWidgets.pyd))
+2025-06-12 20:52:34,775 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-12 20:52:34,789 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-06-12 20:52:38,391 - digcalc_project.src.ui.main_window - INFO - User selected PDF for background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-12 20:52:38,391 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-12 20:52:38,391 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-12 20:52:38,391 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-12 20:52:38,407 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-12 20:52:38,408 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-12 20:52:43,419 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-12 20:52:43,444 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-12 20:52:44,506 - digcalc_project.src.ui.pv_plotter_singleton - INFO - Real BackgroundPlotter configured and returning.
+2025-06-12 20:52:44,506 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-12 20:52:44,507 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-12 20:52:44,507 - digcalc_project.src.ui.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-06-12 20:52:44,507 - digcalc_project.src.ui.main_window - INFO - [on_load_pdf_background] SUCCESS: About to call _update_ui_for_project with project: Untitled Project
+2025-06-12 20:52:44,507 - digcalc_project.src.ui.main_window - INFO - [_update_ui_for_project] Called with project: Untitled Project
+2025-06-12 20:52:44,511 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-06-12 20:52:44,511 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-06-12 20:52:44,512 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-06-12 20:52:44,512 - digcalc_project.src.ui.main_window - INFO - [_update_ui_for_project] About to call self.visualization_panel.set_project with: Untitled Project
+2025-06-12 20:52:44,513 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-06-12 20:52:44,513 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-06-12 20:52:44,513 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-12 20:52:44,670 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-12 20:52:44,670 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-12 20:52:44,670 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-12 20:52:44,670 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-12 20:52:44,672 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-12 20:52:44,673 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-12 20:52:49,017 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-12 20:52:49,028 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-12 20:52:49,070 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-12 20:52:49,074 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-06-12 20:52:49,075 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-06-12 20:52:56,822 - digcalc_project.src.ui.main_window - INFO - Load PDF background cancelled by user.
+2025-06-12 20:52:59,219 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-06-12 20:53:24,333 - digcalc_project.src.ui.visualization_panel - INFO - Setting tracing mode to: Enabled
+2025-06-12 20:53:24,812 - digcalc_project.src.ui.visualization_panel - WARNING - Tracing enabled, but project scale is not set or invalid.
+2025-06-12 20:53:24,813 - digcalc_project.src.ui.main_window - INFO - Tracing mode enabled via MainWindow action.
+2025-06-12 20:53:29,662 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-06-12 20:53:29,663 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\chase\.digcalc\settings.json
+2025-06-12 20:53:29,671 - digcalc_project.src.ui.main_window - INFO - [_on_scale_dialog_done] Entered. Dialog result: 1
+2025-06-12 20:53:29,672 - digcalc_project.src.ui.main_window - INFO - [_on_scale_dialog_done] Scale from dialog: input_method='direct_entry' world_units='ft' world_per_paper_in=1.0 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 6, 13, 1, 53, 29, 661704)
+2025-06-12 20:53:29,672 - digcalc_project.src.ui.main_window - INFO - [_on_scale_dialog_done] current_project (id: 2044461491024): <Project(name='Untitled Project', path='None', layers=0, polylines=0)>, current_project.scale (before): input_method='direct_entry' world_units='ft' world_per_paper_in=1.0 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 6, 13, 1, 53, 29, 661704)
+2025-06-12 20:53:29,672 - digcalc_project.src.ui.main_window - INFO - [_on_scale_dialog_done] Assigned scale to current_project. current_project.scale (after): input_method='direct_entry' world_units='ft' world_per_paper_in=1.0 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 6, 13, 1, 53, 29, 661704), is_dirty: True
+2025-06-12 20:53:29,672 - digcalc_project.src.ui.main_window - INFO - [_on_scale_dialog_done] About to call _update_scale_pill.
+2025-06-12 20:53:29,673 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: 1.00 ft/in', Color Decision='green (DPI match)'
+2025-06-12 20:53:41,138 - digcalc_project.src.ui.tracing_scene - INFO - Borehole mode click at (3625.71, 971.09)
+2025-06-12 20:53:57,209 - digcalc_project.src.ui.tracing_scene - INFO - Borehole mode click at (4255.43, 1554.32)
+2025-06-12 20:54:12,522 - digcalc_project.src.ui.visualization_panel - INFO - Setting tracing mode to: Disabled
+2025-06-12 20:54:12,523 - digcalc_project.src.ui.main_window - INFO - Tracing mode disabled via MainWindow action.
+2025-06-12 20:54:16,987 - digcalc_project.src.ui.tracing_scene - INFO - Borehole mode click at (5548.07, 1562.50)
+2025-06-12 21:11:10,826 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-06-12 21:11:15,035 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/chase/Desktop/DigCalc/Alpha_3/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-12 21:11:15,157 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-06-12 21:11:15,179 - digcalc_project.src.ui.main_window - INFO - Application quitting. Attempting to close PyVista plotter...
+2025-06-12 21:11:15,179 - digcalc_project.src.ui.main_window - INFO - PyVista plotter was not initialized, no cleanup needed.
+2025-06-12 21:11:15,180 - digcalc_project.src.main - INFO - Application exited with code 0
