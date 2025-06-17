@@ -14018,3 +14018,12 @@ ValueError: Interpolation requires at least 3 vertices
 2025-06-12 14:58:13,515 - digcalc_project.src.ui.main_window - INFO - Application quitting. Attempting to close PyVista plotter...
 2025-06-12 14:58:13,515 - digcalc_project.src.ui.main_window - INFO - PyVista plotter was not initialized, no cleanup needed.
 2025-06-12 14:58:13,515 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-06-17 10:22:58,482 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-17 10:22:58,580 - digcalc_project.src.ui.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-17 10:22:58,580 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-17 10:22:58,580 - digcalc_project.src.ui.main_window - INFO - Scale pill updated: Text='Scale: —', Color Decision='grey (no project or no scale)'
+2025-06-17 10:29:51,088 - digcalc_project.src.ui.main_window - INFO - Close event triggered.
+2025-06-17 10:29:51,088 - digcalc_project.src.ui.main_window - INFO - Closing application.
+2025-06-17 10:29:51,095 - digcalc_project.src.ui.main_window - INFO - Application quitting. Attempting to close PyVista plotter...
+2025-06-17 10:29:51,095 - digcalc_project.src.ui.main_window - INFO - PyVista plotter was not initialized, no cleanup needed.
+2025-06-17 10:29:51,095 - digcalc_project.src.main - INFO - Application exited with code 0
