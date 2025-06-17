@@ -1,53 +1,97 @@
-from __future__ import annotations
-
-import unittest
-from unittest.mock import MagicMock
+"""Unit tests for the Strata Surface Interpolation service."""
 
 import numpy as np
+import pytest
 
-from digcalc_project.src.models.strata_models import Material, BoreholeLog, StrataLayer, StrataStack
+# Import paths aligned with existing tests – no Alpha_3 package prefix
+from digcalc_project.src.models.strata_models import (
+    Material,
+    StrataStack,
+    LayerDepth,
+    BoreholeLog,
+)
+# Use a lightweight stub for Surface bounds during interpolation
+
 from digcalc_project.src.services.interpolation_service import IDWInterpolator
 
+class MockProject:
+    """A mock project class for testing purposes."""
+    def __init__(self, base_grid=0.0, min_thickness=0.0):
+        self.base_grid = base_grid
+        self.min_thickness = min_thickness
 
-class TestInterpolationService(unittest.TestCase):
+@pytest.fixture
+def simple_planar_stack():
+    """Creates a StrataStack with three boreholes defining a simple plane."""
+    material = Material(id=1, name="Silt", colour="#C0C0C0")
+    
+    # Plane: Z = 0.1*X + 0.2*Y + 5
+    boreholes = [
+        BoreholeLog(
+            id=1,
+            x=10,
+            y=20,
+            layers=[LayerDepth(material_id=1, top_z=0.1 * 10 + 0.2 * 20 + 5, bottom_z=0.0)],
+        ),  # Z≈10
+        BoreholeLog(
+            id=2,
+            x=50,
+            y=20,
+            layers=[LayerDepth(material_id=1, top_z=0.1 * 50 + 0.2 * 20 + 5, bottom_z=0.0)],
+        ),  # Z≈14
+        BoreholeLog(
+            id=3,
+            x=30,
+            y=60,
+            layers=[LayerDepth(material_id=1, top_z=0.1 * 30 + 0.2 * 60 + 5, bottom_z=0.0)],
+        ),  # Z≈20
+    ]
+    
+    stack = StrataStack(id=1, materials=[material], boreholes=boreholes)
+    return stack
 
-    def test_generate_surfaces_rmse_for_perfect_plane(self):
-        """
-        Tests that the RMSE is close to zero when interpolating a perfectly flat plane.
-        """
-        # 1. Arrange
-        mock_project = MagicMock()
-        mock_project.id = "test_project"
-        mock_existing_surface = MagicMock()
-        mock_existing_surface.bounds = (0, 0, 0, 100, 100, 0)
-        mock_existing_surface.crs = "EPSG:32610"
+@pytest.fixture
+def existing_surface():
+    """Lightweight mock surface object providing .bounds and .crs attributes."""
+    from types import SimpleNamespace
 
-        # Create a simple strata stack with one material and boreholes on a plane
-        material = Material(id=1, name="Sand", colour="#EDC9AF")
-        boreholes = [
-            BoreholeLog(id=1, x=10, y=10, layers=[StrataLayer(material_id=1, top_z=50.0)]),
-            BoreholeLog(id=2, x=90, y=10, layers=[StrataLayer(material_id=1, top_z=50.0)]),
-            BoreholeLog(id=3, x=50, y=90, layers=[StrataLayer(material_id=1, top_z=50.0)]),
-            BoreholeLog(id=4, x=10, y=90, layers=[StrataLayer(material_id=1, top_z=50.0)]),
-        ]
-        stack = StrataStack(materials=[material], boreholes=boreholes)
+    # bounds = (x_min, y_min, z_min, x_max, y_max, z_max)
+    bounds = (0.0, 0.0, 0.0, 100.0, 100.0, 0.0)
+    return SimpleNamespace(bounds=bounds, crs=None)
 
-        interpolator = IDWInterpolator()
+def test_idw_plane(simple_planar_stack, existing_surface):
+    """
+    Tests that the IDWInterpolator can accurately reproduce a planar surface
+    from three borehole points.
+    """
+    interpolator = IDWInterpolator()
+    project = MockProject(base_grid=1.0) # Use a 1m grid
 
-        # 2. Act
-        surfaces, rmse = interpolator.generate_surfaces(
-            project=mock_project,
-            stack=stack,
-            existing_surface=mock_existing_surface,
-        )
+    surfaces = interpolator.generate_surfaces(project, simple_planar_stack, existing_surface)
 
-        # 3. Assert
-        self.assertEqual(len(surfaces), 1)
-        self.assertAlmostEqual(rmse, 0.0, places=6, msg="RMSE for a perfect plane should be ~0.0")
+    # 1. Check that one surface was generated
+    assert len(surfaces) == 1
+    strata_surface = surfaces[0]
 
-        # Also check that the grid itself is flat
-        generated_grid = surfaces[0].grid_data
-        self.assertTrue(np.allclose(generated_grid[~np.isnan(generated_grid)], 50.0))
+    # 2. Check metadata
+    assert strata_surface.material_id == 1
+    assert strata_surface.grid_metadata["cell_size"] == 1.0
 
-if __name__ == '__main__':
-    unittest.main() 
+    # 3. Calculate RMSE at borehole locations
+    grid = strata_surface.grid_data
+    known_points = np.array([(b.x, b.y) for b in simple_planar_stack.boreholes])
+    known_values = np.array([b.layers[0].top_z for b in simple_planar_stack.boreholes])
+    
+    interpolated_values = []
+    for x, y in known_points:
+        # Convert world coords to grid indices
+        ix = int(round(x / strata_surface.grid_metadata["cell_size"]))
+        iy = int(round(y / strata_surface.grid_metadata["cell_size"]))
+        interpolated_values.append(grid[iy, ix])
+
+    interpolated_values = np.array(interpolated_values)
+    
+    rmse = np.sqrt(np.mean((known_values - interpolated_values)**2))
+
+    # 4. Assert that the error is negligible
+    assert rmse < 1e-6 

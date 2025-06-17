@@ -25,5 +25,9 @@ def test_sample_compression(qtbot):
 
     assert len(sampled) <= 100
     # Ensure first and last points are preserved
-    assert sampled[0][0] == 0
-    assert sampled[-1][0] == 99
+    first = sampled[0]
+    last = sampled[-1]
+    x_first = first.x() if hasattr(first, "x") else first[0]
+    x_last = last.x() if hasattr(last, "x") else last[0]
+    assert x_first == 0
+    assert x_last == 99

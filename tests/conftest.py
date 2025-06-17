@@ -3,6 +3,9 @@ import importlib
 import sys
 import types
 from pathlib import Path
+import os
+import tempfile
+from collections.abc import Generator
 
 import pytest
 
@@ -13,6 +16,28 @@ import pytest
 _repo_root = Path(__file__).resolve().parent.parent
 if str(_repo_root) not in sys.path:
     sys.path.insert(0, str(_repo_root))
+
+# Add `digcalc_project` to path to allow `src` imports
+project_dir = _repo_root / "digcalc_project"
+if project_dir.exists() and str(project_dir) not in sys.path:
+    sys.path.insert(0, str(project_dir))
+
+# Attempt to set PyVista to off-screen rendering for tests
+try:
+    import pyvista as pv
+    pv.global_vars.off_screen = True
+except ImportError:
+    pass  # PyVista not installed
+except AttributeError: # For older PyVista versions that might use pv.OFF_SCREEN
+    try:
+        import pyvista as pv
+        pv.OFF_SCREEN = True
+    except Exception:
+        pass
+except Exception:
+    pass
+
+from digcalc_project.src.models.project import Project
 
 
 @pytest.fixture
@@ -71,3 +96,38 @@ def benchmark():
         return time.perf_counter() - t0
 
     return _runner
+
+
+@pytest.fixture
+def temp_dir() -> Generator[str, None, None]:
+    """Create a temporary directory for test files.
+    
+    Returns:
+        Path to a temporary directory
+
+    """
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        yield tmp_dir
+
+# ---------------------------------------------------------------------------
+# Fixture helpers – sample boreholes / project (Phase 0-5)
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def sample_boreholes_csv_path() -> Path:
+    """Absolute path to *sample_boreholes.csv* test fixture."""
+    return Path(__file__).parent / "fixtures" / "sample_boreholes.csv"
+
+
+@pytest.fixture
+def sample_project_json_path() -> Path:
+    """Absolute path to *sample_project.json* test fixture."""
+    return Path(__file__).parent / "fixtures" / "sample_project.json"
+
+
+@pytest.fixture
+def sample_project(sample_project_json_path: Path) -> Project:
+    """Loaded :class:`Project` object from sample JSON fixture."""
+    proj = Project.load(str(sample_project_json_path))
+    assert proj is not None, "Failed to load sample project fixture"
+    return proj

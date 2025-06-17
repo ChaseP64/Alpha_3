@@ -50,50 +50,71 @@ class _HeadlessPlotter:  # pylint: disable=too-few-public-methods
     """
 
     def __init__(self):
+        # ------------------------------------------------------------------
+        # Public flags ------------------------------------------------------
+        # ------------------------------------------------------------------
+        # Consumers (PvDock tests) may check this to branch behaviour.
+        self.is_headless = True  # Distinguish the stub from real plotters
+        # ------------------------------------------------------------------
+        # Qt widget & basic scene scaffolding -------------------------------
+        # ------------------------------------------------------------------
         self.interactor = QWidget()
         self.renderer = SimpleNamespace(actors={}, bounds=(0, 1, 0, 1, 0, 1))
         self.ren_win = SimpleNamespace(SetMultiSamples=lambda *a, **k: None)
-        self._parallel = True
-        self.camera = SimpleNamespace(GetParallelProjection=lambda: self._parallel)
         self.bounds = (0, 1, 0, 1, 0, 1)
         self.center = (0.5, 0.5, 0.5)
-        self.camera_position = "iso"
-        self.enable_anti_aliasing_called = True  # type: ignore[attr-defined]
 
-    # Quality helpers ------------------------------------------------------
+        # Camera stub mirrors the minimal API surface used in tests
+        self._parallel = True
+        self.camera = SimpleNamespace(GetParallelProjection=lambda: self._parallel)
+        self.camera_position = "iso"
+
+        # Quality-mode helpers (AA / EDL) -----------------------------------
+        self._aa_on = True  # AA is considered ON by default for high-quality mode
+        self.enable_anti_aliasing_called = True  # type: ignore[attr-defined]
+        self.enable_trackball_style_called = False  # type: ignore[attr-defined]
+
+    # ------------------------------------------------------------------
+    # Quality helpers --------------------------------------------------
+    # ------------------------------------------------------------------
     def enable_anti_aliasing(self):
-        # Record flag for unit-test expectations
+        self._aa_on = True
         self.enable_anti_aliasing_called = True  # type: ignore[attr-defined]
 
     def enable_trackball_style(self):
         self.enable_trackball_style_called = True  # type: ignore[attr-defined]
-        pass
 
+    # EDL helpers share AA flag for simplicity
     enable_eye_dome_lighting = enable_anti_aliasing
 
     def disable_anti_aliasing(self):
-        pass
+        self._aa_on = False
 
     disable_eye_dome_lighting = disable_anti_aliasing
 
-    # Mesh helpers ---------------------------------------------------------
+    # ------------------------------------------------------------------
+    # Mesh helpers -----------------------------------------------------
+    # ------------------------------------------------------------------
     class _StubMapper:  # noqa: D401 – minimal API shim
         def __init__(self):
-            self._planes: list[tuple] = []
-            self.dataset = SimpleNamespace(n_points=1)
+            from types import SimpleNamespace as _SN
 
-        # Clipping plane API ------------------------------------------------
-        def AddClippingPlane(self, *_a, **_k):  # noqa: N802
-            self._planes.append((_a, _k))
+            self._planes: list[object] = []
+            # Provide dataset with point-count attr for assertions
+            self.dataset = _SN(n_points=1)
 
-        def RemoveAllClippingPlanes(self, *_a, **_k):  # noqa: N802
+        # Clipping plane API subset -------------------------------------
+        def AddClippingPlane(self, plane):  # noqa: N802, ANN001
+            self._planes.append(plane)
+
+        def RemoveAllClippingPlanes(self):  # noqa: N802
             self._planes.clear()
 
         def GetNumberOfClippingPlanes(self):  # noqa: N802
             return len(self._planes)
 
     class _StubActor(SimpleNamespace):
-        """Mimic basic VTK actor API touched by PvDock/tests."""
+        """Mimic basic VTK actor API touched by PvDock and tests."""
 
         def __init__(self):
             super().__init__(
@@ -104,52 +125,66 @@ class _HeadlessPlotter:  # pylint: disable=too-few-public-methods
             self._visible = True
             self._scale = (1.0, 1.0, 1.0)
 
-        # VTK actor methods -------------------------------------------------
+        # VTK-actor-like helpers ---------------------------------------
         def SetVisibility(self, flag: bool):  # noqa: N802
             self._visible = bool(flag)
 
         def GetVisibility(self):  # noqa: N802
             return self._visible
 
-        def SetScale(self, *_a):  # noqa: N802
-            if len(_a) == 3:
-                self._scale = tuple(float(v) for v in _a)
+        # Scale helpers -------------------------------------------------
+        def SetScale(self, sx: float, sy: float, sz: float):  # noqa: N802
+            self._scale = (float(sx), float(sy), float(sz))
 
         def GetScale(self):  # noqa: N802
             return self._scale
 
     def add_mesh(self, mesh, **_k):
-        # Update mapper dataset points count for assertions
+        """Add a mesh and return a stub actor while tracking it internally."""
         actor = _HeadlessPlotter._StubActor()
-        if hasattr(actor, "mapper"):
-            try:
-                actor.mapper.dataset = SimpleNamespace(n_points=getattr(mesh, "n_points", 1))
-            except Exception:
-                pass
+        # Propagate point-count to mapper.dataset for assertions
+        try:
+            npts = getattr(mesh, "n_points", 1)
+            actor.mapper.dataset.n_points = npts
+        except Exception:
+            pass
         self.renderer.actors[id(actor)] = actor
         return actor
 
+    # ------------------------------------------------------------------
+    # Legend helpers ---------------------------------------------------
+    # ------------------------------------------------------------------
+    def add_legend(self, *args, **kwargs):  # noqa: D401, ANN001
+        """Create a placeholder legend actor and keep a handle for removal."""
+        legend_actor = object()
+        # Store so tests can assert its presence
+        self._digcalc_legend_actor = legend_actor  # type: ignore[attr-defined]
+        return legend_actor
+
     def remove_actor(self, actor):  # noqa: ANN001
+        """Remove *actor* from registry and clear legend handle if matching."""
         self.renderer.actors.pop(id(actor), None)
-        if getattr(self, "_digcalc_legend_actor", None) is actor:
+        if getattr(self, "_digcalc_legend_actor", None) is actor:  # type: ignore[attr-defined]
             self._digcalc_legend_actor = None  # type: ignore[attr-defined]
 
+    # ------------------------------------------------------------------
+    # Scene helpers ----------------------------------------------------
+    # ------------------------------------------------------------------
     def clear(self):
         self.renderer.actors.clear()
 
-    clear_actors = clear
+    clear_actors = clear  # Alias common PyVista method
 
-    # Camera & render stubs -----------------------------------------------
     def reset_camera(self, *args, **kwargs):  # noqa: D401
-        pass
+        pass  # No-op for stub
 
-    def enable_parallel_projection(self):
+    def enable_parallel_projection(self):  # noqa: D401
         self._parallel = True
 
     def render(self):  # noqa: D401
-        pass
+        pass  # Intentionally blank
 
-    # Misc helpers ---------------------------------------------------------
+    # Misc helpers -----------------------------------------------------
     def add_axes(self, *args, **kwargs):
         pass
 
@@ -159,24 +194,39 @@ class _HeadlessPlotter:  # pylint: disable=too-few-public-methods
     def add_orientation_widget(self, *args, **kwargs):
         pass
 
-    def add_legend(self, *args, **kwargs):
-        legend = object()
-        # Store for tests expecting this attribute
-        self._digcalc_legend_actor = legend  # type: ignore[attr-defined]
-        return legend
-
-    # Section-plane widget dummy ------------------------------------------
+    # ------------------------------------------------------------------
+    # Section-plane widget ---------------------------------------------
+    # ------------------------------------------------------------------
     def add_plane_widget(self, *_a, **_k):  # noqa: D401, ANN001
-        class _DummyPlaneWidget:  # pylint: disable=too-few-public-methods
-            def SetEnabled(self, _flag):
-                pass
+        """Return a minimal stub with the subset of API used by PvDock."""
 
-            def GetEnabled(self):
-                return False
+        class _DummyPlaneWidget:  # pylint: disable=too-few-public-methods
+            def __init__(self):
+                self._enabled = True
+                self._origin = (0, 0, 0)
+                self._normal = (0, 0, 1)
+
+            # Enabled flag helpers ------------------------------------
+            def SetEnabled(self, flag: bool):  # noqa: N802
+                self._enabled = bool(flag)
+
+            def GetEnabled(self):  # noqa: N802
+                return self._enabled
+
+            enabled = property(GetEnabled, SetEnabled)  # back-compat attr
+
+            # Positional helpers – not strictly needed for tests but nice
+            def SetOrigin(self, origin):  # noqa: N802, ANN001
+                self._origin = origin
+
+            def SetNormal(self, normal):  # noqa: N802, ANN001
+                self._normal = normal
 
         return _DummyPlaneWidget()
 
-    screenshot = render
+    # Screenshot stub (used by screenshot feature) ---------------------
+    def screenshot(self, *_a, **_k):  # noqa: D401
+        pass
 
 
 def _create_plotter() -> "BackgroundPlotter":  # pragma: no cover – runtime side-effect
