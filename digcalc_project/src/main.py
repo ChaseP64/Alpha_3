@@ -12,11 +12,12 @@ import sys
 from pathlib import Path
 
 # Application imports
-from .ui.main_window import MainWindow
+from PySide6.QtWidgets import QApplication
+from .ui.main_window.main_window import MainWindow
+from .utils.logging_utils import setup_logging
 
 # Use relative imports within the package
 # Setup logging
-from .utils.logging_utils import setup_logging
 
 # from .models.project import Project # Project might not be needed directly here?
 
@@ -36,9 +37,6 @@ def main():
     logger.info("Starting DigCalc application")
 
     try:
-        # Import Qt modules here to avoid circular imports
-        from PySide6.QtWidgets import QApplication
-
         # Create Qt application
         app = QApplication(sys.argv)
         app.setApplicationName("DigCalc")

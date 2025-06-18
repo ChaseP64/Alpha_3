@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Optional
 from PySide6.QtCore import QObject, Signal
 
 # --- End Add ---
-from PySide6.QtWidgets import QFileDialog, QMessageBox
+from PySide6.QtWidgets import QFileDialog, QMessageBox, QWidget
 
 from ..core.geometry.surface_builder import lowest_surface
 
@@ -24,7 +24,7 @@ from ..models.surface import Surface
 
 # Use TYPE_CHECKING to avoid circular imports with MainWindow
 if TYPE_CHECKING:
-    from .main_window import MainWindow
+    from .main_window.main_window import MainWindow
 
 logger = logging.getLogger(__name__)
 

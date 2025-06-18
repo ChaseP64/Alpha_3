@@ -1,7 +1,9 @@
 import pytest
+from PySide6.QtWidgets import QApplication
+from digcalc_project.src.ui.main_window.main_window import MainWindow
+from digcalc_project.src.models.project import Project
+from digcalc_project.src.models.project_scale import ProjectScale
 from pytestqt.qt_compat import qt_api
-
-from digcalc_project.src.ui.main_window import MainWindow
 
 
 @pytest.mark.skipif(not qt_api, reason="pytest-qt not available")

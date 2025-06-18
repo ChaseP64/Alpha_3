@@ -1,9 +1,10 @@
 import pytest
 from PySide6.QtWidgets import QApplication, QMessageBox
+from unittest.mock import MagicMock, patch
 
 from digcalc_project.src.models.project import Project
 from digcalc_project.src.models.project_scale import ProjectScale
-from digcalc_project.src.ui.main_window import MainWindow
+from digcalc_project.src.ui.main_window.main_window import MainWindow
 
 
 @pytest.fixture(autouse=True)

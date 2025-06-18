@@ -1,7 +1,9 @@
 import pytest
 from PySide6.QtWidgets import QApplication
-
-from digcalc_project.src.ui.main_window import MainWindow
+from PySide6.QtCore import Qt
+from digcalc_project.src.ui.main_window.main_window import MainWindow
+from digcalc_project.src.ui.visualization_panel import VisualizationPanel
+from unittest.mock import MagicMock, patch
 
 
 @pytest.fixture(autouse=True)

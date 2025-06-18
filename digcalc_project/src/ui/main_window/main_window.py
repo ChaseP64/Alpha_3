@@ -67,28 +67,28 @@ from digcalc_project.src.ui.docks.pdf_thumbnail_dock import PdfThumbnailDock  # 
 # from src.ui.project_controller import ProjectController # OLD
 from digcalc_project.src.ui.project_controller import ProjectController  # NEW
 
-from ..core.calculations.volume_calculator import VolumeCalculator
-from ..core.geometry.surface_builder import SurfaceBuilder, SurfaceBuilderError
+from ...core.calculations.volume_calculator import VolumeCalculator
+from ...core.geometry.surface_builder import SurfaceBuilder, SurfaceBuilderError
 
-# Local imports - Use relative paths
-from ..models.project import PolylineData, Project
-from ..visualization.pdf_renderer import PDFRenderer, PDFRendererError
-from .dialogs.build_surface_dialog import BuildSurfaceDialog
-from .dialogs.elevation_dialog import ElevationDialog
+# Local imports - Use relative paths (two levels up)
+from ...models.project import PolylineData, Project
+from ...visualization.pdf_renderer import PDFRenderer, PDFRendererError
+from ...ui.dialogs.build_surface_dialog import BuildSurfaceDialog
+from ...ui.dialogs.elevation_dialog import ElevationDialog
 
 # --- NEW: Add missing import ---
-from .dialogs.pdf_page_selector_dialog import PdfPageSelectorDialog
-from .dialogs.report_dialog import ReportDialog
-from .dialogs.volume_calculation_dialog import VolumeCalculationDialog
-from .project_panel import ProjectPanel
-from .properties_dock import PropertiesDock
-from .visualization_panel import VisualizationPanel
+from ...ui.dialogs.pdf_page_selector_dialog import PdfPageSelectorDialog
+from ...ui.dialogs.report_dialog import ReportDialog
+from ...ui.dialogs.volume_calculation_dialog import VolumeCalculationDialog
+from ...ui.project_panel import ProjectPanel
+from ...ui.properties_dock import PropertiesDock
+from ...ui.visualization_panel import VisualizationPanel
 
 # --- NEW: Layer Legend Dock ---
 from digcalc_project.src.ui.docks.layer_legend_dock import LayerLegendDock
 
-from .pv_plotter_singleton import get_plotter, _plotter as plotter_instance # Import for shutdown
-from ..models.strata_models import StrataStack
+from ...ui.pv_plotter_singleton import get_plotter, _plotter as plotter_instance # Import for shutdown
+from ...models.strata_models import StrataStack
 
 logger = logging.getLogger(__name__)
 
@@ -232,39 +232,12 @@ class MainWindow(QMainWindow):
         self.visualization_panel = VisualizationPanel(self)
         self.main_layout.addWidget(self.visualization_panel)
 
-        # Create project panel as a dock widget, passing self (MainWindow)
-        self.project_dock = QDockWidget("Project", self)
-        self.project_dock.setFeatures(
-            QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable,
-        )
-        self.project_panel = ProjectPanel(main_window=self, parent=self)
-        self.project_dock.setWidget(self.project_panel)
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.project_dock)
+        # Build all dock widgets via helper
+        from .dock_manager import DockManager  # type: ignore
 
-        # --- Verify Project Dock ---
-        self.layer_dock = QDockWidget("Layers", self)
-        self.layer_dock.setObjectName("LayerDock")
-        self.layer_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
+        self.docks = DockManager(self)
 
-        self.layer_tree = QTreeWidget(self.layer_dock)
-        self.layer_tree.setHeaderHidden(True)
-        self.layer_dock.setWidget(self.layer_tree)
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.layer_dock)
-
-        # --- NEW: Create and add Properties Dock ---
-        self.prop_dock = PropertiesDock(self)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.prop_dock)
-        self.prop_dock.hide()
-        # --- END NEW ---
-
-        # --- NEW: Create and add PDF Thumbnail Dock ---
-        # self.pdf_thumbnail_dock = PdfThumbnailDock(self.pdf_service, self.pdf_controller, self) # Incorrect
-        self.pdf_thumbnail_dock = PdfThumbnailDock(self) # Correct - Pass only parent
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.pdf_thumbnail_dock)
-        self.pdf_thumbnail_dock.hide() # Initially hidden, show when PDF is loaded?
-        # --- END NEW ---
-
-        # Connect the signal for item changes (checkbox toggles)
+        # Connect layer tree checkbox toggles
         self.layer_tree.itemChanged.connect(self._on_layer_visibility_changed)
 
         # ------------------------------------------------------------------
@@ -303,532 +276,30 @@ class MainWindow(QMainWindow):
             self.strata_manager_dock = _StubStrataDock(self)  # type: ignore[attr-defined]
 
     def _connect_signals(self):
-        """Connect signals from UI components to main window slots."""
-        self.logger.debug("Connecting MainWindow signals...")
+        """Delegate verbose signal wiring to SignalBinder helper."""
+        from .signal_binder import SignalBinder  # type: ignore
 
-        # --- Project Controller signals ---
-        self.new_project_action.triggered.connect(self.project_controller.on_new_project)
-        self.open_project_action.triggered.connect(self.project_controller.on_open_project)
-        self.save_project_action.triggered.connect(self.project_controller.on_save_project) # save_as=False by default
-        # Connect Save As action to on_save_project with save_as=True
-        self.save_project_as_action.triggered.connect(lambda: self.project_controller.on_save_project(save_as=True))
-        self.exit_action.triggered.connect(self.close)
-        # --- End Connect Project Controller signals ---\
-
-        # --- NEW: Connect Trace PDF Action ---
-        self.trace_pdf_action.triggered.connect(self._on_trace_from_pdf)
-        # --- END NEW ---
-
-        # Connect visualization panel signals
-        if hasattr(self.visualization_panel, "surface_visualization_failed"):
-            self.visualization_panel.surface_visualization_failed.connect(self._on_visualization_failed)
-
-        # Connect tracing scene signals (via visualization panel)
-        if hasattr(self.visualization_panel, "scene_2d") and self.visualization_panel.scene_2d:
-            self.visualization_panel.scene_2d.polyline_finalized.connect(self._on_polyline_drawn)
-            self.visualization_panel.scene_2d.selectionChanged.connect(self._on_item_selected)
-            if hasattr(self.visualization_panel.scene_2d, "pageRectChanged"):
-                self.visualization_panel.scene_2d.pageRectChanged.connect(self._fit_view_to_scene)
-            if hasattr(self.visualization_panel.scene_2d, "padDrawn"):
-                self.visualization_panel.scene_2d.padDrawn.connect(self._on_pad_drawn)
-        else:
-             self.logger.warning("Could not connect tracing scene signals: scene_2d not found or is None.")
-
-        # Connect layer tree signal
-        self.layer_tree.itemChanged.connect(self._on_layer_visibility_changed)
-
-        # --- NEW: Connect PropertiesDock signal ---
-        # self.prop_dock.edited.connect(self._apply_elevation_edit) # Old signal name
-        self.prop_dock.polylineEdited.connect(self._apply_elevation_edit) # Corrected signal name
-        # TODO: Connect self.prop_dock.regionUpdated to a handler method
-        # Connect the new settingsChanged signal
-        self.prop_dock.settingsChanged.connect(self.project_controller.trigger_rebuild_if_needed)
-        # --- END NEW ---
-
-
-        # --- NEW: Connect View Actions ---
-        if hasattr(self, "view_2d_action") and self.view_2d_action:
-            self.view_2d_action.triggered.connect(self.on_view_2d)
-        else:
-             logger.error("view_2d_action not found during signal connection.")
-        if hasattr(self, "view_3d_action") and self.view_3d_action:
-            self.view_3d_action.triggered.connect(self.on_view_3d)
-        else:
-             logger.error("view_3d_action not found during signal connection.")
-        # --- END NEW ---
-
-        # --- Connect PDF Actions ---
-        if hasattr(self, "load_pdf_background_action"):
-            self.load_pdf_background_action.triggered.connect(self.on_load_pdf_background)
-        if hasattr(self, "clear_pdf_background_action"):
-            self.clear_pdf_background_action.triggered.connect(self.on_clear_pdf_background)
-        if hasattr(self, "prev_pdf_page_action"):
-            self.prev_pdf_page_action.triggered.connect(self.on_prev_pdf_page)
-        if hasattr(self, "next_pdf_page_action"):
-            self.next_pdf_page_action.triggered.connect(self.on_next_pdf_page)
-        if hasattr(self, "toggle_trace_mode_action"):
-            self.toggle_trace_mode_action.toggled.connect(self.on_toggle_tracing_mode)
-
-        # --- Connect Analysis Actions ---
-        if hasattr(self, "calculate_volume_action"):
-            self.calculate_volume_action.triggered.connect(self.on_calculate_volume)
-        if hasattr(self, "build_surface_action"):
-            self.build_surface_action.triggered.connect(self.on_build_surface)
-        if hasattr(self, "generate_report_action"):
-            self.generate_report_action.triggered.connect(self.on_generate_report)
-
-        # --- Connect Help Actions ---
-        if hasattr(self, "about_action"):
-            self.about_action.triggered.connect(self.on_about)
-
-        # --- Connect Project Controller signals (for UI updates) ---
-        if hasattr(self, "project_controller"):
-            self.project_controller.project_loaded.connect(self._update_ui_for_project)
-            self.project_controller.project_closed.connect(lambda: self._update_ui_for_project(None))
-            self.project_controller.project_modified.connect(self._update_window_title)
-            self.project_controller.surfaces_rebuilt.connect(self._on_surfaces_rebuilt)
-            # Connect import actions through controller
-            if hasattr(self, "import_csv_action"):
-                self.import_csv_action.triggered.connect(lambda: self.project_controller.on_import_file("csv"))
-            if hasattr(self, "import_dxf_action"):
-                self.import_dxf_action.triggered.connect(lambda: self.project_controller.on_import_file("dxf"))
-            if hasattr(self, "import_landxml_action"):
-                self.import_landxml_action.triggered.connect(lambda: self.project_controller.on_import_file("landxml"))
-        else:
-            self.logger.error("ProjectController not found during signal connection.")
-
-        # --- Connect PDF Controller Signal ---
-        if hasattr(self, "pdf_controller") and self.pdf_controller:
-            self.pdf_controller.pageSelected.connect(self._on_pdf_page_selected)
-            self.logger.debug("Connected pdf_controller.pageSelected signal.")
-        else:
-            self.logger.error("PdfController not found during signal connection.")
-        # --- End Connect PDF Controller Signal ---
-
-        # ------------------------------------------------------------------
-        # Tracing menu – elevation mode radio actions (update SettingsService)
-        # ------------------------------------------------------------------
-        if hasattr(self, "trace_point_action"):
-            self.trace_point_action.triggered.connect(lambda _checked=False: self._set_tracing_elev_mode("point"))
-        if hasattr(self, "trace_interpolate_action"):
-            self.trace_interpolate_action.triggered.connect(lambda _checked=False: self._set_tracing_elev_mode("interpolate"))
-        if hasattr(self, "trace_line_action"):
-            self.trace_line_action.triggered.connect(lambda _checked=False: self._set_tracing_elev_mode("line"))
-
-        self.logger.debug("Finished connecting MainWindow signals.")
-
-        # ------------------------------------------------------------------
-        # Borehole tool – toggle + point-picked flow
-        # ------------------------------------------------------------------
-        if hasattr(self, "borehole_tool_action") and self.borehole_tool_action:
-            # Toggle Borehole placement mode in VisualizationPanel
-            self.borehole_tool_action.toggled.connect(
-                self.visualization_panel.set_borehole_mode,
-            )
-
-        # Relay signal from VisualizationPanel → MainWindow handler
-        if hasattr(self.visualization_panel, "boreholePointPicked"):
-            self.visualization_panel.boreholePointPicked.connect(self._on_borehole_point)
+        self._signals = SignalBinder(self)
 
     def _create_actions(self):
-        """Create actions for menus and toolbars."""
-        # File menu actions
-        self.new_project_action = QAction("&New Project", self)
-        self.new_project_action.setShortcut(QKeySequence.StandardKey.New)
-        self.new_project_action.setStatusTip("Create a new empty project.")
+        """Create all QAction objects via ActionManager."""
+        # Deferred import to avoid circular reference at module load time.
+        from .actions import ActionManager  # type: ignore
 
-        self.open_project_action = QAction("&Open Project...", self)
-        self.open_project_action.setShortcut(QKeySequence.StandardKey.Open)
-        self.open_project_action.setStatusTip("Open an existing project file (.digcalc).")
-
-        self.save_project_action = QAction("&Save Project", self)
-        self.save_project_action.setShortcut(QKeySequence.StandardKey.Save)
-        self.save_project_action.setStatusTip("Save the current project.")
-        self.save_project_action.setEnabled(False) # Initially disabled
-
-        self.save_project_as_action = QAction("Save Project &As...", self)
-        self.save_project_as_action.setShortcut(QKeySequence.StandardKey.SaveAs)
-        self.save_project_as_action.setStatusTip("Save the current project to a new file.")
-        self.save_project_as_action.setEnabled(False) # Initially disabled
-
-        self.exit_action = QAction("E&xit", self)
-        self.exit_action.setShortcut(QKeySequence.StandardKey.Quit)
-        self.exit_action.setStatusTip("Exit the application.")
-
-        # Import menu actions
-        self.import_csv_action = QAction("Import &CSV...", self)
-        self.import_csv_action.setStatusTip("Import points from a CSV file.")
-        # Connect via controller in _connect_signals or elsewhere
-        # self.import_csv_action.triggered.connect(lambda: self.project_controller.on_import_file('csv'))
-
-        self.import_dxf_action = QAction("Import &DXF...", self)
-        self.import_dxf_action.setStatusTip("Import geometry from a DXF file.")
-        # self.import_dxf_action.triggered.connect(lambda: self.project_controller.on_import_file('dxf'))
-
-        self.import_landxml_action = QAction("Import &LandXML...", self)
-        self.import_landxml_action.setStatusTip("Import surfaces or points from a LandXML file.")
-        # self.import_landxml_action.triggered.connect(lambda: self.project_controller.on_import_file('landxml'))
-
-        # Background actions (Load/Clear PDF)
-        self.load_pdf_background_action = QAction("Load PDF &Background...", self)
-        self.load_pdf_background_action.setStatusTip("Load a PDF page as a background for tracing.")
-        # Connection in _connect_signals
-
-        self.clear_pdf_background_action = QAction("&Clear PDF Background", self)
-        self.clear_pdf_background_action.setStatusTip("Remove the current PDF background image.")
-        # Connection in _connect_signals
-        self.clear_pdf_background_action.setEnabled(False)
-
-        # PDF Navigation Actions
-        self.prev_pdf_page_action = QAction("Previous PDF Page", self)
-        self.prev_pdf_page_action.setStatusTip("Go to the previous page in the PDF background.")
-        # Connection in _connect_signals
-        self.prev_pdf_page_action.setEnabled(False)
-
-        self.next_pdf_page_action = QAction("Next PDF Page", self)
-        self.next_pdf_page_action.setStatusTip("Go to the next page in the PDF background.")
-        # Connection in _connect_signals
-        self.next_pdf_page_action.setEnabled(False)
-
-        # Analysis menu actions
-        self.calculate_volume_action = QAction("&Calculate Volume...", self)
-        self.calculate_volume_action.setStatusTip("Calculate cut/fill volumes between surfaces.")
-        # Connection in _connect_signals
-        self.calculate_volume_action.setEnabled(False)
-
-        self.build_surface_action = QAction("&Build Surface...", self)
-        self.build_surface_action.setStatusTip("Build a TIN or Grid surface from project layers.")
-        # Connection in _connect_signals
-        self.build_surface_action.setEnabled(False)
-
-        self.generate_report_action = QAction("Generate &Report...", self)
-        self.generate_report_action.setStatusTip("Generate a PDF report of the project.")
-        # Connection in _connect_signals
-        self.generate_report_action.setEnabled(False)
-
-        # --- NEW: Export Report Action ---
-        self.export_action = QAction(self.style().standardIcon(QStyle.SP_DialogSaveButton),
-                                    "Export Report…", self)
-        self.export_action.setStatusTip("Export PDF report with CSV tables.")
-        self.export_action.triggered.connect(self.on_export_report)
-
-        # View menu actions (Toggles for docks - simplified creation)
-        # Ensure docks exist before creating actions that depend on them
-        if hasattr(self, "project_dock"):
-            self.view_project_panel_action = self.project_dock.toggleViewAction()
-            self.view_project_panel_action.setText("&Project Panel")
-        else:
-             self.logger.error("Cannot create view_project_panel_action: project_dock missing")
-
-        if hasattr(self, "layer_dock"):
-            self.view_layer_panel_action = self.layer_dock.toggleViewAction()
-            self.view_layer_panel_action.setText("&Layer Panel")
-        else:
-             self.logger.error("Cannot create view_layer_panel_action: layer_dock missing")
-
-        if hasattr(self, "prop_dock"):
-            self.view_properties_dock_action = self.prop_dock.toggleViewAction()
-            self.view_properties_dock_action.setText("P&roperties Dock")
-        else:
-             self.logger.error("Cannot create view_properties_dock_action: prop_dock missing")
-
-        if hasattr(self, "pdf_thumbnail_dock"):
-            self.view_pdf_thumbnail_dock_action = self.pdf_thumbnail_dock.toggleViewAction()
-            self.view_pdf_thumbnail_dock_action.setText("PDF T&humbnails")
-            self.view_pdf_thumbnail_dock_action.setEnabled(False)
-        else:
-             self.logger.error("Cannot create view_pdf_thumbnail_dock_action: pdf_thumbnail_dock missing")
-
-
-        # View mode actions (2D/3D)
-        self.view_2d_action = QAction("View &2D", self, checkable=True)
-        # Renamed: This action now activates the PyVista tab-based 3-D view
-        self.view_3d_action = QAction("3D View (Tab)", self, checkable=True)
-        self.view_action_group = QActionGroup(self)
-        self.view_action_group.addAction(self.view_2d_action)
-        self.view_action_group.addAction(self.view_3d_action)
-        self.view_action_group.setExclusive(True)
-        self.view_2d_action.setChecked(True) # Default to 2D view
-
-        # 3-D Viewer Dock action
-        self.view3d_action = QAction("3-D Viewer", self)
-        self.view3d_action.setStatusTip("Open the 3-D viewer dock.")
-        self.view3d_action.triggered.connect(self.on_open_3d)
-
-        # Cut/Fill Map Action
-        self.cutfill_action = QAction("Show Cut/Fill Map", self, checkable=True)
-        self.cutfill_action.setChecked(False)
-        self.cutfill_action.setEnabled(False)
-
-        # Tool Actions
-        self.toggle_trace_mode_action = QAction("&Enable Tracing", self, checkable=True)
-        self.toggle_trace_mode_action.setStatusTip("Toggle polyline tracing mode for the 2D view.")
-        self.toggle_trace_mode_action.setChecked(False)
-        # Connection in _connect_signals
-        self.toggle_trace_mode_action.setEnabled(False)
-
-        self.trace_pdf_action = QAction("Trace from PDF Vectors...", self)
-        self.trace_pdf_action.setStatusTip("Extract vector paths from a PDF page and create layers.")
-        # Connection in _connect_signals
-        self.trace_pdf_action.setEnabled(False)
-
-        # --- NEW: Daylight Offset Action ---
-        self.daylight_action = QAction(QIcon(":/icons/daylight.svg"), "Daylight Offset…", self)
-        self.daylight_action.setStatusTip("Create daylight offset breakline from selected polyline.")
-        self.daylight_action.triggered.connect(self.on_daylight_offset)
-        # Toolbar hookup occurs in _create_toolbars after toolbar is created
-        # --- END NEW ---
-
-        # --- NEW: Mass-Haul Action ---
-        self.masshaul_action = QAction(QIcon(":/icons/masshaul.svg"), "Mass-Haul…", self)
-        self.masshaul_action.setStatusTip("Generate mass-haul diagram from Existing and Design surfaces.")
-        self.masshaul_action.triggered.connect(self.on_mass_haul)
-        self.masshaul_action.setEnabled(False)  # enable when conditions met later
-        # --- END NEW ---
-
-        # --- NEW: Borehole Tool Action ---
-        self.borehole_tool_action = QAction(QIcon.fromTheme("mdi.circle"), "Place Borehole", self)
-        self.borehole_tool_action.setCheckable(True)
-        self.borehole_tool_action.setStatusTip("Place a borehole log on the plan")
-        # Connection in _connect_signals
-        # --- END NEW ---
-
-        # Help menu actions
-        self.about_action = QAction("&About DigCalc", self)
-        self.about_action.setStatusTip("Show information about the DigCalc application.")
-        # Connection in _connect_signals
-
-        # Settings menu
-        if hasattr(self, "menu_bar"):
-            self.settings_menu = self.menu_bar.addMenu("Settings")
-            self.strata_settings_action = QAction("Strata…", self)
-            self.strata_settings_action.triggered.connect(self._on_strata_settings)
-            self.settings_menu.addAction(self.strata_settings_action)
+        # Instantiate manager – it will attach actions back onto *this* instance.
+        self.actions = ActionManager(self)
 
     def _create_menus(self):
-        """Create the main menu bar."""
-        self.menu_bar = self.menuBar()
+        """Build menus via MenuBuilder helper class."""
+        from .menu_builder import MenuBuilder  # type: ignore
 
-        # File menu
-        file_menu = self.menu_bar.addMenu("&File")
-        file_menu.addAction(self.new_project_action)
-        file_menu.addAction(self.open_project_action)
-        file_menu.addAction(self.save_project_action)
-        file_menu.addAction(self.save_project_as_action)
-        file_menu.addSeparator()
-        # Add Import actions to File menu for now
-        # file_menu.addAction(self.import_cad_action)
-        # file_menu.addAction(self.import_pdf_action) # This seems like viewing bg, not tracing
-        # file_menu.addAction(self.import_landxml_action)
-        # file_menu.addAction(self.import_csv_action)
-        # file_menu.addSeparator() # Add separator before tracing action?
-        # --- NEW: Add Trace PDF Action ---
-        file_menu.addAction(self.trace_pdf_action)
-        file_menu.addSeparator()
-        # --- END NEW ---
-        file_menu.addAction(self.exit_action)
-
-        # Import menu
-        self.import_menu = self.menu_bar.addMenu("Import")
-        self.import_menu.addAction(self.import_csv_action)
-        self.import_menu.addAction(self.import_dxf_action)
-        self.import_menu.addAction(self.import_landxml_action)
-
-        # View menu - Add PDF actions here
-        self.view_menu = self.menu_bar.addMenu("View")
-        self.view_menu.addAction(self.load_pdf_background_action)
-        self.view_menu.addAction(self.clear_pdf_background_action)
-        self.view_menu.addSeparator()
-        self.view_menu.addAction(self.prev_pdf_page_action)
-        self.view_menu.addAction(self.next_pdf_page_action)
-        self.view_menu.addSeparator()
-        self.view_menu.addAction(self.view_2d_action)
-        self.view_menu.addAction(self.view_3d_action)
-        # 3-D viewer dock action
-        self.view_menu.addAction(self.view3d_action)
-        self.view_menu.addSeparator()
-        # Ensure project_dock exists before adding its action
-        if hasattr(self, "project_dock"):
-            self.view_menu.addAction(self.project_dock.toggleViewAction())
-        else:
-             self.logger.error("Project dock not created, cannot add toggle action.")
-        # --- Verify Layer Dock Toggle Action ---
-        # Check if layer_dock exists before adding its action
-        if hasattr(self, "layer_dock") and self.layer_dock:
-             self.view_menu.addAction(self.layer_dock.toggleViewAction())
-        else:
-             self.logger.error("Layer dock not created or is None, cannot add toggle action.")
-        # --- End Verify Layer Dock Toggle Action ---
-        # --- Properties Dock Toggle Action ---
-        # Check if prop_dock exists before adding its action
-        if hasattr(self, "prop_dock"):
-            view_menu_actions = self.view_menu.actions()
-            insert_before_action = None
-            layer_toggle_action = self.layer_dock.toggleViewAction() if hasattr(self, "layer_dock") and self.layer_dock else None
-
-            if layer_toggle_action:
-                try:
-                    idx = view_menu_actions.index(layer_toggle_action)
-                    for i in range(idx + 1, len(view_menu_actions)):
-                         if view_menu_actions[i].isSeparator():
-                             insert_before_action = view_menu_actions[i]
-                             break
-                    if not insert_before_action:
-                        if idx + 1 < len(view_menu_actions):
-                             insert_before_action = view_menu_actions[idx+1]
-                except ValueError:
-                    self.logger.warning("Layer toggle action not found in view menu for inserting properties toggle.")
-
-            if insert_before_action:
-                self.view_menu.insertAction(insert_before_action, self.prop_dock.toggleViewAction())
-            else:
-                self.view_menu.addAction(self.prop_dock.toggleViewAction())
-        else:
-            self.logger.error("Properties dock not created, cannot add toggle action.")
-        # --- End Properties Dock Toggle Action ---
-        self.view_menu.addSeparator()
-        self.view_menu.addAction(self.toggle_trace_mode_action)
-
-        # --- NEW: Surfaces Menu ---
-        self.surfaces_menu = self.menu_bar.addMenu("Surfaces")
-        self.surfaces_menu.addAction(self.build_surface_action)
-        # --- END NEW ---
-
-        # Analysis menu
-        self.analysis_menu = self.menu_bar.addMenu("Analysis")
-        self.analysis_menu.addAction(self.calculate_volume_action)
-
-        # Settings menu
-        self.settings_menu = self.menu_bar.addMenu("Settings")
-        self.strata_settings_action = QAction("Strata…", self)
-        self.strata_settings_action.triggered.connect(self._on_strata_settings)
-        self.settings_menu.addAction(self.strata_settings_action)
-
-        # ------------------------------------------------------------------
-        # Tracing menu (new)
-        # ------------------------------------------------------------------
-        self.tracing_menu = self.menu_bar.addMenu("Tracing")
-
-        # Re-use the existing enable-tracing toggle action
-        self.tracing_menu.addAction(self.toggle_trace_mode_action)
-        self.tracing_menu.addSeparator()
-
-        # NEW: Scale calibration action
-        self.scale_calib_act = QAction(QIcon.fromTheme("mdi.ruler"), "Scale…", self)
-        self.scale_calib_act.setToolTip("Calibrate or edit drawing scale (Ctrl+K)")
-        self.scale_calib_act.setShortcut("Ctrl+K")
-        self.scale_calib_act.triggered.connect(self.on_scale_calibration)
-        self.scale_calib_act.setEnabled(False)  # Disabled until a PDF is loaded
-        self.tracing_menu.addAction(self.scale_calib_act)
-        self.tracing_menu.addSeparator()
-
-        # Elevation-prompt mode radio actions
-        self.trace_point_action = QAction("Point Prompt", self, checkable=True)
-        self.trace_interpolate_action = QAction("First/Last Prompt (Interpolate)", self, checkable=True)
-        self.trace_line_action = QAction("Line Elevation", self, checkable=True)
-
-        self.trace_mode_group = QActionGroup(self)
-        self.trace_mode_group.setExclusive(True)
-        for act in (self.trace_point_action, self.trace_interpolate_action, self.trace_line_action):
-            self.trace_mode_group.addAction(act)
-            self.tracing_menu.addAction(act)
-
-        # Initial checked state from SettingsService
-        mode_pref = SettingsService().tracing_elev_mode()
-        if mode_pref == "interpolate":
-            self.trace_interpolate_action.setChecked(True)
-        elif mode_pref == "line":
-            self.trace_line_action.setChecked(True)
-        else:  # fallback to point
-            self.trace_point_action.setChecked(True)
-
-        # ------------------------------------------------------------------
-        # Connect mode actions to handler – done in _connect_signals
-        # ------------------------------------------------------------------
-
-        # --- NEW: Tools Toolbar ---
-        self.tools_toolbar = QToolBar("Tools Toolbar")
-        self.tools_toolbar.setIconSize(QSize(24, 24))
-        self.addToolBar(self.tools_toolbar)
-        self.tools_toolbar.addAction(self.daylight_action)
-        # --- NEW: Add mass-haul action to tools toolbar ---
-        self.tools_toolbar.addAction(self.masshaul_action)
-        # --- END NEW ---
-
-        # --- NEW: Add borehole tool action to tools toolbar ---
-        self.tools_toolbar.addAction(self.borehole_tool_action)
-        # --- END NEW ---
-
-        # Help menu
-        self.help_menu = self.menu_bar.addMenu("Help")
-        # Add help actions here
+        self.menus = MenuBuilder(self)
 
     def _create_toolbars(self):
-        """Create the application toolbars."""
-        # Main toolbar
-        self.main_toolbar = QToolBar("Main Toolbar")
-        self.main_toolbar.setIconSize(QSize(24, 24))
-        self.addToolBar(self.main_toolbar)
+        """Build toolbars via ToolbarBuilder helper."""
+        from .toolbar_builder import ToolbarBuilder  # type: ignore
 
-        # Add actions to toolbar
-        self.main_toolbar.addAction(self.new_project_action)
-        self.main_toolbar.addAction(self.open_project_action)
-        self.main_toolbar.addAction(self.save_project_action)
-        self.main_toolbar.addSeparator()
-
-        # Add the layer selector from VisualizationPanel
-        if hasattr(self, "visualization_panel") and hasattr(self.visualization_panel, "layer_selector"):
-            self.main_toolbar.addSeparator()
-            self.main_toolbar.addWidget(QLabel(" Layer:"))
-            self.main_toolbar.addWidget(self.visualization_panel.layer_selector)
-        else:
-            self.logger.warning("Could not add layer selector to toolbar: visualization_panel or layer_selector not found.")
-
-        # Import toolbar
-        self.import_toolbar = QToolBar("Import Toolbar")
-        self.import_toolbar.setIconSize(QSize(24, 24))
-        self.addToolBar(self.import_toolbar)
-
-        self.import_toolbar.addAction(self.import_csv_action)
-        self.import_toolbar.addAction(self.import_dxf_action)
-        self.import_toolbar.addAction(self.import_landxml_action)
-
-        self.main_toolbar.addSeparator()
-        self.main_toolbar.addAction(self.calculate_volume_action)
-
-        # --- PDF Toolbar --- (Optional, could also be in status bar)
-        self.pdf_toolbar = QToolBar("PDF Toolbar")
-        self.pdf_toolbar.setIconSize(QSize(24, 24))
-        self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self.pdf_toolbar)
-
-        self.pdf_toolbar.addAction(self.load_pdf_background_action)
-        self.pdf_toolbar.addAction(self.scale_calib_act)  # Add Scale action next to load
-        self.pdf_toolbar.addAction(self.clear_pdf_background_action)
-        self.pdf_toolbar.addSeparator()
-        self.pdf_toolbar.addAction(self.prev_pdf_page_action)
-        self.pdf_page_label = QLabel(" Page: ")
-        self.pdf_page_spinbox = QSpinBox()
-        self.pdf_page_spinbox.setRange(0, 0)
-        self.pdf_page_spinbox.setEnabled(False)
-        self.pdf_page_spinbox.valueChanged.connect(self.on_set_pdf_page_from_spinbox)
-        self.pdf_toolbar.addWidget(self.pdf_page_label)
-        self.pdf_toolbar.addWidget(self.pdf_page_spinbox)
-        self.pdf_toolbar.addAction(self.next_pdf_page_action)
-        self.pdf_toolbar.setVisible(False)
-
-        # --- Tracing Toolbar Action ---
-        self.pdf_toolbar.addSeparator()
-        self.pdf_toolbar.addAction(self.toggle_trace_mode_action)
-
-        # --- NEW: Optional View Toolbar ---
-        self.view_toolbar = QToolBar("View Toolbar")
-        self.view_toolbar.setIconSize(QSize(24, 24))
-        self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self.view_toolbar)
-        # Add actions (use icons later if desired)
-        self.view_toolbar.addAction(self.view_2d_action)
-        self.view_toolbar.addAction(self.view_3d_action)
-        self.view_toolbar.addAction(self.view3d_action)
-        # --- END NEW ---
+        self.toolbars = ToolbarBuilder(self)
 
     def _create_statusbar(self):
         """Create the status bar."""
@@ -2919,7 +2390,7 @@ class MainWindow(QMainWindow):
     def _on_strata_settings(self):
         """Open the Strata settings dialog."""
         try:
-            from .dialogs.strata_settings_dialog import StrataSettingsDialog
+            from ...ui.dialogs.strata_settings_dialog import StrataSettingsDialog
         except Exception as exc:
             self.logger.error("Failed to import StrataSettingsDialog: %s", exc)
             return
