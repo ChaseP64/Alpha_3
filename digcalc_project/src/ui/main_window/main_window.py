@@ -124,6 +124,20 @@ class MainWindow(QMainWindow):
 
         self.logger = logging.getLogger(__name__)
 
+        # --- NEW: UI State Manager (Phase-2 refactor) ---
+        from .ui_state_manager import UIStateManager  # Local import to avoid early circular refs
+        self.ui_state = UIStateManager(self)
+        # --- END NEW ---
+
+        # --- NEW: PDF Event Handler (Phase-2 refactor) ---
+        from .pdf_event_handler import PDFEventHandler
+        self.pdf_handler = PDFEventHandler(self)
+        # --- END NEW ---
+
+        # --- NEW: Feature Handlers (Phase-2 refactor) ---
+        from .feature_handlers import FeatureHandlers
+        self.feature_handlers = FeatureHandlers(self)
+        # --- END NEW ---
 
         # --- PDF Service and Controller ---
         # Instantiate PdfService (should likely be singleton or passed in if shared)

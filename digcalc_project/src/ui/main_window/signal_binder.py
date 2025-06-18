@@ -28,7 +28,11 @@ class SignalBinder:  # noqa: D101
         mw.exit_action.triggered.connect(mw.close)
 
         # Trace-PDF action
-        mw.trace_pdf_action.triggered.connect(mw._on_trace_from_pdf)
+        pdf = getattr(mw, "pdf_handler", None)
+        if pdf is not None:
+            mw.trace_pdf_action.triggered.connect(pdf._on_trace_from_pdf)
+        else:
+            mw.trace_pdf_action.triggered.connect(mw._on_trace_from_pdf)
 
         # Visualization feedback
         if hasattr(mw.visualization_panel, "surface_visualization_failed"):
@@ -58,16 +62,30 @@ class SignalBinder:  # noqa: D101
         mw.view_3d_action.triggered.connect(mw.on_view_3d)
 
         # PDF actions
-        mw.load_pdf_background_action.triggered.connect(mw.on_load_pdf_background)
-        mw.clear_pdf_background_action.triggered.connect(mw.on_clear_pdf_background)
-        mw.prev_pdf_page_action.triggered.connect(mw.on_prev_pdf_page)
-        mw.next_pdf_page_action.triggered.connect(mw.on_next_pdf_page)
+        pdf = getattr(mw, "pdf_handler", None)
+        if pdf is not None:
+            mw.load_pdf_background_action.triggered.connect(pdf.on_load_pdf_background)
+            mw.clear_pdf_background_action.triggered.connect(pdf.on_clear_pdf_background)
+            mw.prev_pdf_page_action.triggered.connect(pdf.on_prev_pdf_page)
+            mw.next_pdf_page_action.triggered.connect(pdf.on_next_pdf_page)
+        else:
+            mw.load_pdf_background_action.triggered.connect(mw.on_load_pdf_background)
+            mw.clear_pdf_background_action.triggered.connect(mw.on_clear_pdf_background)
+            mw.prev_pdf_page_action.triggered.connect(mw.on_prev_pdf_page)
+            mw.next_pdf_page_action.triggered.connect(mw.on_next_pdf_page)
+
         mw.toggle_trace_mode_action.toggled.connect(mw.on_toggle_tracing_mode)
 
         # Analysis actions
-        mw.calculate_volume_action.triggered.connect(mw.on_calculate_volume)
-        mw.build_surface_action.triggered.connect(mw.on_build_surface)
-        mw.generate_report_action.triggered.connect(mw.on_generate_report)
+        fh = getattr(mw, "feature_handlers", None)
+        if fh is not None:
+            mw.calculate_volume_action.triggered.connect(fh.on_calculate_volume)
+            mw.build_surface_action.triggered.connect(fh.on_build_surface)
+            mw.generate_report_action.triggered.connect(fh.on_generate_report)
+        else:
+            mw.calculate_volume_action.triggered.connect(mw.on_calculate_volume)
+            mw.build_surface_action.triggered.connect(mw.on_build_surface)
+            mw.generate_report_action.triggered.connect(mw.on_generate_report)
 
         mw.about_action.triggered.connect(mw.on_about)
 
@@ -85,7 +103,11 @@ class SignalBinder:  # noqa: D101
 
         # PDF controller
         if mw.pdf_controller is not None:
-            mw.pdf_controller.pageSelected.connect(mw._on_pdf_page_selected)
+            pdf = getattr(mw, "pdf_handler", None)
+            if pdf is not None:
+                mw.pdf_controller.pageSelected.connect(pdf._on_pdf_page_selected)
+            else:
+                mw.pdf_controller.pageSelected.connect(mw._on_pdf_page_selected)
 
         # Tracing-mode radio buttons update SettingsService
         mw.trace_point_action.triggered.connect(lambda _=False: mw._set_tracing_elev_mode("point"))
