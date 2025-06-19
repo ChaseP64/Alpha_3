@@ -133,7 +133,6 @@ class ActionManager:
         act = QAction(mw.style().standardIcon(QStyle.SP_DialogSaveButton),
                       "Export Report…", mw)
         act.setStatusTip("Export PDF report with CSV tables.")
-        act.triggered.connect(mw.on_export_report)
         self._add_attr("export_action", act)
 
         # View menu actions (docks) ----------------------------------------
@@ -205,13 +204,11 @@ class ActionManager:
         # Daylight Offset --------------------------------------------------
         act = QAction(QIcon(":/icons/daylight.svg"), "Daylight Offset…", mw)
         act.setStatusTip("Create daylight offset breakline from selected polyline.")
-        act.triggered.connect(mw.on_daylight_offset)
         self._add_attr("daylight_action", act)
 
         # Mass-Haul --------------------------------------------------------
         act = QAction(QIcon(":/icons/masshaul.svg"), "Mass-Haul…", mw)
         act.setStatusTip("Generate mass-haul diagram from Existing and Design surfaces.")
-        act.triggered.connect(mw.on_mass_haul)
         act.setEnabled(False)
         self._add_attr("masshaul_action", act)
 

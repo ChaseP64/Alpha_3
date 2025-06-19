@@ -90,6 +90,11 @@ from digcalc_project.src.ui.docks.layer_legend_dock import LayerLegendDock
 from ...ui.pv_plotter_singleton import get_plotter, _plotter as plotter_instance # Import for shutdown
 from ...models.strata_models import StrataStack
 
+# Refactor: actions and signal binder helpers
+from .actions import ActionManager
+from .signal_binder import SignalBinder
+from .action_handler import ActionHandler
+
 logger = logging.getLogger(__name__)
 
 
@@ -236,6 +241,10 @@ class MainWindow(QMainWindow):
         if app: # Should always exist in a running Qt app
             app.aboutToQuit.connect(self._on_application_quit)
 
+        # --- NEW: Extracted action handler ---
+        self.action_handler = ActionHandler(self)
+        # --- END NEW ---
+
     def _init_ui(self):
         """Initialize the UI components, including docked panels."""
         # Create central widget
@@ -304,7 +313,7 @@ class MainWindow(QMainWindow):
         from .actions import ActionManager  # type: ignore
 
         # Instantiate manager – it will attach actions back onto *this* instance.
-        self.action_manager = ActionManager(self)
+        self.actions = ActionManager(self)
 
     def _create_menus(self):
         """Create the main menu bar."""
@@ -340,83 +349,32 @@ class MainWindow(QMainWindow):
         QMessageBox.warning(self, "Visualization Error",
                             f"Could not visualize surface '{surface_name}'.\nReason: {error_msg}")
 
-    def on_calculate_volume(self):
-        """Handle the 'Calculate Volumes' action."""
-        project = self.project_controller.get_current_project()
-        if not project or len(project.surfaces) < 2:
-            QMessageBox.warning(self, "Cannot Calculate Volumes",
-                                "Please ensure at least two surfaces exist in the project.")
-            self.logger.warning("Volume calculation attempted with insufficient surfaces.")
+    def on_volume_computed(self, result: tuple):
+        """Handle the result of a volume calculation."""
+        # This is now a slot connected to the calculator's signal
+        params = self._last_volume_calculation_params
+        if not params:
+            self.logger.warning("on_volume_computed called with no parameters stored.")
             return
+            
+        self._last_dz_cache = result
+        dz_grid, bounds, grid_res = result
 
-        surface_names = list(project.surfaces.keys())
-        dialog = VolumeCalculationDialog(surface_names, self)
+        cut_volume = np.sum(dz_grid[dz_grid > 0])
+        fill_volume = np.abs(np.sum(dz_grid[dz_grid < 0]))
+        net_volume = np.sum(dz_grid)
 
-        if dialog.exec():
-            selection = dialog.get_selected_surfaces()
-            resolution = dialog.get_grid_resolution()
-
-            if selection and resolution > 0:
-                existing_name = selection["existing"]
-                proposed_name = selection["proposed"]
-                self.logger.info(f"Starting volume calculation: Existing='{existing_name}', Proposed='{proposed_name}', Resolution={resolution}")
-                self.statusBar().showMessage(f"Calculating volumes (Grid: {resolution})...", 0)
-
-                try:
-                    # Use project obtained from controller
-                    existing_surface = project.get_surface(existing_name)
-                    proposed_surface = project.get_surface(proposed_name)
-
-                    if not existing_surface or not proposed_surface:
-                         raise ValueError("Selected surface(s) not found in project.")
-
-                    if not existing_surface.points or not proposed_surface.points:
-                         raise ValueError("Selected surface(s) have no data points for calculation.")
-
-                    # VolumeCalculator expects the active Project so it can
-                    # extend bounding boxes with regions and log context.
-                    calculator = VolumeCalculator(project)
-                    results = calculator.calculate_surface_to_surface(
-                        surface1=existing_surface,
-                        surface2=proposed_surface,
-                        grid_resolution=resolution,
-                    )
-                    cut_volume = results["cut_volume"]
-                    fill_volume = results["fill_volume"]
-                    net_volume = results["net_volume"]
-
-                    self.statusBar().showMessage(f"Calculation complete: Cut={cut_volume:.2f}, Fill={fill_volume:.2f}, Net={net_volume:.2f}", 5000)
-                    self.logger.info(f"Volume calculation successful: Cut={cut_volume:.2f}, Fill={fill_volume:.2f}, Net={net_volume:.2f}")
-
-                    report_dialog = ReportDialog(
-                        existing_surface_name=existing_name,
-                        proposed_surface_name=proposed_name,
-                        grid_resolution=resolution,
-                        cut_volume=cut_volume,
-                        fill_volume=fill_volume,
-                        net_volume=net_volume,
-                        parent=self,
-                    )
-                    self.logger.debug("Displaying volume calculation report.")
-                    report_dialog.exec()
-
-                except Exception as e:
-                    self.logger.exception(f"Error during volume calculation: {e}")
-                    QMessageBox.critical(self, "Calculation Error",
-                                         f"Failed to calculate volumes:\n{e}")
-                    self.statusBar().showMessage("Volume calculation failed.", 5000)
-            else:
-                 if resolution <= 0:
-                    self.logger.warning("Volume calculation cancelled: Invalid grid resolution.")
-                    QMessageBox.warning(self, "Invalid Input", "Grid resolution must be greater than zero.")
-                 else:
-                    self.logger.warning("Volume calculation cancelled: Invalid surface selection.")
-                 self.statusBar().showMessage("Calculation cancelled.", 3000)
-        else:
-            self.logger.info("Volume calculation dialog cancelled by user.")
-            self.statusBar().showMessage("Calculation cancelled.", 3000)
-
-
+        report_dialog = ReportDialog(
+            existing_surface_name=params['existing_surface'],
+            proposed_surface_name=params['proposed_surface'],
+            grid_resolution=params['grid_resolution'],
+            cut_volume=cut_volume,
+            fill_volume=fill_volume,
+            net_volume=net_volume,
+            parent=self
+        )
+        report_dialog.exec()
+        self.statusBar().showMessage("Volume calculation complete.", 5000)
 
     def closeEvent(self, event):
         """Handle the main window close event."""
@@ -920,136 +878,6 @@ class MainWindow(QMainWindow):
         else:
             self.logger.error("Cannot switch to 3-D view: VisualizationPanel not found.")
 
-    # --- END NEW ---
-    @Slot()
-    def on_build_surface(self):
-        """Handles the 'Build Surface from Layer' action."""
-        # Get project from controller
-        project = self.project_controller.get_current_project()
-        if not project or not project.traced_polylines:
-            QMessageBox.information(self, "Build Surface", "No traced polylines available...")
-            logger.warning("Build Surface action triggered but no traced polylines exist.")
-            return
-
-        # --- FIX: Handle list/dict format when checking for elevation ---
-        layers_with_elevation = []
-        # Use project variable
-        for layer, polys in project.traced_polylines.items():
-            # ... (rest of elevation check uses local vars) ...
-            if not isinstance(polys, list):
-                # ...
-                continue
-            has_elevation = False
-            for p_data in polys:
-                # ...
-                if isinstance(p_data, dict) and p_data.get("elevation") is not None:
-                    has_elevation = True
-                    break
-            if has_elevation:
-                layers_with_elevation.append(layer)
-        # --- END FIX ---
-
-        if not layers_with_elevation:
-             # ... (no layers with elevation message) ...
-             return
-
-        # Pass project to dialog
-        dlg = BuildSurfaceDialog(project, self)
-        if dlg.exec() == QtWidgets.QDialog.Accepted:
-            selected_layer = dlg.layer()
-            surface_name = dlg.surface_name()
-
-            if not selected_layer or not surface_name:
-                 # ... (dialog error handling) ...
-                 return
-
-            # Use project variable
-            unique_surface_name = project.get_unique_surface_name(surface_name)
-            if unique_surface_name != surface_name:
-                 # ... (adjust name) ...
-                 surface_name = unique_surface_name
-
-            # ... (logging and status) ...
-
-            # Initialize list before try block to guarantee existence
-            valid_polys_for_build: list = []
-            try:
-                # Use project variable
-                polylines_to_build = project.traced_polylines.get(selected_layer, [])
-                
-                # Filter polylines: include if they have a top-level elevation 
-                # OR if their points are 3D.
-                temp_valid_polys = []
-                for p_data in polylines_to_build:
-                    if not isinstance(p_data, dict):
-                        continue
-                    
-                    # Condition 1: Top-level elevation exists
-                    if p_data.get("elevation") is not None:
-                        temp_valid_polys.append(p_data)
-                        continue # Polyline is valid, no need to check points
-                    
-                    # Condition 2: Points list contains 3D coordinates
-                    points = p_data.get("points")
-                    if isinstance(points, list) and points:
-                        first_point = points[0]
-                        if isinstance(first_point, (list, tuple)) and len(first_point) == 3:
-                            if isinstance(first_point[2], (int, float)): # Check if Z is a number
-                                temp_valid_polys.append(p_data)
-                
-                valid_polys_for_build = temp_valid_polys
-                
-                if not valid_polys_for_build:
-                    raise SurfaceBuilderError(f"Layer '{selected_layer}' has no polylines with suitable elevation data for building.")
-
-                # Use project variable
-                current_layer_rev = project.layer_revisions.get(selected_layer, 0)
-                # ... (logging) ...
-
-                surface = SurfaceBuilder.build_from_polylines(
-                    layer_name=selected_layer,
-                    polylines_data=valid_polys_for_build, # Pass the filtered list
-                    revision=current_layer_rev,
-                )
-                surface.name = surface_name
-                # Use project variable
-                project.add_surface(surface)
-                # --- CHANGE THIS LINE ---
-                self.visualization_panel.display_surface(surface) # Use display_surface
-                # --- END CHANGE ---
-                # ... (rest of UI updates and error handling) ...
-
-                if hasattr(self, "project_panel"):
-                    self.project_panel._update_tree()
-                # --- ADD THIS ---
-                self.ui_state.update_analysis_actions_state() # Check if calc button should be enabled
-                # --- END ADD ---
-                self.statusBar().showMessage(f"Surface '{surface_name}' created from layer '{selected_layer}'.", 5000)
-                # Update the view action states now that content has changed
-                self.ui_state.update_view_actions_state()
-
-                # Notify any listeners (e.g., 3-D viewer) that surfaces list changed
-                if hasattr(self.project_controller, "surfaces_rebuilt"):
-                    self.project_controller.surfaces_rebuilt.emit()
-
-                # Update visualization - Use display_surface (defined in Part 4)
-                # --- CHANGE THIS LINE --- 
-                if hasattr(self.visualization_panel, "display_surface"):
-                    self.visualization_panel.display_surface(surface)
-                # --- END CHANGE ---
-
-            except SurfaceBuilderError as e:
-                 logger.error(f"Surface build failed: {e}", exc_info=True)
-                 QMessageBox.warning(self, "Build Surface Error", str(e))
-                 self.statusBar().showMessage("Surface build failed.", 5000)
-            except Exception as e:
-                 logger.exception(f"Unexpected error during surface build: {e}")
-                 QMessageBox.critical(self, "Build Surface Error", f"An unexpected error occurred:\n{e}")
-                 self.statusBar().showMessage("Surface build failed (unexpected error).", 5000)
-        else:
-             logger.info("Build Surface dialog cancelled by user.")
-             self.statusBar().showMessage("Build surface cancelled.", 3000)
-    # --- END NEW ---
 
     # --- NEW: Rebuild Helpers ---
     def _queue_surface_rebuilds_for_layer(self, layer_name: str):
@@ -1367,20 +1195,6 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------
     # Reporting
     # ------------------------------------------------------------------
-    @Slot()
-    def on_generate_report(self) -> None:
-        """Generate a PDF report for the current project.
-
-        For now this is a stub: it just shows a message box so the
-        QAction connection works and avoids the AttributeError.
-        """
-        # Note: QMessageBox was imported at the top earlier
-        QMessageBox.information(
-            self,
-            "DigCalc",
-            "Report generation is not implemented yet.\n"
-            "This placeholder slot proves the QAction hookup works.",
-        )
 
     # ------------------------------------------------------------------
     # Help Menu Slots
@@ -1496,52 +1310,7 @@ class MainWindow(QMainWindow):
         QShortcut(QKeySequence.StandardKey.Redo, self, self.undoStack.redo)
 
     # --- NEW: Daylight Offset Slot ------------------------------------------------
-    @Slot()
-    def on_daylight_offset(self):
-        """Create daylight offset breakline from the currently selected polyline."""
-        # Deferred import to avoid heavy UI cost at startup
-        try:
-            from digcalc_project.src.ui.dialogs.daylight_dialog import DaylightDialog
-        except ImportError as e:
-            self.logger.error(f"Could not import DaylightDialog: {e}")
-            QMessageBox.critical(self, "DigCalc", "Daylight dialog is unavailable.")
-            return
 
-        # Access TracingScene via VisualizationPanel
-        scene = getattr(self.visualization_panel, "scene_2d", None)
-        if scene is None:
-            QMessageBox.warning(self, "DigCalc", "2D Tracing Scene is not active.")
-            return
-
-        # Ensure a polyline is selected
-        if not hasattr(scene, "current_polyline") or not scene.current_polyline():
-            QMessageBox.warning(self, "DigCalc", "Select a polyline first.")
-            return
-
-        dlg = DaylightDialog(self)
-        if dlg.exec():
-            dist, slope = dlg.values()
-            if slope == 0:
-                QMessageBox.warning(self, "DigCalc", "Slope ratio cannot be zero.")
-                return
-            try:
-                poly = scene.current_polyline_points()
-                from digcalc_project.src.tools.daylight_offset_tool import (
-                    offset_polygon,
-                    project_to_slope,
-                )
-                off2d = offset_polygon(poly, dist)
-                off3d = project_to_slope(off2d, abs(dist), slope)
-                if hasattr(scene, "add_offset_breakline"):
-                    scene.add_offset_breakline(off3d)
-                else:
-                    # Fallback: log error if scene lacks helper
-                    self.logger.error("TracingScene does not implement add_offset_breakline().")
-                    QMessageBox.warning(self, "DigCalc", "Offset breakline feature is not available.")
-            except Exception as e:
-                self.logger.exception("Failed to create daylight offset: %s", e)
-                QMessageBox.critical(self, "DigCalc", f"Failed to create daylight offset.\n{e}")
-    # --- END NEW ---
 
     # ------------------------------------------------------------------
     # Pad elevation handling
@@ -1608,175 +1377,10 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------
     # Mass-Haul Slot
     # ------------------------------------------------------------------
-    @Slot()
-    def on_mass_haul(self):
-        """Generate mass-haul curve, chart, and CSV report section."""
-        from PySide6.QtWidgets import QDialog, QMessageBox
-
-        from digcalc_project.src.core.calculations.mass_haul import build_mass_haul
-        from digcalc_project.src.core.reporting.haul_chart import make_mass_haul_chart
-        from digcalc_project.src.services.csv_writer import write_mass_haul
-        from digcalc_project.src.ui.dialogs.haul_alignment_dialog import (
-            HaulAlignmentDialog,
-        )
-
-        # Ensure tracing scene and alignment polyline
-        if not hasattr(self.visualization_panel, "scene_2d"):
-            QMessageBox.warning(self, "DigCalc", "2D scene not available.")
-            return
-
-        scene = self.visualization_panel.scene_2d
-        if not hasattr(scene, "current_polyline"):
-            QMessageBox.warning(self, "DigCalc", "Tracing scene missing polyline helpers.")
-            return
-
-        align_item = scene.current_polyline()
-        if not align_item:
-            QMessageBox.warning(self, "DigCalc", "Select an alignment polyline first.")
-            return
-
-        # Fetch the list of QPointF points from the current polyline
-        if not hasattr(scene, "current_polyline_points"):
-            QMessageBox.warning(self, "DigCalc", "Scene does not expose current_polyline_points().")
-            return
-
-        qpts = scene.current_polyline_points()
-        pts = [(p.x(), p.y()) for p in qpts]
-
-        # Build shapely LineString
-        try:
-            from shapely.geometry import (
-                LineString,  # local import to avoid heavy cost if not used
-            )
-            alignment = LineString(pts)
-        except Exception as exc:  # pragma: no cover
-            QMessageBox.warning(self, "DigCalc", f"Failed to create alignment: {exc}")
-            return
-
-        # Ask user for parameters
-        dlg = HaulAlignmentDialog(parent=self)
-        if dlg.exec() != QDialog.Accepted:
-            return
-        interval, free = dlg.values()
-
-        # Surfaces – expect Existing and Design set on project
-        project = self.project_controller.get_current_project()
-        if not project:
-            QMessageBox.warning(self, "DigCalc", "No active project loaded.")
-            return
-        ref = getattr(project, "existing_surface", None)
-        diff = getattr(project, "design_surface", None)
-        if not (ref and diff):
-            QMessageBox.warning(self, "DigCalc", "Need Existing and Design surfaces in the project.")
-            return
-
-        # Perform calculation
-        stations = build_mass_haul(ref, diff, alignment, interval, free)
-
-        # Prepare output files
-        if hasattr(self.project_controller, "make_temp_path"):
-            png_path = self.project_controller.make_temp_path("masshaul.png")
-        else:
-            # Fallback – store in project folder's reports dir
-            report_dir = Path(project.file_path or Path.cwd()).with_suffix("") / "reports"
-            report_dir.mkdir(parents=True, exist_ok=True)
-            png_path = str(report_dir / "masshaul.png")
-
-        make_mass_haul_chart(
-            [s.station for s in stations],
-            [s.cumulative for s in stations],
-            free,
-            png_path,
-        )
-
-        csv_path = png_path.replace(".png", ".csv")
-        write_mass_haul(stations, csv_path)
-
-        # Inject into report if available
-        if hasattr(self.project_controller, "current_report") and self.project_controller.current_report:
-            try:
-                self.project_controller.current_report.insert_mass_haul(stations, free)
-            except Exception as exc:  # pragma: no cover
-                self.logger.error("Failed to insert mass haul into report: %s", exc)
-
-        QMessageBox.information(
-            self,
-            "DigCalc",
-            f"Mass-haul diagram generated.\nPNG: {png_path}\nCSV: {csv_path}",
-        )
 
     # ------------------------------------------------------------------
     #   Export Report
     # ------------------------------------------------------------------
-
-    @Slot()
-    def on_export_report(self):
-        """Export a PDF report (and companion CSVs) via file dialog."""
-        path, _ = QFileDialog.getSaveFileName(self, "Save PDF", "", "PDF files (*.pdf)")
-        if not path:
-            return
-
-        # Gather data from project controller
-        proj = getattr(self.project_controller, "project", None)
-        calc = getattr(self.project_controller, "last_volume_calc", None)
-        slices = getattr(self.project_controller, "last_slice_results", None)
-        haul = getattr(self.project_controller, "last_mass_haul", None)
-
-        # Build the PDF story using helpers
-        try:
-            from reportlab.platypus import SimpleDocTemplate
-
-            from digcalc_project.src.core.reporting.pdf_report import (
-                add_job_summary,
-                add_mass_haul,
-                add_region_table,
-                add_slice_table,
-            )
-            from digcalc_project.src.services.settings_service import SettingsService
-        except Exception as exc:  # pragma: no cover – missing optional deps
-            QMessageBox.critical(self, "Export Error", f"Required libraries missing: {exc}")
-            self.logger.exception("Failed to import reporting dependencies")
-            return
-
-        story: list = []
-        add_job_summary(story, proj, SettingsService())
-
-        if calc and getattr(calc, "region_results", None):
-            add_region_table(story, calc.region_results)
-
-        if slices:
-            add_slice_table(story, slices)
-
-        if haul:
-            add_mass_haul(story, haul.png_path, haul.free_distance)
-
-        SimpleDocTemplate(path).build(story)
-
-        # Companion CSV exports
-        try:
-            from pathlib import Path as _Path
-
-            from digcalc_project.src.services.csv_writer import (
-                write_mass_haul,
-                write_region_table,
-                write_slice_table,
-            )
-        except Exception:
-            self.logger.warning("CSV writer helpers not available – skipping CSV companions.")
-            write_region_table = write_slice_table = write_mass_haul = None  # type: ignore
-            _Path = Path  # fallback
-
-        stem = _Path(path).with_suffix("")
-        if calc and getattr(calc, "region_results", None) and write_region_table:
-            write_region_table(calc.region_results, f"{stem}_regions.csv")
-
-        if slices and write_slice_table:
-            write_slice_table(slices, f"{stem}_slices.csv")
-
-        if haul and write_mass_haul:
-            write_mass_haul(haul.stations, f"{stem}_masshaul.csv")
-
-        QMessageBox.information(self, "DigCalc", "Report exported.")
 
     @Slot()
     def on_open_3d(self):

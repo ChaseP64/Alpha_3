@@ -101,7 +101,7 @@ class UIStateManager:
         self.logger.debug(f"PDF controls updated: has_pdf={has_pdf}, page_count={page_count}, current_page={current_page_1_based}")
         self.update_scale_action_enabled(has_pdf)
         try:
-            self.update_scale_pill()
+            self._mw.status_bar.update_from_project()
         except Exception as exc:
             self.logger.warning("Failed to refresh scale pill in update_pdf_controls: %s", exc)
 
@@ -155,7 +155,7 @@ class UIStateManager:
         self.update_view_actions_state()
         self.update_build_surface_action_state()
         try:
-            self.update_scale_pill()
+            self._mw.status_bar.update_from_project()
         except Exception as exc:
             self.logger.warning("Failed to refresh scale pill in update_ui_for_project: %s", exc)
         self.logger.debug("UI update complete.")
@@ -172,7 +172,7 @@ class UIStateManager:
                 self._mw.pdf_thumbnail_dock.hide()
         self.logger.info(f"[update_ui_for_project] About to call self._mw.visualization_panel.set_project with: {project.name if project else 'None'}")
         self._mw.visualization_panel.set_project(project)
-        self.update_scale_pill()
+        self._mw.status_bar.update_from_project()
 
     # Window title ------------------------------------------------------------
     def update_window_title(self) -> None:

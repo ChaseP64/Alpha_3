@@ -77,15 +77,13 @@ class SignalBinder:  # noqa: D101
         mw.toggle_trace_mode_action.toggled.connect(mw.on_toggle_tracing_mode)
 
         # Analysis actions
-        fh = getattr(mw, "feature_handlers", None)
-        if fh is not None:
-            mw.calculate_volume_action.triggered.connect(fh.on_calculate_volume)
-            mw.build_surface_action.triggered.connect(fh.on_build_surface)
-            mw.generate_report_action.triggered.connect(fh.on_generate_report)
-        else:
-            mw.calculate_volume_action.triggered.connect(mw.on_calculate_volume)
-            mw.build_surface_action.triggered.connect(mw.on_build_surface)
-            mw.generate_report_action.triggered.connect(mw.on_generate_report)
+        ah = mw.action_handler
+        mw.calculate_volume_action.triggered.connect(ah.calculate_volume)
+        mw.build_surface_action.triggered.connect(ah.build_surface)
+        mw.generate_report_action.triggered.connect(ah.generate_report)
+        mw.export_action.triggered.connect(ah.export_report)
+        mw.daylight_action.triggered.connect(ah.daylight_offset)
+        mw.masshaul_action.triggered.connect(ah.mass_haul)
 
         mw.about_action.triggered.connect(mw.on_about)
 
