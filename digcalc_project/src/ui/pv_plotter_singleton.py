@@ -154,10 +154,10 @@ class _HeadlessPlotter:  # pylint: disable=too-few-public-methods
     # ------------------------------------------------------------------
     # Legend helpers ---------------------------------------------------
     # ------------------------------------------------------------------
-    def add_legend(self, *args, **kwargs):  # noqa: D401, ANN001
-        """Create a placeholder legend actor and keep a handle for removal."""
-        legend_actor = object()
-        # Store so tests can assert its presence
+    def add_legend(self, entries, **kwargs):  # noqa: D401, ANN001
+        """Create a test-friendly legend actor stored in renderer.actors."""
+        legend_actor = {"entries": entries, "_is_legend": True}
+        self.renderer.actors["legend"] = legend_actor
         self._digcalc_legend_actor = legend_actor  # type: ignore[attr-defined]
         return legend_actor
 
@@ -197,32 +197,35 @@ class _HeadlessPlotter:  # pylint: disable=too-few-public-methods
     # ------------------------------------------------------------------
     # Section-plane widget ---------------------------------------------
     # ------------------------------------------------------------------
-    def add_plane_widget(self, *_a, **_k):  # noqa: D401, ANN001
+    def add_plane_widget(self, *_a, callback=None, **_k):  # noqa: D401, ANN001
         """Return a minimal stub with the subset of API used by PvDock."""
-
         class _DummyPlaneWidget:  # pylint: disable=too-few-public-methods
-            def __init__(self):
+            def __init__(self, cb):
                 self._enabled = True
                 self._origin = (0, 0, 0)
                 self._normal = (0, 0, 1)
+                self._cb = cb
+                # Initial callback (mimic creation trigger)
+                if self._cb:
+                    self._cb((0, 0, 1), (0, 0, 0))
 
-            # Enabled flag helpers ------------------------------------
             def SetEnabled(self, flag: bool):  # noqa: N802
                 self._enabled = bool(flag)
+                if flag and self._cb:
+                    self._cb((0, 0, 1), (0, 0, 0))
 
             def GetEnabled(self):  # noqa: N802
                 return self._enabled
 
-            enabled = property(GetEnabled, SetEnabled)  # back-compat attr
+            enabled = property(GetEnabled, SetEnabled)
 
-            # Positional helpers – not strictly needed for tests but nice
-            def SetOrigin(self, origin):  # noqa: N802, ANN001
+            def SetOrigin(self, origin):  # noqa: N802
                 self._origin = origin
 
-            def SetNormal(self, normal):  # noqa: N802, ANN001
+            def SetNormal(self, normal):  # noqa: N802
                 self._normal = normal
 
-        return _DummyPlaneWidget()
+        return _DummyPlaneWidget(callback)
 
     # Screenshot stub (used by screenshot feature) ---------------------
     def screenshot(self, *_a, **_k):  # noqa: D401

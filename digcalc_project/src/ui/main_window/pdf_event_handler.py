@@ -15,6 +15,11 @@ about these controls.
 
 from typing import TYPE_CHECKING
 import logging
+from pathlib import Path
+from PySide6.QtWidgets import QFileDialog, QMessageBox, QDialog
+
+from ...visualization.pdf_renderer import PDFRendererError
+from ...ui.dialogs.pdf_page_selector_dialog import PdfPageSelectorDialog
 
 if TYPE_CHECKING:  # pragma: no cover
     from .main_window import MainWindow
@@ -60,8 +65,9 @@ class PDFEventHandler:  # noqa: D101
             spin.valueChanged.connect(self.on_set_pdf_page_from_spinbox)
 
         # PdfController emits pageSelected (index) signal.
-        if mw.pdf_controller is not None:
-            mw.pdf_controller.pageSelected.connect(self._on_pdf_page_selected)
+        controller = getattr(mw, "pdf_controller", None)
+        if controller is not None:
+            controller.pageSelected.connect(self._on_pdf_page_selected)
 
         # PdfService emits documentLoaded(page_count) → used to resize spin-box
         if hasattr(mw, "pdf_service") and mw.pdf_service is not None:
@@ -78,36 +84,183 @@ class PDFEventHandler:  # noqa: D101
     # Public slots – delegating to legacy MainWindow implementations for now
     # ------------------------------------------------------------------
     def on_load_pdf_background(self) -> None:  # noqa: D401
-        if hasattr(self._mw, "on_load_pdf_background"):
-            self._mw.on_load_pdf_background()
+        self.logger.debug("on_load_pdf_background slot entered.")
+        filename, _ = QFileDialog.getOpenFileName(
+            self._mw, "Load PDF Background", "", "PDF Files (*.pdf);;All Files (*)",
+        )
+
+        if filename:
+            self.logger.info(f"User selected PDF for background: {filename}")
+            self._mw.statusBar().showMessage(f"Loading PDF background '{Path(filename).name}'...", 0)
+            success = False
+            try:
+                success = self._mw.visualization_panel.load_pdf_background(filename, dpi=self._mw.pdf_dpi_setting)
+                if success:
+                    project = self._mw.project_controller.get_current_project()
+                    if project:
+                        project.pdf_background_path = filename
+                        project.pdf_background_page = self._mw.visualization_panel.current_pdf_page
+                        project.pdf_background_dpi = self._mw.pdf_dpi_setting
+                        project.clear_traced_polylines()
+                        self._mw.visualization_panel.clear_polylines_from_scene()
+
+                    page_count = self._mw.visualization_panel.pdf_renderer.get_page_count() if self._mw.visualization_panel.pdf_renderer else 0
+                    self._mw.statusBar().showMessage(f"Loaded PDF background '{Path(filename).name}' ({page_count} pages).", 5000)
+                    self.logger.info(f"Successfully loaded PDF background '{Path(filename).name}' with {page_count} pages.")
+                    self._mw.ui_state.update_ui_for_project(project)
+                else:
+                    raise PDFRendererError("Loading or rendering PDF background failed.")
+
+            except (FileNotFoundError, PDFRendererError, Exception) as e:
+                self.logger.exception(f"Failed to load PDF background: {e}")
+                QMessageBox.critical(self._mw, "PDF Load Error", f"Failed to load PDF background:\n{e}")
+                self._mw.statusBar().showMessage("Failed to load PDF background.", 5000)
+                project = self._mw.project_controller.get_current_project()
+                if project and project.pdf_background_path == filename:
+                    project.pdf_background_path = None
+                    project.pdf_background_page = 0
+                    project.pdf_background_dpi = 0
+            finally:
+                self._mw.ui_state.update_pdf_controls()
+                self._mw.ui_state.update_view_actions_state()
+        else:
+            self.logger.info("Load PDF background cancelled by user.")
+            self._mw.statusBar().showMessage("Load cancelled.", 3000)
 
     def on_clear_pdf_background(self) -> None:  # noqa: D401
-        if hasattr(self._mw, "on_clear_pdf_background"):
-            self._mw.on_clear_pdf_background()
+        self.logger.debug("Clearing PDF background via MainWindow action.")
+        self._mw.visualization_panel.clear_pdf_background()
+        self._mw._clear_cutfill_state()
+        self._mw.ui_state.update_pdf_controls()
 
     def on_next_pdf_page(self) -> None:  # noqa: D401
-        if hasattr(self._mw, "on_next_pdf_page"):
-            self._mw.on_next_pdf_page()
+        if self._mw.visualization_panel.pdf_renderer:
+            current = self._mw.visualization_panel.current_pdf_page
+            total = self._mw.visualization_panel.pdf_renderer.get_page_count()
+            if current < total:
+                self._mw.visualization_panel.set_pdf_page(current + 1)
+                project = self._mw.project_controller.get_current_project()
+                if project:
+                    project.pdf_background_page = current + 1
+                self._mw.ui_state.update_pdf_controls()
+                self._mw.statusBar().showMessage(f"Showing PDF page {current + 1}/{total}", 3000)
 
     def on_prev_pdf_page(self) -> None:  # noqa: D401
-        if hasattr(self._mw, "on_prev_pdf_page"):
-            self._mw.on_prev_pdf_page()
+        if self._mw.visualization_panel.pdf_renderer:
+            current = self._mw.visualization_panel.current_pdf_page
+            total = self._mw.visualization_panel.pdf_renderer.get_page_count()
+            if current > 1:
+                self._mw.visualization_panel.set_pdf_page(current - 1)
+                project = self._mw.project_controller.get_current_project()
+                if project:
+                    project.pdf_background_page = current - 1
+                self._mw.ui_state.update_pdf_controls()
+                self._mw.statusBar().showMessage(f"Showing PDF page {current - 1}/{total}", 3000)
 
     def on_set_pdf_page_from_spinbox(self, page_number: int) -> None:  # noqa: D401
-        if hasattr(self._mw, "on_set_pdf_page_from_spinbox"):
-            self._mw.on_set_pdf_page_from_spinbox(page_number)  # type: ignore[arg-type]
+        if self._mw.pdf_page_spinbox.isEnabled() and page_number > 0:
+            self.logger.debug(f"Setting PDF page from spinbox to: {page_number}")
+            self._mw.visualization_panel.set_pdf_page(page_number)
+            project = self._mw.project_controller.get_current_project()
+            if project:
+                project.pdf_background_page = page_number
+            self._mw.ui_state.update_pdf_controls()
+            total = self._mw.visualization_panel.pdf_renderer.get_page_count() if self._mw.visualization_panel.pdf_renderer else 0
+            self._mw.statusBar().showMessage(f"Showing PDF page {page_number}/{total}", 3000)
 
     # ------------------------------------------------------------------
     # Private slots mirrored from MainWindow (kept private here too)
     # ------------------------------------------------------------------
     def _on_pdf_page_selected(self, page_index: int) -> None:  # noqa: D401
-        if hasattr(self._mw, "_on_pdf_page_selected"):
-            self._mw._on_pdf_page_selected(page_index)  # type: ignore[arg-type]
+        self.logger.info(f"PDFEventHandler received pageSelected signal for index: {page_index}")
+        page_number = page_index + 1
+        self._mw.visualization_panel.set_pdf_page(page_number)
 
     def _on_document_loaded(self, page_count: int) -> None:  # noqa: D401
-        if hasattr(self._mw, "_on_document_loaded"):
-            self._mw._on_document_loaded(page_count)  # type: ignore[arg-type]
+        self.logger.debug(f"Document loaded with {page_count} pages, updating scale action.")
+        self._mw.ui_state.update_scale_action_enabled(True)
 
     def _on_trace_from_pdf(self) -> None:  # noqa: D401
-        if hasattr(self._mw, "_on_trace_from_pdf"):
-            self._mw._on_trace_from_pdf() 
+        self.logger.info("Trace from PDF action triggered.")
+        project = self._mw.project_controller.get_project()
+        if not project:
+            QMessageBox.warning(self._mw, "No Project", "Please open or create a project first.")
+            return
+
+        file_path_tuple = QFileDialog.getOpenFileName(
+            self._mw, "Select PDF for Tracing", self._mw.project_controller.get_last_directory(), "PDF Files (*.pdf)",
+        )
+        file_path_str = file_path_tuple[0]
+        if not file_path_str:
+            self.logger.info("PDF selection cancelled.")
+            return
+
+        file_path = Path(file_path_str)
+        self._mw.project_controller.set_last_directory(str(file_path.parent))
+
+        try:
+            self._mw.pdf_service.load_pdf(str(file_path))
+            if not self._mw.pdf_service.current_document:
+                raise PDFRendererError("Failed to load document object after loading path.")
+            self.logger.info(f"PDF loaded via PdfService: {file_path}")
+        except PDFRendererError as e:
+            self.logger.error(f"Error loading PDF for tracing: {e}")
+            QMessageBox.critical(self._mw, "PDF Load Error", f"Could not load PDF: {e}")
+            return
+        except Exception as e:
+            self.logger.exception(f"Unexpected error loading PDF '{file_path}': {e}")
+            QMessageBox.critical(self._mw, "PDF Load Error", f"An unexpected error occurred while loading the PDF: {e}")
+            return
+
+        self._mw.visualization_panel.load_pdf_background(str(file_path))
+
+        dialog = PdfPageSelectorDialog(self._mw.pdf_service.current_document, self._mw)
+        if dialog.exec() == QDialog.Accepted:
+            selected_indices = dialog.get_selected_pages()
+            if not selected_indices:
+                self.logger.info("No pages selected for tracing.")
+                self._mw.statusBar().showMessage("No pages selected for tracing.", 3000)
+                return
+
+            self.logger.info(f"Selected PDF pages for tracing (0-based indices): {selected_indices}")
+            added_layers_count = 0
+            project = self._mw.project_controller.get_project()
+            if not project:
+                self.logger.error("Project became unavailable after PDF selection.")
+                QMessageBox.critical(self._mw, "Error", "Project not available. Cannot create layers.")
+                return
+
+            for index in selected_indices:
+                try:
+                    page_label = self._mw.pdf_service.current_document.page_label(index)
+                    base_layer_name = f"PDF Trace - {file_path.name} - Page {page_label}"
+                    unique_layer_name = project.get_unique_layer_name(base_layer_name)
+
+                    if unique_layer_name not in project.traced_polylines:
+                        project.traced_polylines[unique_layer_name] = []
+                    else:
+                        self.logger.warning(f"Layer '{unique_layer_name}' already exists. Adding PDF source info.")
+
+                    project.add_pdf_trace_source(unique_layer_name, str(file_path), index)
+                    added_layers_count += 1
+                except Exception as e:
+                    self.logger.error(f"Error processing page index {index} for tracing: {e}", exc_info=True)
+                    QMessageBox.warning(self._mw, "Layer Creation Error", f"Could not create tracing layer for page {index + 1}.\nError: {e}")
+
+            if added_layers_count > 0:
+                self._mw._update_layer_tree()
+                self._mw.project_controller.set_project_modified(True)
+                self._mw.statusBar().showMessage(f"Added {added_layers_count} PDF trace layer(s).", 5000)
+                self.logger.info(f"Successfully added {added_layers_count} PDF trace sources.")
+                self._mw.trace_pdf_action.setEnabled(True)
+
+                if selected_indices:
+                    first_page_number = selected_indices[0] + 1
+                    self.logger.info(f"Automatically displaying first selected PDF page: {first_page_number}")
+                    self._mw.visualization_panel.set_pdf_page(first_page_number)
+            else:
+                self.logger.warning("No trace layers were added despite page selection.")
+                if selected_indices:
+                    QMessageBox.warning(self._mw, "No Layers Added", "Could not add tracing layers for the selected pages. Check logs for details.")
+        else:
+            self.logger.info("PDF page selection cancelled.") 

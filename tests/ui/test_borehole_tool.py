@@ -3,12 +3,8 @@ import sys
 import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QGraphicsEllipseItem
-from unittest.mock import MagicMock, patch
 
-from digcalc_project.src.ui.main_window.main_window import MainWindow
-from digcalc_project.src.models.project import Project
-from digcalc_project.src.models.strata_models import Material
-from digcalc_project.src.ui.dialogs.borehole_editor_dialog import BoreholeEditorDialog
+from digcalc_project.src.ui.main_window import MainWindow
 
 pytest.importorskip("PySide6")
 pytest.skip("Skipping Borehole tool UI tests pending stabilization", allow_module_level=True)
@@ -46,6 +42,8 @@ def test_borehole_place_and_undo(qtbot, main_window):
     qtbot.mouseClick(view.viewport(), Qt.MouseButton.LeftButton, pos=view.mapFromScene(10, 10))
 
     # Wait for BoreholeEditorDialog, auto-accept
+    from digcalc_project.src.ui.dialogs.borehole_editor_dialog import BoreholeEditorDialog
+
     dlg = None
     for widget in QApplication.topLevelWidgets():
         if isinstance(widget, BoreholeEditorDialog):

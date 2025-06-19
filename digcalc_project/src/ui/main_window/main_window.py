@@ -124,6 +124,12 @@ class MainWindow(QMainWindow):
 
         self.logger = logging.getLogger(__name__)
 
+        # --- PDF Service and Controller ---
+        # Must be initialized before handlers that may depend on it.
+        self.pdf_service = PdfService() # Singleton
+        self.pdf_controller = PdfController(self)
+        # --- End PDF Service ---
+
         # --- NEW: UI State Manager (Phase-2 refactor) ---
         from .ui_state_manager import UIStateManager  # Local import to avoid early circular refs
         self.ui_state = UIStateManager(self)
@@ -139,13 +145,10 @@ class MainWindow(QMainWindow):
         self.feature_handlers = FeatureHandlers(self)
         # --- END NEW ---
 
-        # --- PDF Service and Controller ---
-        # Instantiate PdfService (should likely be singleton or passed in if shared)
-        # self.pdf_service = PdfService(self) # Incorrect - Singleton takes no args
-        self.pdf_service = PdfService() # Correct instantiation for Singleton
-        # self.pdf_controller = PdfController(self.pdf_service, self) # Incorrect - __init__ takes only parent
-        self.pdf_controller = PdfController(self) # Pass only parent
-        # --- End PDF Service ---
+        # --- NEW: Scene Event Handler (Phase-2 refactor) ---
+        from .scene_event_handler import SceneEventHandler
+        self.scene_handler = SceneEventHandler(self)
+        # --- END NEW ---
 
         self._selected_scene_item: Optional[QGraphicsPathItem] = None
         self.pdf_dpi_setting = 300
@@ -196,16 +199,16 @@ class MainWindow(QMainWindow):
             self.setStatusBar(status_bar)
         status_bar.addPermanentWidget(self.scale_pill)
 
-        self._update_scale_pill()   # Set initial state
+        self.ui_state.update_scale_pill()   # Set initial state
         # --- END NEW ---
 
         # --- END MODIFIED ---
         self._connect_signals()
-        self._update_view_actions_state()
+        self.ui_state.update_view_actions_state()
 
         self.logger.debug("MainWindow initialized")
         # Ensure Scale-Calibration menu action reflects current PDF state at startup
-        self._update_scale_action_enabled(False)
+        self.ui_state.update_scale_action_enabled(False)
         # --- Connect PdfService signal to update scale action ---
         if hasattr(self, "pdf_service") and self.pdf_service:
             # Use a *bound* Qt slot instead of an anonymous lambda so that the
@@ -301,10 +304,11 @@ class MainWindow(QMainWindow):
         from .actions import ActionManager  # type: ignore
 
         # Instantiate manager – it will attach actions back onto *this* instance.
-        self.actions = ActionManager(self)
+        self.action_manager = ActionManager(self)
 
     def _create_menus(self):
-        """Build menus via MenuBuilder helper class."""
+        """Create the main menu bar."""
+        # Deferred import to avoid circular reference at module load time.
         from .menu_builder import MenuBuilder  # type: ignore
 
         self.menus = MenuBuilder(self)
@@ -319,91 +323,6 @@ class MainWindow(QMainWindow):
         """Create the status bar."""
         self.statusBar().showMessage("Ready")
         # Maybe add PDF page info to status bar later?
-
-
-
-
-    def _update_analysis_actions_state(self):
-        """Enable/disable analysis actions based on the current project state.
-        Specifically, enables volume calculation if >= 2 surfaces exist.
-        """
-        project = self.project_controller.get_current_project()
-        can_calculate = bool(project and len(project.surfaces) >= 2)
-        self.calculate_volume_action.setEnabled(can_calculate)
-        # --- NEW: Enable mass-haul button when Existing & Design surfaces present
-        has_req_surfaces = False
-        if project:
-            has_req_surfaces = (
-                getattr(project, "existing_surface", None) is not None
-                and getattr(project, "design_surface", None) is not None
-            )
-        self.masshaul_action.setEnabled(can_calculate and has_req_surfaces)
-        # --- END NEW ---
-        self.logger.debug(f"Calculate Volume action enabled state: {can_calculate}")
-
-    def _update_pdf_controls(self):
-        """Updates the state of PDF-related controls (spinbox, labels, actions).
-        Now uses VisualizationPanel to get document state.
-        """
-        # Get state directly from VisualizationPanel
-        panel = self.visualization_panel
-        has_pdf = panel.has_pdf() # Checks if renderer and bg item exist
-        page_count = panel.pdf_renderer.get_page_count() if panel.pdf_renderer else 0
-        # current_pdf_page in panel is 1-based
-        current_page_1_based = panel.current_pdf_page if has_pdf else 1
-
-        # --- FIX: Use correct attribute names (remove leading underscore) ---
-        if self.pdf_page_spinbox:
-            self.pdf_page_spinbox.setEnabled(has_pdf and page_count > 1)
-            self.pdf_page_spinbox.setRange(1, max(1, page_count))
-            # Block signals temporarily to avoid recursive updates
-            self.pdf_page_spinbox.blockSignals(True)
-            self.pdf_page_spinbox.setValue(current_page_1_based)
-            self.pdf_page_spinbox.blockSignals(False)
-        else:
-             self.logger.warning("Cannot update missing pdf_page_spinbox")
-
-        if self.pdf_page_label:
-            if has_pdf:
-                # Assuming page_label is not readily available, just show numbers
-                self.pdf_page_label.setText(f"Page: {current_page_1_based} / {page_count}")
-            else:
-                self.pdf_page_label.setText("Page: N/A")
-        else:
-             self.logger.warning("Cannot update missing pdf_page_label")
-        # --- END FIX ---
-
-        # Enable/disable next/prev actions (ensure they exist)
-        # Use 1-based index for comparison
-        if hasattr(self, "prev_pdf_page_action"):
-            self.prev_pdf_page_action.setEnabled(has_pdf and current_page_1_based > 1)
-        if hasattr(self, "next_pdf_page_action"):
-            self.next_pdf_page_action.setEnabled(has_pdf and current_page_1_based < page_count)
-
-        # Show/hide thumbnail dock based on whether a PDF is loaded
-        self.pdf_thumbnail_dock.setVisible(has_pdf)
-
-        # --- FIX: Show/hide the PDF toolbar itself ---
-        if hasattr(self, "pdf_toolbar"):
-            self.pdf_toolbar.setVisible(has_pdf)
-            self.logger.debug(f"Setting PDF toolbar visibility to: {has_pdf}")
-        else:
-            self.logger.warning("Cannot set PDF toolbar visibility: pdf_toolbar attribute not found.")
-        # --- END FIX ---
-
-        self.logger.debug(f"PDF controls updated: has_pdf={has_pdf}, page_count={page_count}, current_page={current_page_1_based}")
-
-        # ------------------------------------------------------------------
-        # Update Scale-Calibration action enabled/disabled state
-        # ------------------------------------------------------------------
-        self._update_scale_action_enabled(has_pdf)
-
-        # --- NEW: Refresh scale pill whenever PDF controls change (may affect DPI) ---
-        try:
-            self._update_scale_pill()
-        except Exception as exc:
-            self.logger.warning("Failed to refresh scale pill in _update_pdf_controls: %s", exc)
-        # --- END NEW ---
 
     # Event handlers
 
@@ -551,7 +470,7 @@ class MainWindow(QMainWindow):
                     self.logger.info(f"Successfully loaded PDF background '{Path(filename).name}' with {page_count} pages.")
                     # ADDED LOG: Confirm _update_ui_for_project is called
                     self.logger.info(f"[on_load_pdf_background] SUCCESS: About to call _update_ui_for_project with project: {project.name if project else 'None'}")
-                    self._update_ui_for_project(project) # Update UI with the (potentially new) project
+                    self.ui_state.update_ui_for_project(project) # Update UI with the (potentially new) project
                 else:
                     # Loading failed (error already logged by visualization_panel)
                     raise PDFRendererError("Loading or rendering PDF background failed.") # Re-raise specific error for unified handling
@@ -569,8 +488,8 @@ class MainWindow(QMainWindow):
                      project.pdf_background_dpi = 0
             finally:
                  # Always update controls regardless of success/failure
-                 self._update_pdf_controls()
-                 self._update_view_actions_state()
+                 self.ui_state.update_pdf_controls()
+                 self.ui_state.update_view_actions_state()
         else:
             self.logger.info("Load PDF background cancelled by user.")
             self.statusBar().showMessage("Load cancelled.", 3000)
@@ -582,7 +501,7 @@ class MainWindow(QMainWindow):
         # Consider if clearing PDF should also clear/disable cut/fill map?
         # Let's assume yes for now, as context might be lost.
         self._clear_cutfill_state()
-        self._update_pdf_controls()
+        self.ui_state.update_pdf_controls()
 
     def on_next_pdf_page(self):
         """Handles moving to the next PDF page."""
@@ -595,7 +514,7 @@ class MainWindow(QMainWindow):
                   project = self.project_controller.get_current_project()
                   if project:
                        project.pdf_background_page = current + 1
-                  self._update_pdf_controls()
+                  self.ui_state.update_pdf_controls()
                   self.statusBar().showMessage(f"Showing PDF page {current + 1}/{total}", 3000)
 
     def on_prev_pdf_page(self):
@@ -609,7 +528,7 @@ class MainWindow(QMainWindow):
                   project = self.project_controller.get_current_project()
                   if project:
                        project.pdf_background_page = current - 1
-                  self._update_pdf_controls()
+                  self.ui_state.update_pdf_controls()
                   self.statusBar().showMessage(f"Showing PDF page {current - 1}/{total}", 3000)
 
     def on_set_pdf_page_from_spinbox(self, page_number: int):
@@ -622,7 +541,7 @@ class MainWindow(QMainWindow):
              if project:
                   project.pdf_background_page = page_number
              # --- END FIX ---
-             self._update_pdf_controls()
+             self.ui_state.update_pdf_controls()
              total = self.visualization_panel.pdf_renderer.get_page_count() if self.visualization_panel.pdf_renderer else 0
              self.statusBar().showMessage(f"Showing PDF page {page_number}/{total}", 3000)
 
@@ -847,7 +766,7 @@ class MainWindow(QMainWindow):
                 new_revision = project._bump_layer_revision(layer_name) # Call project helper
 
                 logger.info(f"Updated elevation for polyline (Layer: {layer_name}, Index: {index}) to {new_elevation}. New layer revision: {new_revision}")
-                self._update_build_surface_action_state() # Add this call
+                self.ui_state.update_build_surface_action_state() # Add this call
                 self.statusBar().showMessage(f"Elevation updated for {layer_name} polyline {index}.", 3000)
                 if self._selected_scene_item and \
                    self._selected_scene_item.data(0) == layer_name and \
@@ -889,7 +808,7 @@ class MainWindow(QMainWindow):
         self.layer_tree.blockSignals(False)
         self.logger.debug(f"Layer tree updated with layers: {layers}")
         # --- NEW: update Build Surface button state whenever layer tree changes ---
-        self._update_build_surface_action_state()
+        self.ui_state.update_build_surface_action_state()
 
     # --- NEW: Handle Delete Key Press ---
     def keyPressEvent(self, event: QKeyEvent):
@@ -983,7 +902,7 @@ class MainWindow(QMainWindow):
         if self.visualization_panel:
             self.logger.debug("Switching to 2D view.")
             self.visualization_panel.show_2d_view()
-            self._update_view_actions_state() # Update check states
+            self.ui_state.update_view_actions_state() # Update check states
         else:
             self.logger.error("Cannot switch to 2D view: VisualizationPanel not found.")
 
@@ -997,129 +916,11 @@ class MainWindow(QMainWindow):
                 self.visualization_panel.show_pyvista_in_tab()
             else:
                 self.logger.error("VisualizationPanel is missing show_pyvista_in_tab().")
-            self._update_view_actions_state()
+            self.ui_state.update_view_actions_state()
         else:
             self.logger.error("Cannot switch to 3-D view: VisualizationPanel not found.")
 
-    def _update_view_actions_state(self):
-        """Updates the enabled and checked state of the view toggle actions (2D/3D)
-        based on available content and the current view widget.
-        """
-        if not hasattr(self, "view_2d_action") or not hasattr(self, "view_3d_action") or not hasattr(self, "visualization_panel"):
-            logger.warning("_update_view_actions_state called before actions/panel were created.")
-            return
-
-        has_pdf = self.visualization_panel.has_pdf()
-        has_surfaces = self.visualization_panel.has_surfaces()
-        # Determine current view directly from the stacked widget
-        # Use correct attribute names: stacked_widget, view_2d, view_3d
-        is_2d_current = self.visualization_panel.stacked_widget.currentWidget() == self.visualization_panel.view_2d
-        is_3d_current = self.visualization_panel.stacked_widget.currentWidget() == self.visualization_panel.view_3d
-
-        logger.debug(f"Updating view actions: has_pdf={has_pdf}, has_surfaces={has_surfaces}, is_2d_current={is_2d_current}, is_3d_current={is_3d_current}")
-
-        # Enable actions based on content
-        self.view_2d_action.setEnabled(has_pdf)
-        self.view_3d_action.setEnabled(has_surfaces)
-
-        # --- Enable Tracing Action ---
-        # Tracing is only possible in 2D view with a PDF loaded
-        can_trace = is_2d_current and has_pdf
-        if hasattr(self, "toggle_trace_mode_action"):
-            self.toggle_trace_mode_action.setEnabled(can_trace)
-            logger.debug(f"Set toggle_trace_mode_action enabled state: {can_trace}")
-        else:
-            logger.warning("Cannot update toggle_trace_mode_action state: action not found.")
-        # --- End Enable Tracing Action ---
-
-        # Set checked state based on the current widget in the stack
-        # Block signals to prevent feedback loops if setChecked triggers the slot
-        self.view_2d_action.blockSignals(True)
-        self.view_3d_action.blockSignals(True)
-        self.view_2d_action.setChecked(is_2d_current and has_pdf) # Only check if enabled
-        self.view_3d_action.setChecked(is_3d_current and has_surfaces) # Only check if enabled
-        self.view_2d_action.blockSignals(False)
-        self.view_3d_action.blockSignals(False)
-
-        # REMOVED Fallback logic: Initial state is handled by VisualizationPanel._init_ui
-        # and subsequent states by the on_view_... slots calling this.
-
-        logger.debug("_actions_state complete.")
-
     # --- END NEW ---
- # --- Restore Method for Controller to Update UI ---
-    def _update_ui_for_project(self, project: Optional[Project]):
-        """Update all relevant UI components based on the (new) project state."""
-        self.logger.info(f"[_update_ui_for_project] Called with project: {project.name if project else 'None'}") # ADDED LOG
-
-        self._update_window_title()
-        self._update_layer_tree() # project_panel.update_project_tree()
-
-        if hasattr(self, "project_panel"): self.project_panel.set_project(project)
-        self._update_analysis_actions_state() # Update menu/toolbar item enabled state
-        self._update_pdf_controls() # Update PDF controls based on project state
-        self._update_window_title() # Update window title
-        if hasattr(self, "prop_dock"):
-            self.prop_dock.clear_selection() # Clear properties dock
-            if self._selected_scene_item is None: # Don't hide if something is selected
-                self.prop_dock.hide()
-        self._clear_cutfill_state() # Clear any stale cut/fill viz
-        # --- Ensure view actions are updated after project load/change ---
-        self._update_view_actions_state()
-        # --- End ensure ---
-        # --- NEW: Update Build-Surface enabled state once project UI is set up ---
-        self._update_build_surface_action_state()
-        # --- END NEW ---
-        # --- NEW: Refresh scale pill for new project ---
-        try:
-            self._update_scale_pill()
-        except Exception as exc:
-            self.logger.warning("Failed to refresh scale pill in _update_ui_for_project: %s", exc)
-        # --- END NEW ---
-        self.logger.debug("UI update complete.")
-        # --- NEW: Refresh legend dock ---
-        if hasattr(self, "legend_dock") and self.legend_dock:
-            try:
-                self.legend_dock._project = project  # noqa: SLF001
-                self.legend_dock.refresh()
-            except Exception:
-                pass
-        # --- END NEW ---
-
-        if hasattr(self, "pdf_thumbnail_dock"):
-            if project and project.pdf_background_path:
-                self.pdf_thumbnail_dock.show()
-            else:
-                self.pdf_thumbnail_dock.hide()
-
-        # Update visualization panel with the project (this will load surfaces, PDF, etc.)
-        self.logger.info(f"[_update_ui_for_project] About to call self.visualization_panel.set_project with: {project.name if project else 'None'}") # ADDED LOG
-        self.visualization_panel.set_project(project)
-
-        # Update scale pill based on the project's scale status
-        self._update_scale_pill()
-
-    # --- Restore Method to Update Window Title ---
-    def _update_window_title(self):
-         """Sets the main window title based on the current project name and dirty state."""
-         # Check if project_controller exists before accessing it
-         if not hasattr(self, "project_controller"):
-              self.setWindowTitle("DigCalc") # Default title if controller not ready
-              return
-         project = self.project_controller.get_current_project()
-         base_title = "DigCalc"
-         if project:
-             title = f"{project.name} - {base_title}"
-             if project.filepath:
-                 # Ensure Path is imported (add 'from pathlib import Path' at the top if missing)
-                 title += f" [{Path(project.filepath).name}]"
-             if project.is_dirty:
-                 title += " *" # Indicate unsaved changes
-             self.setWindowTitle(title)
-         else:
-             self.setWindowTitle(base_title)
-    # --- End Restore ---
-    # --- NEW: Slot for Building Surface ---
     @Slot()
     def on_build_surface(self):
         """Handles the 'Build Surface from Layer' action."""
@@ -1221,11 +1022,11 @@ class MainWindow(QMainWindow):
                 if hasattr(self, "project_panel"):
                     self.project_panel._update_tree()
                 # --- ADD THIS ---
-                self._update_analysis_actions_state() # Check if calc button should be enabled
+                self.ui_state.update_analysis_actions_state() # Check if calc button should be enabled
                 # --- END ADD ---
                 self.statusBar().showMessage(f"Surface '{surface_name}' created from layer '{selected_layer}'.", 5000)
                 # Update the view action states now that content has changed
-                self._update_view_actions_state()
+                self.ui_state.update_view_actions_state()
 
                 # Notify any listeners (e.g., 3-D viewer) that surfaces list changed
                 if hasattr(self.project_controller, "surfaces_rebuilt"):
@@ -1290,6 +1091,8 @@ class MainWindow(QMainWindow):
                 processed_count += 1
 
         self.logger.info(f"Finished processing rebuild queue. Rebuilt {processed_count} surfaces derived from {layers_to_process}.")
+        if processed_count > 0:
+            self.ui_state.update_analysis_actions_state()
 
     # Pass project explicitly
     def _rebuild_surface_now(self, project: Project, surface_name: str):
@@ -1800,7 +1603,7 @@ class MainWindow(QMainWindow):
                     self.visualization_panel.update_surface_mesh(surf)
                 except Exception:
                     pass
-        self._update_analysis_actions_state()
+        self.ui_state.update_analysis_actions_state()
 
     # ------------------------------------------------------------------
     # Mass-Haul Slot
@@ -2050,363 +1853,91 @@ class MainWindow(QMainWindow):
     # 3. Slot at end of class
     @Slot()
     def on_scale_calibration(self):
-        """Handles the 'Calibrate Scale...' menu action."""
-        if not self.project_controller or not self.project_controller.get_current_project():
-            QMessageBox.warning(self, "No Project", "Please open or create a project first.")
-            return
-
+        """Handles the 'Calibrate Scale...' action.
+        Opens the scale calibration dialog and applies the result.
+        """
+        # Ensure project is available
         project = self.project_controller.get_current_project()
-        if not project.pdf_background_path:
-            QMessageBox.information(self, "No PDF Loaded", "Please load a PDF background image first.")
-            return
-
-        # Ensure we have the TracingScene from the VisualizationPanel
-        if not hasattr(self.visualization_panel, "scene_2d") or not self.visualization_panel.scene_2d:
-            self.logger.error("TracingScene (scene_2d) not found in VisualizationPanel.")
-            QMessageBox.critical(self, "Error", "Cannot open scale calibration: 2D scene not available.")
-            return
-
-        scene = self.visualization_panel.scene_2d
-        # Get current page pixmap from TracingScene or VisualizationPanel if available
-        # This part might need adjustment based on how TracingScene stores its current background
-        current_bg_pixmap = None
-        if scene._background_items: # Accessing protected member, consider a getter in TracingScene
-            current_bg_pixmap = scene._background_items[0].pixmap() # Assuming first is current
-
-        if not current_bg_pixmap or current_bg_pixmap.isNull():
-            # As a fallback, or if TracingScene doesn't hold the main pixmap directly for calibration preview,
-            # re-render the current page from the project's PDF path and DPI.
-            # This ensures the dialog gets a pixmap rendered at the correct project DPI.
-            if project.pdf_background_path and project.pdf_background_dpi > 0:
-                self.logger.info(f"No direct pixmap from scene, re-rendering page {project.pdf_background_page} at {project.pdf_background_dpi} DPI for calibration dialog.")
-                # Use PdfService to get the PdfDocument
-                _pdf_service = PdfService()  # noqa: F841
-                # pdf_service.load_pdf might have already been called, get current doc
-                # This needs a way to get the PdfDocument instance that PDFRenderer would use.
-                # For now, assuming PDFRenderer can be instantiated if needed.
-                try:
-                    # We need the PdfDocument that was loaded for the project.
-                    # This logic is a bit convoluted because PDFRenderer is created in VisualizationPanel.
-                    # A better way would be for PdfService to hold the *current* PdfDocument
-                    # that the project is associated with.
-                    temp_renderer = PDFRenderer(project.pdf_background_path, dpi=project.pdf_background_dpi)
-                    qimage = temp_renderer.get_page_image(project.pdf_background_page)
-                    if qimage and not qimage.isNull():
-                        current_bg_pixmap = QPixmap.fromImage(qimage)
-                    temp_renderer.close() # Important to close it
-                except Exception as e_render:
-                    self.logger.error(f"Failed to re-render PDF page for calibration dialog: {e_render}")
-                    QMessageBox.warning(self, "PDF Error", "Could not prepare PDF preview for calibration.")
-                    return # Exit if we can't get a pixmap
-            else:
-                 QMessageBox.warning(self, "PDF Error", "Could not prepare PDF preview for calibration: No PDF path or DPI.")
-                 return
-
-        if not current_bg_pixmap or current_bg_pixmap.isNull():
-             QMessageBox.warning(self, "PDF Error", "Could not obtain PDF page image for calibration.")
-             return
-
-        # Pass the project instance to the dialog
-        dlg = ScaleCalibrationDialog(parent=self, project=project, scene=scene, page_pixmap=current_bg_pixmap)
-        dlg.finished.connect(lambda result, dialog=dlg: self._on_scale_dialog_done(dialog, result))
-        dlg.exec()
-
-    # ------------------------------------------------------------------
-    # Scale-calibration dialog callback (modeless)
-    # ------------------------------------------------------------------
-    def _on_scale_dialog_done(self, dlg: "ScaleCalibrationDialog", result: int):
-        """Handle completion of ScaleCalibrationDialog launched modelessly."""
-        from PySide6.QtWidgets import QDialog
-        self.logger.info(f"[_on_scale_dialog_done] Entered. Dialog result: {result}")
-
-        if result != QDialog.DialogCode.Accepted:  # User cancelled
-            self.logger.info("[_on_scale_dialog_done] Dialog cancelled by user.")
-            return
-
-        proj_scale_from_dialog = dlg.result_scale()
-        self.logger.info(f"[_on_scale_dialog_done] Scale from dialog: {proj_scale_from_dialog}")
-
-        if proj_scale_from_dialog is None:
-            self.logger.warning("[_on_scale_dialog_done] Dialog returned None for scale. Aborting.")
-            return
-
-        current_project = self.project_controller.get_current_project()
-        self.logger.info(f"[_on_scale_dialog_done] current_project (id: {id(current_project)}): {current_project}, current_project.scale (before): {getattr(current_project, 'scale', 'Not Set')}")
-
-        if current_project is not None:
-            try:
-                current_project.scale = proj_scale_from_dialog
-                current_project.is_dirty = True
-                self.logger.info(f"[_on_scale_dialog_done] Assigned scale to current_project. current_project.scale (after): {current_project.scale}, is_dirty: {current_project.is_dirty}")
-            except Exception as exc:
-                self.logger.error(f"[_on_scale_dialog_done] Failed to set project scale: {exc}", exc_info=True)
-                # Even if assignment fails, update pill with current (likely old/None) scale state
-                self._update_scale_pill()
-                return # Return to avoid further operations with potentially inconsistent state
-
-        # --- NEW: Refresh scale pill & tracing scene overlay ---
-        self.logger.info("[_on_scale_dialog_done] About to call _update_scale_pill.")
-        self._update_scale_pill() # THIS IS WHERE IT SHOULD BE GREEN
-        # ... (invalidate_cache logic follows)
-
-        # Settings already persisted by dialog
-        try:
-            self.statusBar().showMessage(
-                f"Scale set: 1 in = {proj_scale_from_dialog.world_per_in:.2f} {proj_scale_from_dialog.world_units}",
-                6000,
-            )
-            # Notify tracing scene so overlay disappears
-            scene = getattr(self.visualization_panel, "scene_2d", None)
-            if scene and hasattr(scene, "on_scale_calibrated"):
-                scene.on_scale_calibrated()
-        except Exception as exc:
-            self.logger.warning("Status/scene update failed after scale calibration: %s", exc)
-
-    # ------------------------------------------------------------------
-    # Scale-calibration action enable/disable helper
-    # ------------------------------------------------------------------
-    def _update_scale_action_enabled(self, loaded: bool):
-        """Enable the Tracing ▸ Calibrate Scale… action based on *loaded*."""
-        if hasattr(self, "scale_calib_act") and self.scale_calib_act:
-            self.scale_calib_act.setEnabled(bool(loaded))
-
-    # --- NEW: _update_scale_pill method ---
-    def _update_scale_pill(self):
-        """Updates the scale pill's text and color based on the current project scale."""
-        self.logger.debug("--- _update_scale_pill --- ENTER ---")
-        proj = self.project_controller.get_current_project()
-        self.logger.debug(f"  _update_scale_pill: Received proj (id: {id(proj)}): {proj}") # Log ID here
-
-        text = "Scale: —"
-        # Default style: grey
-        style = "QLabel#scalePill { border-radius: 8px; padding: 2px 5px; }"
-        final_color_decision = "grey (default)"
-
-        # Log initial states
-        vp_renderer = getattr(self.visualization_panel, 'pdf_renderer', None)
-        vp_renderer_dpi = getattr(vp_renderer, 'dpi', None) if vp_renderer else None
-        proj_scale = getattr(proj, 'scale', None) if proj else None
-        proj_scale_cal_dpi = getattr(proj_scale, 'render_dpi_at_cal', None) if proj_scale else None
-
-        self.logger.debug(f"  Initial proj: {proj}")
-        self.logger.debug(f"  Initial proj.scale: {proj_scale}")
-        self.logger.debug(f"  Initial proj.scale.render_dpi_at_cal: {proj_scale_cal_dpi}")
-        self.logger.debug(f"  Initial self.visualization_panel.pdf_renderer: {vp_renderer}")
-        self.logger.debug(f"  Initial self.visualization_panel.pdf_renderer.dpi: {vp_renderer_dpi}")
-
-        if proj and proj_scale: # Changed from proj.scale to proj_scale for clarity
-            # Format the scale text
-            scale_str = "Unknown Scale"
-            if hasattr(proj_scale, "to_short_str") and callable(proj_scale.to_short_str):
-                try:
-                    scale_str = proj_scale.to_short_str()
-                except Exception as e:
-                    self.logger.error(f"Error calling proj_scale.to_short_str(): {e}")
-            elif hasattr(proj_scale, "world_per_paper_in") and proj_scale.world_per_paper_in is not None:
-                scale_str = f"{proj_scale.world_per_paper_in:.2f} {proj_scale.world_units}/in"
-            elif hasattr(proj_scale, "ratio_denom") and proj_scale.ratio_denom is not None:
-                 scale_str = f"1 : {proj_scale.ratio_denom:.0f}"
-            text = f"Scale: {scale_str}"
-
-            # Determine color based on DPI match
-            self.logger.debug("  Condition check for color change:")
-            self.logger.debug(f"    hasattr(self.visualization_panel, 'pdf_renderer'): {hasattr(self.visualization_panel, 'pdf_renderer')}")
-            self.logger.debug(f"    vp_renderer is not None: {vp_renderer is not None}")
-            self.logger.debug(f"    vp_renderer_dpi is not None: {vp_renderer_dpi is not None}")
-            self.logger.debug(f"    hasattr(proj_scale, 'render_dpi_at_cal'): {hasattr(proj_scale, 'render_dpi_at_cal')}") # Should be true if proj_scale exists
-            self.logger.debug(f"    proj_scale_cal_dpi is not None: {proj_scale_cal_dpi is not None}")
-
-            if (vp_renderer is not None and
-                vp_renderer_dpi is not None and
-                proj_scale_cal_dpi is not None): # Simpler check now that variables are pre-fetched
-
-                current_panel_render_dpi = vp_renderer_dpi
-                calibrated_dpi = proj_scale_cal_dpi
-
-                self.logger.debug(f"    Comparing DPIs: Panel DPI={current_panel_render_dpi}, Calibrated DPI={calibrated_dpi}")
-
-                if abs(current_panel_render_dpi - calibrated_dpi) > 0.5: # Mismatch threshold
-                    # Red for DPI mismatch
-                    style = "QLabel#scalePill { background-color: #D88080; color: white; border-radius: 8px; padding: 2px 5px; }"
-                    final_color_decision = "red (DPI mismatch)"
-                else:
-                    # Green for valid scale and matching DPI
-                    style = "QLabel#scalePill { background-color: #80D880; color: black; border-radius: 8px; padding: 2px 5px; }"
-                    final_color_decision = "green (DPI match)"
-            else:
-                # Conditions for green/red not met.
-                # If proj_scale exists, text will show scale, but color remains grey.
-                final_color_decision = "grey (missing DPI info for comparison)"
-                self.logger.warning(
-                    f"Scale pill color remains {final_color_decision}: "
-                    f"vp_renderer={vp_renderer}, vp_renderer_dpi={vp_renderer_dpi}, "
-                    f"proj_scale_cal_dpi={proj_scale_cal_dpi}."
-                )
-        else:
-            if not proj:
-                self.logger.debug("  Project is None. Pill is grey.")
-            elif not proj_scale:
-                self.logger.debug("  Project.scale is None. Pill is grey.")
-            final_color_decision = "grey (no project or no scale)"
-
-
-        self.scale_pill.setText(text)
-        # Try to force a style refresh
-        if hasattr(self.scale_pill, 'style') and callable(self.scale_pill.style):
-            current_style = self.scale_pill.style()
-            current_style.unpolish(self.scale_pill)
-            current_style.polish(self.scale_pill)
-        self.scale_pill.setStyleSheet(style)
-        self.scale_pill.update() # Another attempt to force repaint
-
-        self.logger.info(f"Scale pill updated: Text='{text}', Color Decision='{final_color_decision}'")
-        self.logger.debug("--- _update_scale_pill --- EXIT ---")
-    # --- END NEW ---
-
-    # ------------------------------------------------------------------
-    # Legend-dock helpers
-    # ------------------------------------------------------------------
-    def _on_legend_layers_count(self, count: int):
-        """Auto-show/auto-hide legend dock based on *count*."""
-        try:
-            if count == 0 and self.legend_dock.isVisible():
-                self.legend_dock.hide()
-            elif count >= 3 and not self.legend_dock.isVisible():
-                self.legend_dock.show()
-        except Exception:
-            pass
-
-    def _on_layer_visibility_toggled(self, layer_id: str, visible: bool):
-        """Propagate layer visibility to TracingScene."""
-        project = self.project_controller.get_current_project() if hasattr(self, "project_controller") else None
         if not project:
+            QMessageBox.warning(self, "Scale Calibration", "Please open or create a project first.")
             return
-        lyr = project.get_layer(layer_id)
-        if not lyr:
+
+        # Ensure a PDF background is loaded
+        if not self.visualization_panel.has_pdf():
+            QMessageBox.warning(self, "Scale Calibration",
+                                "Please load a PDF background before calibrating the scale.")
             return
-        scene = getattr(self.visualization_panel, "scene_2d", None)
-        if scene and hasattr(scene, "setLayerVisible"):
-            scene.setLayerVisible(lyr.name, visible)
 
-        if project:
-            # Update UI elements
-            if hasattr(self, "legend_dock") and self.legend_dock:
-                try:
-                    self.legend_dock._project = project  # noqa: SLF001
-                    self.legend_dock.refresh()
-                except Exception:
-                    pass
-
-    # --- Plotter Cleanup on Application Quit (Task 2 / PLAN.md) ---
-    @Slot()
-    def _on_application_quit(self):
-        """Ensure the singleton PyVista plotter is closed cleanly on application exit."""
-        self.logger.info("Application quitting. Attempting to close PyVista plotter...")
-        # Access the module-level instance directly to check if it was created
-        # to avoid instantiating it here if it was never used.
-        if plotter_instance is not None:
-            try:
-                plotter_instance.close()
-                self.logger.info("PyVista plotter closed successfully.")
-            except Exception as e:
-                self.logger.error(f"Error closing PyVista plotter: {e}")
+        # Pass the current page's pixmap to the dialog for preview
+        current_pixmap = None
+        if self.visualization_panel._pdf_bg_item:
+            current_pixmap = self.visualization_panel._pdf_bg_item.pixmap()
         else:
-            self.logger.info("PyVista plotter was not initialized, no cleanup needed.")
+            self.logger.warning("No pixmap available for scale calibration preview.")
+            # Optionally, you could still proceed without a preview image
+            # but for now, let's log and continue
 
-    # ------------------------------------------------------------------
-    # Borehole placement handler
-    # ------------------------------------------------------------------
-    def _on_borehole_point(self, x: float, y: float) -> None:  # noqa: D401
-        """Handle point pick for Borehole tool."""
-        # Reset action toggle
-        if hasattr(self, "borehole_tool_action"):
-            self.borehole_tool_action.setChecked(False)
+        # Pass project to dialog
+        dlg = ScaleCalibrationDialog(
+            parent=self,
+            project=project,
+            scene=self.visualization_panel.scene_2d,
+            page_pixmap=current_pixmap,
+        )
 
-        project = self.project_controller.get_current_project()
-        if project is None:
-            return
+        # Connect the dialog's finished signal to a dedicated slot
+        # Using a direct connection to a slot on self ensures proper cleanup
+        # if the dialog is closed while this instance is being destroyed.
+        dlg.finished.connect(lambda result: self._on_scale_dialog_done(dlg, result))
+        dlg.open() # Use open() for non-modal behavior if desired, or exec() for modal
 
-        # Ensure strata stack exists
-        if project.strata is None:
-            project.strata = StrataStack(id=1)
+    def _on_scale_dialog_done(self, dlg: "ScaleCalibrationDialog", result: int):
+        """Slot to handle the result of the scale calibration dialog."""
+        # This function is now a slot, ensuring that `dlg` is not prematurely garbage-collected.
+        if result == QDialog.Accepted:
+            new_scale = dlg.result_scale()
+            project = self.project_controller.get_current_project()
 
-        stack = project.strata
+            if new_scale and project:
+                # The dialog now sets the scale on the project directly.
+                # No need to do project.scale = new_scale here.
+                # We just need to update the UI.
+                self.logger.info(f"Scale calibration successful. New scale: {new_scale}")
+                self.statusBar().showMessage(f"Scale set: {new_scale.to_string_short()}", 5000)
 
-        # Ensure there is at least one material so the editor combo-box isn't empty.
-        if not getattr(stack, "materials", []):
-            try:
-                from digcalc_project.src.models.strata_models import Material
+                # Update the scale pill to reflect the new state
+                self.ui_state.update_scale_pill()
 
-                default_mat = Material(id=1, name="Material 1")
-                stack.materials.append(default_mat)
-                # Mark project dirty if API available
-                if hasattr(project, "mark_dirty"):
-                    project.mark_dirty()
-            except Exception:
-                # Fallback: leave materials empty; dialog will disable OK via validation
-                pass
+                # Mark project as modified
+                self.project_controller.set_project_modified(True)
 
-        # ------------------------------------------------------------------
-        # Open editor dialog (non-blocking so unit tests can find the window)
-        from digcalc_project.src.ui.dialogs.borehole_editor_dialog import BoreholeEditorDialog
-
-        dlg = BoreholeEditorDialog(stack, parent=self)
-        # Keep a reference to prevent premature GC in headless test runs
-        self._active_borehole_dlg = dlg  # type: ignore[attr-defined]
-
-        def _on_finished(result: int):  # Local slot – executes after dialog closes
-            # Drop the reference when done to avoid leaks
-            self._active_borehole_dlg = None  # type: ignore[attr-defined]
-            if result != QDialog.DialogCode.Accepted:
-                return
-
-            bh_id = stack.next_borehole_id()
-            borehole = dlg.to_borehole(x, y, bh_id)
-
-            from digcalc_project.src.ui.commands.add_borehole_command import AddBoreholeCommand
-            scene = self.visualization_panel.scene_2d
-            cmd = AddBoreholeCommand(stack, borehole, scene)
-
-            # If the dock is available, use its undo stack; otherwise execute immediately
-            dock = getattr(self, "strata_manager_dock", None)
-            if dock and hasattr(dock, "undo_stack"):
-                dock.undo_stack.push(cmd)
-                if hasattr(dock, "refresh_boreholes"):
-                    dock.refresh_boreholes()
+                # --- NEW: Force scene to invalidate its cache ---
+                scene = getattr(self.visualization_panel, "scene_2d", None)
+                if scene and hasattr(scene, "invalidate_cache"):
+                    scene.invalidate_cache()
+                # --- END NEW ---
             else:
-                # Headless/unit-test path – redo immediately so the symbol appears
-                cmd.redo()
+                self.logger.error("Scale calibration dialog accepted, but no valid scale or project was returned.")
+                self.statusBar().showMessage("Scale calibration failed (internal error).", 5000)
+        else:
+            self.logger.info("Scale calibration cancelled by user.")
+            self.statusBar().showMessage("Scale calibration cancelled.", 3000)
 
-        dlg.finished.connect(_on_finished)
-        dlg.open()
-        # Note: No further processing here – handled in _on_finished after user action
+        # Ensure the dialog object is deleted after it's finished
+        # This is good practice to prevent resource leaks.
+        dlg.deleteLater()
 
-    # ------------------------------------------------------------------
-    # PdfService callback – enable/disable Scale… action
-    # ------------------------------------------------------------------
     @Slot(int)
     def _on_document_loaded(self, page_count: int):
-        """Slot connected to PdfService.documentLoaded(int).
-
-        Ensures the Tracing ▸ Scale… action is enabled only when a PDF with at
-        least one page is loaded.  Using a bound Qt slot (rather than a lambda)
-        means the connection is automatically dropped when the MainWindow is
-        destroyed, preventing stray signal emissions from referencing deleted
-        QAction objects in subsequent tests.
-        """
-        try:
-            self._update_scale_action_enabled(page_count > 0)
-        except RuntimeError:
-            # If the QAction was already deleted (e.g. window closed) simply
-            # ignore – this situation can occur in unit-test teardowns.
-            pass
+        """Update scale action when a new PDF document is loaded."""
+        self.logger.debug(f"Document loaded with {page_count} pages, updating scale action.")
+        self.ui_state.update_scale_action_enabled(True)
 
     def _on_strata_settings(self):
-        """Open the Strata settings dialog."""
+        """Launch the strata settings dialog."""
         try:
             from ...ui.dialogs.strata_settings_dialog import StrataSettingsDialog
-        except Exception as exc:
-            self.logger.error("Failed to import StrataSettingsDialog: %s", exc)
-            return
-        dlg = StrataSettingsDialog(self)
-        dlg.exec()
+            dlg = StrataSettingsDialog(self)
+            dlg.exec()
+        except ImportError as e:
+            self.logger.error("Could not import or show StrataSettingsDialog: %s", e)

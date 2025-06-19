@@ -94,11 +94,16 @@ class MenuBuilder:
         # ----------------------------- Analysis ------------------------
         analysis_menu = self._mb.addMenu("Analysis")
         analysis_menu.addAction(mw.calculate_volume_action)
+        analysis_menu.addAction(mw.build_surface_action)
+        analysis_menu.addSeparator()
+        analysis_menu.addAction(mw.masshaul_action)
+        analysis_menu.addSeparator()
+        analysis_menu.addAction(mw.daylight_action)
         self._add_attr("analysis_menu", analysis_menu)
 
         # ----------------------------- Settings ------------------------
         settings_menu = self._mb.addMenu("Settings")
-        mw.strata_settings_action = mw.actions.strata_settings_action  # ensure exists
+        mw.strata_settings_action = mw.action_manager.strata_settings_action  # ensure exists
         settings_menu.addAction(mw.strata_settings_action)
         self._add_attr("settings_menu", settings_menu)
 
@@ -142,5 +147,17 @@ class MenuBuilder:
 
         # ----------------------------- Help ----------------------------
         help_menu = self._mb.addMenu("Help")
-        help_menu.addAction(mw.about_action)
-        self._add_attr("help_menu", help_menu) 
+        help_menu.addAction(mw.action_manager.docs_action)
+        help_menu.addAction(mw.action_manager.report_issue_action)
+        help_menu.addSeparator()
+        help_menu.addAction(mw.action_manager.check_updates_action)
+        help_menu.addSeparator()
+        help_menu.addAction(mw.action_manager.about_action)
+        self._add_attr("help_menu", help_menu)
+
+        # Expose on MainWindow for testability
+        mw.file_menu = file_menu
+        mw.import_menu = import_menu
+        mw.view_menu = view_menu
+        mw.analysis_menu = analysis_menu
+        mw.help_menu = help_menu 

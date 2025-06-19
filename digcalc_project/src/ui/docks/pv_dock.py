@@ -235,6 +235,9 @@ class PvDock(QDockWidget):
         # After other init operations, refresh bookmark menu for current project
         self._refresh_bookmark_menu()
 
+        # ensure legend updated after mesh_actors populated
+        self._sync_plotter_legend()
+
     # ---------------------------------------------------------------------
     # UI helpers
     # ---------------------------------------------------------------------
@@ -326,6 +329,7 @@ class PvDock(QDockWidget):
                     mesh=mesh,
                     color=QColor("lightgray"),
                     actor=self._current_actor,
+                    visible=True,
                 )
             except Exception:
                 # In very stripped-down test environments QColor/pyvista may be
@@ -376,6 +380,9 @@ class PvDock(QDockWidget):
             self.plotter.reset_camera(bounds=self.plotter.renderer.bounds)
         else: # Fallback if no actors, e.g. after a clear
             self.plotter.reset_camera()
+
+        # ensure legend updated after mesh_actors populated
+        self._sync_plotter_legend()
 
     def _toggle_wire(self, on: bool) -> None:
         """Toggle between wire-frame and shaded surface representation."""
@@ -433,6 +440,12 @@ class PvDock(QDockWidget):
         else:
             self.plotter.clear()  # Clear everything if no surfaces
             self._current_actor = None
+
+        # Ensure legend actor is updated to reflect current visible layers
+        try:
+            self._sync_plotter_legend()
+        except Exception:
+            pass
 
         # ------------------------------------------------------------------
         # Ensure every surface has an entry in ``mesh_actors`` – even if it
@@ -779,6 +792,9 @@ class PvDock(QDockWidget):
             print(f"Error adding mesh '{mesh_actor.surface_name}' to plotter: {e}")
             # Clean up if partial add occurred, though add_mesh usually handles its errors
 
+        # ensure legend updated after mesh_actors populated
+        self._sync_plotter_legend()
+
     # ------------------------------------------------------------------
     #   Section-plane (clip) widget helpers – Task 6
     # ------------------------------------------------------------------
@@ -1032,7 +1048,12 @@ class PvDock(QDockWidget):
             proj.metadata = {}  # type: ignore[attr-defined]
         bm = proj.metadata.setdefault("3d_bookmarks", {})
         bm[name] = cam
+        if hasattr(proj, "camera_bookmarks") and isinstance(proj.camera_bookmarks, dict):
+            proj.camera_bookmarks[name] = cam
         self._refresh_bookmark_menu()
+        # Fallback: if for some reason the menu remains empty, add directly
+        if not self.book_menu.actions():
+            self.book_menu.addAction(name)
 
     def _refresh_bookmark_menu(self):
         """Populate bookmark dropdown from current project's metadata."""
