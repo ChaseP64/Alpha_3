@@ -31,8 +31,6 @@ class SignalBinder:  # noqa: D101
         pdf = getattr(mw, "pdf_handler", None)
         if pdf is not None:
             mw.trace_pdf_action.triggered.connect(pdf._on_trace_from_pdf)
-        else:
-            mw.trace_pdf_action.triggered.connect(mw._on_trace_from_pdf)
 
         # Visualization feedback
         if hasattr(mw.visualization_panel, "surface_visualization_failed"):
@@ -41,12 +39,12 @@ class SignalBinder:  # noqa: D101
         # Tracing scene signals
         scene2d = getattr(mw.visualization_panel, "scene_2d", None)
         if scene2d is not None:
-            scene2d.polyline_finalized.connect(mw._on_polyline_drawn)
-            scene2d.selectionChanged.connect(mw._on_item_selected)
+            scene2d.polyline_finalized.connect(mw.polyline_handler._on_polyline_drawn)
+            scene2d.selectionChanged.connect(mw.polyline_handler._on_item_selected)
             if hasattr(scene2d, "pageRectChanged"):
                 scene2d.pageRectChanged.connect(mw._fit_view_to_scene)
             if hasattr(scene2d, "padDrawn"):
-                scene2d.padDrawn.connect(mw._on_pad_drawn)
+                scene2d.padDrawn.connect(mw.polyline_handler._on_pad_drawn)
         else:
             logger.warning("scene_2d unavailable for signal hookup")
 
@@ -54,12 +52,12 @@ class SignalBinder:  # noqa: D101
         mw.layer_tree.itemChanged.connect(mw._on_layer_visibility_changed)
 
         # Properties dock signals
-        mw.prop_dock.polylineEdited.connect(mw._apply_elevation_edit)
+        mw.prop_dock.polylineEdited.connect(mw.polyline_handler._apply_elevation_edit)
         mw.prop_dock.settingsChanged.connect(mw.project_controller.trigger_rebuild_if_needed)
 
         # View-mode actions
-        mw.view_2d_action.triggered.connect(mw.on_view_2d)
-        mw.view_3d_action.triggered.connect(mw.on_view_3d)
+        mw.view_2d_action.triggered.connect(mw.view_mode_handler.on_view_2d)
+        mw.view_3d_action.triggered.connect(mw.view_mode_handler.on_view_3d)
 
         # PDF actions
         pdf = getattr(mw, "pdf_handler", None)
@@ -68,11 +66,6 @@ class SignalBinder:  # noqa: D101
             mw.clear_pdf_background_action.triggered.connect(pdf.on_clear_pdf_background)
             mw.prev_pdf_page_action.triggered.connect(pdf.on_prev_pdf_page)
             mw.next_pdf_page_action.triggered.connect(pdf.on_next_pdf_page)
-        else:
-            mw.load_pdf_background_action.triggered.connect(mw.on_load_pdf_background)
-            mw.clear_pdf_background_action.triggered.connect(mw.on_clear_pdf_background)
-            mw.prev_pdf_page_action.triggered.connect(mw.on_prev_pdf_page)
-            mw.next_pdf_page_action.triggered.connect(mw.on_next_pdf_page)
 
         mw.toggle_trace_mode_action.toggled.connect(mw.on_toggle_tracing_mode)
 
@@ -104,12 +97,10 @@ class SignalBinder:  # noqa: D101
             pdf = getattr(mw, "pdf_handler", None)
             if pdf is not None:
                 mw.pdf_controller.pageSelected.connect(pdf._on_pdf_page_selected)
-            else:
-                mw.pdf_controller.pageSelected.connect(mw._on_pdf_page_selected)
 
         # Tracing-mode radio buttons update SettingsService
-        mw.trace_point_action.triggered.connect(lambda _=False: mw._set_tracing_elev_mode("point"))
-        mw.trace_interpolate_action.triggered.connect(lambda _=False: mw._set_tracing_elev_mode("interpolate"))
-        mw.trace_line_action.triggered.connect(lambda _=False: mw._set_tracing_elev_mode("line"))
+        mw.trace_point_action.triggered.connect(lambda _=False: mw.view_mode_handler._set_tracing_elev_mode("point"))
+        mw.trace_interpolate_action.triggered.connect(lambda _=False: mw.view_mode_handler._set_tracing_elev_mode("interpolate"))
+        mw.trace_line_action.triggered.connect(lambda _=False: mw.view_mode_handler._set_tracing_elev_mode("line"))
 
         logger.debug("Signal binding complete") 

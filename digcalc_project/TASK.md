@@ -85,4 +85,28 @@
 
 # Added Phase 3 helper tools
 - [x] Add daylight_offset_tool geometry helpers (offset_polygon, project_to_slope)
-- [ ] Implement TIN generation 
+- [ ] Implement TIN generation
+
+## MainWindow Method Inventory (Phase 1 – 2025-06-23)
+The table below groups *remaining* methods in `MainWindow` by primary concern. This inventory is used by the allow-list test added in Phase 1 and serves as the refactor checklist for upcoming phases.
+
+| Concern | Methods |
+|---------|---------|
+| Polyline Interaction | `_on_polyline_drawn`, `_on_pad_drawn`, `_apply_elevation_edit`, `_delete_selected_polyline`, `_on_item_selected` |
+| View & Input | `on_view_2d`, `on_view_3d`, `_fit_view_to_scene`, `_toggle_other_layers_visibility`, `_set_tracing_elev_mode`, `_create_shortcuts`, `keyPressEvent` |
+| Scale Calibration | `on_scale_calibration`, `_on_scale_dialog_done` |
+| Layer Legend / Visibility | `_on_legend_layers_count`, `_on_layer_visibility_toggled`, `_trigger_layer_visibility_update`, `_on_layer_visibility_changed`, `_update_layer_tree` |
+| PDF Navigation & Controls | `on_load_pdf_background`, `on_clear_pdf_background`, `on_next_pdf_page`, `on_prev_pdf_page`, `on_set_pdf_page_from_spinbox`, `_on_pdf_page_selected`, `_on_document_loaded` |
+| Surface Rebuild & Update | `_queue_surface_rebuilds_for_layer`, `_process_rebuild_queue`, `_rebuild_surface_now`, `_on_surfaces_rebuilt` |
+| Volume & Reporting | `on_volume_computed`, `_clear_cutfill_state`, `_on_volume_computed` |
+| Strata Settings | `_on_strata_settings` |
+| Miscellaneous | `closeEvent`, `on_about`, `on_open_3d` |
+
+## MainWindow Refactor (Completed 2025-06-23)
+- [x] Phase 1: Inventory & Safety Net
+- [x] Phase 2: PolylineInteractionHandler
+- [x] Phase 3: View & Input Handlers
+- [x] Phase 4: Scale & Legend Controllers
+- [x] Phase 5: PDF Navigation Cleanup
+- [x] Phase 6: UI Builder Extraction Finish
+- [x] Phase 7: Final Cleanup & Size Check 

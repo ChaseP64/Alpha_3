@@ -12,8 +12,7 @@ from ...ui.dialogs.daylight_dialog import DaylightDialog
 from ...ui.dialogs.volume_calculation_dialog import VolumeCalculationDialog
 from ...ui.dialogs.report_dialog import ReportDialog
 from ...ui.dialogs.haul_alignment_dialog import HaulAlignmentDialog
-from ...core.reporting.haul_chart import HaulChart
-from ...core.reporting.csv_writer import CSVWriter
+from ...core.reporting import csv_writer
 from ...core.reporting.pdf_report import PDFReport
 
 if TYPE_CHECKING:
@@ -142,7 +141,7 @@ class ActionHandler:
             try:
                 # 1. Export CSV
                 csv_path = f"{base_name}.csv"
-                CSVWriter.export_volume_report(csv_path, params, self.mw._last_dz_cache)
+                csv_writer.export_volume_report(csv_path, params, self.mw._last_dz_cache)
                 
                 # 2. Export PDF
                 pdf_path = f"{base_name}.pdf"
