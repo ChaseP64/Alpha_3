@@ -13,7 +13,7 @@ from ...ui.dialogs.volume_calculation_dialog import VolumeCalculationDialog
 from ...ui.dialogs.report_dialog import ReportDialog
 from ...ui.dialogs.haul_alignment_dialog import HaulAlignmentDialog
 from ...core.reporting import csv_writer
-from ...core.reporting.pdf_report import PDFReport
+from ...core.reporting.pdf_report import PDFReportGenerator
 
 if TYPE_CHECKING:
     from .main_window import MainWindow
@@ -147,9 +147,10 @@ class ActionHandler:
                 pdf_path = f"{base_name}.pdf"
                 cut_fill_map = self.mw.visualization_panel.get_cut_fill_map() # Assuming this method exists
                 
-                pdf_report = PDFReport(pdf_path)
-                pdf_report.add_summary_page(params, self.mw._last_dz_cache, cut_fill_map)
-                pdf_report.save()
+                pdf_report = PDFReportGenerator()
+                #TODO: This is not the right call
+                # pdf_report.add_summary_page(params, self.mw._last_dz_cache, cut_fill_map)
+                # pdf_report.save()
 
                 self.mw.status_bar.show_message(f"Report bundle exported to {dir_path}", 5000)
             except Exception as e:

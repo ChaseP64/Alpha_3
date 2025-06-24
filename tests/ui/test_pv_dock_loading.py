@@ -396,7 +396,7 @@ def three_layer_project() -> MagicMock:  # noqa: ANN001
     return p
 
 
-@pytest.mark.skip(reason="Temporarily disabled to unblock MainWindow refactoring. Needs fix.")
+# @pytest.mark.skip(reason="Temporarily disabled to unblock MainWindow refactoring. Needs fix.")
 def test_section_plane_clips(qtbot, three_layer_project, pv_dock_with_parent):  # noqa: ANN001
     """Check that enabling the section plane clips all visible actors."""
     dock, _ = pv_dock_with_parent

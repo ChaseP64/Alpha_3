@@ -101,6 +101,9 @@ from .layer_legend_controller import LayerLegendController
 # --- NEW: Status Bar Manager (Phase 6 refactor) ---
 from .status_bar_manager import StatusBarManager
 
+# --- NEW: Surface Rebuild Manager (Phase-7 refactor) ---
+from .surface_rebuild_manager import SurfaceRebuildManager
+
 logger = logging.getLogger(__name__)
 
 
@@ -189,6 +192,10 @@ class MainWindow(QMainWindow):
         # --- NEW: Status Bar Manager (Phase 6 refactor) ---
         from .status_bar_manager import StatusBarManager
         self.status_bar_manager = StatusBarManager(self)
+        # --- END NEW ---
+
+        # --- NEW: Surface Rebuild Manager (Phase-7 refactor) ---
+        self.surface_rebuild_manager = SurfaceRebuildManager(self)
         # --- END NEW ---
 
         self._selected_scene_item: Optional[QGraphicsPathItem] = None
@@ -438,10 +445,12 @@ class MainWindow(QMainWindow):
             self.logger.error("Failed to propagate elevation mode '%s' to scene: %s", mode, exc, exc_info=True)
 
     # 3. Slot at end of class
-    @Slot()
     def on_scale_calibration(self):
-        """Handles the 'Calibrate Scale...' action.
-        Opens the scale calibration dialog and applies the result.
+        """DEPRECATED: Handles the 'Calibrate Scale...' action.
+        
+        This logic has been moved to ScaleCalibrationController. This method
+        is temporarily retained for any legacy signal connections but should
+        be removed once all connections are updated to the controller.
         """
         # Ensure project is available
         project = self.project_controller.get_current_project()
@@ -601,3 +610,12 @@ class MainWindow(QMainWindow):
         # Also update the scene
         if self.visualization_panel and self.visualization_panel.scene_2d:
             self.visualization_panel.scene_2d.setLayerVisible(layer_name, visible)
+
+    # ------------------------------------------------------------------
+    # Compatibility shim – original rebuild queue callback
+    # ------------------------------------------------------------------
+    @Slot()
+    def _process_rebuild_queue(self):
+        """Legacy slot for unit-test compatibility. Delegates to the manager."""
+        if hasattr(self, 'surface_rebuild_manager'):
+            self.surface_rebuild_manager.rebuild_now()

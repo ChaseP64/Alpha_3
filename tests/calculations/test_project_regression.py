@@ -1,5 +1,6 @@
 import json
 import pathlib
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -21,10 +22,17 @@ def _load_demo_project():
     return project
 
 
-def test_regression_against_gold():
-    pytest.skip("Expected volumes need update after calculator changes")
+def test_regression_against_gold(tmp_path):
+    """Verify that the volume calculation for a known project matches
+    a set of "gold standard" expected volumes from a JSON file.
+    """
+    # TODO: Regenerate this file with the new calculator
+    # pytest.skip("Expected volumes need update after calculator changes")
 
-    project = _load_demo_project()
+    # Load the sample project
+    project_path = Path(__file__).parent.parent / "fixtures" / "sample_project.json"
+    project = Project.load(str(project_path))
+    assert project is not None, "Fixture project failed to load"
 
     # Run grid-based volume calc on the two surfaces
     calc = VolumeCalculator(project)

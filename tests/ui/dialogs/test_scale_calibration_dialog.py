@@ -65,7 +65,7 @@ def test_pick_falls_back_when_pdf_view_hidden(qtbot, pdf_view_widget, mock_proje
     assert getattr(dlg, "_global_picker", None) is None
 
 
-@pytest.mark.skip(reason="This test causes a fatal Windows exception. Disabling to allow other tests to run.")
+# @pytest.mark.skip(reason="This test causes a fatal Windows exception. Disabling to allow other tests to run.")
 def test_pick_uses_global_when_pdf_view_visible(qtbot, pdf_view_widget, mock_project):
     """When the PDF view is visible the dialog should attach the global picker."""
     win, view = pdf_view_widget

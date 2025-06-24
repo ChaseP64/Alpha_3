@@ -5,19 +5,31 @@ import pytest
 from PySide6.QtWidgets import QComboBox, QDoubleSpinBox
 
 from digcalc_project.src.services.settings_service import SettingsService
+from digcalc_project.src.utils.singleton import Singleton
 
 # Widget being tested
 from digcalc_project.src.ui.properties_dock import PropertiesDock
 
 
 @pytest.fixture(autouse=True)
-def ensure_settings_defaults():
-    """Ensure settings service starts with known defaults for these tests."""
-    # Reset specific settings to defaults before each test
+def settings_for_test(monkeypatch, temporary_settings):
+    """Fixture to ensure all tests in this file use a temporary settings file."""
+    # Force the singleton to use our temporary path for the duration of the tests
+    monkeypatch.setattr(SettingsService, "_path", temporary_settings)
+
+    # Clear any existing singleton instance to ensure the new path is used on next creation
+    Singleton.clear_instances()
+
+    # Provide a fresh instance with defaults for each test
     settings = SettingsService()
-    settings.set("smooth_sampling_ft", settings._defaults["smooth_sampling_ft"])
-    settings.set("tracing_elev_mode", settings._defaults["tracing_elev_mode"])
-    settings.save() # Ensure defaults are persisted if tests read from file initially
+    settings._settings = settings._DEFAULTS.copy()
+    settings.save()
+
+    yield settings
+
+    # Clean up after tests
+    Singleton.clear_instances()
+
 
 @pytest.fixture
 def dock(qtbot) -> PropertiesDock:
@@ -30,11 +42,10 @@ def dock(qtbot) -> PropertiesDock:
     return widget
 
 
-def test_initial_tracing_values(dock: PropertiesDock):
+def test_initial_tracing_values(dock: PropertiesDock, settings_for_test: SettingsService):
     """Test that tracing widgets load initial values from SettingsService."""
-    settings = SettingsService()
-    initial_sampling = settings.smooth_sampling_ft()
-    initial_mode = settings.tracing_elev_mode()
+    initial_sampling = settings_for_test.smooth_sampling_ft()
+    initial_mode = settings_for_test.tracing_elev_mode()
 
     sampling_spin: QDoubleSpinBox = dock._spline_sampling_spin
     mode_combo: QComboBox = dock._elev_mode_combo
@@ -43,9 +54,8 @@ def test_initial_tracing_values(dock: PropertiesDock):
     assert mode_combo.currentData() == initial_mode
 
 
-def test_sampling_spinbox_updates_setting(qtbot, dock: PropertiesDock):
+def test_sampling_spinbox_updates_setting(qtbot, dock: PropertiesDock, settings_for_test: SettingsService):
     """Test changing the sampling spinbox updates the SettingsService."""
-    settings = SettingsService()
     sampling_spin: QDoubleSpinBox = dock._spline_sampling_spin
     initial_value = sampling_spin.value()
     new_value = initial_value + 0.5
@@ -57,12 +67,11 @@ def test_sampling_spinbox_updates_setting(qtbot, dock: PropertiesDock):
     qtbot.wait(50)
 
     # Check that the setting was updated
-    assert settings.smooth_sampling_ft() == pytest.approx(new_value)
+    assert settings_for_test.smooth_sampling_ft() == pytest.approx(new_value)
 
 
-def test_elevation_mode_combobox_updates_setting(qtbot, dock: PropertiesDock):
+def test_elevation_mode_combobox_updates_setting(qtbot, dock: PropertiesDock, settings_for_test: SettingsService):
     """Test changing the elevation mode combobox updates the SettingsService."""
-    settings = SettingsService()
     mode_combo: QComboBox = dock._elev_mode_combo
     initial_index = mode_combo.currentIndex()
     new_index = (initial_index + 1) % mode_combo.count() # Cycle to next index
@@ -73,7 +82,7 @@ def test_elevation_mode_combobox_updates_setting(qtbot, dock: PropertiesDock):
 
     # Check that the setting was updated
     new_mode = mode_combo.itemData(new_index)
-    assert settings.tracing_elev_mode() == new_mode
+    assert settings_for_test.tracing_elev_mode() == new_mode
 
 
 def test_settings_changed_signal_emitted(qtbot, dock: PropertiesDock):
@@ -95,23 +104,13 @@ def test_settings_changed_signal_emitted(qtbot, dock: PropertiesDock):
     assert mode_blocker.signal_triggered
 
 
-def test_load_persisted_values_on_recreation(qtbot):
-    """Test that the dock loads persisted values when recreated (simulating restart)."""
-    settings = SettingsService()
+def test_load_persisted_values_on_recreation(qtbot, settings_for_test: SettingsService):
+    # Set non-default values and save
     test_sampling = 5.5
     test_mode = "interpolate"
-
-    # Set non-default values and save
-    settings.set_smooth_sampling_ft(test_sampling)
-    settings.set_tracing_elev_mode(test_mode)
-    settings.save() # Ensure saved to file
-
-    # Clear the singleton instance cache to force re-init
-    # (Requires knowledge of Singleton implementation, adjust if needed)
-    if hasattr(SettingsService, "_instances"):
-         SettingsService._instances = {}
-    else:
-         pytest.skip("Cannot reliably clear Singleton cache for this test.")
+    settings_for_test.set_smooth_sampling_ft(test_sampling)
+    settings_for_test.set_tracing_elev_mode(test_mode)
+    settings_for_test.save()
 
     # Re-create the dock - it should now load the persisted values
     dock = PropertiesDock()
@@ -122,7 +121,3 @@ def test_load_persisted_values_on_recreation(qtbot):
 
     assert sampling_spin.value() == pytest.approx(test_sampling)
     assert mode_combo.currentData() == test_mode
-
-    # Clean up singleton cache again if needed
-    if hasattr(SettingsService, "_instances"):
-         SettingsService._instances = {}

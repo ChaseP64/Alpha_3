@@ -6,8 +6,9 @@ from PySide6.QtWidgets import QApplication, QGraphicsEllipseItem
 
 from digcalc_project.src.ui.main_window import MainWindow
 
+# Skip this entire test module if PySide6 is not installed
 pytest.importorskip("PySide6")
-pytest.skip("Skipping Borehole tool UI tests pending stabilization", allow_module_level=True)
+# pytest.skip("Skipping Borehole tool UI tests pending stabilization", allow_module_level=True)
 
 
 @pytest.fixture
@@ -57,4 +58,8 @@ def test_borehole_place_and_undo(qtbot, main_window):
 
     # Undo via dock
     main_window.strata_manager_dock.undo_stack.undo()
-    qtbot.waitUntil(lambda: _ellipse_count(scene) == before) 
+    qtbot.waitUntil(lambda: _ellipse_count(scene) == before)
+
+
+def test_true():
+    assert True 

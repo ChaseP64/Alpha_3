@@ -18,17 +18,8 @@ except ModuleNotFoundError:  # pragma: no cover
 # ---------------------------------------------------------------------------
 
 ALLOWLIST: Set[str] = {
-    # Qt event overrides
-    "closeEvent",
-    "keyPressEvent",
-
-    # Misc slots
-    "on_about",
     "on_open_3d",
-    "on_toggle_tracing_mode",
-
-    # Calculation results
-    "on_volume_computed",
+    "on_scale_calibration",
 }
 
 

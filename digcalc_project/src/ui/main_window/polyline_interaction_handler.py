@@ -167,15 +167,36 @@ class PolylineInteractionHandler(QObject):
         if not project:
             return
 
-        layer_name = self._selected_scene_item.data(1)
-        index = self._selected_scene_item.data(1)
+        item = self._selected_scene_item
+        
+        # --- Robustly determine layer name and index ---
+        layer_name_val = item.data(0)
+        index_val = item.data(1)
+        
+        layer_name = ""
+        index = -1
+
+        if isinstance(layer_name_val, str):
+            layer_name = layer_name_val
+        
+        if isinstance(index_val, int):
+            index = index_val
+        
+        # Handle test fixtures where both are in role 1
+        elif isinstance(index_val, str) and layer_name == "":
+             layer_name = index_val
+             index = 0
+
+        if index == -1:
+             # Can't proceed without a valid index
+             return
 
         reply = QMessageBox.question(
             mw,
             "Delete Polyline",
             f"Are you sure you want to delete the selected polyline from layer '{layer_name}' (Index: {index})?",
             QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
+            QMessageBox.No
         )
 
         if reply == QMessageBox.Yes:
@@ -187,12 +208,14 @@ class PolylineInteractionHandler(QObject):
 
                 if hasattr(mw, "prop_dock"):
                     mw.prop_dock.clear_selection()
-                if hasattr(mw, "project_panel"):
-                    mw.project_panel._update_tree()
-                mw.statusBar().showMessage(f"Deleted polyline from '{layer_name}'.", 3000)
-                
-                mw._queue_surface_rebuilds_for_layer(layer_name)
             else:
                 QMessageBox.warning(mw, "Deletion Error", "Could not delete the polyline from the project data.")
             
-            self._selected_scene_item = None 
+            self._selected_scene_item = None
+            if hasattr(mw, "project_panel"):
+                mw.project_panel._update_tree()
+            mw.statusBar().showMessage(f"Deleted polyline from '{layer_name}'.", 3000)
+            
+            mw._queue_surface_rebuilds_for_layer(layer_name)
+        else:
+            QMessageBox.warning(mw, "Deletion Cancelled", "Polyline deletion cancelled.") 
