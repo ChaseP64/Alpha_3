@@ -157,18 +157,15 @@ class _DummyPlotter:
         callback,  # noqa: ANN001
         **kwargs,  # noqa: ANN401
     ):  # noqa: D401
-        """Return a lightweight stub that supports `SetEnabled` and calls the callback."""
+        """Return a lightweight stub that mimics PyVista's plane widget behavior."""
 
         class _DummyPlaneWidget:
-            def __init__(self, cb):
+            def __init__(self):
                 self._enabled = True
-                self._cb = cb
 
             def SetEnabled(self, flag: bool):  # noqa: D401
+                """In the mock, this only toggles the state and does NOT fire a callback."""
                 self._enabled = flag
-                # When the widget is enabled/disabled, PvDock expects the callback to be fired.
-                if self._cb and flag:
-                    self._cb((0, 0, 1), (0, 0, 0))
 
             def GetEnabled(self):  # noqa: D401
                 return self._enabled
@@ -176,11 +173,13 @@ class _DummyPlotter:
             # Convenience for tests to mimic VTK API
             enabled = property(GetEnabled, SetEnabled)
 
-        widget = _DummyPlaneWidget(callback)
-        # Immediately invoke callback once to simulate initial placement
+        # Per PyVista's documented behavior (test_callback=True by default),
+        # the callback is fired once immediately upon widget creation.
         if callback:
-            callback((0, 0, 1), (0, 0, 0))
-        return widget
+            # Using hard-coded values as the exact orientation is not critical for this test.
+            callback(normal=(0, 0, 1), origin=(0, 0, 0))
+
+        return _DummyPlaneWidget()
 
     # Quality helpers -------------------------------------------------------
     def disable_anti_aliasing(self):
@@ -408,23 +407,14 @@ def test_section_plane_clips(qtbot, three_layer_project, pv_dock_with_parent):  
     assert len(dock.plotter.renderer.actors) == 3
 
     # Enable the section widget via the action
-    print("Enabling section action...")
     dock.section_act.setChecked(True)
-    qtbot.wait(10)
-
-    # Manually trigger the callback to simulate the widget moving
-    dock._on_plane_moved(normal=(0, 0, 1), origin=(0, 0, 0))
     qtbot.wait(10)
 
     # Check that the callback was fired and all actors have a clipping plane
     for actor in dock.plotter.renderer.actors.values():
-        print(f"Checking actor {actor}. Mapper: {actor.mapper}")
         if hasattr(actor, "mapper"):
             num_planes = actor.mapper.GetNumberOfClippingPlanes()
-            print(f"Actor has {num_planes} clipping planes.")
             assert num_planes == 1
-        else:
-            print("Actor has no mapper attribute.")
 
 # -----------------------------------------------------------------------------
 # Z-exaggeration slider test – Task 8-D

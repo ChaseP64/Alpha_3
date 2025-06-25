@@ -451,16 +451,20 @@ class Project:
                  migrated = True
 
             # Convert legacy world_per_in to ProjectScale (v3 shim)
-            render_dpi = None
-            try:
-                render_dpi = pdf_service.current_render_dpi() if pdf_service else None
-            except AttributeError:
+            if project_version < 3:
                 render_dpi = None
+                try:
+                    render_dpi = pdf_service.current_render_dpi() if pdf_service else None
+                except AttributeError:
+                    render_dpi = None
 
-            data = _migrate_v2_add_scale(data, render_dpi)
+                data = _migrate_v2_add_scale(data, render_dpi)
+                migrated = True
 
             # Other v1→v2 migrations (regions etc.)
-            data = _migrate_v1_to_v2(data)
+            if "regions" not in data:
+                data = _migrate_v1_to_v2(data)
+                migrated = True
 
             # Create project instance
             project = cls(name=data.get("name", "Untitled Project"))
@@ -597,6 +601,7 @@ class Project:
             else:
                 project.strata = None
 
+            project.filepath = filename
             project.is_dirty = migrated # Mark modified if migration happened
             logger.info(f"Project loaded from {filename}")
             return project

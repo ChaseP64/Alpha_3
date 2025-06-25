@@ -799,98 +799,71 @@ class PvDock(QDockWidget):
     #   Section-plane (clip) widget helpers – Task 6
     # ------------------------------------------------------------------
     def _ensure_plane_widget(self) -> None:
-        """Create the shared VTK plane and PyVista widget once per viewer.
+        """Lazily create the vtkPlane and the pyvista widget on first use."""
+        logger.info("****** _ensure_plane_widget called")
+        if self._plane_widget is None:
+            logger.info("****** _plane_widget is None, creating new widget")
+            try:
+                # Import VTK locally to avoid dependency if not used
+                from vtk import vtkPlane
+                # Shared geometric plane (stores origin/normal)
+                self._vtk_plane = vtkPlane()
 
-        The widget is instantiated lazily and re-used for subsequent projects.
-        """
-        if self._plane_widget is not None:
-            return  # Already created
+                # Determine sensible defaults for origin/bounds from the current scene
+                origin = getattr(self.plotter, "center", (0, 0, 0))
+                bounds = getattr(self.plotter, "bounds", None)
 
-        # Local (lazy) imports to avoid heavy VTK/PyVista cost on module load
-        import vtk  # type: ignore
+                # PyVista add_plane_widget returns a vtkImplicitPlaneWidget2-like helper
+                self._plane_widget = self.plotter.add_plane_widget(
+                    callback=self._on_plane_moved,
+                    normal=(0, 0, 1),  # Clip along Z
+                    assign_to_axis="z",
+                    origin=origin,
+                    bounds=bounds,
+                    color="yellow",
+                    implicit=False,
+                    tubing=False,
+                )
 
-        # Shared geometric plane (stores origin/normal)
-        self._vtk_plane = vtk.vtkPlane()
-
-        # Determine sensible defaults for origin/bounds from the current scene
-        origin = getattr(self.plotter, "center", (0, 0, 0))
-        bounds = getattr(self.plotter, "bounds", None)
-
-        # PyVista add_plane_widget returns a vtkImplicitPlaneWidget2-like helper
-        self._plane_widget = self.plotter.add_plane_widget(
-            callback=self._on_plane_moved,
-            normal=(0, 0, 1),  # Clip along Z
-            assign_to_axis="z",
-            origin=origin,
-            bounds=bounds,
-            color="yellow",
-            implicit=False,
-            tubing=False,
-        )
-
-        # Start disabled – becomes active when the toolbar toggle is on.
-        try:
-            self._plane_widget.SetEnabled(False)  # type: ignore[attr-defined]
-        except AttributeError:
-            # Some backends expose `.enabled` instead of `SetEnabled`.
-            setattr(self._plane_widget, "enabled", False)
+                # Start disabled – becomes active when the toolbar toggle is on.
+                try:
+                    self._plane_widget.SetEnabled(False)  # type: ignore[attr-defined]
+                except AttributeError:
+                    # Some backends expose `.enabled` instead of `SetEnabled`.
+                    setattr(self._plane_widget, "enabled", False)
+            except Exception as exc:
+                print(f"Error creating plane widget: {exc}")
 
     def _on_plane_moved(self, normal, origin):  # noqa: ANN001
-        """Callback – apply clipping to all actors when the plane moves."""
+        """Handler for the plane widget's InteractionEvent."""
+        logger.info(f"****** _on_plane_moved called with normal={normal}, origin={origin}")
         if self._vtk_plane is None:
-            return
+            return  # Should not happen if widget is active
 
-        # Update the shared plane object (VTK expects a point + normal)
-        self._vtk_plane.SetOrigin(origin)
         self._vtk_plane.SetNormal(normal)
+        self._vtk_plane.SetOrigin(origin)
 
-        # Apply clipping to every registered actor
-        for ma in self.mesh_actors.values():
-            if ma.actor is None:
-                continue
-            mapper = getattr(ma.actor, "mapper", None)
-            if mapper is None:
-                continue
-            # Remove previous clipping planes to keep only the current one
-            if hasattr(mapper, "RemoveAllClippingPlanes"):
-                mapper.RemoveAllClippingPlanes()
-            # Add the updated plane
-            if hasattr(mapper, "AddClippingPlane"):
-                mapper.AddClippingPlane(self._vtk_plane)
+        # Apply this plane to all actors that are currently visible
+        for actor in self.plotter.renderer.actors.values():
+            if hasattr(actor, "GetVisibility") and actor.GetVisibility():
+                if hasattr(actor, "mapper"):
+                    actor.mapper.RemoveAllClippingPlanes()
+                    actor.mapper.AddClippingPlane(self._vtk_plane)
+            elif hasattr(actor, "mapper"):  # Not visible, remove clipping
+                actor.mapper.RemoveAllClippingPlanes()
 
-        # Redraw scene
-        self.plotter.render()
+        if self.plotter:
+            self.plotter.render()
 
-        # Persist last origin so the slice is restored when reopening
-        if hasattr(self.main, "project_controller"):
-            proj = self.main.project_controller.get_current_project()
-            if proj is not None and hasattr(proj, "metadata"):
-                proj.metadata["3d_section_plane"] = {"origin": origin, "normal": normal}
-
-    # ------------------------------------------------------------------
-    #   Toolbar/menu actions
-    # ------------------------------------------------------------------
     def _toggle_section(self, enabled: bool) -> None:
-        """Enable/disable the section-plane widget and clipping."""
-        # Lazily create the widget on first use
+        """Show/hide the 3D section plane widget and enable clipping."""
+        logger.info(f"****** _toggle_section called with enabled={enabled}")
         self._ensure_plane_widget()
-
-        if self._plane_widget is None:
-            return
-
         # Enable/disable the interactive widget itself
         try:
             self._plane_widget.SetEnabled(enabled)  # type: ignore[attr-defined]
         except AttributeError:
             setattr(self._plane_widget, "enabled", enabled)
-
-        if enabled and self._vtk_plane is not None:
-            try:
-                normal = self._vtk_plane.GetNormal()  # type: ignore[attr-defined]
-                origin = self._vtk_plane.GetOrigin()  # type: ignore[attr-defined]
-                self._on_plane_moved(normal, origin)
-            except Exception:  # pragma: no cover
-                pass
 
         # When disabling, remove clipping planes from all actors
         if not enabled:
@@ -900,10 +873,10 @@ class PvDock(QDockWidget):
                 mapper = getattr(ma.actor, "mapper", None)
                 if mapper and hasattr(mapper, "RemoveAllClippingPlanes"):
                     mapper.RemoveAllClippingPlanes()
-            self.plotter.render()
+        self.plotter.render()
 
     def _reset_section_plane(self) -> None:
-        """Re-centre the section plane and clear all clipping."""
+        """Helper to clear section-plane state when loading a new project."""
         if self._vtk_plane is None:
             return
 

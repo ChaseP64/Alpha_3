@@ -1,3 +1,4 @@
+from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -15,9 +16,13 @@ except ImportError:
 TracedPolylinesType = Dict[str, List[PolylineData]]
 
 
-def _poly(*points: Tuple[float, float], elevation: Optional[float] = None) -> PolylineData:
-    """Helper to create PolylineData dict for tests."""
-    return {"points": list(points), "elevation": elevation}
+def _poly(*points: Tuple[float, float], elevation: Optional[float] = None, **kwargs) -> PolylineData:
+    """Creates a PolylineData dictionary from points and an optional elevation."""
+    # This structure must match the PolylineData TypedDict definition
+    data: PolylineData = {"points": list(points), "elevation": elevation}
+    # Allow additional keys like is_strata, material_id for more specific tests
+    data.update(kwargs)
+    return data
 
 
 def test_layer_storage_basic(caplog):
@@ -53,26 +58,26 @@ def test_save_and_load_roundtrip(tmp_path: Path):
     # Setup using the NEW format: Dict[str, List[PolylineData]]
     polyline_data_new_format: TracedPolylinesType = {
         "Test Layer 1": [
-            _poly((5, 5), (6, 6), elevation=10.0),
-            _poly((7, 7), (8, 8), elevation=None),
+            _poly((5, 5), (6, 6), elevation=10.0, is_strata=False, material_id=None),
+            _poly((7, 7), (8, 8), elevation=None, is_strata=False, material_id=None),
         ],
         "Test Layer 2": [
-            _poly((10, 10), (11, 11), elevation=20.5),
+            _poly((10, 10), (11, 11), elevation=20.5, is_strata=False, material_id=None),
         ],
     }
     # Assign the correctly structured data
     pr.traced_polylines = polyline_data_new_format
-    pr.is_modified = True
+    pr.is_dirty = True
 
     file = tmp_path / "proj.json"
     save_success = pr.save(file)
     assert save_success, "Project save should succeed"
-    assert not pr.is_modified, "is_modified should be False after save"
+    assert not pr.is_dirty, "is_dirty should be False after save"
 
     # Now load it back
     pr2 = Project.load(file)
     assert pr2 is not None, "Project load should succeed"
-    assert not pr2.is_modified, "is_modified should be False after load"
+    assert not pr2.is_dirty, "is_dirty should be False after load"
 
     # Compare loaded Python object structure against original Python structure
     assert pr2.traced_polylines == polyline_data_new_format, \
@@ -118,8 +123,8 @@ def test_legacy_migration(tmp_path: Path, caplog):
     assert migrated_layer[1]["elevation"] is None
     assert migrated_layer[1]["points"] == [(2.0, 2.0), (3.0, 3.0)]
 
-    assert pr.is_modified, "Project should be marked modified after migration"
-    assert "Migrating to 'Legacy Traces' layer" in caplog.text
+    assert pr.is_dirty, "Project should be marked dirty after migration"
+    assert "Migrating legacy traced polylines (list) to new dictionary format" in caplog.text
 
 
 def test_load_invalid_polyline_format(tmp_path: Path, caplog):
@@ -142,7 +147,7 @@ def test_load_invalid_polyline_format(tmp_path: Path, caplog):
     assert not pr.traced_polylines, "traced_polylines should be empty after loading invalid format"
 
     # Check that the project is not marked as modified
-    assert not pr.is_modified, "Project should not be marked as modified"
+    assert not pr.is_dirty, "Project should not be marked as dirty"
 
     # Check logger warning for invalid format
     assert "Traced polyline data found but is in an unexpected format" in caplog.text
@@ -168,7 +173,7 @@ def test_load_missing_polylines_key(tmp_path: Path, caplog):
     assert not pr.traced_polylines, "traced_polylines should be empty when key is missing"
 
     # Check that the project is not marked as modified
-    assert not pr.is_modified, "Project should not be marked as modified"
+    assert not pr.is_dirty, "Project should not be marked as dirty"
 
     # Ensure no error/warning about missing key specifically (it should default safely)
     assert "Migrated legacy" not in caplog.text
