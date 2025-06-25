@@ -30,7 +30,7 @@ def test_regression_against_gold(tmp_path):
     # pytest.skip("Expected volumes need update after calculator changes")
 
     # Load the sample project
-    project_path = Path(__file__).parent.parent / "fixtures" / "sample_project.json"
+    project_path = Path(__file__).parent.parent / "fixtures" / "strata_demo_project.json"
     project = Project.load(str(project_path))
     assert project is not None, "Fixture project failed to load"
 
@@ -66,10 +66,16 @@ def test_regression_against_gold(tmp_path):
     # Total check
     total_calc = sum(vols_named.values())
     total_exp = expected["total"]
-    assert abs(total_calc - total_exp) / total_exp <= TOL_TOTAL, "Total volume outside tolerance"
+    if total_exp == 0:
+        assert total_calc == 0, "Total calculated volume should be zero"
+    else:
+        assert abs(total_calc - total_exp) / total_exp <= TOL_TOTAL, "Total volume outside tolerance"
 
     # Per-material check
     for mat_name, exp_v in expected["materials"].items():
         calc_v = vols_named.get(mat_name)
         assert calc_v is not None, f"Material '{mat_name}' missing in calc"
-        assert abs(calc_v - exp_v) / exp_v <= TOL_MAT, f"Volume mismatch for {mat_name}" 
+        if exp_v == 0:
+            assert calc_v == 0, f"Volume for {mat_name} should be zero"
+        else:
+            assert abs(calc_v - exp_v) / exp_v <= TOL_MAT, f"Volume mismatch for {mat_name}" 
