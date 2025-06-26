@@ -81,15 +81,14 @@ class Project(BaseModel):
     layer_revisions: Dict[str, int] = field(default_factory=lambda: defaultdict(int))
     # --- END NEW ---
 
-    # --- NEW: List of *Layer* objects ------------------------------------------------
-    # Stores a flat list of Layer instances used by the project.  Layer objects
-    # carry style (colour) and metadata.  Existing code that references
-    # `traced_polylines` by *name* continues to work – the two concepts are kept
-    # in sync by higher-level UI logic.
-    layers: list["Layer"] = field(default_factory=list)
+    # --- NEW: Flat list of Layer objects (UI styling/meta) ---------------------------
+    layer_objects: list["Layer"] = field(default_factory=list)
 
     # Pydantic config
     model_config = ConfigDict(arbitrary_types_allowed=True, populate_by_name=True, extra="allow")
+
+    # Author/creator meta-data
+    author: str = "Unknown"
 
     # --- NEW: property alias for compatibility ---
     @property
@@ -300,7 +299,7 @@ class Project(BaseModel):
         # Ensure the layer object itself exists in self.layers
         # Check if a layer with this name already exists
         existing_layer = None
-        for layer_obj in self.layers:
+        for layer_obj in self.layer_objects:
             if layer_obj.name == layer_name:
                 existing_layer = layer_obj
                 break
@@ -312,7 +311,7 @@ class Project(BaseModel):
             default_line_color, _ = Layer.next_default_colors()
             new_layer = Layer(id=layer_name, name=layer_name, line_color=default_line_color)
             # --- END MODIFIED ---
-            self.layers.append(new_layer) # Append to the list
+            self.layer_objects.append(new_layer)  # Append to list for UI/styling
             logger.info(f"[Project.add_traced_polyline] Created new Layer object: '{layer_name}' with default settings. ID(self): {id(self)}")
         else:
             logger.debug(f"[Project.add_traced_polyline] Layer '{layer_name}' already exists. ID(self): {id(self)}")
@@ -355,7 +354,7 @@ class Project(BaseModel):
 
     def get_layer(self, layer_id: str) -> Optional["Layer"]:
         """Return the Layer with matching id from self.layers."""
-        for lyr in self.layers: # Iterate through the list
+        for lyr in self.layer_objects:
             if getattr(lyr, "id", None) == layer_id: # Check id attribute
                 return lyr
         return None
