@@ -801,6 +801,12 @@ class VisualizationPanel(QWidget):
         """Checks if a PDF background is currently loaded."""
         return self.pdf_renderer is not None
 
+    def get_current_dpi(self) -> Optional[int]:
+        """Returns the DPI of the currently loaded PDF renderer."""
+        if self.pdf_renderer:
+            return self.pdf_renderer.dpi
+        return None
+
     def current_view(self) -> str:
         """Returns the currently visible view mode ("2d" or "3d")."""
         current = self.stacked_widget.currentWidget()

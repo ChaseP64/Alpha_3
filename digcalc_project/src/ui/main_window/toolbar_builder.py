@@ -71,7 +71,7 @@ class ToolbarBuilder:  # noqa: D101 – simple helper
         mw.pdf_page_spinbox = QSpinBox()
         mw.pdf_page_spinbox.setRange(0, 0)
         mw.pdf_page_spinbox.setEnabled(False)
-        mw.pdf_page_spinbox.valueChanged.connect(mw.on_set_pdf_page_from_spinbox)
+        # mw.pdf_page_spinbox.valueChanged.connect(mw.on_set_pdf_page_from_spinbox)
         pdf_tb.addWidget(mw.pdf_page_label)
         pdf_tb.addWidget(mw.pdf_page_spinbox)
         pdf_tb.addAction(mw.next_pdf_page_action)

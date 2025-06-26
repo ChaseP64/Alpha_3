@@ -44,7 +44,7 @@ class ActionHandler:
         if dialog.exec() == QDialog.Accepted:
             params = dialog.get_parameters()
             if params:
-                self.mw.status_bar.show_message(f"Calculating volumes (Grid: {params['grid_resolution']})...")
+                self.mw.status_bar_manager.show_message(f"Calculating volumes (Grid: {params['grid_resolution']})...")
                 calculator = VolumeCalculator(project)
                 try:
                     result = calculator.calculate_grid_method(params)
@@ -55,12 +55,12 @@ class ActionHandler:
         
         if result:
             self.mw._last_volume_calculation_params = params
-            self.mw.status_bar.show_message("Volume calculation initiated...", 2000)
+            self.mw.status_bar_manager.show_message("Volume calculation initiated...", 2000)
             # The on_volume_computed slot will handle showing the report dialog
         else:
             self.mw._last_volume_calculation_params = None
             if dialog.result() == QDialog.Accepted:
-                self.mw.status_bar.show_message("Volume calculation failed.", 5000)
+                self.mw.status_bar_manager.show_message("Volume calculation failed.", 5000)
 
     def build_surface(self) -> None:
         """Handle the 'Build Surface' action."""
@@ -68,23 +68,47 @@ class ActionHandler:
         if not project:
             return
 
-        dialog = BuildSurfaceDialog(list(project.traced_polylines.keys()), self.mw)
-        if dialog.exec():
-            surface_name, source_layer = dialog.get_surface_details()
-            if surface_name and source_layer:
-                try:
-                    polylines = project.traced_polylines.get(source_layer, [])
-                    layer_rev = project.layer_revisions.get(source_layer, 0)
-                    surface = SurfaceBuilder.build_from_polylines(polylines, layer_rev)
-                    surface.name = surface_name
-                    surface.source_layer_name = source_layer
-                    
-                    project.add_surface(surface)
-                    self.mw.status_bar.show_message(f"Surface '{surface_name}' built successfully.", 5000)
+        # Launch dialog with full project context so it can validate layers.
+        dialog = BuildSurfaceDialog(project, self.mw)
+
+        if dialog.exec() == QDialog.Accepted:
+            source_layer = dialog.layer()
+            surface_name = dialog.surface_name()
+
+            if not (source_layer and surface_name):
+                # Dialog should prevent this, but guard defensively.
+                return
+
+            try:
+                polylines = project.traced_polylines.get(source_layer, [])
+                layer_rev = project.layer_revisions.get(source_layer, 0)
+
+                # Build the surface using the current API (layer first).
+                surface = SurfaceBuilder.build_from_polylines(
+                    source_layer,
+                    polylines,
+                    layer_rev,
+                )
+
+                surface.name = surface_name
+                surface.source_layer_name = source_layer
+
+                project.add_surface(surface)
+
+                # Update UI / state
+                self.mw.status_bar_manager.show_message(
+                    f"Surface '{surface_name}' built successfully.",
+                    5000,
+                )
+                self.mw.project_panel._update_tree()
+                self.mw.ui_state.update_analysis_actions_state()
+
+                # Queue visual rebuild so the new surface becomes visible.
+                if hasattr(self.mw, "surface_rebuild_manager"):
                     self.mw.surface_rebuild_manager.queue_layer(source_layer)
-                except SurfaceBuilderError as e:
-                    QMessageBox.warning(self.mw, "Build Surface Error", str(e))
-                    self.mw.status_bar.show_message("Surface build failed.", 5000)
+            except SurfaceBuilderError as e:
+                QMessageBox.warning(self.mw, "Build Surface Error", str(e))
+                self.mw.status_bar_manager.show_message("Surface build failed.", 5000)
 
     def mass_haul(self) -> None:
         """Handle the 'Mass Haul' action."""
@@ -136,7 +160,7 @@ class ActionHandler:
             base_name = Path(dir_path) / default_path
             params = self.mw._last_volume_calculation_params
             
-            self.mw.status_bar.show_message("Exporting report bundle...")
+            self.mw.status_bar_manager.show_message("Exporting report bundle...")
             
             try:
                 # 1. Export CSV
@@ -152,11 +176,11 @@ class ActionHandler:
                 # pdf_report.add_summary_page(params, self.mw._last_dz_cache, cut_fill_map)
                 # pdf_report.save()
 
-                self.mw.status_bar.show_message(f"Report bundle exported to {dir_path}", 5000)
+                self.mw.status_bar_manager.show_message(f"Report bundle exported to {dir_path}", 5000)
             except Exception as e:
                 self.mw.logger.exception("Failed to export report bundle.")
                 QMessageBox.critical(self.mw, "Export Error", f"Failed to export report bundle:\n{e}")
-                self.mw.status_bar.show_message("Export failed.", 5000)
+                self.mw.status_bar_manager.show_message("Export failed.", 5000)
 
     def daylight_offset(self) -> None:
         """Handle the 'Daylight Offset' action."""

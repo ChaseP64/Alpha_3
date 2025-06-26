@@ -14078,3 +14078,835 @@ ValueError: Interpolation requires at least 3 vertices
 2025-06-12 21:11:15,179 - digcalc_project.src.ui.main_window - INFO - Application quitting. Attempting to close PyVista plotter...
 2025-06-12 21:11:15,179 - digcalc_project.src.ui.main_window - INFO - PyVista plotter was not initialized, no cleanup needed.
 2025-06-12 21:11:15,180 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-06-26 10:03:26,814 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 10:03:26,916 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:03:26,916 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:03:26,916 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-26 10:03:26,929 - digcalc_project.src.main - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'action_manager'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 46, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 228, in __init__
+    self._create_menus()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 340, in _create_menus
+    self.menus = MenuBuilder(self)
+                 ^^^^^^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\menu_builder.py", line 32, in __init__
+    self.build()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\menu_builder.py", line 106, in build
+    mw.strata_settings_action = mw.action_manager.strata_settings_action  # ensure exists
+                                ^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'action_manager'
+2025-06-26 10:14:08,625 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 10:14:08,666 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:14:08,666 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:14:08,667 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-26 10:14:08,668 - digcalc_project.src.main - ERROR - Fatal error in main application: 'ActionManager' object has no attribute 'docs_action'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 46, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 228, in __init__
+    self._create_menus()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 340, in _create_menus
+    self.menus = MenuBuilder(self)
+                 ^^^^^^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\menu_builder.py", line 32, in __init__
+    self.build()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\menu_builder.py", line 150, in build
+    help_menu.addAction(mw.action_manager.docs_action)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ActionManager' object has no attribute 'docs_action'
+2025-06-26 10:15:01,568 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 10:15:01,610 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:15:01,610 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:15:01,610 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-26 10:15:01,624 - digcalc_project.src.main - ERROR - Fatal error in main application: 'ActionManager' object has no attribute 'report_issue_action'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 46, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 228, in __init__
+    self._create_menus()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 340, in _create_menus
+    self.menus = MenuBuilder(self)
+                 ^^^^^^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\menu_builder.py", line 32, in __init__
+    self.build()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\menu_builder.py", line 151, in build
+    help_menu.addAction(mw.action_manager.report_issue_action)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ActionManager' object has no attribute 'report_issue_action'
+2025-06-26 10:16:04,549 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 10:16:04,593 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:16:04,594 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:16:04,594 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-26 10:16:04,599 - digcalc_project.src.main - ERROR - Fatal error in main application: 'ActionManager' object has no attribute 'check_updates_action'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 46, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 228, in __init__
+    self._create_menus()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 340, in _create_menus
+    self.menus = MenuBuilder(self)
+                 ^^^^^^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\menu_builder.py", line 32, in __init__
+    self.build()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\menu_builder.py", line 153, in build
+    help_menu.addAction(mw.action_manager.check_updates_action)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ActionManager' object has no attribute 'check_updates_action'
+2025-06-26 10:16:51,318 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 10:16:51,364 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:16:51,365 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:16:51,365 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-26 10:16:51,371 - digcalc_project.src.main - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'on_set_pdf_page_from_spinbox'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 46, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 229, in __init__
+    self._create_toolbars()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 346, in _create_toolbars
+    self.toolbars = ToolbarBuilder(self)
+                    ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\toolbar_builder.py", line 24, in __init__
+    self._build()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\toolbar_builder.py", line 74, in _build
+    mw.pdf_page_spinbox.valueChanged.connect(mw.on_set_pdf_page_from_spinbox)
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'on_set_pdf_page_from_spinbox'
+2025-06-26 10:17:58,853 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 10:17:58,892 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:17:58,893 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:17:58,893 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-26 10:17:58,900 - digcalc_project.src.main - ERROR - Fatal error in main application: 'MainWindow' object has no attribute '_on_visualization_failed'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 46, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 235, in __init__
+    self._connect_signals()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 325, in _connect_signals
+    self._signals = SignalBinder(self)
+                    ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\signal_binder.py", line 16, in __init__
+    self._bind()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\signal_binder.py", line 37, in _bind
+    mw.visualization_panel.surface_visualization_failed.connect(mw._on_visualization_failed)
+                                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute '_on_visualization_failed'
+2025-06-26 10:18:52,299 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 10:18:52,334 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:18:52,334 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:18:52,334 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-26 10:18:52,334 - digcalc_project.src.main - ERROR - Fatal error in main application: 'MainWindow' object has no attribute '_fit_view_to_scene'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 46, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 235, in __init__
+    self._connect_signals()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 325, in _connect_signals
+    self._signals = SignalBinder(self)
+                    ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\signal_binder.py", line 16, in __init__
+    self._bind()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\signal_binder.py", line 45, in _bind
+    scene2d.pageRectChanged.connect(mw._fit_view_to_scene)
+                                    ^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute '_fit_view_to_scene'
+2025-06-26 10:21:20,041 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 10:21:20,082 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:21:20,083 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:21:20,083 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-26 10:21:20,090 - digcalc_project.src.main - ERROR - Fatal error in main application: 'MainWindow' object has no attribute '_on_layer_visibility_changed'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 46, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 235, in __init__
+    self._connect_signals()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 325, in _connect_signals
+    self._signals = SignalBinder(self)
+                    ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\signal_binder.py", line 16, in __init__
+    self._bind()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\signal_binder.py", line 52, in _bind
+    mw.layer_tree.itemChanged.connect(mw._on_layer_visibility_changed)
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute '_on_layer_visibility_changed'
+2025-06-26 10:22:58,739 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 10:22:58,778 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:22:58,779 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:22:58,779 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-26 10:22:58,785 - digcalc_project.src.main - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'on_toggle_tracing_mode'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 46, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 235, in __init__
+    self._connect_signals()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 325, in _connect_signals
+    self._signals = SignalBinder(self)
+                    ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\signal_binder.py", line 16, in __init__
+    self._bind()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\signal_binder.py", line 70, in _bind
+    mw.toggle_trace_mode_action.toggled.connect(mw.on_toggle_tracing_mode)
+                                                ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'on_toggle_tracing_mode'
+2025-06-26 10:23:51,698 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 10:23:51,734 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:23:51,736 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:23:51,736 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-26 10:23:51,742 - digcalc_project.src.main - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'action_handler'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 46, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 235, in __init__
+    self._connect_signals()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 325, in _connect_signals
+    self._signals = SignalBinder(self)
+                    ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\signal_binder.py", line 16, in __init__
+    self._bind()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\signal_binder.py", line 73, in _bind
+    ah = mw.action_handler
+         ^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'action_handler'
+2025-06-26 10:25:03,049 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 10:25:03,068 - digcalc_project.src.main - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'project_controller'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 46, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 168, in __init__
+    self.action_handler = ActionHandler(self)
+                          ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\action_handler.py", line 30, in __init__
+    self.project_controller = mw.project_controller
+                              ^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'project_controller'
+2025-06-26 10:27:00,773 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 10:27:00,815 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:27:00,816 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:27:00,816 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-26 10:27:00,823 - digcalc_project.src.main - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'on_about'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 46, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 240, in __init__
+    self._connect_signals()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 330, in _connect_signals
+    self._signals = SignalBinder(self)
+                    ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\signal_binder.py", line 16, in __init__
+    self._bind()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\signal_binder.py", line 81, in _bind
+    mw.about_action.triggered.connect(mw.on_about)
+                                      ^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'on_about'
+2025-06-26 10:27:03,276 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 10:27:03,314 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:27:03,315 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:27:03,315 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-26 10:27:03,321 - digcalc_project.src.main - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'on_about'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 46, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 240, in __init__
+    self._connect_signals()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 330, in _connect_signals
+    self._signals = SignalBinder(self)
+                    ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\signal_binder.py", line 16, in __init__
+    self._bind()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\signal_binder.py", line 81, in _bind
+    mw.about_action.triggered.connect(mw.on_about)
+                                      ^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'on_about'
+2025-06-26 10:28:36,549 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 10:28:36,589 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:28:36,590 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:28:36,591 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-26 10:28:36,597 - digcalc_project.src.main - ERROR - Fatal error in main application: 'MainWindow' object has no attribute 'on_about'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 46, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 251, in __init__
+    self._connect_signals()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 341, in _connect_signals
+    self._signals = SignalBinder(self)
+                    ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\signal_binder.py", line 16, in __init__
+    self._bind()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\signal_binder.py", line 81, in _bind
+    mw.about_action.triggered.connect(mw.on_about)
+                                      ^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'on_about'
+2025-06-26 10:30:09,872 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 10:30:09,911 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:30:09,912 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 10:30:09,912 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-26 10:30:30,382 - digcalc_project.src.ui.main_window.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 10:30:30,382 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-26 10:30:30,382 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-26 10:30:30,382 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 10:30:30,387 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-26 10:30:30,387 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-26 10:30:33,883 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-26 10:30:33,894 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-26 10:30:34,354 - digcalc_project.src.ui.pv_plotter_singleton - INFO - Real BackgroundPlotter configured and returning.
+2025-06-26 10:30:34,354 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-26 10:30:34,354 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-26 10:30:34,355 - digcalc_project.src.ui.main_window.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-06-26 10:30:34,355 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] Called with project: Untitled Project
+2025-06-26 10:30:34,355 - digcalc_project.src.ui.main_window.main_window - ERROR - Failed to load PDF background: 'MainWindow' object has no attribute '_update_layer_tree'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\pdf_event_handler.py", line 110, in on_load_pdf_background
+    self._mw.ui_state.update_ui_for_project(project)
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\ui_state_manager.py", line 145, in update_ui_for_project
+    self._mw._update_layer_tree()
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute '_update_layer_tree'
+2025-06-26 10:30:36,619 - digcalc_project.src.ui.main_window.main_window - WARNING - Failed to refresh scale pill in update_pdf_controls: 'MainWindow' object has no attribute 'status_bar'
+2025-06-26 10:30:40,076 - digcalc_project.src.ui.visualization_panel - INFO - Setting tracing mode to: Enabled
+2025-06-26 10:30:40,270 - digcalc_project.src.ui.visualization_panel - INFO - Tracing enabled with valid project scale.
+2025-06-26 10:31:03,060 - digcalc_project.src.ui.main_window.main_window - WARNING - No pixmap available for scale calibration preview.
+2025-06-26 10:31:21,328 - digcalc_project.src.ui.main_window.main_window - INFO - Scale calibration cancelled by user.
+2025-06-26 10:31:24,835 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-06-26 11:22:51,696 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 11:22:51,818 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 11:22:51,819 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 11:22:51,820 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-26 11:22:55,621 - digcalc_project.src.ui.main_window.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 11:22:55,622 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-26 11:22:55,622 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-26 11:22:55,622 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 11:22:55,624 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-26 11:22:55,624 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-26 11:22:59,092 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-26 11:22:59,103 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-26 11:22:59,710 - digcalc_project.src.ui.pv_plotter_singleton - INFO - Real BackgroundPlotter configured and returning.
+2025-06-26 11:22:59,710 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-26 11:22:59,711 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-26 11:22:59,711 - digcalc_project.src.ui.main_window.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-06-26 11:22:59,711 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] Called with project: Untitled Project
+2025-06-26 11:22:59,721 - digcalc_project.src.ui.main_window.main_window - ERROR - Failed to load PDF background: 'MainWindow' object has no attribute '_clear_cutfill_state'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\pdf_event_handler.py", line 110, in on_load_pdf_background
+    self._mw.ui_state.update_ui_for_project(project)
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\ui_state_manager.py", line 158, in update_ui_for_project
+    self._mw._clear_cutfill_state()
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute '_clear_cutfill_state'
+2025-06-26 11:23:05,199 - digcalc_project.src.ui.main_window.main_window - WARNING - No pixmap available for scale calibration preview.
+2025-06-26 11:23:29,287 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-06-26 11:23:29,288 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-06-26 11:23:29,291 - digcalc_project.src.ui.main_window.main_window - INFO - Scale calibration successful. New scale: input_method='two_point' world_units='ft' world_per_paper_in=6.311651301930562 ratio_numer=None ratio_denom=None render_dpi_at_cal=96.0 calibrated_at=datetime.datetime(2025, 6, 26, 16, 23, 29, 287051) render_dpi_at_cal=96.0
+2025-06-26 11:23:31,576 - digcalc_project.src.ui.main_window.main_window - INFO - Application is about to quit. Cleaning up resources.
+2025-06-26 11:23:31,577 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-06-26 11:29:59,738 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 11:29:59,781 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 11:29:59,782 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 11:29:59,782 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-26 11:30:14,870 - digcalc_project.src.ui.main_window.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 11:30:14,871 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-26 11:30:14,871 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-26 11:30:14,871 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 11:30:14,873 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-26 11:30:14,873 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-26 11:30:18,310 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-26 11:30:18,321 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-26 11:30:18,692 - digcalc_project.src.ui.pv_plotter_singleton - INFO - Real BackgroundPlotter configured and returning.
+2025-06-26 11:30:18,692 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-26 11:30:18,692 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-26 11:30:18,693 - digcalc_project.src.ui.main_window.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-06-26 11:30:18,693 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] Called with project: Untitled Project
+2025-06-26 11:30:18,695 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] About to call self._mw.visualization_panel.set_project with: Untitled Project
+2025-06-26 11:30:18,695 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-06-26 11:30:18,695 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-06-26 11:30:18,695 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 11:30:18,770 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-26 11:30:18,771 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-26 11:30:18,771 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-26 11:30:18,771 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 11:30:18,772 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-26 11:30:18,773 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-26 11:30:22,234 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-26 11:30:22,245 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-26 11:30:22,290 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-26 11:31:33,403 - digcalc_project.src.ui.main_window.main_window - WARNING - No pixmap available for scale calibration preview.
+2025-06-26 11:31:37,756 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-06-26 11:31:37,757 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-06-26 11:31:37,762 - digcalc_project.src.ui.main_window.main_window - INFO - Scale calibration successful. New scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 6, 26, 16, 31, 37, 755384)
+2025-06-26 11:31:41,013 - digcalc_project.src.ui.main_window.main_window - INFO - Application is about to quit. Cleaning up resources.
+2025-06-26 11:31:41,013 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-06-26 11:44:48,123 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 11:44:48,167 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 11:44:48,168 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 11:44:48,168 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-26 11:44:58,693 - digcalc_project.src.ui.main_window.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 11:44:58,693 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-26 11:44:58,693 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-26 11:44:58,693 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 11:44:58,695 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-26 11:44:58,695 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-26 11:45:02,155 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-26 11:45:02,167 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-26 11:45:02,525 - digcalc_project.src.ui.pv_plotter_singleton - INFO - Real BackgroundPlotter configured and returning.
+2025-06-26 11:45:02,525 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-26 11:45:02,525 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-26 11:45:02,525 - digcalc_project.src.ui.main_window.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-06-26 11:45:02,525 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] Called with project: Untitled Project
+2025-06-26 11:45:02,528 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] About to call self._mw.visualization_panel.set_project with: Untitled Project
+2025-06-26 11:45:02,528 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-06-26 11:45:02,528 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-06-26 11:45:02,528 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 11:45:02,662 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-26 11:45:02,663 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-26 11:45:02,663 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-26 11:45:02,663 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 11:45:02,667 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-26 11:45:02,667 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-26 11:45:06,102 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-26 11:45:06,113 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-26 11:45:06,158 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-26 11:45:11,400 - digcalc_project.src.ui.main_window.main_window - WARNING - No pixmap available for scale calibration preview.
+2025-06-26 11:45:13,530 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-06-26 11:45:13,531 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-06-26 11:45:13,536 - digcalc_project.src.ui.main_window.main_window - INFO - Scale calibration successful. New scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 6, 26, 16, 45, 13, 530662)
+2025-06-26 11:45:16,681 - digcalc_project.src.ui.main_window.main_window - INFO - Application is about to quit. Cleaning up resources.
+2025-06-26 11:45:16,681 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-06-26 11:49:37,762 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 11:49:37,802 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 11:49:37,803 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 11:49:37,803 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-26 11:49:40,796 - digcalc_project.src.ui.main_window.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 11:49:40,796 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-26 11:49:40,796 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-26 11:49:40,796 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 11:49:40,798 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-26 11:49:40,799 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-26 11:49:44,267 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-26 11:49:44,278 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-26 11:49:44,670 - digcalc_project.src.ui.pv_plotter_singleton - INFO - Real BackgroundPlotter configured and returning.
+2025-06-26 11:49:44,670 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-26 11:49:44,670 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-26 11:49:44,670 - digcalc_project.src.ui.main_window.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-06-26 11:49:44,671 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] Called with project: Untitled Project
+2025-06-26 11:49:44,673 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] About to call self._mw.visualization_panel.set_project with: Untitled Project
+2025-06-26 11:49:44,673 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-06-26 11:49:44,673 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-06-26 11:49:44,673 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 11:49:44,748 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-26 11:49:44,749 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-26 11:49:44,749 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-26 11:49:44,749 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 11:49:44,751 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-26 11:49:44,751 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-26 11:49:48,201 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-26 11:49:48,211 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-26 11:49:48,256 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-26 11:50:12,986 - digcalc_project.src.ui.main_window.main_window - WARNING - No pixmap available for scale calibration preview.
+2025-06-26 11:50:15,419 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-06-26 11:50:15,420 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-06-26 11:50:15,424 - digcalc_project.src.ui.main_window.main_window - INFO - Scale calibration successful. New scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 6, 26, 16, 50, 15, 419228)
+2025-06-26 11:50:19,581 - digcalc_project.src.ui.main_window.main_window - INFO - Application is about to quit. Cleaning up resources.
+2025-06-26 11:50:19,582 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-06-26 11:51:54,349 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 11:51:54,390 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 11:51:54,390 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 11:51:54,392 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-26 11:51:58,651 - digcalc_project.src.ui.main_window.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 11:51:58,652 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-26 11:51:58,652 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-26 11:51:58,652 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 11:51:58,654 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-26 11:51:58,654 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-26 11:52:02,074 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-26 11:52:02,090 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-26 11:52:02,447 - digcalc_project.src.ui.pv_plotter_singleton - INFO - Real BackgroundPlotter configured and returning.
+2025-06-26 11:52:02,447 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-26 11:52:02,447 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-26 11:52:02,447 - digcalc_project.src.ui.main_window.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-06-26 11:52:02,447 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] Called with project: Untitled Project
+2025-06-26 11:52:02,447 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] About to call self._mw.visualization_panel.set_project with: Untitled Project
+2025-06-26 11:52:02,447 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-06-26 11:52:02,447 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-06-26 11:52:02,447 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 11:52:02,529 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-26 11:52:02,529 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-26 11:52:02,529 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-26 11:52:02,529 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 11:52:02,531 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-26 11:52:02,531 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-26 11:52:06,010 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-26 11:52:06,031 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-26 11:52:06,074 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-26 11:52:08,608 - digcalc_project.src.ui.main_window.main_window - WARNING - No pixmap available for scale calibration preview.
+2025-06-26 11:52:11,704 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-06-26 11:52:11,704 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-06-26 11:52:11,716 - digcalc_project.src.ui.main_window.main_window - INFO - Scale calibration successful. New scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 6, 26, 16, 52, 11, 704704)
+2025-06-26 11:52:15,221 - digcalc_project.src.ui.main_window.main_window - INFO - Application is about to quit. Cleaning up resources.
+2025-06-26 11:52:15,222 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-06-26 12:04:23,311 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 12:04:23,352 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 12:04:23,353 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 12:04:23,353 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-26 12:04:27,241 - digcalc_project.src.ui.main_window.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 12:04:27,243 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-26 12:04:27,243 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-26 12:04:27,243 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 12:04:27,245 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-26 12:04:27,245 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-26 12:04:30,679 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-26 12:04:30,679 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-26 12:04:31,067 - digcalc_project.src.ui.pv_plotter_singleton - INFO - Real BackgroundPlotter configured and returning.
+2025-06-26 12:04:31,067 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-26 12:04:31,067 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-26 12:04:31,067 - digcalc_project.src.ui.main_window.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-06-26 12:04:31,067 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] Called with project: Untitled Project
+2025-06-26 12:04:31,068 - digcalc_project.src.ui.main_window.main_window - ERROR - Failed to load PDF background: 'Project' object has no attribute 'calculations'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\pdf_event_handler.py", line 110, in on_load_pdf_background
+    self._mw.ui_state.update_ui_for_project(project)
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\ui_state_manager.py", line 150, in update_ui_for_project
+    if hasattr(self._mw, "project_panel"): self._mw.project_panel.set_project(project)
+                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\project_panel.py", line 106, in set_project
+    self._update_tree()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\project_panel.py", line 159, in _update_tree
+    if self.project.calculations:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\pydantic\main.py", line 994, in __getattr__
+    raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}')
+AttributeError: 'Project' object has no attribute 'calculations'
+2025-06-26 12:04:57,470 - digcalc_project.src.ui.main_window.main_window - INFO - Application is about to quit. Cleaning up resources.
+2025-06-26 12:04:57,470 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-06-26 12:11:55,419 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 12:11:55,459 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 12:11:55,460 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 12:11:55,460 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-26 12:12:06,958 - digcalc_project.src.ui.main_window.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 12:12:06,958 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-26 12:12:06,958 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-26 12:12:06,958 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 12:12:06,973 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-26 12:12:06,973 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-26 12:12:10,407 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-26 12:12:10,430 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-26 12:12:10,796 - digcalc_project.src.ui.pv_plotter_singleton - INFO - Real BackgroundPlotter configured and returning.
+2025-06-26 12:12:10,796 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-26 12:12:10,796 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-26 12:12:10,796 - digcalc_project.src.ui.main_window.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-06-26 12:12:10,796 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] Called with project: Untitled Project
+2025-06-26 12:12:10,803 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] About to call self._mw.visualization_panel.set_project with: Untitled Project
+2025-06-26 12:12:10,803 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-06-26 12:12:10,803 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-06-26 12:12:10,803 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 12:12:10,878 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-26 12:12:10,878 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-26 12:12:10,878 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-26 12:12:10,878 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 12:12:10,880 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-26 12:12:10,880 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-26 12:12:14,379 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-26 12:12:14,379 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-26 12:12:14,434 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-26 12:12:16,520 - digcalc_project.src.ui.main_window.main_window - WARNING - No pixmap available for scale calibration preview.
+2025-06-26 12:12:22,299 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-06-26 12:12:22,299 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-06-26 12:12:22,307 - digcalc_project.src.ui.main_window.main_window - INFO - Scale calibration successful. New scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 6, 26, 17, 12, 22, 299469)
+2025-06-26 12:12:29,513 - digcalc_project.src.ui.main_window.main_window - INFO - Application is about to quit. Cleaning up resources.
+2025-06-26 12:12:29,514 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-06-26 12:16:08,156 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 12:16:08,205 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 12:16:08,206 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 12:16:08,206 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-26 12:16:13,490 - digcalc_project.src.ui.main_window.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 12:16:13,490 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-26 12:16:13,490 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-26 12:16:13,490 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 12:16:13,490 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-26 12:16:13,490 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-26 12:16:16,982 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-26 12:16:16,993 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-26 12:16:17,347 - digcalc_project.src.ui.pv_plotter_singleton - INFO - Real BackgroundPlotter configured and returning.
+2025-06-26 12:16:17,348 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-26 12:16:17,348 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-26 12:16:17,348 - digcalc_project.src.ui.main_window.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-06-26 12:16:17,348 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] Called with project: Untitled Project
+2025-06-26 12:16:17,350 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] About to call self._mw.visualization_panel.set_project with: Untitled Project
+2025-06-26 12:16:17,350 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-06-26 12:16:17,351 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-06-26 12:16:17,351 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 12:16:17,426 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-26 12:16:17,426 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-26 12:16:17,427 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-26 12:16:17,427 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 12:16:17,428 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-26 12:16:17,428 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-26 12:16:20,918 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-26 12:16:20,929 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-26 12:16:20,973 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-26 12:16:26,527 - digcalc_project.src.ui.main_window.main_window - WARNING - No pixmap available for scale calibration preview.
+2025-06-26 12:16:55,238 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-06-26 12:16:55,239 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-06-26 12:16:55,243 - digcalc_project.src.ui.main_window.main_window - INFO - Scale calibration successful. New scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 6, 26, 17, 16, 55, 237702)
+2025-06-26 12:17:02,865 - digcalc_project.src.ui.visualization_panel - INFO - Setting tracing mode to: Enabled
+2025-06-26 12:17:02,865 - digcalc_project.src.ui.visualization_panel - INFO - Tracing enabled with valid project scale.
+2025-06-26 12:17:05,398 - digcalc_project.src.ui.tracing_scene - WARNING -       [TracingScene._get_layer_color] Layer with id 'Existing Surface' NOT FOUND in project (Project ID: 2016793094144). Available layer IDs: []
+2025-06-26 12:17:07,931 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 3 points on layer 'Existing Surface'.
+2025-06-26 12:17:07,932 - digcalc_project.src.ui.main_window.polyline_interaction_handler - ERROR - Finalized polyline item is missing layer data! Assigning to 'Default'.
+2025-06-26 12:17:07,932 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Default' (Index: 0, Points: 3, Elev: Uniform Z: 100.0 (all points at this Z), New Rev: 1, Strata: False).
+2025-06-26 12:17:07,933 - digcalc_project.src.models.project - INFO - [Project.add_traced_polyline] Created new Layer object: 'Default' with default settings. ID(self): 2016793094144
+2025-06-26 12:17:12,267 - digcalc_project.src.ui.tracing_scene - WARNING -       [TracingScene._get_layer_color] Layer with id 'Existing Surface' NOT FOUND in project (Project ID: 2016793094144). Available layer IDs: ['Default']
+2025-06-26 12:17:14,365 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Existing Surface'.
+2025-06-26 12:17:14,365 - digcalc_project.src.ui.main_window.polyline_interaction_handler - ERROR - Finalized polyline item is missing layer data! Assigning to 'Default'.
+2025-06-26 12:17:14,365 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Default' (Index: 1, Points: 6, Elev: Uniform Z: 50.0 (all points at this Z), New Rev: 2, Strata: False).
+2025-06-26 12:17:17,768 - digcalc_project.src.ui.tracing_scene - WARNING -       [TracingScene._get_layer_color] Layer with id 'Existing Surface' NOT FOUND in project (Project ID: 2016793094144). Available layer IDs: ['Default']
+2025-06-26 12:17:19,098 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Existing Surface'.
+2025-06-26 12:17:19,098 - digcalc_project.src.ui.main_window.polyline_interaction_handler - ERROR - Finalized polyline item is missing layer data! Assigning to 'Default'.
+2025-06-26 12:17:19,098 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Default' (Index: 2, Points: 6, Elev: Uniform Z: 0.0 (all points at this Z), New Rev: 3, Strata: False).
+2025-06-26 12:17:46,977 - digcalc_project.src.ui.main_window.main_window - INFO - Application is about to quit. Cleaning up resources.
+2025-06-26 12:17:46,977 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-06-26 12:21:15,824 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 12:21:15,874 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 12:21:15,874 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 12:21:15,874 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-26 12:21:18,703 - digcalc_project.src.ui.main_window.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 12:21:18,703 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-26 12:21:18,703 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-26 12:21:18,703 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 12:21:18,719 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-26 12:21:18,719 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-26 12:21:22,147 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-26 12:21:22,158 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-26 12:21:22,552 - digcalc_project.src.ui.pv_plotter_singleton - INFO - Real BackgroundPlotter configured and returning.
+2025-06-26 12:21:22,553 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-26 12:21:22,553 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-26 12:21:22,553 - digcalc_project.src.ui.main_window.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-06-26 12:21:22,553 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] Called with project: Untitled Project
+2025-06-26 12:21:22,555 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] About to call self._mw.visualization_panel.set_project with: Untitled Project
+2025-06-26 12:21:22,556 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-06-26 12:21:22,556 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-06-26 12:21:22,556 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 12:21:22,629 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-26 12:21:22,630 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-26 12:21:22,630 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-26 12:21:22,630 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 12:21:22,632 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-26 12:21:22,632 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-26 12:21:26,075 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-26 12:21:26,090 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-26 12:21:26,143 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-26 12:21:28,899 - digcalc_project.src.ui.visualization_panel - INFO - Setting tracing mode to: Enabled
+2025-06-26 12:21:29,101 - digcalc_project.src.ui.visualization_panel - WARNING - Tracing enabled, but project scale is not set or invalid.
+2025-06-26 12:21:35,577 - digcalc_project.src.ui.visualization_panel - INFO - Setting tracing mode to: Disabled
+2025-06-26 12:21:36,841 - digcalc_project.src.ui.main_window.main_window - WARNING - No pixmap available for scale calibration preview.
+2025-06-26 12:21:38,770 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-06-26 12:21:38,770 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-06-26 12:21:38,786 - digcalc_project.src.ui.main_window.main_window - INFO - Scale calibration successful. New scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 6, 26, 17, 21, 38, 770876)
+2025-06-26 12:21:41,660 - digcalc_project.src.ui.visualization_panel - INFO - Setting tracing mode to: Enabled
+2025-06-26 12:21:41,660 - digcalc_project.src.ui.visualization_panel - INFO - Tracing enabled with valid project scale.
+2025-06-26 12:21:43,517 - digcalc_project.src.ui.tracing_scene - WARNING -       [TracingScene._get_layer_color] Layer with id 'Existing Surface' NOT FOUND in project (Project ID: 1879184159792). Available layer IDs: []
+2025-06-26 12:21:46,227 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 5 points on layer 'Existing Surface'.
+2025-06-26 12:21:46,227 - digcalc_project.src.ui.main_window.polyline_interaction_handler - ERROR - Finalized polyline item is missing layer data! Assigning to 'Default'.
+2025-06-26 12:21:46,227 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Default' (Index: 0, Points: 5, Elev: Uniform Z: 50.0 (all points at this Z), New Rev: 1, Strata: False).
+2025-06-26 12:21:46,227 - digcalc_project.src.models.project - INFO - [Project.add_traced_polyline] Created new Layer object: 'Default' with default settings. ID(self): 1879184159792
+2025-06-26 12:21:49,351 - digcalc_project.src.ui.tracing_scene - WARNING -       [TracingScene._get_layer_color] Layer with id 'Existing Surface' NOT FOUND in project (Project ID: 1879184159792). Available layer IDs: ['Default']
+2025-06-26 12:21:51,068 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Existing Surface'.
+2025-06-26 12:21:51,068 - digcalc_project.src.ui.main_window.polyline_interaction_handler - ERROR - Finalized polyline item is missing layer data! Assigning to 'Default'.
+2025-06-26 12:21:51,068 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Default' (Index: 1, Points: 6, Elev: Uniform Z: 25.0 (all points at this Z), New Rev: 2, Strata: False).
+2025-06-26 12:21:53,900 - digcalc_project.src.ui.tracing_scene - WARNING -       [TracingScene._get_layer_color] Layer with id 'Existing Surface' NOT FOUND in project (Project ID: 1879184159792). Available layer IDs: ['Default']
+2025-06-26 12:21:55,528 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 11 points on layer 'Existing Surface'.
+2025-06-26 12:21:55,528 - digcalc_project.src.ui.main_window.polyline_interaction_handler - ERROR - Finalized polyline item is missing layer data! Assigning to 'Default'.
+2025-06-26 12:21:55,528 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Default' (Index: 2, Points: 11, Elev: Uniform Z: 0.0 (all points at this Z), New Rev: 3, Strata: False).
+2025-06-26 12:21:58,406 - digcalc_project.src.ui.dialogs.build_surface_dialog - ERROR - Incorrect type passed for project: expected <class 'digcalc_project.src.models.project.Project'>, got <class 'list'>
+2025-06-26 12:22:03,535 - digcalc_project.src.ui.main_window.main_window - INFO - Application is about to quit. Cleaning up resources.
+2025-06-26 12:22:03,536 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-06-26 13:04:12,099 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 13:04:12,152 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 13:04:12,153 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 13:04:12,153 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-26 13:04:16,148 - digcalc_project.src.ui.main_window.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 13:04:16,148 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-26 13:04:16,148 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-26 13:04:16,149 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 13:04:16,151 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-26 13:04:16,151 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-26 13:04:19,585 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-26 13:04:19,601 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-26 13:04:19,971 - digcalc_project.src.ui.pv_plotter_singleton - INFO - Real BackgroundPlotter configured and returning.
+2025-06-26 13:04:19,971 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-26 13:04:19,971 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-26 13:04:19,971 - digcalc_project.src.ui.main_window.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-06-26 13:04:19,971 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] Called with project: Untitled Project
+2025-06-26 13:04:19,971 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] About to call self._mw.visualization_panel.set_project with: Untitled Project
+2025-06-26 13:04:19,971 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-06-26 13:04:19,971 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-06-26 13:04:19,971 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 13:04:20,055 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-26 13:04:20,056 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-26 13:04:20,056 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-26 13:04:20,056 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 13:04:20,058 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-26 13:04:20,058 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-26 13:04:23,472 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-26 13:04:23,487 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-26 13:04:23,526 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-26 13:04:25,586 - digcalc_project.src.ui.main_window.main_window - WARNING - No pixmap available for scale calibration preview.
+2025-06-26 13:04:27,796 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-06-26 13:04:27,796 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-06-26 13:04:27,812 - digcalc_project.src.ui.main_window.main_window - INFO - Scale calibration successful. New scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 6, 26, 18, 4, 27, 796834)
+2025-06-26 13:04:32,987 - digcalc_project.src.ui.visualization_panel - INFO - Setting tracing mode to: Enabled
+2025-06-26 13:04:32,987 - digcalc_project.src.ui.visualization_panel - INFO - Tracing enabled with valid project scale.
+2025-06-26 13:04:35,046 - digcalc_project.src.ui.tracing_scene - WARNING -       [TracingScene._get_layer_color] Layer with id 'Existing Surface' NOT FOUND in project (Project ID: 1928572728928). Available layer IDs: []
+2025-06-26 13:04:41,453 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 6 points on layer 'Existing Surface'.
+2025-06-26 13:04:41,453 - digcalc_project.src.ui.main_window.polyline_interaction_handler - ERROR - Finalized polyline item is missing layer data! Assigning to 'Default'.
+2025-06-26 13:04:41,453 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Default' (Index: 0, Points: 6, Elev: Uniform Z: 10.0 (all points at this Z), New Rev: 1, Strata: False).
+2025-06-26 13:04:41,453 - digcalc_project.src.models.project - INFO - [Project.add_traced_polyline] Created new Layer object: 'Default' with default settings. ID(self): 1928572728928
+2025-06-26 13:04:44,617 - digcalc_project.src.ui.tracing_scene - WARNING -       [TracingScene._get_layer_color] Layer with id 'Existing Surface' NOT FOUND in project (Project ID: 1928572728928). Available layer IDs: ['Default']
+2025-06-26 13:04:46,682 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 9 points on layer 'Existing Surface'.
+2025-06-26 13:04:46,682 - digcalc_project.src.ui.main_window.polyline_interaction_handler - ERROR - Finalized polyline item is missing layer data! Assigning to 'Default'.
+2025-06-26 13:04:46,682 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Default' (Index: 1, Points: 9, Elev: Uniform Z: 5.0 (all points at this Z), New Rev: 2, Strata: False).
+2025-06-26 13:04:49,951 - digcalc_project.src.ui.tracing_scene - WARNING -       [TracingScene._get_layer_color] Layer with id 'Existing Surface' NOT FOUND in project (Project ID: 1928572728928). Available layer IDs: ['Default']
+2025-06-26 13:04:51,350 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 10 points on layer 'Existing Surface'.
+2025-06-26 13:04:51,350 - digcalc_project.src.ui.main_window.polyline_interaction_handler - ERROR - Finalized polyline item is missing layer data! Assigning to 'Default'.
+2025-06-26 13:04:51,350 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Default' (Index: 2, Points: 10, Elev: Uniform Z: 0.0 (all points at this Z), New Rev: 3, Strata: False).
+2025-06-26 13:04:57,094 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Default' (3 polylines).
+2025-06-26 13:04:57,094 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 25 unique 3D points with elevation from layer 'Default'.
+2025-06-26 13:04:57,097 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Default_Surface'...
+2025-06-26 13:04:57,097 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Default_Surface' from layer 'Default' (Rev: 3).
+2025-06-26 13:04:57,097 - digcalc_project.src.models.project - INFO - Surface 'Default_Surface' added to project
+2025-06-26 13:04:57,360 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Default' (3 polylines).
+2025-06-26 13:04:57,361 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 25 unique 3D points with elevation from layer 'Default'.
+2025-06-26 13:04:57,363 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Default_Surface'...
+2025-06-26 13:04:57,364 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Default_Surface' from layer 'Default' (Rev: 3).
+2025-06-26 13:04:57,364 - digcalc_project.src.ui.project_controller - INFO - Rebuilt 1 surface(s) for layers: {'Default'}
+2025-06-26 13:05:13,160 - digcalc_project.src.ui.main_window.main_window - INFO - Application is about to quit. Cleaning up resources.
+2025-06-26 13:05:13,160 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-06-26 13:10:15,315 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 13:10:15,363 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 13:10:15,364 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 13:10:15,364 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-26 13:10:22,201 - digcalc_project.src.ui.main_window.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 13:10:22,201 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-26 13:10:22,201 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-26 13:10:22,201 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 13:10:22,201 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-26 13:10:22,201 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-26 13:10:25,669 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-26 13:10:25,669 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-26 13:10:26,057 - digcalc_project.src.ui.pv_plotter_singleton - INFO - Real BackgroundPlotter configured and returning.
+2025-06-26 13:10:26,057 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-26 13:10:26,057 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-26 13:10:26,057 - digcalc_project.src.ui.main_window.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-06-26 13:10:26,057 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] Called with project: Untitled Project
+2025-06-26 13:10:26,057 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] About to call self._mw.visualization_panel.set_project with: Untitled Project
+2025-06-26 13:10:26,057 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-06-26 13:10:26,057 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-06-26 13:10:26,057 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 13:10:26,143 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-26 13:10:26,144 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-26 13:10:26,144 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-26 13:10:26,144 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 13:10:26,146 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-26 13:10:26,146 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-26 13:10:29,620 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-26 13:10:29,620 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-26 13:10:29,710 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-26 13:10:32,526 - digcalc_project.src.ui.main_window.main_window - WARNING - No pixmap available for scale calibration preview.
+2025-06-26 13:10:34,620 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-06-26 13:10:34,636 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-06-26 13:10:34,640 - digcalc_project.src.ui.main_window.main_window - INFO - Scale calibration successful. New scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 6, 26, 18, 10, 34, 620825)
+2025-06-26 13:10:36,557 - digcalc_project.src.ui.visualization_panel - INFO - Setting tracing mode to: Enabled
+2025-06-26 13:10:36,557 - digcalc_project.src.ui.visualization_panel - INFO - Tracing enabled with valid project scale.
+2025-06-26 13:10:38,834 - digcalc_project.src.ui.tracing_scene - WARNING -       [TracingScene._get_layer_color] Layer with id 'Existing Surface' NOT FOUND in project (Project ID: 1700113168128). Available layer IDs: []
+2025-06-26 13:10:43,170 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 7 points on layer 'Existing Surface'.
+2025-06-26 13:10:43,170 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 7, Elev: Uniform Z: 10.0 (all points at this Z), New Rev: 1, Strata: False).
+2025-06-26 13:10:43,170 - digcalc_project.src.models.project - INFO - [Project.add_traced_polyline] Created new Layer object: 'Existing Surface' with default settings. ID(self): 1700113168128
+2025-06-26 13:10:49,031 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 13 points on layer 'Existing Surface'.
+2025-06-26 13:10:49,031 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 1, Points: 13, Elev: Uniform Z: 5.0 (all points at this Z), New Rev: 2, Strata: False).
+2025-06-26 13:10:55,267 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 11 points on layer 'Existing Surface'.
+2025-06-26 13:10:55,267 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 2, Points: 11, Elev: Uniform Z: 0.0 (all points at this Z), New Rev: 3, Strata: False).
+2025-06-26 13:11:01,864 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (3 polylines).
+2025-06-26 13:11:01,864 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 31 unique 3D points with elevation from layer 'Existing Surface'.
+2025-06-26 13:11:01,880 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-06-26 13:11:01,880 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface' (Rev: 3).
+2025-06-26 13:11:01,880 - digcalc_project.src.models.project - INFO - Surface 'Existing Surface_Surface' added to project
+2025-06-26 13:11:02,120 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (3 polylines).
+2025-06-26 13:11:02,120 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 31 unique 3D points with elevation from layer 'Existing Surface'.
+2025-06-26 13:11:02,120 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-06-26 13:11:02,120 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface' (Rev: 3).
+2025-06-26 13:11:02,120 - digcalc_project.src.ui.project_controller - INFO - Rebuilt 1 surface(s) for layers: {'Existing Surface'}
+2025-06-26 13:11:12,937 - digcalc_project.src.ui.main_window.main_window - INFO - Application is about to quit. Cleaning up resources.
+2025-06-26 13:11:12,937 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-06-26 13:14:48,970 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-06-26 13:14:49,020 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 13:14:49,021 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-06-26 13:14:49,021 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-06-26 13:14:51,752 - digcalc_project.src.ui.main_window.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 13:14:51,753 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-26 13:14:51,753 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-26 13:14:51,754 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 13:14:51,755 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-26 13:14:51,755 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-26 13:14:55,203 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-26 13:14:55,203 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-26 13:14:55,604 - digcalc_project.src.ui.pv_plotter_singleton - INFO - Real BackgroundPlotter configured and returning.
+2025-06-26 13:14:55,605 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-26 13:14:55,605 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-26 13:14:55,605 - digcalc_project.src.ui.main_window.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-06-26 13:14:55,605 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] Called with project: Untitled Project
+2025-06-26 13:14:55,607 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] About to call self._mw.visualization_panel.set_project with: Untitled Project
+2025-06-26 13:14:55,608 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-06-26 13:14:55,608 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-06-26 13:14:55,608 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 13:14:55,683 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-06-26 13:14:55,683 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-06-26 13:14:55,683 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-06-26 13:14:55,683 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-06-26 13:14:55,685 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-06-26 13:14:55,685 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-06-26 13:14:59,143 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-06-26 13:14:59,154 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-06-26 13:14:59,199 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-06-26 13:15:04,915 - digcalc_project.src.ui.main_window.main_window - WARNING - No pixmap available for scale calibration preview.
+2025-06-26 13:15:07,193 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-06-26 13:15:07,193 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-06-26 13:15:07,193 - digcalc_project.src.ui.main_window.main_window - INFO - Scale calibration successful. New scale: input_method='direct_entry' world_units='ft' world_per_paper_in=0.01 ratio_numer=None ratio_denom=None render_dpi_at_cal=300.0 calibrated_at=datetime.datetime(2025, 6, 26, 18, 15, 7, 193819)
+2025-06-26 13:15:10,205 - digcalc_project.src.ui.visualization_panel - INFO - Setting tracing mode to: Enabled
+2025-06-26 13:15:10,205 - digcalc_project.src.ui.visualization_panel - INFO - Tracing enabled with valid project scale.
+2025-06-26 13:15:15,194 - digcalc_project.src.ui.tracing_scene - WARNING -       [TracingScene._get_layer_color] Layer with id 'Existing Surface' NOT FOUND in project (Project ID: 2388589900768). Available layer IDs: []
+2025-06-26 13:15:19,841 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 8 points on layer 'Existing Surface'.
+2025-06-26 13:15:19,842 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 0, Points: 8, Elev: Uniform Z: 1.0 (all points at this Z), New Rev: 1, Strata: False).
+2025-06-26 13:15:19,842 - digcalc_project.src.models.project - INFO - [Project.add_traced_polyline] Created new Layer object: 'Existing Surface' with default settings. ID(self): 2388589900768
+2025-06-26 13:15:29,917 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 12 points on layer 'Existing Surface'.
+2025-06-26 13:15:29,917 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 1, Points: 12, Elev: Uniform Z: 0.5 (all points at this Z), New Rev: 2, Strata: False).
+2025-06-26 13:15:35,574 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 10 points on layer 'Existing Surface'.
+2025-06-26 13:15:35,574 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 2, Points: 10, Elev: Uniform Z: 0.0 (all points at this Z), New Rev: 3, Strata: False).
+2025-06-26 13:15:40,996 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 10 points on layer 'Existing Surface'.
+2025-06-26 13:15:40,996 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 3, Points: 10, Elev: Uniform Z: 0.0 (all points at this Z), New Rev: 4, Strata: False).
+2025-06-26 13:15:46,172 - digcalc_project.src.ui.tracing_scene - INFO - Finalized polyline with 13 points on layer 'Existing Surface'.
+2025-06-26 13:15:46,172 - digcalc_project.src.models.project - INFO - Added polyline to layer 'Existing Surface' (Index: 4, Points: 13, Elev: Uniform Z: 0.0 (all points at this Z), New Rev: 5, Strata: False).
+2025-06-26 13:15:52,043 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (5 polylines).
+2025-06-26 13:15:52,043 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 53 unique 3D points with elevation from layer 'Existing Surface'.
+2025-06-26 13:15:52,045 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-06-26 13:15:52,045 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface' (Rev: 5).
+2025-06-26 13:15:52,046 - digcalc_project.src.models.project - INFO - Surface 'Existing Surface_Surface' added to project
+2025-06-26 13:15:52,301 - digcalc_project.src.core.geometry.surface_builder - INFO - Attempting to build surface from layer 'Existing Surface' (5 polylines).
+2025-06-26 13:15:52,301 - digcalc_project.src.core.geometry.surface_builder - INFO - Extracted 53 unique 3D points with elevation from layer 'Existing Surface'.
+2025-06-26 13:15:52,301 - digcalc_project.src.core.geometry.surface_builder - INFO - Creating Surface object 'Existing Surface_Surface'...
+2025-06-26 13:15:52,301 - digcalc_project.src.core.geometry.surface_builder - INFO - Successfully built surface 'Existing Surface_Surface' from layer 'Existing Surface' (Rev: 5).
+2025-06-26 13:15:52,301 - digcalc_project.src.ui.project_controller - INFO - Rebuilt 1 surface(s) for layers: {'Existing Surface'}
+2025-06-26 13:16:56,925 - digcalc_project.src.ui.main_window.main_window - INFO - Application is about to quit. Cleaning up resources.
+2025-06-26 13:16:56,925 - digcalc_project.src.main - INFO - Application exited with code 0

@@ -117,6 +117,14 @@ class ProjectScale(BaseModel):
             raise ValueError("render_dpi_at_cal must be positive to calculate world_per_px")
         return self.world_per_paper_in / self.render_dpi_at_cal
 
+    def to_string_short(self) -> str:
+        """Return a compact string representation like '50.0 ft/in'."""
+        if self.input_method == "ratio":
+            return f"1:{self.ratio_denom}"
+        elif self.world_per_paper_in is not None:
+            return f"{self.world_per_paper_in:.1f} {self.world_units}/in"
+        return "Not set"
+
     # factory helpers
     @classmethod
     def from_direct(cls, value: float, units: Literal["ft", "yd", "m"], render_dpi: float) -> ProjectScale:

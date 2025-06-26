@@ -60,6 +60,9 @@ class UIStateManager:
         self._mw.masshaul_action.setEnabled(can_calculate and has_req_surfaces)
         self.logger.debug(f"Calculate Volume action enabled state: {can_calculate}")
 
+        # Finally, update the status bar (e.g. scale pill)
+        self._mw.status_bar_manager.update_from_project()
+
     # PDF controls ------------------------------------------------------------
     def update_pdf_controls(self) -> None:
         """Updates the state of PDF-related controls (spinbox, labels, actions)."""
@@ -101,7 +104,7 @@ class UIStateManager:
         self.logger.debug(f"PDF controls updated: has_pdf={has_pdf}, page_count={page_count}, current_page={current_page_1_based}")
         self.update_scale_action_enabled(has_pdf)
         try:
-            self._mw.status_bar.update_from_project()
+            self._mw.status_bar_manager.update_from_project()
         except Exception as exc:
             self.logger.warning("Failed to refresh scale pill in update_pdf_controls: %s", exc)
 
@@ -142,7 +145,8 @@ class UIStateManager:
         """Update all relevant UI components based on the (new) project state."""
         self.logger.info(f"[update_ui_for_project] Called with project: {project.name if project else 'None'}")
         self.update_window_title()
-        self._mw._update_layer_tree()
+        if hasattr(self._mw, 'project_panel'):
+            self._mw.project_panel._update_tree()
         if hasattr(self._mw, "project_panel"): self._mw.project_panel.set_project(project)
         self.update_analysis_actions_state()
         self.update_pdf_controls()
@@ -151,11 +155,12 @@ class UIStateManager:
             self._mw.prop_dock.clear_selection()
             if self._mw._selected_scene_item is None:
                 self._mw.prop_dock.hide()
-        self._mw._clear_cutfill_state()
+        if hasattr(self._mw, "visualization_panel"):
+            self._mw.visualization_panel.clear_cutfill_map()
         self.update_view_actions_state()
         self.update_build_surface_action_state()
         try:
-            self._mw.status_bar.update_from_project()
+            self._mw.status_bar_manager.update_from_project()
         except Exception as exc:
             self.logger.warning("Failed to refresh scale pill in update_ui_for_project: %s", exc)
         self.logger.debug("UI update complete.")
@@ -172,7 +177,7 @@ class UIStateManager:
                 self._mw.pdf_thumbnail_dock.hide()
         self.logger.info(f"[update_ui_for_project] About to call self._mw.visualization_panel.set_project with: {project.name if project else 'None'}")
         self._mw.visualization_panel.set_project(project)
-        self._mw.status_bar.update_from_project()
+        self._mw.status_bar_manager.update_from_project()
 
     # Window title ------------------------------------------------------------
     def update_window_title(self) -> None:
@@ -200,41 +205,8 @@ class UIStateManager:
             self._mw.scale_calib_act.setEnabled(loaded)
 
     def update_scale_pill(self) -> None:
-        """Refresh the scale status pill in the status-bar."""
-        project = self._mw.project_controller.get_current_project() if hasattr(self._mw, "project_controller") else None
-        if not project or project.scale is None:
-            text = "Scale: —"
-            tooltip = "No scale calibrated. Use Ctrl+K or the 'Scale...' button."
-            bg_color = QColor("#555")  # Dark grey
-            fg_color = QColor("white")
-            self._mw.scale_pill.setToolTip(tooltip)
-            self._mw.scale_pill.setStyleSheet(
-                f"QLabel#scalePill {{ background-color: {bg_color.name()}; color: {fg_color.name()}; border-radius: 8px; padding: 2px 5px; }}"
-            )
-            self._mw.scale_pill.setText(text)
-            return
-
-        scale = project.scale
-        is_valid = scale.is_valid_for_dpi(project.pdf_background_dpi)
-        text = scale.to_string_short()
-
-        if is_valid:
-            tooltip = f"Scale is calibrated and valid for current PDF DPI ({project.pdf_background_dpi} dpi)."
-            bg_color = QColor("#3c9")  # Green
-            fg_color = QColor("white")
-        else:
-            tooltip = (
-                f"Scale Inconsistent! Recalibrate needed.\n"
-                f"Saved at {scale.px_per_in} px/in; current PDF is {project.pdf_background_dpi} dpi."
-            )
-            bg_color = QColor("#c33")  # Red
-            fg_color = QColor("white")
-
-        self._mw.scale_pill.setToolTip(tooltip)
-        self._mw.scale_pill.setStyleSheet(
-            f"QLabel#scalePill {{ background-color: {bg_color.name()}; color: {fg_color.name()}; border-radius: 8px; padding: 2px 5px; font-weight: bold; }}"
-        )
-        self._mw.scale_pill.setText(text)
+        """Force a refresh of the scale display in the status bar."""
+        self._mw.status_bar_manager.update_from_project()
 
     # Build-surface action ----------------------------------------------------
     def update_build_surface_action_state(self) -> None:

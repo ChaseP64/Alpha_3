@@ -529,7 +529,7 @@ class ScaleCalibrationDialog(QDialog):
             world_val_per_inch_paper = world_per_px * px_per_in_display
 
             self._scale = ProjectScale(
-                px_per_in=px_per_in_display,
+                render_dpi_at_cal=px_per_in_display,
                 world_units=selected_units_code,
                 world_per_in=world_val_per_inch_paper,
             )
@@ -591,3 +591,27 @@ class ScaleCalibrationDialog(QDialog):
     # Alias for backward-compatibility with older tests that directly call _accept()
     # and for consistency as _on_accept is the slot.
     _accept = _on_accept
+
+    def set_target_view(self, target_view: QGraphicsView):
+        # Disconnect any previous connections to avoid multiple calls
+        try:
+            target_view.destroyed.disconnect()
+        except (RuntimeError, TypeError):
+            pass  # Ignore if not connected or object is already gone
+
+        # Let Qt manage the dialog's lifecycle with its parent.
+        # The destroyed signal can lead to double-deletion issues.
+        # target_view.destroyed.connect(lambda *_: self._cleanup())
+
+        self.logger.debug(f"ScaleCalibrationDialog attached to scene '{target_view}'.")
+
+    def _cleanup(self):
+        # Restore cursor and remove filter
+        try:
+            if self._view and self._view.viewport():
+                self._view.viewport().setCursor(Qt.CursorShape.ArrowCursor)
+                self._view.viewport().removeEventFilter(self)
+        except Exception:
+            pass  # Defensive – ignore if already detached
+        self._view = None
+        self.deleteLater()

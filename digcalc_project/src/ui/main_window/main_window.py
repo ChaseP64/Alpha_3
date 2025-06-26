@@ -164,6 +164,10 @@ class MainWindow(QMainWindow):
         self.scene_handler = SceneEventHandler(self)
         # --- END NEW ---
 
+        # --- NEW: Action Handler ---
+        # self.action_handler = ActionHandler(self) # MOVED
+        # --- END NEW ---
+
         # --- NEW: Polyline Interaction Handler (Phase 2 refactor) ---
         from .polyline_interaction_handler import PolylineInteractionHandler
         self.polyline_handler = PolylineInteractionHandler(self)
@@ -221,6 +225,7 @@ class MainWindow(QMainWindow):
 
         # --- Instantiate ProjectController AFTER UI Init --- << MUST EXIST HERE
         self.project_controller = ProjectController(self)
+        self.action_handler = ActionHandler(self) # MOVED HERE
         # --- End Instantiate ---
 
         self.menu_bar = self.menuBar()
@@ -259,7 +264,7 @@ class MainWindow(QMainWindow):
             app.aboutToQuit.connect(self._on_application_quit)
 
         # --- NEW: Extracted action handler ---
-        self.action_handler = ActionHandler(self)
+        # self.action_handler = ActionHandler(self) # MOVED
         # --- END NEW ---
 
     def _init_ui(self):
@@ -330,7 +335,7 @@ class MainWindow(QMainWindow):
         from .actions import ActionManager  # type: ignore
 
         # Instantiate manager – it will attach actions back onto *this* instance.
-        self.actions = ActionManager(self)
+        self.action_manager = ActionManager(self)
 
     def _create_menus(self):
         """Create the main menu bar."""
@@ -482,7 +487,7 @@ class MainWindow(QMainWindow):
         )
 
         # Connect the dialog's finished signal to a dedicated slot
-        # Using a direct connection to a slot on self ensures proper cleanup
+        # using a direct connection to a slot on self ensures proper cleanup
         # if the dialog is closed while this instance is being destroyed.
         dlg.finished.connect(lambda result: self._on_scale_dialog_done(dlg, result))
         dlg.open() # Use open() for non-modal behavior if desired, or exec() for modal
@@ -541,16 +546,15 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def _on_application_quit(self):
-        """Global application shutdown handler.
-
-        Ensures external resources like the PyVista plotter are properly
-        terminated to prevent zombie processes or dangling windows, which
-        is especially critical in a testing environment.
-        """
-        if plotter_instance[0]:
-            self.logger.info("Closing PyVista plotter singleton…")
-            plotter_instance[0].close()
-            plotter_instance[0] = None
+        """Perform graceful shutdown of background resources like PyVista."""
+        self.logger.info("Application is about to quit. Cleaning up resources.")
+        # Safely close the PyVista plotter
+        if plotter_instance and plotter_instance[0]:
+            try:
+                plotter_instance[0].close()
+                self.logger.info("Successfully closed PyVista plotter.")
+            except Exception as e:
+                self.logger.error(f"Error closing PyVista plotter: {e}", exc_info=True)
 
     def _get_active_scene(self):
         """Returns the currently active scene (2D or 3D).
@@ -616,6 +620,78 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------
     @Slot()
     def _process_rebuild_queue(self):
-        """Legacy slot for unit-test compatibility. Delegates to the manager."""
+        """Process any pending surface rebuilds."""
         if hasattr(self, 'surface_rebuild_manager'):
             self.surface_rebuild_manager.rebuild_now()
+
+    @Slot()
+    def on_about(self):
+        """Show the application's About dialog."""
+        QMessageBox.about(
+            self,
+            "About DigCalc",
+            "<b>DigCalc</b><br>"
+            "A simple tool for earthwork calculations.<br><br>"
+            "Version 0.1.0",
+        )
+
+    # --- ADDED: Slot for visualization errors ---
+    @Slot(str)
+    def _on_visualization_failed(self, error_message: str):
+        """Display a critical error message when a visualization fails."""
+        self.logger.error(f"Visualization failed: {error_message}")
+        QMessageBox.critical(
+            self,
+            "Visualization Error",
+            f"A critical error occurred in the visualization panel:\n\n{error_message}",
+        )
+    # --- END ADDED ---
+
+    def _update_layer_tree(self):
+        """Refresh layer/polylines tree widgets after project changes."""
+        if hasattr(self, "project_panel"):
+            try:
+                self.project_panel._update_tree()
+            except Exception as exc:
+                self.logger.warning("Layer tree update failed: %s", exc)
+
+        # Also refresh build-surface action state so it becomes enabled once
+        # a polyline with elevation has been added.
+        if hasattr(self, "ui_state"):
+            try:
+                self.ui_state.update_build_surface_action_state()
+            except Exception:
+                pass
+
+    # ------------------------------------------------------------------
+    # Queue surface-rebuilds for a layer (compat shim for refactor).
+    # ------------------------------------------------------------------
+    def _queue_surface_rebuilds_for_layer(self, layer_name: str) -> None:
+        """Add *layer_name* to the rebuild queue.
+
+        Newer code paths expect :pyattr:`MainWindow.surface_rebuild_manager` to
+        exist, whereas older unit-tests invoked the private
+        ``_rebuild_needed_layers``/``_rebuild_timer`` mechanism.  This shim
+        keeps **both** working so we avoid touching unrelated call-sites while
+        the refactor is still in flux.
+
+        Args:
+            layer_name: Identifier of the layer whose dependent surfaces need
+                rebuilding.  Empty/``None`` values are ignored silently.
+        """
+        if not layer_name:
+            return  # Nothing to do
+
+        # Preferred path — use the dedicated manager introduced in Phase-7.
+        if hasattr(self, "surface_rebuild_manager") and self.surface_rebuild_manager:
+            try:
+                self.surface_rebuild_manager.queue_layer(layer_name)
+                return
+            except Exception as exc:  # pragma: no cover – defensive
+                self.logger.warning("SurfaceRebuildManager.queue_layer failed: %s", exc)
+
+        # Fallback for legacy mechanism (kept for backwards-compatibility).
+        # This code path should disappear once every caller is migrated.
+        if hasattr(self, "_rebuild_needed_layers") and hasattr(self, "_rebuild_timer"):
+            self._rebuild_needed_layers.add(layer_name)
+            self._rebuild_timer.start()

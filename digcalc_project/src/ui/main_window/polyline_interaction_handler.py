@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Optional
 
-from PySide6.QtCore import QObject, Slot
+from PySide6.QtCore import QObject, Slot, Qt
 from PySide6.QtWidgets import QGraphicsItem, QGraphicsPathItem, QMessageBox
 
 from ...models.project import PolylineData
@@ -38,7 +38,8 @@ class PolylineInteractionHandler(QObject):
                 item.scene().removeItem(item)
             return
 
-        layer_name = item.data(1)
+        # Layer name is stored under custom user-role offset (see TracingScene).
+        layer_name = item.data(Qt.UserRole + 1)
         if layer_name is None:
             logger.error("Finalized polyline item is missing layer data! Assigning to 'Default'.")
             layer_name = "Default"
@@ -62,6 +63,9 @@ class PolylineInteractionHandler(QObject):
         )
 
         if new_index is not None:
+            # Store the new polyline index under the *same* role that other
+            # components expect (integer index at role 1).  Do **not**
+            # overwrite the layer name stored at ``Qt.UserRole + 1``.
             item.setData(1, new_index)
             mw.project_panel._update_tree()
             mw._update_layer_tree()
@@ -119,7 +123,8 @@ class PolylineInteractionHandler(QObject):
             return
 
         self._selected_scene_item = item
-        layer_name = item.data(1)
+        # Layer name is stored under custom user-role offset (see TracingScene).
+        layer_name = item.data(Qt.UserRole + 1)
         index = item.data(1)
         project = mw.project_controller.get_current_project()
         if not project:
@@ -169,8 +174,8 @@ class PolylineInteractionHandler(QObject):
 
         item = self._selected_scene_item
         
-        # --- Robustly determine layer name and index ---
-        layer_name_val = item.data(0)
+        # Layer name is stored under custom user-role offset (see TracingScene).
+        layer_name_val = item.data(Qt.UserRole + 1)
         index_val = item.data(1)
         
         layer_name = ""

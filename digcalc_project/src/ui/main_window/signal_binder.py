@@ -42,14 +42,14 @@ class SignalBinder:  # noqa: D101
             scene2d.polyline_finalized.connect(mw.polyline_handler._on_polyline_drawn)
             scene2d.selectionChanged.connect(mw.polyline_handler._on_item_selected)
             if hasattr(scene2d, "pageRectChanged"):
-                scene2d.pageRectChanged.connect(mw._fit_view_to_scene)
+                scene2d.pageRectChanged.connect(mw.view_mode_handler._fit_view_to_scene)
             if hasattr(scene2d, "padDrawn"):
                 scene2d.padDrawn.connect(mw.polyline_handler._on_pad_drawn)
         else:
             logger.warning("scene_2d unavailable for signal hookup")
 
         # Layer-tree visibility toggles
-        mw.layer_tree.itemChanged.connect(mw._on_layer_visibility_changed)
+        mw.layer_tree.itemChanged.connect(mw.layer_legend_controller._on_layer_visibility_changed)
 
         # Properties dock signals
         mw.prop_dock.polylineEdited.connect(mw.polyline_handler._apply_elevation_edit)
@@ -67,7 +67,7 @@ class SignalBinder:  # noqa: D101
             mw.prev_pdf_page_action.triggered.connect(pdf.on_prev_pdf_page)
             mw.next_pdf_page_action.triggered.connect(pdf.on_next_pdf_page)
 
-        mw.toggle_trace_mode_action.toggled.connect(mw.on_toggle_tracing_mode)
+        mw.toggle_trace_mode_action.toggled.connect(mw.scene_handler.on_toggle_tracing_mode)
 
         # Analysis actions
         ah = mw.action_handler

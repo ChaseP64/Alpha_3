@@ -15,7 +15,9 @@ import os
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, TypedDict, TYPE_CHECKING, Union
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
+from pydantic import BaseModel, Field, PrivateAttr, ConfigDict
+from typing_extensions import TypedDict
 
 from .calculation import VolumeCalculation
 from .project_scale import ProjectScale  # NEW Pydantic model
@@ -50,29 +52,21 @@ TracedPolylinesType = Dict[str, List[PolylineData]]
 
 DEFAULT_LAYER = "Default Layer"
 
-@dataclass
-class Project:
-    """Project model representing an excavation takeoff project.
-    
-    A project contains surfaces, volume calculations, and metadata.
-    `traced_polylines` is now a dict keyed by layer name; see
-    add_traced_polyline() for details.
+class Project(BaseModel):
     """
-
-    name: str
+    Top-level model for a DigCalc project.
+    """
+    name: str = "Untitled Project"
     filepath: Optional[str] = None
+    is_modified: bool = False
     description: str = ""
     created_at: datetime.datetime = field(default_factory=datetime.datetime.now)
     modified_at: datetime.datetime = field(default_factory=datetime.datetime.now)
-    author: str = field(default_factory=lambda: os.environ.get("USERNAME", "Unknown"))
-    surfaces: Dict[str, Surface] = field(default_factory=dict)
-    calculations: List[VolumeCalculation] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    regions: list[Region] = field(default_factory=list)
-    strata: "Optional[StrataStack]" = None  # NEW – stratigraphy data
-    scale: Optional[ProjectScale] = None  # Updated to new ProjectScale
-    # Flags for project-level state (e.g., legacy scale invalid)
-    flags: List[str] = field(default_factory=list)
+    layers: dict[str, Layer] = Field(default_factory=dict)
+    surfaces: dict[str, Surface] = Field(default_factory=dict)
+    # List of volume calculations associated with the project (kept for UI/back-compat)
+    calculations: list[VolumeCalculation] = Field(default_factory=list)
+    scale: ProjectScale | None = None
 
     # --- Tracing / PDF Background Data ---
     pdf_background_path: Optional[str] = None
@@ -93,6 +87,19 @@ class Project:
     # `traced_polylines` by *name* continues to work – the two concepts are kept
     # in sync by higher-level UI logic.
     layers: list["Layer"] = field(default_factory=list)
+
+    # Pydantic config
+    model_config = ConfigDict(arbitrary_types_allowed=True, populate_by_name=True, extra="allow")
+
+    # --- NEW: property alias for compatibility ---
+    @property
+    def is_modified(self) -> bool:
+        """Alias for legacy attribute used by UI to mark unsaved changes."""
+        return self.is_dirty
+
+    @is_modified.setter
+    def is_modified(self, value: bool) -> None:
+        self.is_dirty = value
 
     def __post_init__(self):
         logger.debug(f"Project '{self.name}' initialized")

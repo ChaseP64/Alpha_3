@@ -72,7 +72,7 @@ class StatusBarManager:
             scale = project.scale
             txt = f"{scale.world_per_in:g} {scale.world_units}/in"
             
-            current_dpi = self.mw.pdf_service.get_current_dpi() if self.mw.pdf_service else 150
+            current_dpi = self.mw.visualization_panel.get_current_dpi() if self.mw.visualization_panel else 150
             
-            dpi_ok = abs(scale.render_dpi_at_calibration - current_dpi) < 0.5
+            dpi_ok = abs(scale.render_dpi_at_cal - current_dpi) < 0.5
             self.set_scale_state(value=txt, valid=dpi_ok) 

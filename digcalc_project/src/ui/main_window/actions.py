@@ -79,6 +79,19 @@ class ActionManager:
         act.setStatusTip("Exit the application.")
         self._add_attr("exit_action", act)
 
+        # Help menu actions -------------------------------------------------
+        act = QAction("&Documentation", mw)
+        act.setStatusTip("Open the online documentation.")
+        self._add_attr("docs_action", act)
+
+        act = QAction("&Report Issue...", mw)
+        act.setStatusTip("Open the issue tracker in a web browser.")
+        self._add_attr("report_issue_action", act)
+
+        act = QAction("Check for &Updates...", mw)
+        act.setStatusTip("Check for new application updates.")
+        self._add_attr("check_updates_action", act)
+
         # Import menu actions ----------------------------------------------
         act = QAction("Import &CSV...", mw)
         act.setStatusTip("Import points from a CSV file.")
