@@ -20,32 +20,41 @@ from ...models.strata_models import StrataStack
 from ...models.surface import Surface
 from ...services.settings_service import SettingsService
 
-# External dependencies (Ensure installed)
-try:
-    from scipy.interpolate import griddata
-except ImportError:
-    griddata = None
-    logging.getLogger(__name__).warning("SciPy not found. Grid interpolation will not work.")
-try:
-    from shapely.errors import GEOSException
-    from shapely.geometry import Point, Polygon, LineString
-except ImportError:
-    logging.getLogger(__name__).warning("Shapely not found. Region-based stripping will not work. Using stub geometry classes for type checking.")
+# ---------------------------------------------------------------------------
+# Optional external dependencies
+# ---------------------------------------------------------------------------
+# We need Shapely classes for type annotations, but we also want DigCalc to run
+# even when Shapely is not installed.  By importing them under a TYPE_CHECKING
+# guard we satisfy static type checkers without creating a hard runtime
+# dependency.  At runtime we fall back to lightweight stubs.
+# ---------------------------------------------------------------------------
 
-    class _GeometryStub:  # minimal stand-in so type annotations remain valid
-        """Fallback stub used when Shapely is not installed (runtime only)."""
+if TYPE_CHECKING:  # pragma: no cover – static analysis only
+    from shapely.geometry import Point, Polygon, LineString  # noqa: F401
+    from shapely.errors import GEOSException  # noqa: F401
+else:
+    try:
+        from shapely.errors import GEOSException  # type: ignore
+        from shapely.geometry import Point, Polygon, LineString  # type: ignore
+    except ImportError:  # pragma: no cover – Shapely missing at runtime
+        logging.getLogger(__name__).warning(
+            "Shapely not found. Region-based stripping will not work. "
+            "Using stub geometry classes instead.")
 
-        def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: D401 – trivial stub
+        class _GeometryStub:  # minimal stand-in so type annotations remain valid
+            """Fallback stub used when Shapely is not installed (runtime only)."""
+
+            def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: D401 – trivial stub
+                pass
+
+        Point = _GeometryStub  # type: ignore
+        Polygon = _GeometryStub  # type: ignore
+        LineString = _GeometryStub  # type: ignore
+
+        class GEOSException(Exception):
+            """Stub replacement for Shapely's GEOSException."""
+
             pass
-
-    Point = _GeometryStub  # type: ignore
-    Polygon = _GeometryStub  # type: ignore
-    LineString = _GeometryStub  # type: ignore
-
-    class GEOSException(Exception):
-        """Stub replacement for Shapely's GEOSException."""
-
-        pass
 
 from digcalc_project.src.core.calculations.mass_haul import HaulStation
 
@@ -420,7 +429,7 @@ class VolumeCalculator:
         self,
         surface_ref: Surface,
         surface_diff: Surface,
-        alignment: LineString,
+        alignment: "LineString",
         station_interval: float,
         strata_stack: StrataStack,
     ) -> Tuple[List[HaulStation], Dict[str, npt.NDArray[Any]]]:

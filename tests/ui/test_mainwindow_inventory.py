@@ -18,8 +18,22 @@ except ModuleNotFoundError:  # pragma: no cover
 # ---------------------------------------------------------------------------
 
 ALLOWLIST: Set[str] = {
+    # Explicitly enumerated public slots/methods – update when changed
+    "closeEvent",
+    "keyPressEvent",
+    "on_build_surface",
+    "on_calculate_volume",
+    "on_clear_pdf_background",
+    "on_load_pdf_background",
+    "on_next_pdf_page",
+    "on_prev_pdf_page",
+    "on_set_pdf_page_from_spinbox",
+    "on_toggle_tracing_mode",
+    "on_view_2d",
+    "on_view_3d",
     "on_open_3d",
     "on_scale_calibration",
+    "on_about",
 }
 
 

@@ -44,7 +44,7 @@
 ## Discovered During Work
 - [x] Recreate Python files as UTF-8 text files to remove null bytes and invalid characters
 - [x] Reset `__init__.py` files to clean UTF-8 files
-- [ ] Fix import paths to be consistent (use 'src.' prefix for absolute imports)
+- [x] Fix import paths to be consistent (use 'src.' prefix for absolute imports) - 2025-06-28
 - [x] Add SURFACE_TYPE_TIN constant to Surface class
 - [ ] Update Surface model implementation to match test assumptions
 - [ ] Fix issues with LandXML parser tests

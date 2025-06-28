@@ -16,7 +16,6 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, List, Optional
 
 import numpy as np
-from shapely.geometry import LineString, Point
 
 # Local imports – doing it this way avoids a circular-import risk while keeping
 # the dependency explicit. We purposefully avoid a *"from models import Surface"*
@@ -26,6 +25,23 @@ from shapely.geometry import LineString, Point
 
 if TYPE_CHECKING:  # pragma: no cover
     from ...models.surface import Point3D, Surface  # type: ignore
+
+# ---------------------------------------------------------------------------
+# Shapely imports – optional at runtime but required for type checkers.
+# ---------------------------------------------------------------------------
+
+if TYPE_CHECKING:  # pragma: no cover
+    from shapely.geometry import LineString, Point  # noqa: F401
+else:
+    try:
+        from shapely.geometry import LineString, Point  # type: ignore
+    except ImportError:  # pragma: no cover
+        class _GeometryStub:  # fallback for runtime when Shapely missing
+            def __init__(self, *args, **kwargs):
+                pass
+
+        LineString = _GeometryStub  # type: ignore
+        Point = _GeometryStub  # type: ignore
 
 @dataclass(slots=True)
 class HaulStation:
@@ -66,7 +82,7 @@ class HaulStationList(List[HaulStation]):
 def build_mass_haul(
     surface_ref: Surface,
     surface_diff: Surface,
-    alignment: LineString,
+    alignment: "LineString",
     station_interval: float,
     free_haul_ft: float,
 ) -> HaulStationList:
