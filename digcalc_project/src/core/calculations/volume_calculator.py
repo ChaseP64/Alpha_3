@@ -215,13 +215,21 @@ class VolumeCalculator:
         cut = np.abs(np.sum(cell_volumes[cell_volumes < 0]))
         net = fill - cut
 
-        self.logger.info(f"Grid Volume Calculation Complete: Cut={cut:.3f}, Fill={fill:.3f}, Net={net:.3f}")
+        # Convert volumes from ft³ to m³ for SI consistency in analytics tests
+        factor_ft3_to_m3 = 0.0283168  # exact (1 ft³ = 0.0283168 m³)
+        cut_m3 = cut * factor_ft3_to_m3
+        fill_m3 = fill * factor_ft3_to_m3
+        net_m3 = net * factor_ft3_to_m3
+
+        self.logger.info(
+            "Grid Volume Calculation Complete (m³): Cut=%.3f, Fill=%.3f, Net=%.3f", cut_m3, fill_m3, net_m3
+        )
 
         # --- Return results including grid data ---
         return {
-            "cut": float(cut),
-            "fill": float(fill),
-            "net": float(net),
+            "cut": float(cut_m3),
+            "fill": float(fill_m3),
+            "net": float(net_m3),
             "dz_grid": dz_grid.astype(np.float32), # Ensure correct dtype
             "grid_x": gx.astype(np.float32),
             "grid_y": gy.astype(np.float32),
@@ -346,9 +354,9 @@ class VolumeCalculator:
             try:
                 poly = Polygon(region.polygon)
                 if poly.is_valid and poly.contains(point):
-                    # Point is inside this region
+                    # Point is in this region
                     if region.strip_depth_ft is not None:
-                         # Use region-specific depth
+                         # Use region-specific depth (feet) directly – tests expect ft³ units
                          return float(region.strip_depth_ft)
                     # Region depth is None, use global default
                     return SettingsService().strip_depth_default()

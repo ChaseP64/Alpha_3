@@ -86,7 +86,7 @@ class ProjectSerializer:
 
 def scale_to_dict(scale: Optional[ProjectScale]) -> Optional[dict]:
     """Serialize ProjectScale to dict, excluding None values."""
-    return scale.dict(exclude_none=True) if scale else None
+    return scale.model_dump(exclude_none=True) if scale else None
 
 def scale_from_dict(d: Optional[dict]) -> Optional[ProjectScale]:
     """Deserialize dict to ProjectScale."""
@@ -95,7 +95,11 @@ def scale_from_dict(d: Optional[dict]) -> Optional[ProjectScale]:
     if d is None:
         return None
     try:
-        return ProjectScale(**d)
+        scale = ProjectScale.model_validate(d)
+        # If critical calibration fields are missing (no direct value & no ratio)
+        if scale.world_per_paper_in is None and (scale.ratio_numer is None or scale.ratio_denom is None):
+            return None
+        return scale
     except Exception as e:
         logger.warning(f"Failed to create ProjectScale from dict: {d}. Error: {e}. Returning None.")
         return None
@@ -130,44 +134,36 @@ def to_dict(project: Project) -> dict:
     :py:meth:`Project.save`, but it lives here so it can evolve independently
     from on-disk persistence.
     """
-    return {
-        "name": project.name,
-        # ------------------------------------------------------------------
-        # Scale (new) – include sub-keys explicitly for clarity
-        # ------------------------------------------------------------------
-        "scale": scale_to_dict(project.scale),
-        # Keep other sections minimal for now – can be expanded later.
-        "surfaces": {n: s.to_dict() for n, s in project.surfaces.items()},
-        "polylines": project._serialisable_polylines(),
-        # ------------------------------------------------------------------
-        # Stratigraphy (optional)
-        # ------------------------------------------------------------------
-        "strata": strata_to_dict(project.strata),
-    }
+    data = project.model_dump(mode="json", exclude_none=True)
+
+    # Always include scale key – even when None so downstream tests can assert
+    # presence of the field.
+    if "scale" not in data:
+        data["scale"] = None
+
+    return data
 
 def from_dict(data: dict) -> Project:
     """Hydrate a :class:`Project` from an in-memory mapping."""
-    # ---------------- Scale (legacy-safe) ------------------------------
-    scale_data = data.get("scale")
-    scale_obj: Optional[ProjectScale] = scale_from_dict(scale_data)
-
-    # If scale_from_dict returns None due to parsing error of old format, scale_obj will be None.
-    # A proper migration path in Project.load would be needed to transform old scale_data
-    # before it even reaches here for an in-memory from_dict scenario, or this function
-    # would need to be smarter about trying to parse old vs. new formats.
-    # For now, this assumes scale_data is either new format or None.
-
-    proj = Project(
-        name=data.get("name", "Untitled"),
-        scale=scale_obj,
-        strata=strata_from_dict(data.get("strata")),
-    )
-
-    # Attach surfaces / polylines using the Project API to maintain invariants
-    proj.surfaces = _load_surfaces(data.get("surfaces"))
-    proj.traced_polylines = _load_polylines(data.get("polylines"))
-
-    return proj
+    try:
+        if "scale" in data:
+            data["scale"] = scale_from_dict(data["scale"])
+        # Ensure 'layers' is an instance of _LayerDict
+        from digcalc_project.src.models.project import _LayerDict as _LD
+        if "layers" not in data or not isinstance(data["layers"], _LD):
+            data["layers"] = _LD(data.get("layers", {}))
+        return Project.model_validate(data)
+    except Exception as exc:
+        # Attempt graceful fallback for invalid ProjectScale etc.
+        if isinstance(data, dict):
+            data = data.copy()
+            if "scale" in data:
+                data["scale"] = scale_from_dict(data["scale"])
+            # Ensure 'layers' is an instance of _LayerDict
+            if "layers" not in data or not isinstance(data["layers"], _LD):
+                data["layers"] = _LD(data.get("layers", {}))
+            return Project.model_validate(data)
+        raise
 
 # ---------------------------------------------------------------------------
 # Layer (de)serialisation helpers

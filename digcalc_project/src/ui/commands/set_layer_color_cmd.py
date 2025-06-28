@@ -57,22 +57,36 @@ class SetLayerColorCommand(QUndoCommand):
                 refresh_fn(self._layer.id)
             except Exception as exc:
                 self.logger.warning("refresh_layer_item failed: %s", exc, exc_info=True)
-        else:
-            # Fallback: update any PolylineItem in the scene manually
-            from digcalc_project.src.ui.items.polyline_item import PolylineItem
-            from PySide6.QtGui import QColor, QPen
 
-            try:
-                for item in getattr(self._dock, "items", lambda: [])():
-                    if isinstance(item, PolylineItem) and getattr(item, "layer_id", None) == self._layer.id:
-                        item.update_color(self._layer.line_color)
-            except Exception as exc:
-                self.logger.warning("Manual layer recolour fallback failed: %s", exc, exc_info=True)
+        # Manual fallback – always run to cover generic QGraphicsScene cases
+        try:
+            for item in getattr(self._dock, "items", lambda: [])():
+                from digcalc_project.src.ui.items.polyline_item import PolylineItem
+                if isinstance(item, PolylineItem) and getattr(item, "layer_id", None) == self._layer.id:
+                    item.update_color(self._layer.line_color)
+        except Exception as exc:
+            self.logger.warning("Manual layer recolour fallback failed: %s", exc, exc_info=True)
 
-        # 2) Optional legend-dock refresh
+        # 2) Optional legend-dock refresh (if dock exposes helper)
         legend_fn = getattr(self._dock, "update_layer_colors", None)
         if callable(legend_fn):
             try:
                 legend_fn(self._layer.id)
             except Exception:
-                pass 
+                pass
+
+        # Done – nothing else to do for pure data-model updates.
+        return  # Earlier code below is now redundant but kept for clarity
+
+        # ------------------------------------------------------------------
+        # Original fallback (kept but will rarely be reached now)
+        # ------------------------------------------------------------------
+        # else:
+        #     from digcalc_project.src.ui.items.polyline_item import PolylineItem
+        #     from PySide6.QtGui import QColor, QPen
+        #     try:
+        #         for item in getattr(self._dock, "items", lambda: [])():
+        #             if isinstance(item, PolylineItem) and getattr(item, "layer_id", None) == self._layer.id:
+        #                 item.update_color(self._layer.line_color)
+        #     except Exception as exc:
+        #         self.logger.warning("Manual layer recolour fallback failed: %s", exc, exc_info=True) 

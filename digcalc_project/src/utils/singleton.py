@@ -20,3 +20,8 @@ class Singleton:  # noqa: D101 – trivial helper
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
+
+    @classmethod
+    def clear_instances(cls):  # noqa: D401
+        """Reset the stored singleton instance (test helper)."""
+        cls._instance = None

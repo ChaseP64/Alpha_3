@@ -8,12 +8,12 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import TYPE_CHECKING, Any, Callable, List, Protocol, Tuple
+from typing import TYPE_CHECKING, Any, Callable, List, Tuple
 import os
 import math
 
 import numpy as np
-from PyQt6.QtCore import QThread, pyqtSignal
+from PySide6.QtCore import QThread, Signal
 
 from ..models.strata_models import StrataSurface
 from ..services.settings_service import SettingsService
@@ -45,6 +45,7 @@ try:
     from numba import njit, prange  # type: ignore
     HAS_NUMBA = True
 except ImportError:  # pragma: no cover – CI may lack numba
+    njit = lambda f: f  # No-op decorator if numba is not available
     HAS_NUMBA = False
 
 # ---------------------------------------------------------------------------
@@ -58,19 +59,6 @@ if TYPE_CHECKING:
 
 ProgressCallback = Callable[[int], None]
 logger = logging.getLogger(__name__)
-
-
-class IStrataInterpolator(Protocol):
-    """Formal interface for strata-surface interpolation algorithms."""
-
-    def generate_surfaces(
-        self,
-        project: Project,
-        stack: StrataStack,
-        existing_surface: Surface,
-        progress_cb: ProgressCallback | None = None,
-    ) -> List[StrataSurface]:
-        ...
 
 
 class IDWInterpolator:
@@ -95,7 +83,7 @@ class IDWInterpolator:
         stack: StrataStack,
         existing_surface: Surface,
         progress_cb: ProgressCallback | None = None,
-    ) -> List[StrataSurface]:
+    ) -> GeneratedSurfaces:
         """Generate one interpolated StrataSurface per material layer.
 
         If contour‐based strata polylines exist for a given material, a grid
@@ -104,7 +92,7 @@ class IDWInterpolator:
         """
         if not stack.materials:
             self._logger.warning("Cannot generate strata surfaces: no materials defined.")
-            return []
+            return GeneratedSurfaces([], 0.0)
 
         # --- Collect contour polylines per material --------------------------------
         contours_by_mat: dict[int, list[list[tuple[float, float, float]]]] = {}
@@ -187,7 +175,7 @@ class IDWInterpolator:
         if progress_cb:
             progress_cb(100)
 
-        self._last_rmse = np.sqrt(np.mean(all_squared_errors)) if all_squared_errors else 0.0  # type: ignore[attr-defined]
+        self._last_rmse = np.sqrt(np.mean(all_squared_errors)) if all_squared_errors else 0.0
         self._logger.info(
             "Generated %d strata surfaces in %.2fs (RMSE %.4f)",
             len(surfaces), time.monotonic() - t0, self._last_rmse,
@@ -311,7 +299,7 @@ class IDWInterpolator:
     def _interpolate_chunk_numpy(self, points: np.ndarray, grid_points: np.ndarray, values: np.ndarray, radius: float, power: int) -> np.ndarray:
         """Interpolates a chunk using NumPy or numba-accelerated kernel."""
         if HAS_NUMBA and '_idw_numba' in globals():
-            return _idw_numba(points, values, grid_points, radius, power)  # type: ignore[misc]
+            return _idw_numba(points, values, grid_points, radius, power)
         # fallback pure numpy
         z_values = np.full(grid_points.shape[0], np.nan)
         for i, p_grid in enumerate(grid_points):
@@ -421,27 +409,27 @@ class IDWInterpolator:
 
 class StrataJob(QThread):
     """Asynchronous worker for running strata interpolation."""
-    progress = pyqtSignal(int)
-    finished = pyqtSignal(list, float)  # surfaces, rmse
+    progress = Signal(int)
+    finished = Signal(list, float)  # surfaces, rmse
 
-    def __init__(self, interpolator: IStrataInterpolator, project: 'Project', stack: 'StrataStack', existing_surface: 'Surface', cache_dir: str):
+    def __init__(self, interpolator: IDWInterpolator, project: 'Project', stack: 'StrataStack', existing_surface: 'Surface', cache_dir: str):
         super().__init__()
-        self._interpolator = interpolator
-        self._project = project
-        self._stack = stack
-        self._existing_surface = existing_surface
-        self._cache_dir = cache_dir
+        self.interpolator = interpolator
+        self.project = project
+        self.stack = stack
+        self.existing_surface = existing_surface
+        self.cache_dir = cache_dir
         self._logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
 
     def run(self):
         """Execute the interpolation and emit results."""
         self._logger.info("Starting asynchronous strata generation job.")
         try:
-            surfaces = self._interpolator.generate_surfaces(
-                self._project, self._stack, self._existing_surface, self.progress.emit
+            surfaces = self.interpolator.generate_surfaces(
+                self.project, self.stack, self.existing_surface, self.progress.emit
             )
             self._write_caches(surfaces)
-            rmse_val = getattr(self._interpolator, "_last_rmse", -1.0)
+            rmse_val = getattr(self.interpolator, "_last_rmse", -1.0)
             self.finished.emit(surfaces, rmse_val)
             self._logger.info(
                 "Asynchronous strata generation job finished successfully with RMSE: %.4f",
@@ -453,18 +441,18 @@ class StrataJob(QThread):
 
     def _write_caches(self, surfaces: List[StrataSurface]):
         """Saves generated surface grids to compressed .npz files."""
-        if not os.path.exists(self._cache_dir):
-            os.makedirs(self._cache_dir)
-            self._logger.info(f"Created cache directory: {self._cache_dir}")
+        if not os.path.exists(self.cache_dir):
+            os.makedirs(self.cache_dir)
+            self._logger.info(f"Created cache directory: {self.cache_dir}")
 
         for surface in surfaces:
             # Find the material name for a more descriptive filename
-            material = next((m for m in self._stack.materials if m.id == surface.material_id), None)
+            material = next((m for m in self.stack.materials if m.id == surface.material_id), None)
             mat_name = material.name.replace(" ", "_") if material else f"unknown_mat_{surface.material_id}"
             
             # Using project UUID and material name to ensure unique cache file
-            filename = f"strata_cache_{self._project.id}_{mat_name}.npz"
-            path = os.path.join(self._cache_dir, filename)
+            filename = f"strata_cache_{self.project.id}_{mat_name}.npz"
+            path = os.path.join(self.cache_dir, filename)
             
             try:
                 save_grid(path, surface.grid_data, surface.grid_metadata)
@@ -473,7 +461,7 @@ class StrataJob(QThread):
 
 if HAS_NUMBA:
     @njit(parallel=True, fastmath=True)
-    def _idw_numba(points: np.ndarray, values: np.ndarray, gp: np.ndarray, radius: float, power: int):  # type: ignore
+    def _idw_numba(points: np.ndarray, values: np.ndarray, gp: np.ndarray, radius: float, power: int):
         m = gp.shape[0]
         out = np.empty(m, dtype=np.float64)
         for i in prange(m):
@@ -515,9 +503,9 @@ class GeneratedSurfaces(list):
 
     # When users do ``surfaces, rmse = generate_surfaces(...)`` we yield
     # *self* (the list) followed by the rmse value.
-    def __iter__(self):  # type: ignore[override]
+    def __iter__(self):
         return iter((self, self.rmse))
 
     # Optional nice repr
-    def __repr__(self):  # pragma: no cover
+    def __repr__(self):
         return f"GeneratedSurfaces(len={len(self)}, rmse={self.rmse:.4f})" 

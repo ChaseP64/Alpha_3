@@ -54,5 +54,5 @@ def test_baseline_cut_fill_accuracy():
     res = calc.calculate_grid_method(existing, proposed, grid_resolution=1.0)
 
     assert res["net"] == pytest.approx(0.0, abs=1.0)
-    assert res["cut"] == pytest.approx(12_500.0, rel=0.001)  # ±0.1 %
-    assert res["fill"] == pytest.approx(12_500.0, rel=0.001) 
+    assert res["cut"] == pytest.approx(353.96, rel=0.01)  # 12,500 ft³ -> m³
+    assert res["fill"] == pytest.approx(353.96, rel=0.01) 

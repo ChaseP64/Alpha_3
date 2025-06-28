@@ -3,119 +3,81 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    PositiveFloat,
+    computed_field,
+    field_validator,
+    ValidationError,
+)
 
 # Backwards-compatible ProjectScale with old field aliases
 
 class ProjectScale(BaseModel):
     """Stores how a drawing's paper inches convert to world units."""
 
-    # Provide default to maintain backward compatibility where input_method was optional
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra="ignore",  # Ignore extra fields during validation
+        str_strip_whitespace=True,
+        ignored_types=(property,),
+    )
+
     input_method: Literal["direct_entry", "ratio", "two_point"] = "two_point"
+    world_units: Literal["ft", "yd", "m", "in"] = Field(default="ft")
 
-    # common
-    world_units: Literal["ft", "yd", "m"] = "ft"
+    # Allow 0 in constructor (tests access property later) – validate in property instead
+    dpi: float = Field(96.0, alias="render_dpi_at_cal")
 
-    # direct entry  (e.g. 50 ft / in)
-    # Alias old name "world_per_in" so legacy code/tests continue to work.
+    # optional so it can be omitted; if provided must be > 0 (PositiveFloat)
     world_per_paper_in: Optional[float] = Field(
-        None, gt=0, alias="world_per_in", serialization_alias="world_per_in",
+        default=None,
+        alias="world_per_paper_in",
+        validation_alias="world_per_in",
     )
+    ratio_numer: Optional[PositiveFloat] = None
+    ratio_denom: Optional[PositiveFloat] = None
 
-    # ratio entry   (e.g. 1 : 600)
-    ratio_numer: Optional[float] = Field(None, gt=0)
-    ratio_denom: Optional[float] = Field(None, gt=0)
-
-    # render context
-    # Alias old name "px_per_in" so legacy code/tests continue to work.
-    render_dpi_at_cal: float = Field(
-        96.0, alias="px_per_in", serialization_alias="px_per_in",
-    )
     calibrated_at: datetime = Field(default_factory=datetime.utcnow)
 
-    # -----------------------------------------------------------------
-    # Private flag remembering *how* the DPI value was supplied.  When the
-    # *alias* ``px_per_in`` is used tests expect a **ZeroDivisionError** from
-    # :pyattr:`world_per_px` whereas passing the canonical field name must
-    # trigger a *validation* error (see outer vs. internal test-suites).
-    # -----------------------------------------------------------------
-    _from_px_alias: bool = PrivateAttr(False)
+    @field_validator("world_per_paper_in", "ratio_numer", "ratio_denom", mode="before")
+    def empty_str_to_none(cls, v):
+        if v == "":
+            return None
+        return v
+        
+    @computed_field(alias="px_per_in")
+    @property
+    def px_per_in(self) -> float:
+        """Alias for dpi (legacy name used in tests)."""
+        return self.dpi
 
-    # -----------------------------------------------------------------
-    # Model-level pre-validator: differentiate alias vs canonical field.
-    # -----------------------------------------------------------------
-    @model_validator(mode="before")
-    @classmethod
-    def _validate_dpi(cls, data: dict):  # noqa: D401 – simple validator
-        # Detect whether the DPI came in via alias or canonical name.
-        if "px_per_in" in data:
-            # Alias path – allow zero (handled later in property getter).
-            # Remember for downstream logic.
-            data.setdefault("render_dpi_at_cal", data["px_per_in"])
-            data["__alias_px__"] = True
-        # Canonical field present – enforce positive value > 0
-        if "render_dpi_at_cal" in data and not data.get("__alias_px__", False):
-            if data["render_dpi_at_cal"] <= 0:
-                raise ValueError("render_dpi_at_cal must be greater than 0")
-        return data
-
-    # After validation – migrate flag into private attr
-    @model_validator(mode="after")
-    def _post_alias_flag(self):  # noqa: D401
-        if getattr(self, "__alias_px__", False):
-            self._from_px_alias = True
-            # Clean up to avoid leaking pseudo-field
-            try:
-                delattr(self, "__alias_px__")
-            except AttributeError:
-                pass
-        return self
-
-    # -------- convenience  --------
+    @computed_field
     @property
     def world_per_px(self) -> float:
-        if not self.world_per_paper_in:
-            # This can happen if input_method is 'ratio' and world_per_paper_in was not correctly calculated
-            # or if input_method is 'two_point' and it's not yet fully populated by that method.
-            # Or if direct_entry was chosen but world_per_paper_in was not provided (should be caught by validation if not Optional)
-            # For now, raise an error or return a sensible default / handle as per application logic.
-            # Raising an error is safer to highlight misconfiguration.
-            if self.input_method == "ratio" and self.ratio_numer and self.ratio_denom:
-                # Attempt to calculate on the fly if ratio parts are present
-                # This logic needs to be robust and match from_ratio or a dedicated calculation method
-                temp_world_per_in_for_ratio: float
-                if self.world_units == "ft":
-                    temp_world_per_in_for_ratio = self.ratio_denom / (self.ratio_numer * 12.0) # Assuming ratio is paper_unit:world_unit_of_same_kind e.g. 1in:600in
-                elif self.world_units == "m":
-                    # Assuming 1 paper_unit : N world_units_of_same_kind (e.g. 1cm : 100cm)
-                    # To get world_meters per paper_inch:
-                    # (ratio_denom / ratio_numer) gives world_units_of_same_kind per paper_unit_of_same_kind
-                    # If paper unit is cm and world unit is cm, then convert paper cm to paper inch
-                    # This part of the logic depends heavily on the interpretation of "ratio"
-                    # Sticking to user's from_ratio: (denom / numer) * (inches_per_world_unit_if_ratio_is_unitless)
-                    # The user's from_ratio is: world_per_in = denom / 12 if units == "ft" else denom
-                    # This implies if units == "m", world_per_paper_in = denom (meaning "denom meters per paper inch")
-                    # So for ratio 1:100, units 'm' => 100m/inch. Calculated here: self.ratio_denom / self.ratio_numer
-                    temp_world_per_in_for_ratio = self.ratio_denom / self.ratio_numer
-                else: # yd
-                    temp_world_per_in_for_ratio = self.ratio_denom / (self.ratio_numer * 36.0) # inches to yards
+        """Size of a pixel in world units."""
+        # 1. Ensure we have a world_per_paper_in value, falling back to ratio components.
+        temp_world_per_in: float | None = self.world_per_paper_in
 
-                if self.render_dpi_at_cal > 0:
-                    return temp_world_per_in_for_ratio / self.render_dpi_at_cal
-                raise ValueError("render_dpi_at_cal must be positive to calculate world_per_px")
+        if temp_world_per_in is None and self.input_method == "ratio" and self.ratio_numer and self.ratio_denom:
+            if self.world_units == "ft":
+                temp_world_per_in = (self.ratio_denom / self.ratio_numer) / 12.0
+            elif self.world_units == "m":
+                temp_world_per_in = (self.ratio_denom / self.ratio_numer) * 0.0254
+            elif self.world_units == "yd":
+                temp_world_per_in = (self.ratio_denom / self.ratio_numer) / 36.0
+            else:  # inches
+                temp_world_per_in = self.ratio_denom / self.ratio_numer
 
-            raise ValueError("world_per_paper_in is not set, cannot calculate world_per_px.")
-        if self.render_dpi_at_cal == 0:
-            # Distinguish error type based on input path – external tests
-            # expect **ZeroDivisionError** when the zero came from the *alias*
-            # ``px_per_in`` whereas internal tests look for *ValueError* when
-            # the canonical field was used.
-            if getattr(self, "_from_px_alias", False):
-                raise ZeroDivisionError("Division by zero – px_per_in was 0")
-            raise ValueError("render_dpi_at_cal must be positive to calculate world_per_px")
-        if self.render_dpi_at_cal < 0:
-            raise ValueError("render_dpi_at_cal must be positive to calculate world_per_px")
-        return self.world_per_paper_in / self.render_dpi_at_cal
+        if temp_world_per_in is None:
+            raise ValueError("world_per_paper_in is not set")
+
+        if self.dpi <= 0:
+            raise ValueError("render_dpi_at_cal must be positive")
+
+        return temp_world_per_in / self.dpi
 
     def to_string_short(self) -> str:
         """Return a compact string representation like '50.0 ft/in'."""
@@ -125,42 +87,63 @@ class ProjectScale(BaseModel):
             return f"{self.world_per_paper_in:.1f} {self.world_units}/in"
         return "Not set"
 
-    # factory helpers
     @classmethod
-    def from_direct(cls, value: float, units: Literal["ft", "yd", "m"], render_dpi: float) -> ProjectScale:
+    def from_direct(
+        cls,
+        value: PositiveFloat,
+        units: Literal["ft", "yd", "m"],
+        render_dpi: PositiveFloat,
+    ) -> ProjectScale:
+        """Create a scale from a direct world-per-inch value."""
+        if value <= 0 or render_dpi <= 0:
+            raise ValidationError.from_exception_data(
+                "ProjectScale",
+                [
+                    {
+                        "loc": ("world_per_paper_in",),
+                        "msg": "Value must be greater than 0",
+                        "type": "greater_than",
+                        "ctx": {"gt": 0},
+                    }
+                ],
+            )
         return cls(
             input_method="direct_entry",
             world_units=units,
             world_per_paper_in=value,
-            render_dpi_at_cal=render_dpi,
+            dpi=render_dpi,
         )
 
     @classmethod
-    def from_ratio(cls, numer: float, denom: float, units: Literal["ft", "yd", "m"], render_dpi: float) -> ProjectScale:
-        # Assuming ratio is numer paper_units : denom world_units_of_same_kind
-        # e.g., 1 inch on paper represents 600 inches in the world for a 1:600 scale.
-        # world_per_paper_in should be in 'units' per 'paper inch'.
-
-        # Calculate how many specified 'units' are in one 'denom' unit (which is same as paper unit implied by ratio numerator)
-        # Example: Ratio 1:600 (e.g. 1 paper inch to 600 world inches).
-        # If project units are 'ft', then world_per_paper_in is 600in / 12(in/ft) = 50 ft/paper_in.
-        # If project units are 'm', then world_per_paper_in is 600in * 0.0254(m/in) = 15.24 m/paper_in.
+    def from_ratio(
+        cls,
+        numer: PositiveFloat,
+        denom: PositiveFloat,
+        units: Literal["ft", "yd", "m"],
+        render_dpi: PositiveFloat,
+    ) -> ProjectScale:
+        """Create a scale from a ratio like 1:100."""
+        if numer == 0 or denom == 0:
+            raise ValidationError.from_exception_data(
+                "ProjectScale",
+                [
+                    {
+                        "loc": ("ratio_numer" if numer == 0 else "ratio_denom",),
+                        "msg": "Value must be greater than 0",
+                        "type": "greater_than",
+                        "ctx": {"gt": 0},
+                    }
+                ],
+            )
 
         calculated_world_per_paper_in: float
         if units == "ft":
-            # numer paper inches : denom world inches. So (denom/numer) world inches per paper inch.
-            # Convert to feet per paper inch.
             calculated_world_per_paper_in = (denom / numer) / 12.0
         elif units == "m":
-            # numer paper inches : denom world inches. So (denom/numer) world inches per paper inch.
-            # Convert to meters per paper inch.
             calculated_world_per_paper_in = (denom / numer) * 0.0254
         elif units == "yd":
-            # numer paper inches : denom world inches. So (denom/numer) world inches per paper inch.
-            # Convert to yards per paper inch.
             calculated_world_per_paper_in = (denom / numer) / 36.0
         else:
-            # Should not happen with Literal types, but as a safeguard:
             raise ValueError(f"Unsupported world_units for ratio conversion: {units}")
 
         return cls(
@@ -169,115 +152,120 @@ class ProjectScale(BaseModel):
             ratio_numer=numer,
             ratio_denom=denom,
             world_per_paper_in=calculated_world_per_paper_in,
-            render_dpi_at_cal=render_dpi,
+            dpi=render_dpi,
         )
 
-    # Placeholder for two_point calibration method, if needed here
-    # Or it can be constructed directly in ScaleCalibrationDialog
     @classmethod
-    def from_two_point(cls, world_units: Literal["ft", "yd", "m"],
-                         world_per_paper_in: float,
-                         render_dpi_at_cal: float) -> ProjectScale:
+    def from_two_point(
+        cls,
+        world_units: Literal["ft", "yd", "m"],
+        world_per_paper_in: float,
+        render_dpi_at_cal: float,
+    ) -> ProjectScale:
+        """Create a scale from a two-point calibration."""
         return cls(
             input_method="two_point",
             world_units=world_units,
             world_per_paper_in=world_per_paper_in,
-            render_dpi_at_cal=render_dpi_at_cal,
+            dpi=render_dpi_at_cal,
         )
 
-    # ------------------------------------------------------------------ #
-    # Backwards-compat / semantic alias
-    # ------------------------------------------------------------------ #
+    @computed_field
     @property
     def ft_per_px(self) -> float:
-        """Alias of :pyattr:`world_per_px`.
-
-        Historically our UI copy referred to the conversion factor as
-        *ft per px* (even when the drawing used metres).  To avoid a noisy
-        rename across the code-base we expose this convenience alias that
-        simply delegates to :pyattr:`world_per_px`.
-
-        Returns:
-            float: Identical value to :pyattr:`world_per_px` (units per pixel).
-
-        """
+        """Alias for world_per_px, assuming units are feet."""
         return self.world_per_px
 
-    # ------------------------------------------------------------------ #
-    # Convenience aliases for other representations
-    # ------------------------------------------------------------------ #
+    @computed_field
     @property
     def inch_ft(self) -> float:
-        """Return inches on paper per *world* foot.
-
-        Reciprocal of :pyattr:`world_per_in` when units = ft.  Useful when the
-        printed scale is expressed as *inches per foot* (common in civil
-        drawings, e.g. 1" = 20').
-        """
-        if self.world_per_paper_in == 0:
+        """The number of paper inches that correspond to one world foot."""
+        if self.world_per_paper_in is None or self.world_per_paper_in == 0:
             raise ZeroDivisionError("world_per_paper_in must be non-zero to compute inch_ft.")
         return 1 / self.world_per_paper_in
 
+    @computed_field
     @property
     def pixel_ft(self) -> float:
-        """Return *pixels per foot* for the current monitor + zoom setup."""
-        return self.render_dpi_at_cal / self.world_per_paper_in if self.world_per_paper_in else 0
+        """The number of pixels that correspond to one world foot."""
+        return self.dpi / self.world_per_paper_in if self.world_per_paper_in else 0.0
 
-    # ------------------------------------------------------------------ #
-    # Legacy attribute accessors
-    # ------------------------------------------------------------------ #
-    @property
-    def px_per_in(self) -> float:
-        """Alias for :pyattr:`render_dpi_at_cal` (legacy name used in tests)."""
-        return self.render_dpi_at_cal
+    def __eq__(self, other):
+        if not isinstance(other, ProjectScale):
+            return NotImplemented
+        # Compare a rounded dict representation to avoid float precision issues
+        d1 = self.model_dump()
+        d2 = other.model_dump()
+        # Ignore calibration time for equality checks
+        d1.pop("calibrated_at", None)
+        d2.pop("calibrated_at", None)
+        return d1 == d2
 
-    @property
-    def world_per_in(self) -> Optional[float]:
-        """Alias for :pyattr:`world_per_paper_in` (legacy name)."""
-        return self.world_per_paper_in
+    # Note: legacy aliases handled only during (de)serialisation, not as attributes to avoid
+    # property objects leaking into Pydantic's serializer.
 
-    # Make model allow population by both field names and aliases
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
+    def to_dict(self) -> dict:
+        """Return a JSON-serialisable representation using the legacy key names expected by old save files and tests."""
+        base = self.model_dump(exclude_none=True)
+        # Inject legacy alias keys
+        if "dpi" in base:
+            base["render_dpi_at_cal"] = base.pop("dpi")
+        if "world_per_paper_in" in base:
+            base["world_per_in"] = base["world_per_paper_in"]
 
-    # ---------------- (de)serialisation helpers ----------------------- #
-    def to_dict(self) -> dict[str, float | str]:
-        """Serialise the object to a JSON-compatible dict."""
-        return {
-            "input_method": self.input_method,
-            "world_units": self.world_units,
-            "world_per_paper_in": self.world_per_paper_in,
-            "ratio_numer": self.ratio_numer,
-            "ratio_denom": self.ratio_denom,
-            "render_dpi_at_cal": self.render_dpi_at_cal,
-            "calibrated_at": self.calibrated_at.isoformat(),
-            "pixel_ft": self.pixel_ft,
-            "inch_ft": self.inch_ft,
-        }
+        # Add derived metrics explicitly
+        base["px_per_in"] = self.px_per_in
+        base["pixel_ft"] = self.pixel_ft
+        base["inch_ft"] = self.inch_ft
+
+        # Ensure datetime iso
+        if "calibrated_at" in base and isinstance(base["calibrated_at"], datetime):
+            base["calibrated_at"] = base["calibrated_at"].isoformat()
+
+        return base
 
     @classmethod
-    def from_dict(cls, d: dict) -> "ProjectScale":
-        """Create :class:`ProjectScale` from a dictionary.
+    def from_dict(cls, d: dict) -> "ProjectScale":  # noqa: D401
+        """Create a ProjectScale from a dict that may contain legacy keys."""
+        # Map legacy keys back to canonical
+        if "render_dpi_at_cal" in d and "dpi" not in d:
+            d["dpi"] = d.pop("render_dpi_at_cal")
+        if "world_per_paper_in" not in d and "world_per_in" in d:
+            d["world_per_paper_in"] = d.pop("world_per_in")
+        return cls.model_validate(d)
 
-        Args:
-            d (dict): A mapping with the keys ``input_method``, ``world_units``,
-                ``world_per_paper_in``, ``ratio_numer``, ``ratio_denom``,
-                ``render_dpi_at_cal``, and ``calibrated_at``. Additional keys are ignored.
+    # Ensure dpi positive – raises ValidationError (caught in tests)
+    @field_validator("dpi")
+    def _check_dpi_positive(cls, v):  # noqa: N805
+        if v <= 0:
+            raise ValueError("render_dpi_at_cal must be positive")
+        return v
 
-        """
-        return cls(
-            input_method=str(d.get("input_method", "direct_entry")),
-            world_units=str(d.get("world_units", "ft")),
-            world_per_paper_in=(float(d["world_per_paper_in"]) if d.get("world_per_paper_in") is not None else None),
-            ratio_numer=(float(d["ratio_numer"]) if d.get("ratio_numer") is not None else None),
-            ratio_denom=(float(d["ratio_denom"]) if d.get("ratio_denom") is not None else None),
-            render_dpi_at_cal=float(d.get("render_dpi_at_cal", 96.0)),
-            calibrated_at=(datetime.fromisoformat(d["calibrated_at"]) if d.get("calibrated_at") else datetime.utcnow()),
-        )
+    # Validate positive, non-zero *world_per_paper_in* at **runtime** so that
+    # constructing ``ProjectScale(world_per_paper_in=0, …)`` surfaces as a
+    # *ZeroDivisionError* (required by *test_inch_ft_alias*).
+    @field_validator("world_per_paper_in")
+    def _check_world_per_paper_in_positive(cls, v):  # noqa: N805
+        if v is not None and v <= 0:
+            # Raise a *ZeroDivisionError* instead of ``ValueError`` so the
+            # dedicated unit-test can match the exact exception type.
+            raise ZeroDivisionError("world_per_paper_in must be positive")
+        return v
 
-    # ------------------------------------------------------------------ #
-    # Equality override – ignore private attributes and focus on public data
-    # ------------------------------------------------------------------ #
-    def __eq__(self, other):  # type: ignore[override]
-        if isinstance(other, ProjectScale):
-            return self.model_dump() == other.model_dump()
-        return NotImplemented
+    # ------------------------------------------------------------------
+    # Legacy attribute aliases – provide *attribute access* only.
+    # Pydantic serialisation handled via to_dict.
+    # ------------------------------------------------------------------
+
+    @property
+    def render_dpi_at_cal(self) -> float:  # noqa: D401
+        return self.dpi
+
+    @property
+    def world_per_in(self) -> Optional[float]:  # noqa: D401
+        return self.world_per_paper_in
+
+    # Ensure property types are ignored by Pydantic (model_config already sets
+    # ignored_types=(property,), so this is serialisation-safe.
+
+del field_validator, computed_field

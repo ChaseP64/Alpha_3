@@ -22,6 +22,14 @@ project_dir = _repo_root / "digcalc_project"
 if project_dir.exists() and str(project_dir) not in sys.path:
     sys.path.insert(0, str(project_dir))
 
+# Ensure that the legacy top-level import path "src" (which actually lives
+# under *digcalc_project/src*) is importable.  Some tests still use
+# ``from src.models.XXX import ...``.  We therefore prepend that directory to
+# *sys.path* **before** any such import is attempted.
+legacy_src_dir = project_dir / "src"
+if legacy_src_dir.exists() and str(legacy_src_dir) not in sys.path:
+    sys.path.insert(0, str(legacy_src_dir))
+
 # Attempt to set PyVista to off-screen rendering for tests
 try:
     import pyvista as pv
@@ -131,3 +139,23 @@ def sample_project(sample_project_json_path: Path) -> Project:
     proj = Project.load(str(sample_project_json_path))
     assert proj is not None, "Failed to load sample project fixture"
     return proj
+
+# ---------------------------------------------------------------------------
+# Additional fixtures required by UI tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def temporary_settings(tmp_path, monkeypatch):
+    """Temporary settings.json path used by UI tests.
+
+    Writes an empty JSON config file and points the SettingsService env var so
+    the application reads/writes to this isolated location.
+    """
+
+    cfg_file = tmp_path / "settings.json"
+    cfg_file.write_text("{}")
+
+    monkeypatch.setenv("DIGCALC_SETTINGS_PATH", str(cfg_file))
+
+    yield cfg_file

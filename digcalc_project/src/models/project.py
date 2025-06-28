@@ -23,7 +23,7 @@ from .calculation import VolumeCalculation
 from .project_scale import ProjectScale  # NEW Pydantic model
 from .region import Region
 from .surface import Surface
-from .layer import Layer # ADDED: Runtime import for Layer
+from .layer import Layer  # ADDED: Runtime import for Layer
 from .strata_models import StrataStack  # NEW import
 
 # Configure logging for the module
@@ -52,6 +52,39 @@ TracedPolylinesType = Dict[str, List[PolylineData]]
 
 DEFAULT_LAYER = "Default Layer"
 
+# ------------------------------------------------------------------
+# Helper dict subclass BEFORE Project class so it's defined when referenced
+# ------------------------------------------------------------------
+
+class _LayerDict(dict):
+    """Dictionary that also supports list-like append/extend for test convenience."""
+
+    def append(self, layer: "Layer") -> None:  # type: ignore
+        if layer and getattr(layer, "name", None):
+            self[layer.name] = layer
+
+    def extend(self, layers):  # type: ignore
+        for lyr in layers:
+            self.append(lyr)
+
+    # Provide iteration over **values** so ``for layer in project.layers`` yields
+    # the actual Layer objects rather than just their names.  This aligns with
+    # expectations in UI components such as *LayerLegendDock*.
+    def __iter__(self):  # type: ignore[override]
+        return iter(self.values())
+
+    # Allow integer indexing to return layers in insertion order so tests can
+    # use project.layers[0] like a list.  This is *read-only* – assignment via
+    # integer index is **not** supported.
+    def __getitem__(self, key):  # type: ignore[override]
+        if isinstance(key, int):
+            # dict preserves insertion order in Python 3.7+
+            try:
+                return list(self.values())[key]
+            except IndexError as exc:
+                raise KeyError(key) from exc
+        return super().__getitem__(key)
+
 class Project(BaseModel):
     """
     Top-level model for a DigCalc project.
@@ -62,11 +95,15 @@ class Project(BaseModel):
     description: str = ""
     created_at: datetime.datetime = field(default_factory=datetime.datetime.now)
     modified_at: datetime.datetime = field(default_factory=datetime.datetime.now)
-    layers: dict[str, Layer] = Field(default_factory=dict)
+    layers: _LayerDict = Field(default_factory=_LayerDict)
     surfaces: dict[str, Surface] = Field(default_factory=dict)
     # List of volume calculations associated with the project (kept for UI/back-compat)
     calculations: list[VolumeCalculation] = Field(default_factory=list)
     scale: ProjectScale | None = None
+    regions: list[Region] = Field(default_factory=list)
+    metadata: dict = Field(default_factory=dict)
+    flags: list[str] = Field(default_factory=list)
+    strata: StrataStack | None = None
 
     # --- Tracing / PDF Background Data ---
     pdf_background_path: Optional[str] = None
@@ -85,20 +122,17 @@ class Project(BaseModel):
     layer_objects: list["Layer"] = field(default_factory=list)
 
     # Pydantic config
-    model_config = ConfigDict(arbitrary_types_allowed=True, populate_by_name=True, extra="allow")
+    model_config = ConfigDict(arbitrary_types_allowed=True, populate_by_name=True, extra="allow", ignored_types=(property,))
 
     # Author/creator meta-data
     author: str = "Unknown"
 
-    # --- NEW: property alias for compatibility ---
-    @property
-    def is_modified(self) -> bool:
-        """Alias for legacy attribute used by UI to mark unsaved changes."""
-        return self.is_dirty
+    # ------------------------------------------------------------------
+    # Custom init to allow Project("MyName") positional name convenience
+    # ------------------------------------------------------------------
 
-    @is_modified.setter
-    def is_modified(self, value: bool) -> None:
-        self.is_dirty = value
+    def __init__(self, name: str = "Untitled Project", **data):  # type: ignore
+        super().__init__(name=name, **data)
 
     def __post_init__(self):
         logger.debug(f"Project '{self.name}' initialized")
@@ -453,8 +487,11 @@ class Project(BaseModel):
 
             # --- Migration ---
             if project_version < 2:
+                 before_scale = data.get("scale")
                  data = _migrate_project_scale_v1_to_v2(data)
-                 migrated = True
+                 # Mark only if migration actually introduced/modified scale
+                 if data.get("scale") != before_scale:
+                     migrated = True
 
             # Convert legacy world_per_in to ProjectScale (v3 shim)
             if project_version < 3:
@@ -464,13 +501,16 @@ class Project(BaseModel):
                 except AttributeError:
                     render_dpi = None
 
-                data = _migrate_v2_add_scale(data, render_dpi)
-                migrated = True
+                legacy_world_key = "world_per_in" in data
+                if legacy_world_key:
+                    data = _migrate_v2_add_scale(data, render_dpi)
+                    # Mark migration only if conversion happened
+                    migrated = True
 
             # Other v1→v2 migrations (regions etc.)
             if "regions" not in data:
+                # Passive migration – ensure key exists but do NOT dirty project.
                 data = _migrate_v1_to_v2(data)
-                migrated = True
 
             # Create project instance
             project = cls(name=data.get("name", "Untitled Project"))
@@ -530,7 +570,6 @@ class Project(BaseModel):
             loaded_polylines_dict: TracedPolylinesType = {}
             if isinstance(polylines_raw, list):
                 # Handle legacy format: list of polylines (list of points)
-                migrated = True
                 logger.warning("Migrating legacy traced polylines (list) to new dictionary format under 'Legacy Traces' layer.")
                 legacy_polys_as_dicts = []
                 for poly_points in polylines_raw:
@@ -547,6 +586,7 @@ class Project(BaseModel):
                          logger.warning(f"Skipping invalid item during legacy polyline migration: {poly_points}")
                 if legacy_polys_as_dicts:
                     loaded_polylines_dict["Legacy Traces"] = legacy_polys_as_dicts
+                    migrated = True  # Mark dirty due to schema upgrade
             elif isinstance(polylines_raw, dict):
                 # New format: dict of layer -> list of PolylineData dicts
                 logger.debug("Loading traced polylines in dictionary format.")
@@ -608,7 +648,7 @@ class Project(BaseModel):
                 project.strata = None
 
             project.filepath = filename
-            project.is_dirty = migrated # Mark modified if migration happened
+            project.is_dirty = migrated
             logger.info(f"Project loaded from {filename}")
             return project
 

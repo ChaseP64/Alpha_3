@@ -86,9 +86,12 @@ class SettingsService(Singleton):
         for k, v in group_map.items()
     }
 
-    def __init__(self) -> None:
-        if getattr(self, "_initialized", False):
+    def __init__(self, config_path: Path | None = None) -> None:
+        if getattr(self, "_initialized", False) and config_path is None:
             return
+            
+        if config_path:
+            self._path = config_path
 
         try:
             self._path.parent.mkdir(parents=True, exist_ok=True)

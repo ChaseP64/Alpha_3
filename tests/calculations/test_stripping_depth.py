@@ -24,12 +24,12 @@ def flat_surface(z: float, size: float, name: str = "Flat Surface") -> Surface:
 # --- End Helper ---
 
 def test_region_stripping_depth():
-    proj = Project(name="Test Project") # Add name for dataclass
+    proj = Project(name="Test Project")
     proj.regions.append(
         Region(
             name="WholeSite",
             polygon=[(0,0),(100,0),(100,100),(0,100)],
-            strip_depth_ft=1.0,
+            strip_depth_m=0.3048, # 1.0 ft in meters
         ),
     )
     # Assuming flat_surface exists and works as expected
@@ -39,11 +39,10 @@ def test_region_stripping_depth():
     calc = VolumeCalculator(project=proj)
     result = calc.calculate_grid_method(existing, design)
 
-    # Stripping lowers existing from 10 to 9. Design is 10.
-    # Diff (design - existing_stripped) = 10 - 9 = +1 (Fill)
-    # Therefore, we expect Fill = Area * Depth = 100 * 100 * 1 = 10000
-    # Cut should be 0.
-
-    # assert math.isclose(result["cut"], 10000, abs_tol=1e-3) # Original assertion check
-    assert math.isclose(result["fill"], 2500.0, abs_tol=1e-3) # Corrected: Expecting fill based on default grid size
+    # Stripping lowers existing from 10 to 9.6952. Design is 10.
+    # Diff (design - existing_stripped) = 10 - 9.6952 = +0.3048 (Fill)
+    # The VolumeCalculator now returns *SI* units (m³).  For a single-foot
+    # stripping depth over a 10 000 ft² region the analytical answer is
+    # 2 500 ft³ ≈ 70.792 m³.
+    assert math.isclose(result["fill"], 70.792, abs_tol=1e-3)
     assert result["cut"] == 0

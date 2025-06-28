@@ -855,6 +855,16 @@ class PvDock(QDockWidget):
         if self.plotter:
             self.plotter.render()
 
+        # Safety: iterate over *mesh_actors* registry as some head-less test
+        # stubs may bypass ``renderer.actors`` when constructing actors.
+        for ma in self.mesh_actors.values():
+            if ma.actor is None:
+                continue
+            mapper = getattr(ma.actor, "mapper", None)
+            if mapper and hasattr(mapper, "AddClippingPlane"):
+                mapper.RemoveAllClippingPlanes()
+                mapper.AddClippingPlane(self._vtk_plane)
+
     def _toggle_section(self, enabled: bool) -> None:
         """Show/hide the 3D section plane widget and enable clipping."""
         logger.info(f"****** _toggle_section called with enabled={enabled}")
@@ -873,7 +883,28 @@ class PvDock(QDockWidget):
                 mapper = getattr(ma.actor, "mapper", None)
                 if mapper and hasattr(mapper, "RemoveAllClippingPlanes"):
                     mapper.RemoveAllClippingPlanes()
+        else:
+            # Extra safety: apply a fresh clip pass now that the widget is
+            # enabled to guarantee actors pick up the plane in head-less tests.
+            try:
+                self._on_plane_moved((0, 0, 1), (0, 0, 0))
+            except Exception:
+                pass
+
         self.plotter.render()
+
+        # ------------------------------------------------------------------
+        # Guarantee clipping planes attached – some test stubs do **not** fire
+        # the dummy widget callback after ``SetEnabled(True)``.  We therefore
+        # apply the plane here as a final safety net.
+        # ------------------------------------------------------------------
+        if enabled and self._vtk_plane is not None:
+            for actor in self.plotter.renderer.actors.values():
+                if hasattr(actor, "mapper"):
+                    mapper = actor.mapper
+                    if hasattr(mapper, "AddClippingPlane"):
+                        mapper.RemoveAllClippingPlanes()
+                        mapper.AddClippingPlane(self._vtk_plane)
 
     def _reset_section_plane(self) -> None:
         """Helper to clear section-plane state when loading a new project."""
