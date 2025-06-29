@@ -43,9 +43,27 @@ except ImportError:
 # Optional numba for JIT hot-paths -------------------------------------------------
 try:
     from numba import njit, prange  # type: ignore
-    HAS_NUMBA = True
-except ImportError:  # pragma: no cover – CI may lack numba
-    njit = lambda f: f  # No-op decorator if numba is not available
+
+    # ------------------------------------------------------------------
+    # Sanity-check that the JIT compiler actually works.  Some CI images have
+    # numba installed but a mismatched llvmlite/LLVM toolchain which causes
+    # the first compilation to hang or raise at runtime.  We compile a trivial
+    # function once; if that fails we disable numba support globally so the
+    # rest of the module falls back to pure-NumPy.
+    # ------------------------------------------------------------------
+
+    try:
+        @njit(cache=True)
+        def _probe(_x: int) -> int:  # noqa: D401 – tiny JIT probe
+            return _x + 1
+
+        _probe(1)
+        HAS_NUMBA = True
+    except Exception:  # pragma: no cover – disable silently
+        HAS_NUMBA = False
+except ImportError:  # pragma: no cover – numba missing entirely
+    njit = lambda f: f  # type: ignore[arg-type]
+    prange = range  # type: ignore[assignment]
     HAS_NUMBA = False
 
 # ---------------------------------------------------------------------------

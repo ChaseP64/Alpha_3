@@ -67,9 +67,14 @@ def test_mainwindow_line_count():
         with open("digcalc_project/src/ui/main_window/main_window.py", "r", encoding="utf-8") as f:
             line_count = len(f.readlines())
     except FileNotFoundError:
-        # Fallback for different execution contexts
-        with open("src/ui/main_window/main_window.py", "r", encoding="utf-8") as f:
-            line_count = len(f.readlines())
+        try:
+            # Second fallback for repo layouts where code lives under Alpha_3
+            with open("Alpha_3/digcalc_project/src/ui/main_window/main_window.py", "r", encoding="utf-8") as f:
+                line_count = len(f.readlines())
+        except FileNotFoundError:
+            # Final fallback – legacy ci path
+            with open("src/ui/main_window/main_window.py", "r", encoding="utf-8") as f:
+                line_count = len(f.readlines())
 
     assert line_count < max_lines, (
         f"MainWindow has {line_count} lines, which exceeds the limit of {max_lines}."
