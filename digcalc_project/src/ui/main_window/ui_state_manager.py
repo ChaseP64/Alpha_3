@@ -12,7 +12,10 @@ here and the private helpers deleted from ``MainWindow``.
 import logging
 from typing import TYPE_CHECKING, Optional
 
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QAction
+from PySide6.QtWidgets import QTreeWidgetItem
+from PySide6.QtCore import Qt
+from shiboken6 import isValid  # type: ignore
 
 if TYPE_CHECKING:
     # Forward-decl to avoid circular import at runtime.
@@ -103,10 +106,11 @@ class UIStateManager:
 
         self.logger.debug(f"PDF controls updated: has_pdf={has_pdf}, page_count={page_count}, current_page={current_page_1_based}")
         self.update_scale_action_enabled(has_pdf)
-        try:
-            self._mw.status_bar_manager.update_from_project()
-        except Exception as exc:
-            self.logger.warning("Failed to refresh scale pill in update_pdf_controls: %s", exc)
+        if hasattr(self._mw, "status_bar_manager"):
+            try:
+                self._mw.status_bar_manager.update_from_project()
+            except Exception as exc:
+                self.logger.warning("Failed to refresh scale pill in update_pdf_controls: %s", exc)
 
     # View actions ------------------------------------------------------------
     def update_view_actions_state(self) -> None:
@@ -201,8 +205,21 @@ class UIStateManager:
     # Scale helpers -----------------------------------------------------------
     def update_scale_action_enabled(self, loaded: bool) -> None:
         """Enable/disable the *Calibrate Scale…* action."""
-        if hasattr(self._mw, 'scale_calib_act'):
-            self._mw.scale_calib_act.setEnabled(loaded)
+        # If the MainWindow C++ object is already gone (shutdown during test
+        # teardown) we cannot touch any Qt objects – simply bail.
+        if not isValid(self._mw):
+            return
+
+        if hasattr(self._mw, "scale_calib_act"):
+            act = self._mw.scale_calib_act  # noqa: SLF001
+            # Ensure underlying C++ object still alive (tests may close menus).
+            try:
+                if isValid(act):
+                    act.setEnabled(loaded)
+                else:
+                    self.logger.debug("scale_calib_act already deleted – skipping enable update.")
+            except RuntimeError:  # underlying QObject deleted
+                self.logger.debug("scale_calib_act RuntimeError – skipping.")
 
     def update_scale_pill(self) -> None:
         """Force a refresh of the scale display in the status bar."""
@@ -240,4 +257,35 @@ class UIStateManager:
                     break
         
         self._mw.build_surface_action.setEnabled(enabled)
-        self.logger.debug(f"Set build_surface_action enabled state: {enabled}") 
+        self.logger.debug(f"Set build_surface_action enabled state: {enabled}")
+
+    # Layer tree -----------------------------------------------------------
+    def update_layer_tree(self) -> None:
+        """Refresh the *Layers* dock tree based on the current project."""
+        mw = self._mw
+        if not hasattr(mw, "layer_tree"):
+            self.logger.warning("update_layer_tree called before layer_tree exists")
+            return
+
+        tree = mw.layer_tree
+        tree.blockSignals(True)
+        tree.clear()
+
+        layers: list[str] = []
+        project = mw.project_controller.get_current_project() if hasattr(mw, "project_controller") else None
+
+        if project:
+            surface_layers = list(project.surfaces.keys()) if hasattr(project, "surfaces") else []
+            trace_layers = project.get_layers() if hasattr(project, "get_layers") else []
+            layers = sorted({*surface_layers, *trace_layers})
+
+        for name in layers:
+            item = QTreeWidgetItem(tree, [name])  # type: ignore[name-defined]
+            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)  # type: ignore[attr-defined]
+            item.setCheckState(0, Qt.Checked)
+
+        tree.expandAll()
+        tree.blockSignals(False)
+
+        self.logger.debug("Layer tree updated with layers: %s", layers)
+        self.update_build_surface_action_state() 

@@ -46,15 +46,19 @@ class PolylineInteractionHandler(QObject):
 
         point_tuples_for_storage = world_points_3d
 
+        # Log the first few points for easier debugging but avoid spamming.
         logger.debug(
-            f"Polyline received with {len(point_tuples_for_storage)} 3D points for layer '{layer_name}'."
+            "Polyline received: layer='%s', point_count=%d, first_points=%s",
+            layer_name,
+            len(point_tuples_for_storage),
+            point_tuples_for_storage[:3],
         )
 
         polyline_data_for_project: PolylineData = {
             "points": point_tuples_for_storage,
-            "elevation": None,
-            "is_strata": bool(item.data(4) or False),
-            "material_id": item.data(5),
+            "elevation": None,  # Per-vertex Z present, uniform elevation unused
+            "is_strata": bool(item.data(Qt.UserRole + 4) or False),
+            "material_id": item.data(Qt.UserRole + 5),
         }
 
         new_index: Optional[int] = project.add_traced_polyline(
@@ -148,19 +152,61 @@ class PolylineInteractionHandler(QObject):
             logger.error(f"Could not find polyline at index {index} in layer '{layer_name}' to update.")
             return
 
-        if 'points' in polyline_data and polyline_data['points']:
-            old_z = polyline_data['points'][0][2] if len(polyline_data['points'][0]) > 2 else 'N/A'
-            logger.info(f"Applying elevation edit. Layer: {layer_name}, Index: {index}, Old Z: {old_z}, New Z: {new_elevation}")
-            
+        if "points" in polyline_data and polyline_data["points"]:
+            old_z = (
+                polyline_data["points"][0][2]
+                if len(polyline_data["points"][0]) > 2
+                else "N/A"
+            )
+
+            # Only update if the value actually changed (avoid churn)
+            elevation_changed: bool = False
+            if (polyline_data.get("elevation") is None) != (new_elevation is None):
+                elevation_changed = True
+            elif (
+                polyline_data.get("elevation") is not None
+                and new_elevation is not None
+                and abs(polyline_data.get("elevation") - new_elevation) > 1e-6
+            ):
+                elevation_changed = True
+
+            if not elevation_changed:
+                logger.debug(
+                    "Elevation unchanged for %s[%d] – skipping update.",
+                    layer_name,
+                    index,
+                )
+                return
+
+            logger.info(
+                "Applying elevation edit. Layer=%s, Index=%d, OldZ=%s, NewZ=%s",
+                layer_name,
+                index,
+                old_z,
+                new_elevation,
+            )
+
             project.update_polyline_elevation(layer_name, index, new_elevation)
-            
-            scene_item = mw.visualization_panel.scene_2d.find_item_by_index(layer_name, index)
-            if scene_item:
-                mw.visualization_panel.scene_2d.refresh_layer_item(layer_name, target_item=scene_item)
-            
+
+            # Refresh the 2-D scene item if it exists
+            if hasattr(mw.visualization_panel, "scene_2d"):
+                scene_item = mw.visualization_panel.scene_2d.find_item_by_index(
+                    layer_name, index
+                )
+                if scene_item:
+                    mw.visualization_panel.scene_2d.refresh_layer_item(
+                        layer_name, target_item=scene_item
+                    )
+
+            # Trigger downstream rebuilds & UI state refresh
             mw._queue_surface_rebuilds_for_layer(layer_name)
+            mw.ui_state.update_build_surface_action_state()
         else:
-            logger.warning(f"Polyline data for layer '{layer_name}' at index {index} has no points.")
+            logger.warning(
+                "Polyline data for layer '%s' at index %d has no points.",
+                layer_name,
+                index,
+            )
 
     def _delete_selected_polyline(self):
         """Deletes the currently selected polyline from the project and scene."""

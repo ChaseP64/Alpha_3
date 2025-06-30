@@ -13,7 +13,7 @@ import numpy as np  # Added for type hinting dz_grid etc.
 from PySide6 import QtWidgets
 
 # PySide6 imports
-from PySide6.QtCore import QSize, Qt, QTimer, Signal, Slot  # Added QTimer
+from PySide6.QtCore import QSize, Qt, Signal, Slot
 from PySide6.QtGui import (  # Added QPixmap
     QAction,
     QActionGroup,
@@ -29,7 +29,6 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QGraphicsItem,
     QGraphicsPathItem,
-    QLabel,
     QMainWindow,
     QMessageBox,
     QSpinBox,
@@ -67,6 +66,9 @@ from digcalc_project.src.ui.docks.pdf_thumbnail_dock import PdfThumbnailDock  # 
 # from src.ui.project_controller import ProjectController # OLD
 from digcalc_project.src.ui.project_controller import ProjectController  # NEW
 
+# --- Surface rebuild manager ---
+from .surface_rebuild_manager import SurfaceRebuildManager
+
 from ...core.calculations.volume_calculator import VolumeCalculator
 from ...core.geometry.surface_builder import SurfaceBuilder, SurfaceBuilderError
 
@@ -89,26 +91,9 @@ from digcalc_project.src.ui.docks.layer_legend_dock import LayerLegendDock
 
 from ...ui.pv_plotter_singleton import get_plotter, _plotter as plotter_instance # Import for shutdown
 from ...models.strata_models import StrataStack
+from ..widgets.clickable_label import ClickableLabel
 
 logger = logging.getLogger(__name__)
-
-
-# --- NEW: ClickableLabel Class ---
-class ClickableLabel(QLabel):
-    """A QLabel that emits a clicked signal when clicked."""
-
-    clicked = Signal()
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setCursor(Qt.PointingHandCursor)
-
-    def mouseReleaseEvent(self, event):
-        """Emit clicked signal on left button release."""
-        if event.button() == Qt.LeftButton:
-            self.clicked.emit()
-        super().mouseReleaseEvent(event)
-# --- END NEW ---
 
 
 class MainWindow(QMainWindow):
@@ -154,12 +139,8 @@ class MainWindow(QMainWindow):
         self._last_pad_elev: float | None = None  # Remember last pad elevation
 
         # --- Rebuild Engine Members ---
-        self._rebuild_needed_layers: set[str] = set()
-        self._rebuild_timer = QTimer(self)
-        self._rebuild_timer.setInterval(250) # Debounce interval in ms
-        self._rebuild_timer.setSingleShot(True)
-        self._rebuild_timer.timeout.connect(self._process_rebuild_queue)
-        # --- End Rebuild Engine Members ---
+        # Centralised rebuild manager handles all surface rebuild queuing.
+        self.surface_rebuild_manager = SurfaceRebuildManager(self)
 
         # Set up the main window properties
         self.setWindowTitle("DigCalc - Excavation Takeoff Tool")
@@ -219,42 +200,24 @@ class MainWindow(QMainWindow):
             # lives in production-only modules which are too heavy for CI.
             from types import SimpleNamespace  # local import
             # Provide a stub with the methods SignalBinder expects.
-            self.view_mode_handler = SimpleNamespace(  # type: ignore[attr-defined]
+            stub_ns = SimpleNamespace(  # type: ignore[attr-defined]
                 on_view_2d=self.on_view_2d,
                 on_view_3d=self.on_view_3d,
                 _fit_view_to_scene=lambda *a, **k: None,
-            )
-            # Provide a lightweight stub for *action_handler* referenced by
-            # SignalBinder.  Each method is a no-op lambda.
-            self.action_handler = SimpleNamespace(  # type: ignore[attr-defined]
                 calculate_volume=lambda *a, **k: None,
                 build_surface=lambda *a, **k: None,
                 generate_report=lambda *a, **k: None,
                 export_report=lambda *a, **k: None,
                 daylight_offset=lambda *a, **k: None,
                 mass_haul=lambda *a, **k: None,
-            )
-            # Stub scene_handler with just the required slot
-            self.scene_handler = SimpleNamespace(  # type: ignore[attr-defined]
                 on_toggle_tracing_mode=lambda *a, **k: None,
             )
+            self.view_mode_handler = self.view_mode_handler if hasattr(self, "view_mode_handler") else stub_ns
+            self.action_handler = self.action_handler if hasattr(self, "action_handler") else stub_ns
+            self.scene_handler = self.scene_handler if hasattr(self, "scene_handler") else stub_ns
         except Exception as exc:  # pragma: no cover – defensive
             self.logger.warning("PolylineInteractionHandler unavailable – using stub (%s)", exc)
             self.polyline_handler = None  # type: ignore[attr-defined]
-            from types import SimpleNamespace
-            self.view_mode_handler = SimpleNamespace(  # type: ignore[attr-defined]
-                on_view_2d=self.on_view_2d,
-                on_view_3d=self.on_view_3d,
-                _fit_view_to_scene=lambda *a, **k: None,
-            )
-
-            # Ensure layer_legend_controller also exists when PolylineInteractionHandler failed
-            def _noop(*_args, **_kwargs):
-                pass
-
-            self.layer_legend_controller = SimpleNamespace(  # type: ignore[attr-defined]
-                _on_layer_visibility_changed=_noop,
-            )
 
         # ---------------------------------------------
         # Lightweight *LayerLegendController* or stub –
@@ -427,16 +390,18 @@ class MainWindow(QMainWindow):
         # Fallback: Minimal Strata Manager Dock for unit-tests
         # ------------------------------------------------------------------
         if not hasattr(self, "strata_manager_dock"):
-            from PySide6.QtGui import QUndoStack
+            try:
+                from tests.mocks.gui_stubs import StubStrataDock as _StubStrataDock  # type: ignore
+            except ImportError:
+                # Fallback tiny stub if tests package not present
+                from PySide6.QtGui import QUndoStack
 
-            class _StubStrataDock:  # Local lightweight replacement
-                """Stub dock with an undo stack – provides minimal API for tests."""
+                class _StubStrataDock:  # noqa: D401 – minimal inline
+                    def __init__(self, parent_widget):
+                        self.undo_stack = QUndoStack(parent_widget)
 
-                def __init__(self, parent_widget):
-                    self.undo_stack = QUndoStack(parent_widget)
-
-                def refresh_boreholes(self):  # Called by MainWindow
-                    pass
+                    def refresh_boreholes(self):
+                        pass
 
             self.strata_manager_dock = _StubStrataDock(self)  # type: ignore[attr-defined]
 
@@ -473,93 +438,18 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage("Ready")
         # Maybe add PDF page info to status bar later?
 
-
-
-
     def _update_analysis_actions_state(self):
         """Enable/disable analysis actions based on the current project state.
         Specifically, enables volume calculation if >= 2 surfaces exist.
         """
-        project = self.project_controller.get_current_project()
-        can_calculate = bool(project and len(project.surfaces) >= 2)
-        self.calculate_volume_action.setEnabled(can_calculate)
-        # --- NEW: Enable mass-haul button when Existing & Design surfaces present
-        has_req_surfaces = False
-        if project:
-            has_req_surfaces = (
-                getattr(project, "existing_surface", None) is not None
-                and getattr(project, "design_surface", None) is not None
-            )
-        self.masshaul_action.setEnabled(can_calculate and has_req_surfaces)
-        # --- END NEW ---
-        self.logger.debug(f"Calculate Volume action enabled state: {can_calculate}")
+        if hasattr(self, "ui_state"):
+            self.ui_state.update_analysis_actions_state()
 
     def _update_pdf_controls(self):
-        """Updates the state of PDF-related controls (spinbox, labels, actions).
-        Now uses VisualizationPanel to get document state.
-        """
-        # Get state directly from VisualizationPanel
-        panel = self.visualization_panel
-        has_pdf = panel.has_pdf() # Checks if renderer and bg item exist
-        page_count = panel.pdf_renderer.get_page_count() if panel.pdf_renderer else 0
-        # current_pdf_page in panel is 1-based
-        current_page_1_based = panel.current_pdf_page if has_pdf else 1
-
-        # --- FIX: Use correct attribute names (remove leading underscore) ---
-        if self.pdf_page_spinbox:
-            self.pdf_page_spinbox.setEnabled(has_pdf and page_count > 1)
-            self.pdf_page_spinbox.setRange(1, max(1, page_count))
-            # Block signals temporarily to avoid recursive updates
-            self.pdf_page_spinbox.blockSignals(True)
-            self.pdf_page_spinbox.setValue(current_page_1_based)
-            self.pdf_page_spinbox.blockSignals(False)
-        else:
-             self.logger.warning("Cannot update missing pdf_page_spinbox")
-
-        if self.pdf_page_label:
-            if has_pdf:
-                # Assuming page_label is not readily available, just show numbers
-                self.pdf_page_label.setText(f"Page: {current_page_1_based} / {page_count}")
-            else:
-                self.pdf_page_label.setText("Page: N/A")
-        else:
-             self.logger.warning("Cannot update missing pdf_page_label")
-        # --- END FIX ---
-
-        # Enable/disable next/prev actions (ensure they exist)
-        # Use 1-based index for comparison
-        if hasattr(self, "prev_pdf_page_action"):
-            self.prev_pdf_page_action.setEnabled(has_pdf and current_page_1_based > 1)
-        if hasattr(self, "next_pdf_page_action"):
-            self.next_pdf_page_action.setEnabled(has_pdf and current_page_1_based < page_count)
-
-        # Show/hide thumbnail dock based on whether a PDF is loaded
-        self.pdf_thumbnail_dock.setVisible(has_pdf)
-
-        # --- FIX: Show/hide the PDF toolbar itself ---
-        if hasattr(self, "pdf_toolbar"):
-            self.pdf_toolbar.setVisible(has_pdf)
-            self.logger.debug(f"Setting PDF toolbar visibility to: {has_pdf}")
-        else:
-            self.logger.warning("Cannot set PDF toolbar visibility: pdf_toolbar attribute not found.")
-        # --- END FIX ---
-
-        self.logger.debug(f"PDF controls updated: has_pdf={has_pdf}, page_count={page_count}, current_page={current_page_1_based}")
-
-        # ------------------------------------------------------------------
-        # Update Scale-Calibration action enabled/disabled state
-        # ------------------------------------------------------------------
-        self._update_scale_action_enabled(has_pdf)
-
-        # --- NEW: Refresh scale pill whenever PDF controls change (may affect DPI) ---
-        try:
-            self._update_scale_pill()
-        except Exception as exc:
-            self.logger.warning("Failed to refresh scale pill in _update_pdf_controls: %s", exc)
-        # --- END NEW ---
+        if hasattr(self, "ui_state"):
+            self.ui_state.update_pdf_controls()
 
     # Event handlers
-
 
     def _on_visualization_failed(self, surface_name: str, error_msg: str):
         """Handle visualization failure.
@@ -650,8 +540,6 @@ class MainWindow(QMainWindow):
             self.logger.info("Volume calculation dialog cancelled by user.")
             self.statusBar().showMessage("Calculation cancelled.", 3000)
 
-
-
     def closeEvent(self, event):
         """Handle the main window close event."""
         self.logger.info("Close event triggered.")
@@ -670,114 +558,38 @@ class MainWindow(QMainWindow):
     # --- PDF Background and Tracing Handlers ---
 
     def on_load_pdf_background(self):
-        """Handles loading a PDF file as a background."""
-        self.logger.debug("on_load_pdf_background slot entered.")
-        filename, _ = QFileDialog.getOpenFileName(
-            self,
-            "Load PDF Background",
-            "",
-            "PDF Files (*.pdf);;All Files (*)",
-        )
-
-        if filename:
-            self.logger.info(f"User selected PDF for background: {filename}")
-            self.statusBar().showMessage(f"Loading PDF background '{Path(filename).name}'...", 0)
-            success = False # Flag to track successful loading
-            try:
-                # Call the panel's load method, which now returns success/failure
-                success = self.visualization_panel.load_pdf_background(filename, dpi=self.pdf_dpi_setting)
-
-                if success:
-                    # Get project from controller
-                    project = self.project_controller.get_current_project()
-                    if project:
-                        project.pdf_background_path = filename
-                        # Use the actual current page from the panel (might be adjusted if initial_page was invalid)
-                        project.pdf_background_page = self.visualization_panel.current_pdf_page
-                        project.pdf_background_dpi = self.pdf_dpi_setting
-                        project.clear_traced_polylines() # Clear old traces if new PDF loaded
-                        self.visualization_panel.clear_polylines_from_scene() # Clear visuals too
-
-                    # Update status bar only on success, getting page count safely
-                    page_count = self.visualization_panel.pdf_renderer.get_page_count() if self.visualization_panel.pdf_renderer else 0
-                    self.statusBar().showMessage(f"Loaded PDF background '{Path(filename).name}' ({page_count} pages).", 5000)
-                    self.logger.info(f"Successfully loaded PDF background '{Path(filename).name}' with {page_count} pages.")
-                    # ADDED LOG: Confirm _update_ui_for_project is called
-                    self.logger.info(f"[on_load_pdf_background] SUCCESS: About to call _update_ui_for_project with project: {project.name if project else 'None'}")
-                    self._update_ui_for_project(project) # Update UI with the (potentially new) project
-                else:
-                    # Loading failed (error already logged by visualization_panel)
-                    raise PDFRendererError("Loading or rendering PDF background failed.") # Re-raise specific error for unified handling
-
-            except (FileNotFoundError, PDFRendererError, Exception) as e:
-                 # Catch errors from load_pdf_background OR re-raised error
-                 self.logger.exception(f"Failed to load PDF background: {e}")
-                 QMessageBox.critical(self, "PDF Load Error", f"Failed to load PDF background:\n{e}")
-                 self.statusBar().showMessage("Failed to load PDF background.", 5000)
-                 # Ensure project state reflects failure if project object exists
-                 project = self.project_controller.get_current_project()
-                 if project and project.pdf_background_path == filename:
-                     project.pdf_background_path = None
-                     project.pdf_background_page = 0
-                     project.pdf_background_dpi = 0
-            finally:
-                 # Always update controls regardless of success/failure
-                 self._update_pdf_controls()
-                 self._update_view_actions_state()
-        else:
-            self.logger.info("Load PDF background cancelled by user.")
-            self.statusBar().showMessage("Load cancelled.", 3000)
+        """Delegate to :class:`PDFEventHandler` implementation."""
+        if hasattr(self, "pdf_handler"):
+            self.pdf_handler.on_load_pdf_background()
 
     def on_clear_pdf_background(self):
-        """Removes the PDF background from the visualization panel."""
-        self.logger.debug("Clearing PDF background via MainWindow action.")
-        self.visualization_panel.clear_pdf_background()
-        # Consider if clearing PDF should also clear/disable cut/fill map?
-        # Let's assume yes for now, as context might be lost.
-        self._clear_cutfill_state()
-        self._update_pdf_controls()
+        if hasattr(self, "pdf_handler"):
+            self.pdf_handler.on_clear_pdf_background()
 
     def on_next_pdf_page(self):
-        """Handles moving to the next PDF page."""
-        if self.visualization_panel.pdf_renderer:
-             current = self.visualization_panel.current_pdf_page
-             total = self.visualization_panel.pdf_renderer.get_page_count()
-             if current < total:
-                  self.visualization_panel.set_pdf_page(current + 1)
-                  # Get project from controller
-                  project = self.project_controller.get_current_project()
-                  if project:
-                       project.pdf_background_page = current + 1
-                  self._update_pdf_controls()
-                  self.statusBar().showMessage(f"Showing PDF page {current + 1}/{total}", 3000)
+        if hasattr(self, "pdf_handler"):
+            self.pdf_handler.on_next_pdf_page()
 
     def on_prev_pdf_page(self):
-        """Handles moving to the previous PDF page."""
-        if self.visualization_panel.pdf_renderer:
-             current = self.visualization_panel.current_pdf_page
-             total = self.visualization_panel.pdf_renderer.get_page_count()
-             if current > 1:
-                  self.visualization_panel.set_pdf_page(current - 1)
-                  # Get project from controller
-                  project = self.project_controller.get_current_project()
-                  if project:
-                       project.pdf_background_page = current - 1
-                  self._update_pdf_controls()
-                  self.statusBar().showMessage(f"Showing PDF page {current - 1}/{total}", 3000)
+        if hasattr(self, "pdf_handler"):
+            self.pdf_handler.on_prev_pdf_page()
 
     def on_set_pdf_page_from_spinbox(self, page_number: int):
-        """Handles setting the PDF page from the spinbox."""
-        if self.pdf_page_spinbox.isEnabled() and page_number > 0:
-             self.logger.debug(f"Setting PDF page from spinbox to: {page_number}")
-             self.visualization_panel.set_pdf_page(page_number)
-             # --- FIX: Get project from controller ---
-             project = self.project_controller.get_current_project()
-             if project:
-                  project.pdf_background_page = page_number
-             # --- END FIX ---
-             self._update_pdf_controls()
-             total = self.visualization_panel.pdf_renderer.get_page_count() if self.visualization_panel.pdf_renderer else 0
-             self.statusBar().showMessage(f"Showing PDF page {page_number}/{total}", 3000)
+        if hasattr(self, "pdf_handler"):
+            self.pdf_handler.on_set_pdf_page_from_spinbox(page_number)
+
+    def _on_pdf_page_selected(self, page_index: int):
+        if hasattr(self, "pdf_handler"):
+            self.pdf_handler._on_pdf_page_selected(page_index)
+
+    @Slot(int)
+    def _on_document_loaded(self, page_count: int) -> None:
+        if hasattr(self, "pdf_handler"):
+            self.pdf_handler._on_document_loaded(page_count)
+
+    def _on_trace_from_pdf(self):
+        if hasattr(self, "pdf_handler"):
+            self.pdf_handler._on_trace_from_pdf()
 
     @Slot(bool)
     def on_toggle_tracing_mode(self, checked: bool):
@@ -798,251 +610,32 @@ class MainWindow(QMainWindow):
 
     @Slot(QTreeWidgetItem, int)
     def _on_layer_visibility_changed(self, item: QTreeWidgetItem, column: int):
-        """Slot called when a layer's checkbox state changes in the dock."""
-        if column == 0:
-            layer_name = item.text(0)
-            is_visible = item.checkState(0) == Qt.Checked
-            self.logger.debug(f"Layer '{layer_name}' visibility toggle -> {is_visible}")
-            if self.visualization_panel and self.visualization_panel.scene_2d and hasattr(self.visualization_panel.scene_2d, "setLayerVisible"):
-                self.visualization_panel.scene_2d.setLayerVisible(layer_name, is_visible)
-            else:
-                self.logger.warning("Cannot toggle layer visibility: Visualization panel, scene_2d, or setLayerVisible method not found.")
+        """Delegate to :class:`LayerLegendController` implementation."""
+        if hasattr(self, "layer_legend_controller"):
+            self.layer_legend_controller._on_layer_visibility_changed(item, column)
 
     @Slot(list, QGraphicsPathItem)
     def _on_polyline_drawn(self, world_points_3d: list, item: QGraphicsPathItem):
-        """Handles the polyline_finalized signal from TracingScene.
-
-        The received 'world_points_3d' are List[Tuple[float, float, float]]
-        with Z-values already determined by the TracingScene's elevation workflow.
-        Adds the polyline data (now always 3D) to the project.
-        Stores the final index back into the QGraphicsPathItem.
-        """
-        project = self.project_controller.get_current_project()
-        if not project:
-            logger.warning("Polyline drawn but no active project.")
-            if item.scene(): item.scene().removeItem(item)
-            return
-
-        layer_name = item.data(Qt.UserRole + 1) # Key used in _finalize_current_polyline
-        if layer_name is None:
-             logger.error("Finalized polyline item is missing layer data! Assigning to 'Default'.")
-             layer_name = "Default"
-
-        # The world_points_3d argument is now always List[Tuple[float, float, float]]
-        # The old logic distinguishing elevation_mode to format points is removed.
-        point_tuples_for_storage = world_points_3d
-
-        # The 'elevation' field in PolylineData is for a single, uniform elevation.
-        # Since Z is now per-vertex in point_tuples_for_storage, this can be None.
-        # Project.add_traced_polyline will need to handle points with Z-values.
-        active_elevation_value_for_log = None # For logging, as the old 'elevation' var is gone.
-
-        logger.debug(
-            f"Polyline received with {len(point_tuples_for_storage)} 3D points for layer '{layer_name}'."
-        )
-        logger.debug(f"Points for storage (first 3): {point_tuples_for_storage[:3]}")
-
-        polyline_data_for_project: PolylineData = {
-            "points": point_tuples_for_storage, # This is List[Tuple[float,float,float]]
-            "elevation": None,  # Uniform elevation is None; Z is in points
-            "is_strata": bool(item.data(Qt.UserRole + 4) or False),
-            "material_id": item.data(Qt.UserRole + 5),
-        }
-
-        new_index: Optional[int] = project.add_traced_polyline(
-            polyline=polyline_data_for_project,
-            layer_name=layer_name,
-        )
-
-        if new_index is not None:
-            try:
-                item.setData(1, new_index) # Store project index on the scene item
-                self.logger.info(
-                    f"Added traced polyline (Index: {new_index}, with per-vertex elevation) to layer '{layer_name}'."
-                )
-                self.project_panel._update_tree()
-                self._update_layer_tree()
-                self.statusBar().showMessage(f"Polyline with per-vertex Z added to layer '{layer_name}'.", 3000)
-                
-                if self.visualization_panel:
-                    self.logger.debug(f"[MainWindow._on_polyline_drawn] Calling refresh_layer_item for layer '{layer_name}'.")
-                    self.visualization_panel.scene_2d.refresh_layer_item(layer_name, target_item=item)
-
-                self._queue_surface_rebuilds_for_layer(layer_name)
-            except Exception as e:
-                 logger.error(f"Error updating UI/logging after adding polyline (Index: {new_index}, Layer: '{layer_name}'): {e}", exc_info=True)
-        else:
-             self.logger.error(f"Failed to add traced polyline to layer '{layer_name}' in project (add_traced_polyline returned None).")
-             if item.scene(): item.scene().removeItem(item)
-             QMessageBox.warning(self, "Error", f"Could not add polyline to project layer '{layer_name}'.")
+        """Delegate to PolylineInteractionHandler implementation."""
+        if hasattr(self, "polyline_handler"):
+            self.polyline_handler._on_polyline_drawn(world_points_3d, item)
 
     @Slot(QGraphicsItem)
     def _on_item_selected(self, item: Optional[QGraphicsItem]):
-        """Handles the selectionChanged signal from the TracingScene.
-        Loads the selected polyline's data into the PropertiesDock.
-        Stores a reference to the selected scene item.
-        """
-        logger.debug(f"--- _on_item_selected --- START --- Item: {item}")
-
-        # Get project from controller first
-        project = self.project_controller.get_current_project()
-        if not project:
-            self._selected_scene_item = None # Clear selection reference
-            logger.warning("_on_item_selected called but no current project.")
-            if hasattr(self, "prop_dock"): self.prop_dock.clear_selection()
-            if hasattr(self, "prop_dock"): self.prop_dock.hide()
-            logger.debug("--- _on_item_selected --- END (no project) ---")
-            return
-        if not hasattr(self, "prop_dock") or not self.prop_dock:
-            self._selected_scene_item = None # Clear selection reference
-            logger.error("Properties dock not initialized.")
-            logger.debug("--- _on_item_selected --- END (no properties dock) ---")
-            return
-
-        if item and isinstance(item, QGraphicsPathItem):
-            # --- Store reference to selected item ---
-            self._selected_scene_item = item
-            # --- End Store ---
-            layer_name = item.data(0)
-            index = item.data(1)
-            logger.debug(f"  Item is QGraphicsPathItem. Layer Data (0): {layer_name}, Index Data (1): {index}")
-
-            if layer_name is not None and index is not None:
-                logger.debug(f"  Attempting to load data for Layer='{layer_name}', Index={index}")
-                try:
-                    # Retrieve the polyline data - could be dict or list
-                    if layer_name not in project.traced_polylines or \
-                       not isinstance(project.traced_polylines[layer_name], list) or \
-                       index >= len(project.traced_polylines[layer_name]):
-                        logger.warning(f"  Invalid layer/index lookup ({layer_name}/{index}).")
-                        raise IndexError(f"Invalid layer/index ({layer_name}/{index}) for selection.")
-
-                    poly_data = project.traced_polylines[layer_name][index]
-                    elevation = None
-                    logger.debug(f"  Retrieved poly_data type: {type(poly_data)}, Value: {poly_data}")
-
-                    # Handle old list format vs new dict format
-                    if isinstance(poly_data, dict):
-                        elevation = poly_data.get("elevation")
-                        logger.debug(f"  Loading elevation from dict: {elevation}")
-                    elif isinstance(poly_data, list):
-                        logger.debug("  Loading old format polyline (list), elevation assumed None.")
-                        elevation = None
-                    else:
-                        logger.warning(f"  Unexpected data type for polyline at {layer_name}[{index}]: {type(poly_data)}")
-                        raise TypeError(f"Unexpected data type for polyline: {type(poly_data)}")
-
-                    logger.debug(f"  Calling prop_dock.load_polyline with: layer='{layer_name}', index={index}, elevation={elevation}")
-                    self.prop_dock.load_polyline(layer_name, index, elevation)
-                    # Explicitly show the dock after loading data
-                    self.prop_dock.show()
-                    self.prop_dock.raise_() # Optional: Bring to front
-
-                except Exception as e:
-                    logger.error(f"  ERROR during data retrieval/processing for {layer_name}[{index}]: {e}", exc_info=True)
-                    self._selected_scene_item = None # Clear on error
-                    self.prop_dock.clear_selection()
-                    self.prop_dock.hide()
-                    QMessageBox.warning(self, "Selection Error", f"Could not load data for selected polyline:\nLayer: {layer_name}, Index: {index}\nError: {e}")
-            else:
-                logger.warning(f"  Selected QGraphicsPathItem missing layer ({layer_name}) or index ({index}) data.")
-                self._selected_scene_item = None # Clear selection reference
-                self.prop_dock.clear_selection()
-        else:
-            # Selection cleared or non-polyline selected
-            if item:
-                 logger.debug(f"  Selection changed, but item is not a QGraphicsPathItem (Type: {type(item)}). Clearing properties.")
-            else:
-                 logger.debug("  Selection changed to None (cleared). Clearing properties.")
-            self._selected_scene_item = None # Clear selection reference
-            self.prop_dock.clear_selection()
-
-        logger.debug("--- _on_item_selected --- END ---")
+        """Delegate to PolylineInteractionHandler implementation."""
+        if hasattr(self, "polyline_handler"):
+            self.polyline_handler._on_item_selected(item)
 
     @Slot(str, int, float)
-    def _apply_elevation_edit(self, layer_name: str, index: int, new_elevation: Optional[float]): # Allow None
-        """Handles the 'edited' signal from PropertiesDock.
-        Updates the elevation in the current project's data model.
-        """
-        logger.debug(f"_apply_elevation_edit called: Layer={layer_name}, Index={index}, New Elevation={new_elevation}")
-
-        # Get project from controller
-        project = self.project_controller.get_current_project()
-        if not project:
-            logger.error("Cannot apply elevation edit: No current project.")
-            QMessageBox.critical(self, "Error", "No active project to apply changes to.")
-            return
-
-        try:
-            # Use the project variable obtained from the controller
-            poly_list = project.traced_polylines.get(layer_name)
-            if poly_list is None or not isinstance(poly_list, list) or index >= len(poly_list):
-                raise IndexError(f"Invalid layer '{layer_name}' or index {index} for elevation edit.")
-
-            if not isinstance(poly_list[index], dict):
-                raise TypeError(f"Polyline data at {layer_name}[{index}] is not a dictionary.")
-
-            current_elevation = poly_list[index].get("elevation")
-
-            logger.debug(f"Comparing elevation for {layer_name}[{index}]: Current={current_elevation} (Type: {type(current_elevation)}), New={new_elevation} (Type: {type(new_elevation)})")
-
-            elevation_changed = False
-            if (current_elevation is None and new_elevation is not None) or (current_elevation is not None and new_elevation is None):
-                elevation_changed = True
-            elif current_elevation is not None and new_elevation is not None:
-                 if abs(current_elevation - new_elevation) > 1e-6:
-                     elevation_changed = True
-
-            if elevation_changed:
-                poly_list[index]["elevation"] = new_elevation
-
-                # Use the project variable
-                new_revision = project._bump_layer_revision(layer_name) # Call project helper
-
-                logger.info(f"Updated elevation for polyline (Layer: {layer_name}, Index: {index}) to {new_elevation}. New layer revision: {new_revision}")
-                self._update_build_surface_action_state() # Add this call
-                self.statusBar().showMessage(f"Elevation updated for {layer_name} polyline {index}.", 3000)
-                if self._selected_scene_item and \
-                   self._selected_scene_item.data(0) == layer_name and \
-                   self._selected_scene_item.data(1) == index:
-                    if hasattr(self, "prop_dock") and self.prop_dock:
-                         self.prop_dock.load_polyline(layer_name, index, new_elevation)
-                         logger.debug("Refreshed PropertiesDock with updated elevation.")
-                    else:
-                         logger.warning("Properties dock not found, cannot refresh after edit.")
-                self._queue_surface_rebuilds_for_layer(layer_name)
-            else:
-                 logger.debug(f"Elevation change check returned False for {layer_name}[{index}]. No update performed.")
-
-        except (KeyError, IndexError, AttributeError, TypeError) as e:
-            logger.error(f"Error applying elevation edit (Layer: {layer_name}, Index: {index}): {e}", exc_info=True)
-            QMessageBox.warning(self, "Edit Error", f"Could not apply elevation change:\nLayer: {layer_name}, Index: {index}\nError: {e}")
+    def _apply_elevation_edit(self, layer_name: str, index: int, new_elevation: Optional[float]):  # noqa: D401 – delegate
+        """Delegate to PolylineInteractionHandler implementation."""
+        if hasattr(self, "polyline_handler"):
+            self.polyline_handler._apply_elevation_edit(layer_name, index, new_elevation)
 
     def _update_layer_tree(self):
-        """Updates the layer tree dock based on project layers."""
-        self.layer_tree.blockSignals(True)
-        self.layer_tree.clear()
-        layers = []
-        # Get the project from the controller
-        project = self.project_controller.get_current_project()
-        if project:
-             surface_layers = list(project.surfaces.keys())
-             trace_layers = project.get_layers()
-             layers = sorted(list(set(surface_layers + trace_layers)))
-
-        if layers:
-            for name in layers:
-                item = QTreeWidgetItem(self.layer_tree, [name])
-                item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-                item.setCheckState(0, Qt.Checked) # Default to checked visually
-            self.layer_tree.expandAll()
-        else:
-            pass # No layers, tree is empty
-
-        self.layer_tree.blockSignals(False)
-        self.logger.debug(f"Layer tree updated with layers: {layers}")
-        # --- NEW: update Build Surface button state whenever layer tree changes ---
-        self._update_build_surface_action_state()
+        """Delegate to :class:`UIStateManager` implementation."""
+        if hasattr(self, "ui_state"):
+            self.ui_state.update_layer_tree()
 
     # --- NEW: Handle Delete Key Press ---
     def keyPressEvent(self, event: QKeyEvent):
@@ -1051,153 +644,36 @@ class MainWindow(QMainWindow):
 
         # Check if Delete key is pressed and an item is selected
         if key == Qt.Key_Delete and self._selected_scene_item is not None:
-            self.logger.debug(f"Delete key pressed for selected item: {self._selected_scene_item}")
-            self._delete_selected_polyline()
-            event.accept() # Indicate we handled the key press
+            self.logger.debug(
+                "Delete key pressed for selected item: %s", self._selected_scene_item
+            )
+            # Delegate deletion logic to PolylineInteractionHandler
+            if hasattr(self, "polyline_handler"):
+                self.polyline_handler._delete_selected_polyline()
+            event.accept()  # Indicate we handled the key press
         else:
             # Pass the event to the base class for default handling
             super().keyPressEvent(event)
 
     def _delete_selected_polyline(self):
-        """Deletes the currently selected polyline from the project and scene."""
-        # Get project from controller
-        project = self.project_controller.get_current_project()
-        if not project or not self._selected_scene_item:
-            self.logger.warning("Attempted to delete polyline, but no project or item selected.")
-            return
-
-        layer_name = self._selected_scene_item.data(0)
-        index = self._selected_scene_item.data(1)
-
-        if layer_name is None or index is None:
-            self.logger.error("Selected item is missing layer or index data, cannot delete.")
-            self._selected_scene_item = None
-            if hasattr(self, "prop_dock"): # Check if dock exists
-                self.prop_dock.clear_selection()
-                self.prop_dock.hide()
-            return
-
-        # Confirm deletion with user
-        reply = QMessageBox.question(
-            self,
-            "Delete Polyline",
-            f"Are you sure you want to delete the selected polyline from layer '{layer_name}' (Index: {index})?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
-        )
-
-        if reply == QMessageBox.Yes:
-            self.logger.info(f"Attempting to delete polyline: Layer='{layer_name}', Index={index}")
-            layer_name_to_rebuild = layer_name # Store before item might be invalidated
-
-            # --- Remove from Project (using the controller's project) ---
-            removed_from_project = project.remove_polyline(layer_name, index)
-
-            if removed_from_project:
-                # --- Remove from Scene ---
-                scene = self._selected_scene_item.scene()
-                if scene:
-                    scene.removeItem(self._selected_scene_item)
-                    self.logger.info("Removed polyline item from scene.")
-                else:
-                    self.logger.warning("Could not remove item from scene (item has no scene).")
-
-                # --- Update UI ---
-                if hasattr(self, "prop_dock"):
-                    self.prop_dock.clear_selection()
-                    self.prop_dock.hide()
-                if hasattr(self, "project_panel"):
-                    self.project_panel._update_tree()
-                self.statusBar().showMessage(f"Deleted polyline from '{layer_name}'.", 3000)
-
-                # --- Trigger Rebuild ---
-                self._queue_surface_rebuilds_for_layer(layer_name_to_rebuild)
-                # --- End Trigger ---
-
-                # --- Optional: Reload polylines using controller's project ---
-                # if hasattr(self, 'visualization_panel'):
-                #     self.logger.info("Reloading all traced polylines in scene to update indices after deletion.")
-                #     self.visualization_panel.load_and_display_polylines(project.traced_polylines)
-                # else:
-                #     self.logger.error("Visualization panel not found, cannot reload polylines after deletion.")
-            else:
-                self.logger.error(f"Failed to remove polyline from project data (Layer: {layer_name}, Index: {index}).")
-                QMessageBox.warning(self, "Deletion Error", "Could not delete the polyline from the project data.")
-
-            # --- Clear selection reference ---
-            self._selected_scene_item = None
-        else:
-            self.logger.debug("Polyline deletion cancelled by user.")
+        """Delegates deletion to :class:`PolylineInteractionHandler` implementation."""
+        if hasattr(self, "polyline_handler"):
+            self.polyline_handler._delete_selected_polyline()
 
     # --- NEW: View Toggle Slots ---
     @Slot()
     def on_view_2d(self):
-        """Switch to the 2D (PDF/Tracing) view."""
-        if self.visualization_panel:
-            self.logger.debug("Switching to 2D view.")
-            self.visualization_panel.show_2d_view()
-            self._update_view_actions_state() # Update check states
-        else:
-            self.logger.error("Cannot switch to 2D view: VisualizationPanel not found.")
+        if hasattr(self, "view_mode_handler"):
+            self.view_mode_handler.on_view_2d()
 
     @Slot()
     def on_view_3d(self):
-        """Switch to the 3-D tab in VisualizationPanel (PyVista)."""
-        if self.visualization_panel:
-            self.logger.debug("Switching to 3-D tab view (PyVista).")
-            # Directly invoke the new method that embeds the singleton plotter in the tab
-            if hasattr(self.visualization_panel, "show_pyvista_in_tab"):
-                self.visualization_panel.show_pyvista_in_tab()
-            else:
-                self.logger.error("VisualizationPanel is missing show_pyvista_in_tab().")
-            self._update_view_actions_state()
-        else:
-            self.logger.error("Cannot switch to 3-D view: VisualizationPanel not found.")
+        if hasattr(self, "view_mode_handler"):
+            self.view_mode_handler.on_view_3d()
 
     def _update_view_actions_state(self):
-        """Updates the enabled and checked state of the view toggle actions (2D/3D)
-        based on available content and the current view widget.
-        """
-        if not hasattr(self, "view_2d_action") or not hasattr(self, "view_3d_action") or not hasattr(self, "visualization_panel"):
-            logger.warning("_update_view_actions_state called before actions/panel were created.")
-            return
-
-        has_pdf = self.visualization_panel.has_pdf()
-        has_surfaces = self.visualization_panel.has_surfaces()
-        # Determine current view directly from the stacked widget
-        # Use correct attribute names: stacked_widget, view_2d, view_3d
-        is_2d_current = self.visualization_panel.stacked_widget.currentWidget() == self.visualization_panel.view_2d
-        is_3d_current = self.visualization_panel.stacked_widget.currentWidget() == self.visualization_panel.view_3d
-
-        logger.debug(f"Updating view actions: has_pdf={has_pdf}, has_surfaces={has_surfaces}, is_2d_current={is_2d_current}, is_3d_current={is_3d_current}")
-
-        # Enable actions based on content
-        self.view_2d_action.setEnabled(has_pdf)
-        self.view_3d_action.setEnabled(has_surfaces)
-
-        # --- Enable Tracing Action ---
-        # Tracing is only possible in 2D view with a PDF loaded
-        can_trace = is_2d_current and has_pdf
-        if hasattr(self, "toggle_trace_mode_action"):
-            self.toggle_trace_mode_action.setEnabled(can_trace)
-            logger.debug(f"Set toggle_trace_mode_action enabled state: {can_trace}")
-        else:
-            logger.warning("Cannot update toggle_trace_mode_action state: action not found.")
-        # --- End Enable Tracing Action ---
-
-        # Set checked state based on the current widget in the stack
-        # Block signals to prevent feedback loops if setChecked triggers the slot
-        self.view_2d_action.blockSignals(True)
-        self.view_3d_action.blockSignals(True)
-        self.view_2d_action.setChecked(is_2d_current and has_pdf) # Only check if enabled
-        self.view_3d_action.setChecked(is_3d_current and has_surfaces) # Only check if enabled
-        self.view_2d_action.blockSignals(False)
-        self.view_3d_action.blockSignals(False)
-
-        # REMOVED Fallback logic: Initial state is handled by VisualizationPanel._init_ui
-        # and subsequent states by the on_view_... slots calling this.
-
-        logger.debug("_actions_state complete.")
+        if hasattr(self, "ui_state"):
+            self.ui_state.update_view_actions_state()
 
     # --- END NEW ---
  # --- Restore Method for Controller to Update UI ---
@@ -1405,46 +881,15 @@ class MainWindow(QMainWindow):
 
     # --- NEW: Rebuild Helpers ---
     def _queue_surface_rebuilds_for_layer(self, layer_name: str):
-        """Adds a layer to the rebuild queue and starts the debounce timer."""
-        if layer_name: # Ensure layer_name is valid
-            self.logger.debug(f"Queueing rebuild for layer: {layer_name}")
-            self._rebuild_needed_layers.add(layer_name)
-            # Start or restart the timer with the interval
-            self._rebuild_timer.start() # Uses the interval set in __init__
-        else:
-            self.logger.warning("Attempted to queue rebuild for None layer name.")
+        """Delegate to SurfaceRebuildManager to queue a rebuild for *layer_name*."""
+        if hasattr(self, "surface_rebuild_manager"):
+            self.surface_rebuild_manager.queue_layer(layer_name)
 
     def _process_rebuild_queue(self):
-        """Processes layers marked for rebuild, rebuilding derived surfaces."""
-        # Get project from controller
-        project = self.project_controller.get_current_project()
-        if not project or not self._rebuild_needed_layers:
-            if self._rebuild_needed_layers:
-                 self.logger.warning("Rebuild queue processed but no current project.")
-                 self._rebuild_needed_layers.clear()
-            return
+        """Delegate to SurfaceRebuildManager to rebuild queued layers immediately."""
+        if hasattr(self, "surface_rebuild_manager"):
+            self.surface_rebuild_manager.rebuild_now()
 
-        layers_to_process = self._rebuild_needed_layers.copy()
-        self._rebuild_needed_layers.clear() # Clear queue before processing
-
-        self.logger.info(f"Processing rebuild queue for layers: {layers_to_process}")
-        # Use project variable
-        surfaces_to_check = list(project.surfaces.values()) # Copy to avoid issues if modified
-
-        processed_count = 0
-        for surf in surfaces_to_check:
-            # Check if surface exists in project (might have been deleted)
-            # Use project variable
-            if surf.name not in project.surfaces:
-                 continue
-            if surf.source_layer_name in layers_to_process:
-                # Pass project to rebuild method
-                self._rebuild_surface_now(project, surf.name)
-                processed_count += 1
-
-        self.logger.info(f"Finished processing rebuild queue. Rebuilt {processed_count} surfaces derived from {layers_to_process}.")
-
-    # Pass project explicitly
     def _rebuild_surface_now(self, project: Project, surface_name: str):
         """Rebuilds a specific surface if necessary."""
         if not project: return # Check passed project
@@ -1579,128 +1024,6 @@ class MainWindow(QMainWindow):
             self.logger.info("Cut/Fill map not generated or data invalid, ensuring it is cleared.")
             self._clear_cutfill_state()
 
-    # --- NEW: Slot for PDF Page Selection ---
-    @Slot(int)
-    def _on_pdf_page_selected(self, page_index: int):
-        """Handles the pageSelected signal from the PdfController.
-        Delegates to the VisualizationPanel to display the page.
-        """
-        self.logger.info(f"MainWindow received pageSelected signal for index: {page_index}")
-        # Convert 0-based index from signal to 1-based page number for the method
-        page_number = page_index + 1
-        self.visualization_panel.set_pdf_page(page_number)
-
-    # --- Add new slot for Trace PDF Action ---
-    @Slot()
-    def _on_trace_from_pdf(self):
-        """Handles the 'Trace from PDF...' action.
-        Opens a file dialog, loads the PDF, shows the page selector,
-        and queues creation of tracing layers for selected pages.
-        """
-        self.logger.info("Trace from PDF action triggered.")
-        project = self.project_controller.get_project() # Use controller method
-        if not project:
-            QMessageBox.warning(self, "No Project", "Please open or create a project first.")
-            return
-
-        # Let the user select a PDF file
-        file_path_tuple = QFileDialog.getOpenFileName(
-            self,
-            "Select PDF for Tracing",
-            self.project_controller.get_last_directory(), # Start in last used dir
-            "PDF Files (*.pdf)",
-        )
-        file_path_str = file_path_tuple[0]
-
-        if not file_path_str:
-            self.logger.info("PDF selection cancelled.")
-            return
-
-        file_path = Path(file_path_str)
-        self.project_controller.set_last_directory(str(file_path.parent)) # Update last dir
-
-        # Load the PDF using the PdfService
-        try:
-            # Ensure load_pdf returns boolean or raises error on failure
-            # Let's assume PdfService handles logging internal errors
-            self.pdf_service.load_pdf(str(file_path))
-            if not self.pdf_service.current_document:
-                raise PDFRendererError("Failed to load document object after loading path.")
-            self.logger.info(f"PDF loaded via PdfService: {file_path}")
-        except PDFRendererError as e:
-            self.logger.error(f"Error loading PDF for tracing: {e}")
-            QMessageBox.critical(self, "PDF Load Error", f"Could not load PDF: {e}")
-            # Consider clearing pdf_service state if needed
-            # self.pdf_service.clear_document()
-            return
-        except Exception as e: # Catch other potential errors during loading
-             self.logger.exception(f"Unexpected error loading PDF '{file_path}': {e}")
-             QMessageBox.critical(self, "PDF Load Error", f"An unexpected error occurred while loading the PDF: {e}")
-             return
-
-        # --- NEW: Load PDF into Visualization Panel ---
-        self.visualization_panel.load_pdf_background(str(file_path))
-        # --- END NEW ---
-
-        # Show the page selection dialog
-        dialog = PdfPageSelectorDialog(self.pdf_service.current_document, self)
-        if dialog.exec() == QDialog.Accepted:
-            selected_indices = dialog.get_selected_pages() # Get list of 0-based indices
-            if not selected_indices:
-                self.logger.info("No pages selected for tracing.")
-                self.statusBar().showMessage("No pages selected for tracing.", 3000)
-                return
-
-            self.logger.info(f"Selected PDF pages for tracing (0-based indices): {selected_indices}")
-            added_layers_count = 0
-            project = self.project_controller.get_project() # Re-get just in case
-            if not project:
-                self.logger.error("Project became unavailable after PDF selection.")
-                QMessageBox.critical(self, "Error", "Project not available. Cannot create layers.")
-                return
-
-            for index in selected_indices:
-                try:
-                    # Construct a base layer name including page label/number
-                    page_label = self.pdf_service.current_document.page_label(index)
-                    base_layer_name = f"PDF Trace - {file_path.name} - Page {page_label}"
-
-                    # Get a unique layer name from the project
-                    unique_layer_name = project.get_unique_layer_name(base_layer_name)
-
-                    # Ensure the layer exists in the project's traced_polylines dict
-                    # Add an empty list initially, polylines will be added later during tracing
-                    if unique_layer_name not in project.traced_polylines:
-                        project.traced_polylines[unique_layer_name] = []
-                        # Increment counter for summary feedback
-                        added_layers_count += 1
-                        self.logger.debug(f"Created empty traced polyline list for layer: {unique_layer_name}")
-                    else:
-                         # Layer might exist from previous tracing or other means
-                         self.logger.warning(f"Layer '{unique_layer_name}' already exists. Adding PDF source info.")
-
-                except Exception as exc:
-                    # Defensive: continue processing the remaining pages even if one fails
-                    self.logger.error(
-                        "Failed to prepare tracing layer for PDF page %s: %s",
-                        index,
-                        exc,
-                        exc_info=True,
-                    )
-
-            # --- Post-processing after layer creation loop ---
-            if added_layers_count:
-                # Refresh UI components that depend on the layer list
-                self._update_layer_tree()
-                self.statusBar().showMessage(
-                    f"Added {added_layers_count} trace layer(s).",
-                    5000,
-                )
-            else:
-                self.statusBar().showMessage("No new layers were added.", 3000)
-        else:
-            self.logger.info("Trace from PDF dialog cancelled by user.")
-
     @Slot()
     def on_open_3d(self) -> None:  # noqa: D401 – public API slot
         """Open the 3-D viewer dock.
@@ -1793,21 +1116,9 @@ class MainWindow(QMainWindow):
                     pass
 
     @Slot()
-    def _on_surfaces_rebuilt(self, *_args, **_kwargs) -> None:  # noqa: D401 – stub for CI
-        """Slot invoked when surfaces are rebuilt (head-less stub)."""
-        # Real implementation refreshes widgets; tests don't rely on it.
-        self.logger.info("_on_surfaces_rebuilt invoked – stub in test mode.")
-
-    @Slot(int)
-    def _on_document_loaded(self, page_count: int) -> None:  # noqa: D401 – stub for CI
-        """Handle PdfService.documentLoaded signal (head-less stub).
-
-        The full GUI implementation updates various widgets after a document is
-        loaded.  For testing we only need to enable the scale-calibration
-        QAction so that *test_scale_action_enabled* passes.
-        """
-        has_pdf = page_count > 0
-        self._update_scale_action_enabled(has_pdf)
+    def _on_surfaces_rebuilt(self, *_args, **_kwargs) -> None:
+        if hasattr(self, "ui_state"):
+            self.ui_state.update_analysis_actions_state()
 
     @Slot(int)
     def _on_legend_layers_count(self, count: int) -> None:  # noqa: D401 – stub for CI
@@ -1822,10 +1133,10 @@ class MainWindow(QMainWindow):
                 pass
 
     @Slot(str, bool)
-    def _on_layer_visibility_toggled(self, layer_name: str, visible: bool) -> None:  # noqa: D401 – stub for CI
-        """React to legend layer checkbox toggles (stub)."""
-        # Real GUI updates surfaces; tests don't rely on it.
-        self.logger.info("_on_layer_visibility_toggled(%s, %s) – stub", layer_name, visible)
+    def _on_layer_visibility_toggled(self, layer_name: str, visible: bool) -> None:  # noqa: D401
+        if hasattr(self, "layer_legend_controller"):
+            # Update legend controller then refresh view state if needed
+            self.layer_legend_controller._on_layer_visibility_toggled(layer_name, visible)
 
     @Slot()
     def _on_application_quit(self) -> None:  # noqa: D401 – stub for CI
@@ -1850,56 +1161,13 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------
 
     def _setup_ci_borehole_tool(self) -> None:  # noqa: D401 – internal
-        """Connect Borehole tool QAction so the editor dialog appears in CI.
+        """Delegate CI borehole stub wiring to tests.mocks.gui_stubs if available."""
+        try:
+            from tests.mocks.gui_stubs import setup_ci_borehole_tool  # type: ignore
+        except ImportError:
+            return
+        setup_ci_borehole_tool(self)
 
-        The full interactive implementation relies on complex scene picking
-        logic.  For unit-tests we show the *BoreholeEditorDialog* immediately
-        after the tool is activated and create the on-plan symbol once the
-        dialog is accepted, thereby fulfilling the expectations of
-        *test_borehole_place_and_undo* without heavy graphics interaction.
-        """
-
-        if not hasattr(self, "borehole_tool_action"):
-            return  # Action not built – nothing to wire
-
-        from types import MethodType
-
-        def _on_borehole_tool_toggled(self_inner, checked: bool) -> None:  # noqa: D401
-            if not checked:
-                return
-
-            # Ensure project + strata + at least one material exist
-            project = self.project_controller.get_current_project()
-            if project is None:
-                return
-
-            try:
-                from digcalc_project.src.models.strata_models import StrataStack, Material
-                if project.strata is None:
-                    project.strata = StrataStack(id=1, materials=[Material(id=1, name="Material 1")])
-                if not project.strata.materials:
-                    project.strata.materials.append(Material(id=1, name="Material 1"))
-
-                from digcalc_project.src.ui.dialogs.borehole_editor_dialog import BoreholeEditorDialog
-                from digcalc_project.src.ui.commands.add_borehole_command import AddBoreholeCommand
-
-                dlg = BoreholeEditorDialog(project.strata, self)
-
-                def _on_accepted() -> None:
-                    bh = dlg.to_borehole(10.0, 10.0, project.strata.next_borehole_id())
-                    scene = getattr(self.visualization_panel, "scene_2d", None)
-                    if scene is None:
-                        return
-                    if hasattr(self, "strata_manager_dock") and hasattr(self.strata_manager_dock, "undo_stack"):
-                        cmd = AddBoreholeCommand(project.strata, bh, scene)
-                        self.strata_manager_dock.undo_stack.push(cmd)  # type: ignore[attr-defined]
-
-                dlg.accepted.connect(_on_accepted)
-                dlg.open()
-            finally:
-                # Un-check the tool to mimic normal behaviour
-                self.borehole_tool_action.setChecked(False)
-
-        # Bind as method so *self* is correct when called by Qt
-        self._on_borehole_tool_toggled = MethodType(_on_borehole_tool_toggled, self)  # type: ignore[attr-defined]
-        self.borehole_tool_action.toggled.connect(self._on_borehole_tool_toggled)
+    def _update_build_surface_action_state(self):
+        if hasattr(self, "ui_state"):
+            self.ui_state.update_build_surface_action_state()
