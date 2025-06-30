@@ -41,6 +41,19 @@
 ### GUI Testing
 - [x] Task 12: GUI Tests for Two-Tab Scale Dialog (World-units, Ratio, Invalid input) - 2025-05-23
 
+### PDF Vectorizer MVP (Phase 1 – 2025-07-01)
+- [ ] Step 0: Pre-flight (branch, deps, fixtures)
+- [ ] Step 1: Module Scaffold
+- [ ] Step 2: Extraction & Flattening
+- [ ] Step 3: Dash detection & Join helpers
+- [ ] Step 4: Vectorizer API + Serialization
+- [ ] Step 5: Import Vector Dialog UI
+- [ ] Step 6: Integration with TracingScene
+- [ ] Step 7: Performance guard & batching
+- [ ] Step 8: DevOps & Feature flag
+- [ ] Step 9: Docs & Samples
+- [ ] Step 10: Fuzz + PR merge
+
 ## Discovered During Work
 - [x] Recreate Python files as UTF-8 text files to remove null bytes and invalid characters
 - [x] Reset `__init__.py` files to clean UTF-8 files
