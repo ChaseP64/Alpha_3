@@ -29,6 +29,41 @@ class FeatureHandlers:  # noqa: D101
     def __init__(self, mw: "MainWindow") -> None:  # noqa: D401 – light init
         self._mw = mw
         self.logger = getattr(mw, "logger", logger)
+        # Ensure a scale calibration controller is available for the MainWindow
+        try:
+            from .scale_calibration_controller import ScaleCalibrationController  # local import
+
+            # Only create once (unit-tests may re-enter constructor)
+            if not hasattr(mw, "scale_calibration_controller"):
+                mw.scale_calibration_controller = ScaleCalibrationController(mw)  # type: ignore[attr-defined]
+        except Exception as exc:  # pragma: no cover – head-less fallback
+            self.logger.warning("ScaleCalibrationController unavailable – using stub (%s)", exc)
+
+            class _StubScaleCalibController:  # noqa: D401 – minimal inline stub
+                def open_dialog(self):
+                    pass
+
+            mw.scale_calibration_controller = _StubScaleCalibController()  # type: ignore[attr-defined]
+
+        # Ensure a *real* ViewModeHandler exists so SignalBinder callbacks work
+        try:
+            from .view_mode_handler import ViewModeHandler  # local import
+
+            if not hasattr(mw, "view_mode_handler") or isinstance(mw.view_mode_handler, type(lambda: None)) or mw.view_mode_handler.__class__.__name__ == 'SimpleNamespace':
+                mw.view_mode_handler = ViewModeHandler(mw)  # type: ignore[attr-defined]
+        except Exception as exc:
+            self.logger.warning("ViewModeHandler unavailable – using stub (%s)", exc)
+            # Expand existing SimpleNamespace or create one with required method
+
+            def _stub_set_elev_mode(*_a, **_k):
+                pass
+
+            if hasattr(mw, "view_mode_handler") and isinstance(mw.view_mode_handler, object):
+                setattr(mw.view_mode_handler, "_set_tracing_elev_mode", _stub_set_elev_mode)
+            else:
+                from types import SimpleNamespace
+                mw.view_mode_handler = SimpleNamespace(_set_tracing_elev_mode=_stub_set_elev_mode)
+
         self._connect_signals()
 
     # ------------------------------------------------------------------

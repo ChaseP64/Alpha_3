@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "digcalc"
-version = "0.4.0a0"
+version = "0.9.0-vectorizer"
 description = "Earthwork take-off tool with PDF tracing"
 authors = [{ name = "Tracy", email = "you@example.com" }] # Adjusted placeholder
 readme = "README.md" # Assuming a README.md exists or will be created

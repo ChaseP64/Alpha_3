@@ -1,0 +1,57 @@
+name: PDF Vectorizer Tests
+
+on:
+  push:
+    branches: [ main, feature/pdf-vectorizer-mvp ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  vectorizer-tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]  # GUI tests run headless with xvfb on Linux
+        python-version: ["3.10"]
+
+    env:
+      DIGCALC_PDF_VEC: "1"          # Enable Vectorizer feature
+      DIGCALC_RUN_BENCH: "1"        # Run performance benchmarks
+      VTK_DEFAULT_RENDER_WINDOW_OFFSCREEN: "ON"  # off-screen rendering
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # --------------------------------------------------------------
+      # Install system libs for VTK & Qt headless operation
+      # --------------------------------------------------------------
+      - name: Install system libs
+        run: |
+          sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev xvfb
+
+      - name: Start X virtual framebuffer
+        run: |
+          Xvfb :99 -screen 0 1280x1024x24 &
+          echo "DISPLAY=:99" >> $GITHUB_ENV
+        shell: bash
+
+      # --------------------------------------------------------------
+      # Install Python dependencies (core + dev extras)
+      # --------------------------------------------------------------
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ".[dev]"
+
+      # --------------------------------------------------------------
+      # Run full test suite including GUI & perf benchmarks
+      # --------------------------------------------------------------
+      - name: Run tests with vectorizer enabled
+        run: |
+          pytest -q 

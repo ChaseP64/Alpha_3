@@ -51,6 +51,7 @@ This document provides a high-level overview of the `DigCalc` application struct
 
 - `interpolation_service.py` (**VIOLATION**: >500 lines)
 - `settings_service.py`
+- **`io/pdf_vectorizer.py`: Extracts vector strokes from PDF pages.
 - ...and other services.
 
 #### UI (`digcalc_project/src/ui/`)
@@ -60,6 +61,7 @@ This document provides a high-level overview of the `DigCalc` application struct
 - `tracing_scene.py` (**VIOLATION**: >1500 lines)
 - **`dialogs/`**: Application dialogs.
   - `scale_calibration_dialog.py` (**VIOLATION**: >500 lines)
+  - **`ImportVectorDialog` for PDF vectors.
 - **`docks/`**: Dockable widgets.
   - `pv_dock.py` (**VIOLATION**: >1000 lines)
 - **`3d/`**, **`items/`**, **`commands/`**: Other UI components.
@@ -123,6 +125,7 @@ The core application logic resides in the `digcalc_project/src/` directory, whic
 -   **`services/`**: Services that provide functionalities to the rest of the application.
     -   `interpolation_service.py`: For interpolating data.
     -   `settings_service.py`: For managing application settings.
+    -   **`io/pdf_vectorizer.py`: Extracts vector strokes from PDF pages.
     -   Other services for handling layers, PDFs, and CSV writing.
 
 -   **`controllers/`**: Controllers that mediate between the models and the UI.
@@ -130,7 +133,7 @@ The core application logic resides in the `digcalc_project/src/` directory, whic
 
 -   **`ui/`**: User interface components.
     -   `main_window.py`: The main application window.
-    -   `dialogs/`: Various dialog boxes used in the application.
+    -   **`dialogs/`: Various dialog boxes used in the application (e.g. `ImportVectorDialog` for PDF vectors).
     -   `3d/`: 3D visualization components, likely using PyVista.
     -   `items/`: Custom graphics items for the UI.
     -   `commands/`: Implementation of the command pattern for undo/redo functionality.

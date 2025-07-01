@@ -1113,6 +1113,17 @@ class TracingScene(QGraphicsScene):
 
         self._tracing_enabled = enable
 
+        # Persist user preference so the per-click check in *mousePressEvent*
+        # (which validates both the runtime flag *and* SettingsService flag)
+        # remains in sync.  Without this, tracing appears enabled in the UI
+        # but clicks are ignored because *SettingsService.tracing_enabled()*
+        # still returns False.
+        try:
+            self._settings.set_tracing_enabled(enable)
+        except Exception:
+            # Defensive – unit tests may stub SettingsService methods.
+            pass
+
     def set_prompt_mode(self, mode: str):
         """Alias to :py:meth:`set_elevation_mode` for API compatibility."""
         self.set_elevation_mode(mode)

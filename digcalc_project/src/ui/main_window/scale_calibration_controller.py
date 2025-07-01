@@ -33,11 +33,23 @@ class ScaleCalibrationController(QObject):
             logger.warning("Attempted to open scale dialog with no active project.")
             return
 
+        # Current dialog signature: (parent, project, scene, page_pixmap=None)
+        page_pixmap = None
+        try:
+            # Prefer the live background pixmap so user sees same page context
+            page_pixmap = (
+                mw.visualization_panel._pdf_bg_item.pixmap()  # type: ignore[attr-defined]
+                if getattr(mw.visualization_panel, "_pdf_bg_item", None) is not None
+                else None
+            )
+        except Exception:
+            pass  # Fallback to None when view not ready / attribute absent
+
         dlg = ScaleCalibrationDialog(
             parent=mw,
-            scene=mw.visualization_panel.scene_2d,
-            initial_scale=project.scale,
-            pdf_service=mw.pdf_service,
+            project=project,
+            scene=mw.visualization_panel.scene_2d,  # type: ignore[attr-defined]
+            page_pixmap=page_pixmap,
         )
         dlg.finished.connect(lambda result: self._on_scale_dialog_done(dlg, result))
         dlg.exec()
@@ -50,16 +62,31 @@ class ScaleCalibrationController(QObject):
             return
 
         if result == QDialog.Accepted:
-            new_scale_data = dlg.get_scale()
-            if new_scale_data:
-                new_scale = ProjectScale(**new_scale_data)
-                project.set_scale(new_scale)
-                logger.info(f"Project scale updated to: {new_scale}")
-                mw.statusBar().showMessage("Scale updated successfully.", 3000)
+            new_scale = dlg.result_scale()
+            if new_scale is not None:
+                project.scale = new_scale
+                logger.info("Project scale updated to: %s", new_scale)
+                try:
+                    mw.statusBar().showMessage("Scale updated successfully.", 3000)
+                except Exception:
+                    pass
             else:
-                logger.warning("Scale dialog accepted, but no scale data was returned.")
+                logger.warning("Scale dialog accepted, but no scale was calculated.")
         else:
             logger.info("Scale calibration was cancelled.")
 
         mw.ui_state.update_scale_pill()
-        mw.ui_state.update_ui_for_project(project) 
+        mw.ui_state.update_ui_for_project(project)
+
+    # ------------------------------------------------------------------
+    # Public facade expected by MainWindow --------------------------------
+    # ------------------------------------------------------------------
+    def open_dialog(self):  # noqa: D401 – compatibility shim
+        """Qt slot wrapper kept for legacy callers.
+
+        Earlier versions of :pyclass:`MainWindow` looked for an *open_dialog*
+        attribute on *scale_calibration_controller*.  The new implementation
+        exposes :py:meth:`on_scale_calibration` instead, so we alias the call
+        here to remain backward-compatible without touching *main_window.py*.
+        """
+        self.on_scale_calibration() 

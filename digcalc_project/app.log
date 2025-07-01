@@ -14910,3 +14910,265 @@ AttributeError: 'Project' object has no attribute 'calculations'
 2025-06-26 13:15:52,301 - digcalc_project.src.ui.project_controller - INFO - Rebuilt 1 surface(s) for layers: {'Existing Surface'}
 2025-06-26 13:16:56,925 - digcalc_project.src.ui.main_window.main_window - INFO - Application is about to quit. Cleaning up resources.
 2025-06-26 13:16:56,925 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-07-01 10:41:06,876 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-07-01 10:41:06,975 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-07-01 10:41:06,975 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-07-01 10:41:06,975 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-07-01 10:41:06,992 - digcalc_project.src.ui.main_window.main_window - INFO - _create_shortcuts called – shortcuts skipped in test mode.
+2025-07-01 10:41:12,249 - digcalc_project.src.ui.main_window.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 10:41:12,249 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-07-01 10:41:12,249 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-07-01 10:41:12,249 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 10:41:12,265 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-07-01 10:41:12,265 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-07-01 10:41:15,674 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-07-01 10:41:15,676 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-07-01 10:41:16,339 - digcalc_project.src.ui.pv_plotter_singleton - INFO - Real BackgroundPlotter configured and returning.
+2025-07-01 10:41:16,339 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-07-01 10:41:16,339 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-07-01 10:41:16,339 - digcalc_project.src.ui.main_window.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-07-01 10:41:16,339 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] Called with project: Untitled Project
+2025-07-01 10:41:16,339 - digcalc_project.src.ui.main_window.main_window - ERROR - Failed to load PDF background: 'MainWindow' object has no attribute 'status_bar_manager'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\pdf_event_handler.py", line 110, in on_load_pdf_background
+    self._mw.ui_state.update_ui_for_project(project)
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\ui_state_manager.py", line 155, in update_ui_for_project
+    self.update_analysis_actions_state()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\ui_state_manager.py", line 67, in update_analysis_actions_state
+    self._mw.status_bar_manager.update_from_project()
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'status_bar_manager'
+2025-07-01 10:41:20,320 - digcalc_project.src.ui.main_window.main_window - INFO - Load PDF background cancelled by user.
+2025-07-01 10:41:21,012 - digcalc_project.src.ui.main_window.main_window - INFO - Close event triggered.
+2025-07-01 10:41:21,012 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 10:41:21,105 - digcalc_project.src.ui.main_window.main_window - INFO - Closing application.
+2025-07-01 10:41:21,127 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-07-01 10:44:31,580 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-07-01 10:44:31,630 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-07-01 10:44:31,631 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-07-01 10:44:31,631 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-07-01 10:44:31,639 - digcalc_project.src.ui.main_window.main_window - INFO - _create_shortcuts called – shortcuts skipped in test mode.
+2025-07-01 10:44:35,502 - digcalc_project.src.ui.main_window.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 10:44:35,502 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-07-01 10:44:35,502 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-07-01 10:44:35,502 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 10:44:35,518 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-07-01 10:44:35,518 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-07-01 10:44:38,886 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-07-01 10:44:38,903 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-07-01 10:44:39,415 - digcalc_project.src.ui.pv_plotter_singleton - INFO - Real BackgroundPlotter configured and returning.
+2025-07-01 10:44:39,415 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-07-01 10:44:39,415 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-07-01 10:44:39,415 - digcalc_project.src.ui.main_window.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-07-01 10:44:39,415 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] Called with project: Untitled Project
+2025-07-01 10:44:39,427 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] About to call self._mw.visualization_panel.set_project with: Untitled Project
+2025-07-01 10:44:39,427 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-07-01 10:44:39,427 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-07-01 10:44:39,427 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 10:44:39,502 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-07-01 10:44:39,503 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-07-01 10:44:39,503 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-07-01 10:44:39,503 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 10:44:39,505 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-07-01 10:44:39,505 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-07-01 10:44:42,882 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-07-01 10:44:42,882 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-07-01 10:44:42,929 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-07-01 10:44:46,524 - digcalc_project.src.ui.main_window.main_window - INFO - Load PDF background cancelled by user.
+2025-07-01 10:45:05,046 - digcalc_project.src.ui.main_window.main_window - INFO - on_scale_calibration invoked – controller unavailable in test mode.
+2025-07-01 10:45:08,430 - digcalc_project.src.ui.main_window.main_window - INFO - on_scale_calibration invoked – controller unavailable in test mode.
+2025-07-01 10:45:26,418 - digcalc_project.src.ui.main_window.main_window - INFO - on_scale_calibration invoked – controller unavailable in test mode.
+2025-07-01 10:45:28,563 - digcalc_project.src.ui.main_window.main_window - INFO - on_scale_calibration invoked – controller unavailable in test mode.
+2025-07-01 10:45:32,697 - digcalc_project.src.ui.main_window.main_window - INFO - Close event triggered.
+2025-07-01 10:45:32,697 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 10:45:32,777 - digcalc_project.src.ui.main_window.main_window - INFO - Closing application.
+2025-07-01 10:45:32,790 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-07-01 10:58:19,592 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-07-01 10:58:19,658 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-07-01 10:58:19,658 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-07-01 10:58:19,658 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-07-01 10:58:19,678 - digcalc_project.src.ui.main_window.main_window - INFO - _create_shortcuts called – shortcuts skipped in test mode.
+2025-07-01 10:58:26,297 - digcalc_project.src.ui.main_window.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 10:58:26,297 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-07-01 10:58:26,297 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-07-01 10:58:26,297 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 10:58:26,302 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-07-01 10:58:26,302 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-07-01 10:58:29,669 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-07-01 10:58:29,685 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-07-01 10:58:30,462 - digcalc_project.src.ui.pv_plotter_singleton - INFO - Real BackgroundPlotter configured and returning.
+2025-07-01 10:58:30,462 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-07-01 10:58:30,462 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-07-01 10:58:30,462 - digcalc_project.src.ui.main_window.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-07-01 10:58:30,462 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] Called with project: Untitled Project
+2025-07-01 10:58:30,474 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] About to call self._mw.visualization_panel.set_project with: Untitled Project
+2025-07-01 10:58:30,474 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-07-01 10:58:30,475 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-07-01 10:58:30,475 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 10:58:30,546 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-07-01 10:58:30,546 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-07-01 10:58:30,546 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-07-01 10:58:30,546 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 10:58:30,557 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-07-01 10:58:30,557 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-07-01 10:58:33,981 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-07-01 10:58:33,981 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-07-01 10:58:34,033 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-07-01 10:58:36,033 - digcalc_project.src.ui.main_window.main_window - INFO - Load PDF background cancelled by user.
+2025-07-01 10:58:44,696 - digcalc_project.src.ui.main_window.main_window - INFO - Close event triggered.
+2025-07-01 10:58:44,696 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 10:58:44,782 - digcalc_project.src.ui.main_window.main_window - INFO - Closing application.
+2025-07-01 10:58:44,800 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-07-01 11:00:49,489 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-07-01 11:00:49,519 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-07-01 11:00:49,519 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-07-01 11:00:49,519 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-07-01 11:00:49,537 - digcalc_project.src.ui.main_window.main_window - INFO - _create_shortcuts called – shortcuts skipped in test mode.
+2025-07-01 11:00:52,280 - digcalc_project.src.ui.main_window.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 11:00:52,280 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-07-01 11:00:52,280 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-07-01 11:00:52,280 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 11:00:52,280 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-07-01 11:00:52,280 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-07-01 11:00:55,645 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-07-01 11:00:55,660 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-07-01 11:00:56,141 - digcalc_project.src.ui.pv_plotter_singleton - INFO - Real BackgroundPlotter configured and returning.
+2025-07-01 11:00:56,141 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-07-01 11:00:56,141 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-07-01 11:00:56,141 - digcalc_project.src.ui.main_window.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-07-01 11:00:56,141 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] Called with project: Untitled Project
+2025-07-01 11:00:56,157 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] About to call self._mw.visualization_panel.set_project with: Untitled Project
+2025-07-01 11:00:56,157 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-07-01 11:00:56,157 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-07-01 11:00:56,157 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 11:00:56,232 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-07-01 11:00:56,233 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-07-01 11:00:56,233 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-07-01 11:00:56,233 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 11:00:56,235 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-07-01 11:00:56,235 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-07-01 11:00:59,646 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-07-01 11:00:59,662 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-07-01 11:00:59,702 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-07-01 11:01:04,451 - digcalc_project.src.ui.main_window.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 11:01:04,451 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-07-01 11:01:04,451 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 11:01:04,534 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-07-01 11:01:04,534 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 11:01:04,534 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-07-01 11:01:04,534 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-07-01 11:01:07,939 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-07-01 11:01:07,939 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-07-01 11:01:07,992 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-07-01 11:01:07,992 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-07-01 11:01:07,992 - digcalc_project.src.ui.main_window.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-07-01 11:01:07,992 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] Called with project: Untitled Project
+2025-07-01 11:01:07,992 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] About to call self._mw.visualization_panel.set_project with: Untitled Project
+2025-07-01 11:01:07,992 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-07-01 11:01:07,992 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-07-01 11:01:07,992 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 11:01:08,065 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-07-01 11:01:08,065 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-07-01 11:01:08,065 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-07-01 11:01:08,065 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 11:01:08,065 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-07-01 11:01:08,065 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-07-01 11:01:11,481 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-07-01 11:01:11,499 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-07-01 11:01:11,541 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-07-01 11:01:16,488 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-07-01 11:01:16,488 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-07-01 11:01:18,764 - digcalc_project.src.ui.main_window.main_window - INFO - Close event triggered.
+2025-07-01 11:01:18,764 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 11:01:18,853 - digcalc_project.src.ui.main_window.main_window - INFO - Closing application.
+2025-07-01 11:01:18,877 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-07-01 11:03:47,495 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-07-01 11:03:47,536 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-07-01 11:03:47,536 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-07-01 11:03:47,536 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-07-01 11:03:47,536 - digcalc_project.src.ui.main_window.main_window - INFO - _create_shortcuts called – shortcuts skipped in test mode.
+2025-07-01 11:03:50,435 - digcalc_project.src.ui.main_window.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 11:03:50,435 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-07-01 11:03:50,435 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-07-01 11:03:50,435 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 11:03:50,435 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-07-01 11:03:50,435 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-07-01 11:03:53,823 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-07-01 11:03:53,843 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-07-01 11:03:54,324 - digcalc_project.src.ui.pv_plotter_singleton - INFO - Real BackgroundPlotter configured and returning.
+2025-07-01 11:03:54,324 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-07-01 11:03:54,324 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-07-01 11:03:54,324 - digcalc_project.src.ui.main_window.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-07-01 11:03:54,324 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] Called with project: Untitled Project
+2025-07-01 11:03:54,330 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] About to call self._mw.visualization_panel.set_project with: Untitled Project
+2025-07-01 11:03:54,330 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-07-01 11:03:54,330 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-07-01 11:03:54,330 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 11:03:54,404 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-07-01 11:03:54,404 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-07-01 11:03:54,404 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-07-01 11:03:54,404 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 11:03:54,406 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-07-01 11:03:54,406 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-07-01 11:03:57,855 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-07-01 11:03:57,865 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-07-01 11:03:57,911 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-07-01 11:04:02,155 - digcalc_project.src.ui.main_window.main_window - INFO - Load PDF background cancelled by user.
+2025-07-01 11:04:05,883 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-07-01 11:04:05,883 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-07-01 11:04:05,889 - digcalc_project.src.ui.main_window.scale_calibration_controller - INFO - Project scale updated to: input_method='direct_entry' world_units='ft' dpi=300.0 world_per_paper_in=0.01 ratio_numer=None ratio_denom=None calibrated_at=datetime.datetime(2025, 7, 1, 16, 4, 5, 867452) px_per_in=300.0 world_per_px=3.3333333333333335e-05 ft_per_px=3.3333333333333335e-05 inch_ft=100.0 pixel_ft=30000.0
+2025-07-01 11:04:05,889 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] Called with project: Untitled Project
+2025-07-01 11:04:05,891 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] About to call self._mw.visualization_panel.set_project with: Untitled Project
+2025-07-01 11:04:05,891 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-07-01 11:04:05,891 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-07-01 11:04:05,891 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 11:04:06,008 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-07-01 11:04:06,009 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-07-01 11:04:06,009 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-07-01 11:04:06,009 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 11:04:06,011 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-07-01 11:04:06,011 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-07-01 11:04:09,398 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-07-01 11:04:09,398 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-07-01 11:04:09,452 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-07-01 11:04:41,707 - digcalc_project.src.ui.main_window.main_window - INFO - Close event triggered.
+2025-07-01 11:04:41,707 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 11:04:41,786 - digcalc_project.src.ui.main_window.main_window - INFO - Closing application.
+2025-07-01 11:04:41,818 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-07-01 11:14:07,935 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-07-01 11:14:07,957 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-07-01 11:14:07,978 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-07-01 11:14:07,978 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-07-01 11:14:07,979 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-07-01 11:14:07,987 - digcalc_project.src.ui.main_window.main_window - INFO - _create_shortcuts called – shortcuts skipped in test mode.
+2025-07-01 11:14:15,454 - digcalc_project.src.ui.main_window.main_window - INFO - User selected PDF for background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 11:14:15,454 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-07-01 11:14:15,454 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-07-01 11:14:15,454 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 11:14:15,454 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-07-01 11:14:15,454 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-07-01 11:14:18,842 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-07-01 11:14:18,858 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-07-01 11:14:19,344 - digcalc_project.src.ui.pv_plotter_singleton - INFO - Real BackgroundPlotter configured and returning.
+2025-07-01 11:14:19,344 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-07-01 11:14:19,344 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-07-01 11:14:19,344 - digcalc_project.src.ui.main_window.main_window - INFO - Successfully loaded PDF background 'Structural Plans - Stout Roofing 3-12-25.pdf' with 12 pages.
+2025-07-01 11:14:19,344 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] Called with project: Untitled Project
+2025-07-01 11:14:19,360 - digcalc_project.src.ui.main_window.main_window - INFO - [update_ui_for_project] About to call self._mw.visualization_panel.set_project with: Untitled Project
+2025-07-01 11:14:19,360 - digcalc_project.src.ui.visualization_panel - INFO - Setting project in VisualizationPanel: Untitled Project
+2025-07-01 11:14:19,360 - digcalc_project.src.ui.visualization_panel - INFO - Clearing all visualization data.
+2025-07-01 11:14:19,360 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 11:14:19,435 - digcalc_project.src.ui.tracing_scene - INFO - Cleared all finalized polylines.
+2025-07-01 11:14:19,435 - digcalc_project.src.ui.visualization_panel - INFO - Loading PDF background: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf, initial page: 1, dpi: 300
+2025-07-01 11:14:19,435 - digcalc_project.src.visualization.pdf_renderer - INFO - PDFRenderer initialized with DPI: 300
+2025-07-01 11:14:19,436 - digcalc_project.src.visualization.pdf_renderer - INFO - Initializing PDFRenderer for: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 11:14:19,437 - digcalc_project.src.visualization.pdf_renderer - INFO - Successfully opened PDF. Pages: 12
+2025-07-01 11:14:19,437 - digcalc_project.src.visualization.pdf_renderer - INFO - Rendering 12 pages at 300 DPI...
+2025-07-01 11:14:22,844 - digcalc_project.src.visualization.pdf_renderer - INFO - Finished rendering. Stored 12 page images.
+2025-07-01 11:14:22,844 - digcalc_project.src.ui.visualization_panel - INFO - PDF document opened successfully via renderer. Page count: 12
+2025-07-01 11:14:22,889 - digcalc_project.src.ui.visualization_panel - INFO - Successfully rendered and displayed page 1 of 'Structural Plans - Stout Roofing 3-12-25.pdf'
+2025-07-01 11:14:25,543 - digcalc_project.src.ui.main_window.main_window - INFO - Load PDF background cancelled by user.
+2025-07-01 11:14:52,265 - digcalc_project.src.ui.main_window.main_window - INFO - Close event triggered.
+2025-07-01 11:14:52,265 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
+2025-07-01 11:14:52,345 - digcalc_project.src.ui.main_window.main_window - INFO - Closing application.
+2025-07-01 11:14:52,361 - digcalc_project.src.main - INFO - Application exited with code 0

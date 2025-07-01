@@ -11,6 +11,7 @@ referencing attributes like ``main_window.open_project_action`` unchanged.
 
 from typing import TYPE_CHECKING
 import logging
+import os
 
 from PySide6.QtGui import QAction, QActionGroup, QIcon, QKeySequence
 from PySide6.QtWidgets import QStyle
@@ -213,6 +214,19 @@ class ActionManager:
         act.setStatusTip("Extract vector paths from a PDF page and create layers.")
         act.setEnabled(False)
         self._add_attr("trace_pdf_action", act)
+
+        # ------------------------------------------------------------------
+        # PDF Vectorizer (feature-flagged by DIGCALC_PDF_VEC).  When the
+        # environment variable is explicitly set to "0" the action is *not*
+        # created so that menu builders and signal binders can simply check
+        # for its presence.  This avoids cluttering the UI when the module is
+        # disabled on CI or in light-weight builds.
+        # ------------------------------------------------------------------
+        if os.getenv("DIGCALC_PDF_VEC") == "1":
+            act = QAction("Vectorize Current PDF Page…", mw)
+            act.setStatusTip("Convert the current PDF page's vector strokes into polylines.")
+            act.setEnabled(False)  # enabled only when a page is loaded
+            self._add_attr("vectorize_pdf_action", act)
 
         # Daylight Offset --------------------------------------------------
         act = QAction(QIcon(":/icons/daylight.svg"), "Daylight Offset…", mw)

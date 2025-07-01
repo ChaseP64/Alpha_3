@@ -3,6 +3,7 @@
 - Surface generation from traced contour data
 - Cut & Fill volume calculations between any two surfaces
 - 3-D visualization of all surfaces
+- Vectorize *native* PDF strokes into editable polylines – no raster tracing!
 
 ### Strata-Aware Earthworks (New!)
 
@@ -23,4 +24,15 @@ DigCalc now supports modeling of subsurface material layers (stratigraphy). This
 
 ## Basic Workflow
 
-1.  **Create a Project**: Start by creating a new project. 
+1.  **Create a Project**: Start by creating a new project.
+
+### Quick Peek – PDF Vectorizer
+
+<p align="center">
+  <img src="docs/media/vectorizer_preview.gif" alt="Vectorizing PDF page" width="600"/>
+</p>
+
+<p align="center">
+  <em>End-to-end import workflow including scale calibration.</em><br/>
+  <img src="docs/media/import_workflow.gif" alt="Import workflow" width="600"/>
+</p> 

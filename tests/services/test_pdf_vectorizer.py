@@ -1,8 +1,14 @@
 import tempfile
 from pathlib import Path
+import os
+import pytest
 
 import numpy as np
 import fitz
+
+# Skip entire module when vectorizer feature is disabled
+if os.getenv("DIGCALC_PDF_VEC") != "1":
+    pytest.skip("PDF vectorizer feature disabled (DIGCALC_PDF_VEC != 1)", allow_module_level=True)
 
 from digcalc_project.src.services.io.pdf_vectorizer import PDFVectorizer
 
@@ -37,4 +43,11 @@ def test_pdf_vectorizer_two_lines(tmp_path):
     max_x, max_y = all_pts.max(axis=0)
     assert np.isclose(min_x, 0.0)
     assert np.isclose(min_y, 0.0)
-    assert np.isclose(max_x, 72.0) or np.isclose(max_y, 72.0) 
+    assert np.isclose(max_x, 72.0) or np.isclose(max_y, 72.0)
+
+    # Serialisation should round-trip
+    ser = PDFVectorizer.serialize(polylines)
+    assert isinstance(ser, list) and ser
+    first = ser[0]
+    assert "vertices" in first and isinstance(first["vertices"], list)
+    assert first["src_page"] == 1 
