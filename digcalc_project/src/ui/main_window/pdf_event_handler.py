@@ -13,10 +13,11 @@ be migrated later.  All Qt signal wiring for PDF actions is performed in
 about these controls.
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List, Tuple, Optional, Union
 import logging
 from pathlib import Path
 from PySide6.QtWidgets import QFileDialog, QMessageBox, QDialog
+from collections import defaultdict
 
 from ...visualization.pdf_renderer import PDFRendererError
 from ...ui.dialogs.pdf_page_selector_dialog import PdfPageSelectorDialog
@@ -77,6 +78,11 @@ class PDFEventHandler:  # noqa: D101
         act = getattr(mw, "trace_pdf_action", None)
         if act is not None:
             act.triggered.connect(self._on_trace_from_pdf)
+
+        # NEW: Vectorize current PDF page
+        act = getattr(mw, "vectorize_pdf_action", None)
+        if act is not None:
+            act.triggered.connect(self.on_vectorize_page)
 
         self.logger.debug("PDFEventHandler signals bound.")
 
@@ -263,4 +269,74 @@ class PDFEventHandler:  # noqa: D101
                 if selected_indices:
                     QMessageBox.warning(self._mw, "No Layers Added", "Could not add tracing layers for the selected pages. Check logs for details.")
         else:
-            self.logger.info("PDF page selection cancelled.") 
+            self.logger.info("PDF page selection cancelled.")
+
+    # ------------------------------------------------------------------
+    # Vectorize Page -----------------------------------------------------
+    # ------------------------------------------------------------------
+    def on_vectorize_page(self) -> None:
+        """Action slot to vectorize the currently displayed PDF page."""
+        mw = self._mw
+        if not mw.visualization_panel or not mw.visualization_panel.pdf_renderer:
+            QMessageBox.warning(mw, "Vectorize Page", "No PDF page loaded.")
+            return
+
+        page_no = mw.visualization_panel.current_pdf_page - 1  # renderer is 0-based
+
+        pdf_path = Path(mw.project_controller.get_current_project().pdf_background_path)
+
+        from ...ui.dialogs.import_vector import ImportVectorDialog
+
+        dlg = ImportVectorDialog(mw)
+
+        # Run vectorization with progress feedback & guard
+        try:
+            success = dlg.run_vectorization(str(pdf_path), page_no, dpi=mw.visualization_panel.pdf_renderer.dpi)  # type: ignore[attr-defined]
+        except Exception as exc:
+            logger.error("Vectorization failed: %s", exc, exc_info=True)
+            QMessageBox.critical(mw, "Vectorize Page", f"Vectorization failed:\n{exc}")
+            return
+
+        if not success:
+            # User cancelled from bail-out prompt.
+            mw.statusBar().showMessage("Vectorization cancelled by user.", 3000)
+            return
+
+        dlg.vectorized_polylines_ready.connect(self._on_polylines_ready)  # type: ignore[arg-type]
+        dlg.exec()
+
+    # ----------------------------------------------
+    def _on_polylines_ready(self, polylines, mapping):  # noqa: D401
+        """Convert polylines to scene items and push undo command."""
+        mw = self._mw
+        scene = mw.visualization_panel.scene_2d
+
+        # Build dict layer -> list of point tuples
+        grouped: Dict[str, List[Dict[str, Union[List[Tuple[float, float]], Optional[float]]]]] = defaultdict(list)
+
+        for pl in polylines:
+            key = (pl.stroke_rgb, tuple(pl.dash or ()))
+            layer = mapping.get(key, "Imported")
+            points = [(float(x), float(y)) for x, y in pl.vertices]
+            grouped[layer].append({"points": points, "elevation": None})
+
+        # Use existing loader – wraps items & handles selection
+        scene.load_polylines_with_layers(grouped)  # type: ignore[arg-type]
+
+        # Push one undo command for the whole import if undo stack exists
+        if hasattr(mw, "undoStack"):
+            from PySide6.QtGui import QUndoCommand
+
+            class _ImportCmd(QUndoCommand):
+                def __init__(self, scene, data):
+                    super().__init__("Import Vector Lines")
+                    self.scene = scene
+                    self.data = data
+
+                def redo(self):
+                    self.scene.load_polylines_with_layers(self.data)
+
+                def undo(self):
+                    self.scene.clear_finalized_polylines()
+
+            mw.undoStack.push(_ImportCmd(scene, grouped)) 

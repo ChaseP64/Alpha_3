@@ -165,26 +165,54 @@ class MainWindow(QMainWindow):
         except Exception as exc:  # pragma: no cover – defensive
             self.logger.debug("_setup_ci_borehole_tool failed: %s", exc, exc_info=True)
         self._create_statusbar()
+
+        # ------------------------------------------------------------------
+        # Ensure status bar manager exists for UIStateManager & others -------
+        # ------------------------------------------------------------------
+        try:
+            from .status_bar_manager import StatusBarManager  # local import
+            self.status_bar_manager = StatusBarManager(self)  # type: ignore[attr-defined]
+        except Exception as exc:  # pragma: no cover – make CI friendly
+            self.logger.warning("StatusBarManager unavailable – using stub (%s)", exc)
+
+            class _StubStatusBarManager:  # noqa: D401 – minimal inline stub
+                """Fallback when StatusBarManager cannot be initialised."""
+
+                def show_message(self, *_args, **_kwargs):
+                    pass
+
+                def update_from_project(self, *_args, **_kwargs):
+                    pass
+
+                def set_scale_state(self, *_args, **_kwargs):
+                    pass
+
+            self.status_bar_manager = _StubStatusBarManager()  # type: ignore[attr-defined]
+
         # --- MODIFIED: Moved _create_shortcuts call here ---
         self._create_shortcuts()
         # --- END MODIFIED ---
 
         # --- NEW: Initialize Scale Pill ---
-        self.scale_pill = ClickableLabel("Scale: —") # Use the ClickableLabel class defined earlier
-        self.scale_pill.setObjectName("scalePill")
-        self.scale_pill.setMargin(4) # Margin in pixels
-        # Base style, color will be set in _update_scale_pill
-        self.scale_pill.setStyleSheet("QLabel#scalePill { border-radius: 8px; padding: 2px 5px; }")
-        self.scale_pill.clicked.connect(self.on_scale_calibration) # Assuming _open_scale_dialog is on_scale_calibration
+        # Only create the legacy *scale_pill* when the full StatusBarManager
+        # could *not* be initialised (head-less CI runs).  The real manager
+        # already owns a pill widget – duplicating it would clutter the UI.
+        if not hasattr(self, "status_bar_manager") or self.status_bar_manager.__class__.__name__.startswith("_Stub"):
+            self.scale_pill = ClickableLabel("Scale: —")  # Use the ClickableLabel class defined earlier
+            self.scale_pill.setObjectName("scalePill")
+            self.scale_pill.setMargin(4)  # Margin in pixels
+            # Base style, colour will be set in _update_scale_pill
+            self.scale_pill.setStyleSheet("QLabel#scalePill { border-radius: 8px; padding: 2px 5px; }")
+            self.scale_pill.clicked.connect(self.on_scale_calibration)
 
-        # Ensure status bar exists and add the pill
-        status_bar = self.statusBar() # Get or create status bar
-        if not status_bar:
-            status_bar = QStatusBar(self)
-            self.setStatusBar(status_bar)
-        status_bar.addPermanentWidget(self.scale_pill)
+            # Ensure status bar exists and add the pill
+            status_bar = self.statusBar()  # Get or create status bar
+            if not status_bar:
+                status_bar = QStatusBar(self)
+                self.setStatusBar(status_bar)
+            status_bar.addPermanentWidget(self.scale_pill)
 
-        self._update_scale_pill()   # Set initial state
+            self._update_scale_pill()  # Set initial state
         # --- END NEW ---
 
         # ------------------------------------------------------------------
