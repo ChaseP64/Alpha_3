@@ -141,5 +141,70 @@ class Polyline:
             keep_idx.append(i)
 
         keep_idx.append(len(verts) - 1)
-        new_verts = verts[keep_idx]
-        return Polyline(vertices=new_verts, stroke_rgb=poly.stroke_rgb, dash=poly.dash, src_page=poly.src_page) 
+
+        # ------------------------------------------------------------------
+        # SECOND-PASS: Remove "zig-zag" artefacts
+        # ------------------------------------------------------------------
+        # Scenario: small horizontal/vertical dash segment followed by an
+        # equally small turn in the opposite direction.  After the first
+        # pass the vertex chain might look like:
+        #    A ── B ╱ C ── D
+        # where the turns at *B* and *C* are both shallow (~45°) but in
+        # opposite orientations (left-then-right or vice-versa).  Keeping
+        # both makes the polyline unnecessarily detailed.  We drop the
+        # *earlier* vertex so that only the dominant corner survives.
+
+        simplified: list[int] = [keep_idx[0]]
+
+        def _unit_vec(v: np.ndarray) -> np.ndarray:
+            n = math.hypot(*v)
+            return v / n if n else v
+
+        i = 1
+        while i < len(keep_idx) - 1:
+            a = verts[keep_idx[i - 1]]
+            b = verts[keep_idx[i]]
+            c = verts[keep_idx[i + 1]]
+
+            # Direction vectors (forward orientation)
+            v_ab = _unit_vec(b - a)
+            v_bc = _unit_vec(c - b)
+
+            # Turning metrics
+            cos_turn = v_ab.dot(v_bc)
+            # cross_z sign encodes left/right orientation
+            cross_z = v_ab[0] * v_bc[1] - v_ab[1] * v_bc[0]
+
+            remove_b = False
+
+            # Mild turn (|angle| < 60°) & followed by opposite mild turn
+            if cos_turn > math.cos(math.radians(60.0)) and i + 2 < len(keep_idx):
+                # Look-ahead one extra vertex to inspect next turn
+                d = verts[keep_idx[i + 2]] if i + 2 < len(keep_idx) else None
+                if d is not None:
+                    v_cd = _unit_vec(d - c)
+                    cos_next = v_bc.dot(v_cd)
+                    cross_next = v_bc[0] * v_cd[1] - v_bc[1] * v_cd[0]
+
+                    # Also a mild turn and opposite orientation → zig-zag
+                    if cos_next > math.cos(math.radians(60.0)) and cross_z * cross_next < 0:
+                        remove_b = True
+
+            if remove_b:
+                # Skip *b* – do **not** append keep_idx[i]
+                i += 1  # advance to the next vertex (c becomes new *b*)
+                continue
+
+            simplified.append(keep_idx[i])
+            i += 1
+
+        simplified.append(keep_idx[-1])
+
+        new_verts = verts[simplified]
+
+        return Polyline(
+            vertices=new_verts,
+            stroke_rgb=poly.stroke_rgb,
+            dash=poly.dash,
+            src_page=poly.src_page,
+        ) 
