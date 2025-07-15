@@ -55,6 +55,7 @@ from digcalc_project.src.ui.commands.toggle_smooth_command import ToggleSmoothCo
 from digcalc_project.src.ui.dialogs.elevation_dialog import ElevationDialog
 from digcalc_project.src.ui.items.polyline_item import PolylineItem
 from digcalc_project.src.ui.items.vertex_item import VertexItem
+from digcalc_project.src.utils.spatial_index import QuadTree  # NEW: spatial index
 
 # --- MODIFIED: Use TYPE_CHECKING for PolylineData ---
 if TYPE_CHECKING:
@@ -216,6 +217,9 @@ class TracingScene(QGraphicsScene):
         if self.sceneRect().width() == 0 or self.sceneRect().height() == 0:
             default_size = 1000.0
             self.setSceneRect(0.0, 0.0, default_size, default_size)
+
+        # --- Phase 3: Spatial index for snap/hover performance ---
+        self._sp_index = QuadTree(boundary=(-1e6, -1e6, 2e6, 2e6))  # generous bounds
 
     # --- Background Image ---
 
@@ -814,6 +818,10 @@ class TracingScene(QGraphicsScene):
             except Exception as exc:
                 self.logger.error(f"Elevation workflow failed: {exc}", exc_info=True)
         # --- END Apply Z-values ---
+
+        # Phase-3: Populate spatial index for snap/hover
+        for pt in self._current_polyline_points:
+            self._sp_index.insert(pt.x(), pt.y(), None)  # payload not needed yet
 
         self.logger.info(
             f"Finalized polyline with {len(self._current_polyline_points)} points on layer '{layer_name}'."

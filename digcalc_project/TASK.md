@@ -100,6 +100,14 @@
 - [x] Add daylight_offset_tool geometry helpers (offset_polygon, project_to_slope)
 - [ ] Implement TIN generation
 
+## Polyline Editing & Snapping (Phase 3 – 2025-07-15)
+- [ ] D1.1: Implement AddVertexCommand
+- [ ] D1.2: Implement DeleteVertexCommand
+- [ ] D1.3: Implement SplitPolylineCommand
+- [ ] D1.4: Implement JoinPolylineCommand
+- [ ] D1.5: Integrate commands with MainWindow.undo_stack & menu/toolbar shortcuts
+- [ ] D1.6: Unit tests: command applies, undo/redo restores state
+
 ## MainWindow Method Inventory (Phase 1 – 2025-06-23)
 The table below groups *remaining* methods in `MainWindow` by primary concern. This inventory is used by the allow-list test added in Phase 1 and serves as the refactor checklist for upcoming phases.
 
