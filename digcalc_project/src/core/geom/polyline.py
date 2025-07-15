@@ -13,7 +13,7 @@ stub in a future sprint.
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Sequence
 
 import numpy as np
 
@@ -207,4 +207,124 @@ class Polyline:
             stroke_rgb=poly.stroke_rgb,
             dash=poly.dash,
             src_page=poly.src_page,
-        ) 
+        )
+
+    # ------------------------------------------------------------------
+    @staticmethod
+    def auto_join_v2(
+        polylines: "Sequence[Polyline]", *, angle_tol_deg: float = 10.0, gap_tol: float = 0.01
+    ) -> list["Polyline"]:
+        """Join fragmented *polylines* whose end-points nearly align.
+
+        The algorithm iteratively merges segments when both criteria hold:
+
+        1. The distance between two candidate end-points is ≤ *gap_tol*.
+        2. The angle between their tangent directions differs by < *angle_tol_deg*.
+
+        Order-preserving: vertex orientation is flipped as needed so final
+        vertex order is consistent along the merged chain.  Corners are kept –
+        vertices are **not** simplified (that is handled by
+        :pyfunc:`join_colinear`).
+        """
+
+        import math
+        from typing import Sequence
+
+        if not polylines:
+            return []
+
+        # Work on shallow copies to prevent mutating callers
+        remaining: list[Polyline] = [pl.copy() for pl in polylines]
+        merged: list[Polyline] = []
+
+        def _unit(v: np.ndarray) -> np.ndarray:
+            n = math.hypot(*v)
+            return v / n if n else v
+
+        cos_ang_thresh = math.cos(math.radians(angle_tol_deg))
+
+        while remaining:
+            base = remaining.pop(0)
+            changed = True
+            while changed:
+                changed = False
+                i = 0
+                while i < len(remaining):
+                    other = remaining[i]
+                    # Collect candidate endpoint pairs (base_end, other_start/other_end)
+                    combos = [
+                        (base.vertices[0], base.vertices[1] - base.vertices[0], "prepend", other.vertices[-1], other.vertices[-2] - other.vertices[-1]),
+                        (base.vertices[0], base.vertices[1] - base.vertices[0], "prepend", other.vertices[0], other.vertices[1] - other.vertices[0]),
+                        (base.vertices[-1], base.vertices[-1] - base.vertices[-2], "append", other.vertices[0], other.vertices[1] - other.vertices[0]),
+                        (base.vertices[-1], base.vertices[-1] - base.vertices[-2], "append", other.vertices[-1], other.vertices[-2] - other.vertices[-1]),
+                    ]
+
+                    joined = False
+                    for p_base, dir_base, mode, p_other, dir_other in combos:
+                        dist = float(np.linalg.norm(p_base - p_other))
+                        if dist > gap_tol:
+                            continue
+                        # Angle between direction vectors (ensure not zero length)
+                        if np.linalg.norm(dir_base) < 1e-12 or np.linalg.norm(dir_other) < 1e-12:
+                            angle_ok = True
+                        else:
+                            dir_base_u = _unit(dir_base)
+                            dir_other_u = _unit(dir_other)
+                            cos_ang = abs(dir_base_u.dot(dir_other_u))  # absolute – we allow 180° as straight
+                            angle_ok = cos_ang >= cos_ang_thresh
+                        if not angle_ok:
+                            continue
+
+                        # Merge ------------------------------------------------
+                        if mode == "append":
+                            # Ensure orientation of *other* so that its first vertex matches base end
+                            if np.linalg.norm(other.vertices[0] - p_other) < 1e-12:
+                                verts_other = other.vertices
+                            else:
+                                verts_other = other.vertices[::-1]
+                            # Skip duplicate vertex at junction
+                            new_vertices = np.vstack([base.vertices, verts_other[1:]])
+                        else:  # prepend
+                            if np.linalg.norm(other.vertices[-1] - p_other) < 1e-12:
+                                verts_other = other.vertices
+                            else:
+                                verts_other = other.vertices[::-1]
+                            new_vertices = np.vstack([verts_other[:-1], base.vertices])
+
+                        base = Polyline(
+                            vertices=new_vertices,
+                            stroke_rgb=base.stroke_rgb or other.stroke_rgb,
+                            dash=base.dash,
+                            src_page=base.src_page or other.src_page,
+                        )
+                        remaining.pop(i)
+                        joined = True
+                        changed = True
+                        break  # break combos
+                    if not joined:
+                        i += 1
+            merged.append(base)
+
+        return merged 
+
+    # ------------------------------------------------------------------
+    @staticmethod
+    def compress(
+        poly: "Polyline", *, dist_tol: float = 0.10, angle_tol_deg: float = 1.0
+    ) -> "Polyline":
+        """Return a simplified copy using join-colinear algorithm with custom tolerances.
+
+        This phase-1 compression prioritises speed over accuracy by delegating
+        to :pyfunc:`join_colinear`.  Future iterations may adopt a full RDP
+        implementation, but for current Smart-Clean needs this strikes the
+        right performance/quality balance.
+        """
+
+        return Polyline.join_colinear(poly, angle_tol_deg=angle_tol_deg, dist_tol=dist_tol)
+
+    # ------------------------------------------------------------------
+    @staticmethod
+    def compress_hq(poly: "Polyline") -> "Polyline":
+        """Higher-quality compression (phase-2) – half default tolerances."""
+
+        return Polyline.compress(poly, dist_tol=0.05, angle_tol_deg=0.5) 

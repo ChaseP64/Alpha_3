@@ -239,6 +239,11 @@ class ActionManager:
         act.setEnabled(False)
         self._add_attr("masshaul_action", act)
 
+        # Smart Clean ------------------------------------------------------
+        act = QAction("Smart Clean…", mw)
+        act.setStatusTip("Run Smart Clean operations and configuration.")
+        self._add_attr("smart_clean_action", act)
+
         # Borehole tool ----------------------------------------------------
         act = QAction(QIcon.fromTheme("mdi.circle"), "Place Borehole", mw)
         act.setCheckable(True)

@@ -105,6 +105,7 @@ class MenuBuilder:
         settings_menu = self._mb.addMenu("Settings")
         mw.strata_settings_action = mw.action_manager.strata_settings_action  # ensure exists
         settings_menu.addAction(mw.strata_settings_action)
+        settings_menu.addAction(mw.smart_clean_action)
         self._add_attr("settings_menu", settings_menu)
 
         # ----------------------------- Tracing -------------------------

@@ -77,6 +77,7 @@ class SignalBinder:  # noqa: D101
         mw.export_action.triggered.connect(ah.export_report)
         mw.daylight_action.triggered.connect(ah.daylight_offset)
         mw.masshaul_action.triggered.connect(ah.mass_haul)
+        mw.smart_clean_action.triggered.connect(ah.smart_clean)
 
         mw.about_action.triggered.connect(mw.on_about)
 

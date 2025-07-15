@@ -8,6 +8,9 @@ stable function signature used by the PDF vectorizer integration.
 """
 
 from typing import List, Sequence, TYPE_CHECKING
+from ...core.clean.rule_engine import RuleRegistry
+from ...core.geom.polyline import Polyline
+from ..settings_service import SettingsService
 
 if TYPE_CHECKING:  # pragma: no cover
     from ...core.geom.polyline import Polyline
@@ -33,4 +36,15 @@ def auto_run(polylines: "Sequence[Polyline]") -> List["Polyline"]:  # type: igno
             seen.add(h)
             unique.append(pl)
 
-    return unique 
+    # Phase-2: optional Automatic Join V2 pre-processing -------------------
+    settings = SettingsService()
+    if settings.enable_auto_join_v2():
+        unique = Polyline.auto_join_v2(unique)
+
+    # Compression phase -------------------------------------------------
+    dist_tol = settings.compress_dist_tol_ft()
+    angle_tol = settings.compress_angle_tol_deg()
+    unique = [Polyline.compress(pl, dist_tol=dist_tol, angle_tol_deg=angle_tol) for pl in unique]
+
+    # Run registered Smart-Clean rules
+    return RuleRegistry.evaluate(unique) 

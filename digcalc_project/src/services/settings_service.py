@@ -77,6 +77,11 @@ class SettingsService(Singleton):
             "vertex_hover_colour": "#ffff00",
             "vertex_line_thickness": 0,
         },
+        "clean": {
+            "enable_auto_join_v2": True,
+            "compress_dist_tol_ft": 0.10,
+            "compress_angle_tol_deg": 1.0,
+        },
     }
 
     # Compatibility alias for unit-tests that reference the old flat dict name
@@ -241,6 +246,21 @@ class SettingsService(Singleton):
     def set_vertex_hover_colour(self, hex_colour: str) -> None:
         """Persist *hex_colour* for vertex hover state in the **legacy** group."""
         self.set("legacy", "vertex_hover_colour", str(hex_colour))
+
+    # ------------------------------------------------------------------
+    # Clean / Smart-Clean settings
+    # ------------------------------------------------------------------
+    def enable_auto_join_v2(self) -> bool:  # noqa: D401 – simple accessor
+        """Return True when Automatic Join V2 is enabled (default True)."""
+        return bool(self.get("clean", "enable_auto_join_v2", True))
+
+    def compress_dist_tol_ft(self) -> float:
+        """Distance tolerance used by Polyline.compress (default 0.10 ft)."""
+        return float(self.get("clean", "compress_dist_tol_ft", 0.10))
+
+    def compress_angle_tol_deg(self) -> float:
+        """Angle tolerance (degrees) for Polyline.compress (default 1.0°)."""
+        return float(self.get("clean", "compress_angle_tol_deg", 1.0))
 
     # ------------------------------------------------------------------
     # Tracing global enable/disable flag

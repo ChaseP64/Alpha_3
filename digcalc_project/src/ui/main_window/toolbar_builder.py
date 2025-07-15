@@ -96,6 +96,7 @@ class ToolbarBuilder:  # noqa: D101 – simple helper
         tools_tb.addAction(mw.daylight_action)
         tools_tb.addAction(mw.masshaul_action)
         tools_tb.addAction(mw.borehole_tool_action)
+        tools_tb.addAction(mw.smart_clean_action)
 
         # Expose on MainWindow for compatibility
         mw.main_toolbar = main_tb

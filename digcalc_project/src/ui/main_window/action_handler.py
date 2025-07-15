@@ -127,6 +127,20 @@ class ActionHandler:
         except Exception as exc:
             QMessageBox.critical(self.mw, "Mass Haul Error", str(exc))
 
+    # ------------------------------------------------------------------
+    def smart_clean(self) -> None:  # noqa: D401
+        """Open the Smart Clean configuration dialog (Phase-2 stub)."""
+        from ...ui.dialogs.smart_clean_dialog import SmartCleanDialog
+
+        dlg = SmartCleanDialog(self.mw)
+        if dlg.exec():
+            dist_tol, angle_tol = dlg.tolerances()
+            from ...services.settings_service import SettingsService
+
+            settings = SettingsService()
+            settings.set("clean", "compress_dist_tol_ft", dist_tol)
+            settings.set("clean", "compress_angle_tol_deg", angle_tol)
+
     def generate_report(self) -> None:
         """Handle the 'Generate Report' action."""
         if self.mw._last_volume_calculation_params and self.mw._last_dz_cache:
