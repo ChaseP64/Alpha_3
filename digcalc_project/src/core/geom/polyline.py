@@ -312,15 +312,59 @@ class Polyline:
     def compress(
         poly: "Polyline", *, dist_tol: float = 0.10, angle_tol_deg: float = 1.0
     ) -> "Polyline":
-        """Return a simplified copy using join-colinear algorithm with custom tolerances.
+        """Return a simplified copy preserving vertices spaced further than *dist_tol*.
 
-        This phase-1 compression prioritises speed over accuracy by delegating
-        to :pyfunc:`join_colinear`.  Future iterations may adopt a full RDP
-        implementation, but for current Smart-Clean needs this strikes the
-        right performance/quality balance.
+        Compared to :pyfunc:`join_colinear`, this variant keeps vertices that
+        may be perfectly colinear but represent *meaningful* segmentation at a
+        scale larger than *dist_tol* (e.g., road alignment chainage points).
         """
 
-        return Polyline.join_colinear(poly, angle_tol_deg=angle_tol_deg, dist_tol=dist_tol)
+        verts = poly.vertices
+        if len(verts) <= 2:
+            return poly.copy()
+
+        import math
+
+        cos_thresh = math.cos(math.radians(180.0 - angle_tol_deg))
+
+        keep_idx: list[int] = [0]
+
+        for i in range(1, len(verts) - 1):
+            a = verts[i - 1]
+            b = verts[i]
+            c = verts[i + 1]
+
+            # Angle between segments
+            v1 = a - b
+            v2 = c - b
+            n1 = math.hypot(*v1)
+            n2 = math.hypot(*v2)
+            if n1 < 1e-12 or n2 < 1e-12:
+                keep_idx.append(i)
+                continue
+            v1 /= n1
+            v2 /= n2
+            cos_ang = v1.dot(v2)
+
+            # Segment length criterion
+            seg_len = min(n1, n2)
+
+            if cos_ang <= cos_thresh and seg_len <= dist_tol:
+                # Nearly straight AND short segment → can drop
+                continue
+
+            keep_idx.append(i)
+
+        keep_idx.append(len(verts) - 1)
+
+        new_verts = verts[keep_idx]
+
+        return Polyline(
+            vertices=new_verts,
+            stroke_rgb=poly.stroke_rgb,
+            dash=poly.dash,
+            src_page=poly.src_page,
+        )
 
     # ------------------------------------------------------------------
     @staticmethod

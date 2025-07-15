@@ -238,6 +238,7 @@ class MainWindow(QMainWindow):
                 export_report=lambda *a, **k: None,
                 daylight_offset=lambda *a, **k: None,
                 mass_haul=lambda *a, **k: None,
+                smart_clean=lambda *a, **k: None,
                 on_toggle_tracing_mode=lambda *a, **k: None,
             )
             self.view_mode_handler = self.view_mode_handler if hasattr(self, "view_mode_handler") else stub_ns
@@ -367,6 +368,7 @@ class MainWindow(QMainWindow):
                 export_report=lambda *a, **k: None,
                 daylight_offset=lambda *a, **k: None,
                 mass_haul=lambda *a, **k: None,
+                smart_clean=lambda *a, **k: None,
             )
 
         if not hasattr(self, "scene_handler"):
