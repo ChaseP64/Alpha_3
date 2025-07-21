@@ -58,6 +58,9 @@ class SettingsService(Singleton):
             "smooth_sampling_ft": 1.0,
             "smooth_min_spacing_ft": 0.01,
             "smooth_max_points": 20000,
+            # Phase-3 additions (D3)
+            "grid_snap_ft": 1.0,  # default grid interval in world units (ft)
+            "enable_heatmap_overlay": False,
         },
         "units": {
             "default_length": "ft",
@@ -345,3 +348,18 @@ class SettingsService(Singleton):
     def smooth_max_points(self) -> int:
         """Return maximum number of points allowed in compressed polyline."""
         return int(self.get("tracing", "smooth_max_points", 20000))
+
+    # ------------------------------------------------------------------
+    # Phase-3 grid-snap helpers
+    # ------------------------------------------------------------------
+    def grid_snap_ft(self) -> float:
+        """Return grid snap spacing in *world* units (ft)."""
+        return float(self.get("tracing", "grid_snap_ft", 1.0))
+
+    def enable_heatmap_overlay(self) -> bool:
+        """Return True when heat-map overlay is enabled."""
+        return bool(self.get("tracing", "enable_heatmap_overlay", False))
+
+    def set_enable_heatmap_overlay(self, flag: bool) -> None:
+        """Persist heat-map overlay enable flag."""
+        self.set("tracing", "enable_heatmap_overlay", bool(flag))

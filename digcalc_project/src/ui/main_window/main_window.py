@@ -22,6 +22,7 @@ from PySide6.QtGui import (  # Added QPixmap
     QKeySequence,
     QPixmap,
     QShortcut,
+    QUndoStack,  # Added for global undo/redo
 )
 from PySide6.QtWidgets import (
     QDialog,
@@ -108,6 +109,19 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.logger = logging.getLogger(__name__)
+
+        # ------------------------------------------------------------------
+        # Global undo/redo stack ------------------------------------------------
+        # Phase-3 requirement: expose a shared stack on the main window so that
+        # all editing commands (Polyline + strata, etc.) can participate in a
+        # single linear history and drive Ctrl+Z / Ctrl+Y actions.
+        # ------------------------------------------------------------------
+        self.undo_stack: QUndoStack = QUndoStack(self)
+
+        # Maintain Qt-style helper so external code can call ``mw.undoStack()``
+        # just like ``QGraphicsScene`` does.  Some call-sites rely on the
+        # *callable* property existing (rather than a normal attribute).
+        self.undoStack = lambda: self.undo_stack  # type: ignore[assignment]
 
         # --- NEW: UI State Manager (Phase-2 refactor) ---
         from .ui_state_manager import UIStateManager  # Local import to avoid early circular refs
@@ -450,6 +464,10 @@ class MainWindow(QMainWindow):
         self.actions = ActionManager(self)
         # Alias for legacy tests expecting `main_window.action_manager`
         self.action_manager = self.actions
+
+        # Hook heat-map overlay toggle
+        if hasattr(self, "heatmap_overlay_action"):
+            self.heatmap_overlay_action.toggled.connect(self._on_toggle_heatmap_overlay)
 
     def _create_menus(self):
         """Build menus via MenuBuilder helper class."""
@@ -1167,6 +1185,20 @@ class MainWindow(QMainWindow):
         if hasattr(self, "layer_legend_controller"):
             # Update legend controller then refresh view state if needed
             self.layer_legend_controller._on_layer_visibility_toggled(layer_name, visible)
+
+    @Slot()
+    def _on_toggle_heatmap_overlay(self, checked: bool) -> None:  # noqa: D401
+        """Handle user toggle of heat-map overlay setting."""
+        from digcalc_project.src.services.settings_service import SettingsService
+        SettingsService().set_enable_heatmap_overlay(checked)
+
+        # Propagate to scene
+        try:
+            scene = self.visualization_panel.scene_2d  # type: ignore[attr-defined]
+            if hasattr(scene, "set_heatmap_enabled"):
+                scene.set_heatmap_enabled(checked)
+        except Exception:
+            pass
 
     @Slot()
     def _on_application_quit(self) -> None:  # noqa: D401 – stub for CI

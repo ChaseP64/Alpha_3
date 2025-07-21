@@ -34,6 +34,11 @@ class ToolbarBuilder:  # noqa: D101 – simple helper
         main_tb.addAction(mw.new_project_action)
         main_tb.addAction(mw.open_project_action)
         main_tb.addAction(mw.save_project_action)
+        main_tb.addAction(mw.save_project_as_action)
+        # Edit actions
+        main_tb.addSeparator()
+        main_tb.addAction(mw.undo_action)
+        main_tb.addAction(mw.redo_action)
         main_tb.addSeparator()
 
         # Layer selector (optional)

@@ -56,6 +56,12 @@ class MenuBuilder:
         file_menu.addAction(mw.exit_action)
         self._add_attr("file_menu", file_menu)
 
+        # ----------------------------- Edit ----------------------------
+        edit_menu = self._mb.addMenu("&Edit")
+        edit_menu.addAction(mw.undo_action)
+        edit_menu.addAction(mw.redo_action)
+        self._add_attr("edit_menu", edit_menu)
+
         # ----------------------------- Import --------------------------
         import_menu = self._mb.addMenu("Import")
         import_menu.addAction(mw.import_csv_action)
@@ -144,6 +150,8 @@ class MenuBuilder:
         else:
             mw.trace_point_action.setChecked(True)
 
+        tracing_menu.addSeparator()
+        tracing_menu.addAction(mw.heatmap_overlay_action)
         self._add_attr("tracing_menu", tracing_menu)
 
         # ----------------------------- Help ----------------------------

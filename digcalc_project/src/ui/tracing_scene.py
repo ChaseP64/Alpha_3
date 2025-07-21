@@ -22,6 +22,7 @@ from PySide6.QtGui import (
     QShortcut,
     QUndoCommand,
     QUndoStack,  # Moved from QtWidgets
+    QGraphicsRectItem,
 )
 from PySide6.QtWidgets import (
     QGraphicsEllipseItem,
@@ -218,8 +219,64 @@ class TracingScene(QGraphicsScene):
             default_size = 1000.0
             self.setSceneRect(0.0, 0.0, default_size, default_size)
 
+        # ------------------------------------------------------------------
         # --- Phase 3: Spatial index for snap/hover performance ---
+        # ------------------------------------------------------------------
         self._sp_index = QuadTree(boundary=(-1e6, -1e6, 2e6, 2e6))  # generous bounds
+
+        # ------------------------------------------------------------------
+        # Grid-snap & heat-map (Phase-3 D3)
+        # ------------------------------------------------------------------
+        from digcalc_project.src.services.settings_service import SettingsService
+
+        ss = SettingsService()
+        self._grid_snap_ft: float = ss.grid_snap_ft()
+        self._heatmap_enabled: bool = ss.enable_heatmap_overlay()
+
+        # Keep simple counter per snapped cell when overlay enabled
+        self._snap_counts: dict[tuple[int, int], int] = {}
+
+        # QGraphicsItem group for heat-map squares
+        self._heatmap_items: dict[tuple[int, int], QGraphicsRectItem] = {}
+
+        # Performance guard flag
+        self._perf_warn_shown: bool = False
+
+    # ------------------------------------------------------------------
+    # Grid-snap helpers
+    # ------------------------------------------------------------------
+    def _grid_spacing_px(self) -> float:
+        """Return grid spacing in *scene pixels* based on current scale.
+
+        Falls back to 1-px spacing if scale unavailable so unit-tests without
+        full project context still work.
+        """
+        try:
+            # Access project scale factor (world_per_px)
+            project = getattr(self, "project", None) or getattr(self.panel, "current_project", None)
+            scale = getattr(project, "scale", None) if project else None
+            if scale and getattr(scale, "world_per_px", None):
+                return self._grid_snap_ft / float(scale.world_per_px)
+        except Exception:
+            pass  # fallback below
+        return self._grid_snap_ft  # assume 1 world-unit == 1 px
+
+    def _apply_grid_snap(self, pos: QPointF) -> QPointF:
+        """Snap *pos* to the nearest grid intersection."""
+        gs = self._grid_spacing_px()
+        if gs <= 0:
+            return pos  # guard divide-by-zero
+        snapped_x = round(pos.x() / gs) * gs
+        snapped_y = round(pos.y() / gs) * gs
+        snapped = QPointF(snapped_x, snapped_y)
+
+        if self._heatmap_enabled:
+            cell = (int(snapped_x // gs), int(snapped_y // gs))
+            self._snap_counts[cell] = self._snap_counts.get(cell, 0) + 1
+            # Update or create heat-map square for this cell
+            self._update_heatmap_cell(cell)
+
+        return snapped
 
     # --- Background Image ---
 
@@ -508,12 +565,11 @@ class TracingScene(QGraphicsScene):
         dx = current_pos.x() - last_point.x()
         dy = current_pos.y() - last_point.y()
 
-        if modifiers == Qt.ShiftModifier:
-            # Constrain to horizontal or vertical
-            if abs(dx) > abs(dy):
-                return QPointF(current_pos.x(), last_point.y()) # Horizontal
-            return QPointF(last_point.x(), current_pos.y()) # Vertical
-        if modifiers == Qt.ControlModifier:
+        # Grid-snap when Shift held (Phase-3 D3)
+        if modifiers & Qt.ShiftModifier:
+            return self._apply_grid_snap(current_pos)
+
+        if modifiers & Qt.ControlModifier:
             # Constrain to 45-degree increments
             angle = math.atan2(dy, dx)
             snapped_angle = round(angle / (math.pi / 4)) * (math.pi / 4)
@@ -851,6 +907,27 @@ class TracingScene(QGraphicsScene):
         # --- END Emit padDrawn ---
 
         self._reset_drawing_state()
+
+        # ------------------------------------------------------------------
+        # Performance guard – warn when >50k vertices in scene (Phase-3 D4)
+        # ------------------------------------------------------------------
+        try:
+            TOTAL_THRESHOLD = 50_000
+            total_pts = len(self._sp_index)
+            if total_pts > TOTAL_THRESHOLD and not self._perf_warn_shown:
+                from PySide6.QtWidgets import QMessageBox
+                self._perf_warn_shown = True
+                QMessageBox.warning(
+                    self.views()[0] if self.views() else None,
+                    "Large Edit Detected",
+                    (
+                        "This operation brings the digitised point count to > 50k.\n"
+                        "Consider enabling *Batch Mode* (menu: Tracing → Batch Mode) "
+                        "for smoother interaction."
+                    ),
+                )
+        except Exception:
+            pass  # never crash finalize on warning failure
 
     def _cancel_current_polyline(self):
         """Cancels the current polyline drawing."""
@@ -1511,6 +1588,52 @@ class TracingScene(QGraphicsScene):
     def current_material_id(self) -> Optional[int]:
         """Return the currently selected material ID (may be *None*)."""
         return self._current_material_id
+
+    # ------------------------------------------------------------------
+    # Heat-map rendering helpers (very lightweight implementation)
+    # ------------------------------------------------------------------
+    def _update_heatmap_cell(self, cell: tuple[int, int]) -> None:
+        """Create or update the coloured square for *cell* (i, j)."""
+        if not self._heatmap_enabled:
+            return
+
+        from PySide6.QtGui import QColor, QBrush, QPen
+
+        i, j = cell
+        gs = self._grid_spacing_px()
+        if gs <= 0:
+            return
+
+        # Convert cell coords back to scene px (origin 0,0)
+        x0 = i * gs
+        y0 = j * gs
+
+        count = self._snap_counts[cell]
+        # Map count → alpha (50 .. 220)
+        alpha = min(220, 50 + count * 25)
+        col = QColor(255, 165, 0, alpha)  # orange w/ variable alpha
+
+        if cell not in self._heatmap_items:
+            rect_item = QGraphicsRectItem(x0, y0, gs, gs)
+            rect_item.setBrush(QBrush(col))
+            rect_item.setPen(QPen(Qt.NoPen))
+            rect_item.setZValue(-5)  # below vertices but above background
+            self.addItem(rect_item)
+            self._heatmap_items[cell] = rect_item
+        else:
+            self._heatmap_items[cell].setBrush(QBrush(col))
+
+    # ------------------------------------------------------------------
+    # Public API – toggle heat-map overlay at runtime
+    # ------------------------------------------------------------------
+    def set_heatmap_enabled(self, flag: bool) -> None:  # noqa: D401
+        """Enable/disable heat-map overlay visibility without losing counts."""
+        flag = bool(flag)
+        if flag == self._heatmap_enabled:
+            return
+        self._heatmap_enabled = flag
+        for rect in self._heatmap_items.values():
+            rect.setVisible(flag)
 
 # ------------------------------------------------------------------
 # Undo/Redo Command

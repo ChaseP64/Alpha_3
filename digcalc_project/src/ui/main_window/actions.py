@@ -93,6 +93,21 @@ class ActionManager:
         act.setStatusTip("Check for new application updates.")
         self._add_attr("check_updates_action", act)
 
+        # -------------------------------------------------
+        # Edit menu – Undo / Redo (Phase-3 D1)
+        # -------------------------------------------------
+        act = QAction("&Undo", mw)
+        act.setShortcut(QKeySequence.StandardKey.Undo)
+        act.setStatusTip("Undo last edit (Ctrl+Z)")
+        act.triggered.connect(lambda _=None, s=mw.undo_stack: s.undo())
+        self._add_attr("undo_action", act)
+
+        act = QAction("&Redo", mw)
+        act.setShortcut(QKeySequence.StandardKey.Redo)
+        act.setStatusTip("Redo last undone edit (Ctrl+Y)")
+        act.triggered.connect(lambda _=None, s=mw.undo_stack: s.redo())
+        self._add_attr("redo_action", act)
+
         # Import menu actions ----------------------------------------------
         act = QAction("Import &CSV...", mw)
         act.setStatusTip("Import points from a CSV file.")
@@ -214,6 +229,12 @@ class ActionManager:
         act.setStatusTip("Extract vector paths from a PDF page and create layers.")
         act.setEnabled(False)
         self._add_attr("trace_pdf_action", act)
+
+        # Tracing heat-map overlay toggle --------------------------------
+        act = QAction("Heat-Map Overlay", mw, checkable=True)
+        from digcalc_project.src.services.settings_service import SettingsService
+        act.setChecked(SettingsService().enable_heatmap_overlay())
+        self._add_attr("heatmap_overlay_action", act)
 
         # ------------------------------------------------------------------
         # PDF Vectorizer (feature-flagged by DIGCALC_PDF_VEC).  When the
