@@ -61,6 +61,8 @@ class SettingsService(Singleton):
             # Phase-3 additions (D3)
             "grid_snap_ft": 1.0,  # default grid interval in world units (ft)
             "enable_heatmap_overlay": False,
+            # Phase-4 additions
+            "enable_snap_default": True,  # global magnet-snap toggle
         },
         "units": {
             "default_length": "ft",
@@ -363,3 +365,14 @@ class SettingsService(Singleton):
     def set_enable_heatmap_overlay(self, flag: bool) -> None:
         """Persist heat-map overlay enable flag."""
         self.set("tracing", "enable_heatmap_overlay", bool(flag))
+
+    # ------------------------------------------------------------------
+    # Phase-4 magnet snap default toggle
+    # ------------------------------------------------------------------
+    def enable_snap_default(self) -> bool:
+        """Return True when magnet snapping is enabled by default."""
+        return bool(self.get("tracing", "enable_snap_default", True))
+
+    def set_enable_snap_default(self, flag: bool) -> None:
+        """Persist default snap enable flag."""
+        self.set("tracing", "enable_snap_default", bool(flag))

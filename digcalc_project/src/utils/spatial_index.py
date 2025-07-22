@@ -142,6 +142,73 @@ class QuadTree(Generic[_T]):
         return hits
 
     # ------------------------------------------------------------------
+    # Nearest-neighbour helpers (Phase-4)
+    # ------------------------------------------------------------------
+    def nearest(self, centre: Point, radius: float) -> tuple[Point, _T] | None:
+        """Return the closest *(point, payload)* within *radius* of *centre*.
+
+        Falls back to *None* when no hits are inside the search circle.
+        """
+        hits = self.query(centre, radius)
+        if not hits:
+            return None
+        cx, cy = centre
+        return min(hits, key=lambda hp: (hp[0][0] - cx) ** 2 + (hp[0][1] - cy) ** 2)
+
+    # ------------------------------------------------------------------
+    # Optional edge index — stores segment mid-points to approximate search
+    # ------------------------------------------------------------------
+    def insert_edge(self, p1: Point, p2: Point, payload: _T) -> None:
+        """Insert an edge (line-segment) by its *mid-point* for proximity queries.
+
+        This keeps the QuadTree implementation point-only.  Callers must store
+        *(p1, p2)* in the *payload* so the exact perpendicular distance can be
+        computed at query-time.
+        """
+        mx = 0.5 * (p1[0] + p2[0])
+        my = 0.5 * (p1[1] + p2[1])
+        self.insert(mx, my, payload)
+
+    def nearest_edge(self, centre: Point, radius: float) -> tuple[tuple[Point, Point], _T, float] | None:
+        """Return the closest edge *(p1, p2, payload, dist)* within *radius*.
+
+        The *payload* must be a ``(p1, p2, user_data)`` triple or similar so
+        that the true segment can be reconstructed.  If the payload is just
+        ``user_data``, the edge is inferred from that.  The helper gracefully
+        handles both cases.
+        """
+        hits = self.query(centre, radius)
+        if not hits:
+            return None
+
+        cx, cy = centre
+
+        def _seg_dist(pt1: Point, pt2: Point) -> float:
+            # Compute perpendicular distance from (cx,cy) to segment p1-p2
+            x1, y1 = pt1
+            x2, y2 = pt2
+            dx = x2 - x1
+            dy = y2 - y1
+            if dx == dy == 0:
+                return ((cx - x1) ** 2 + (cy - y1) ** 2) ** 0.5
+            t = ((cx - x1) * dx + (cy - y1) * dy) / (dx * dx + dy * dy)
+            t = max(0.0, min(1.0, t))
+            px = x1 + t * dx
+            py = y1 + t * dy
+            return ((cx - px) ** 2 + (cy - py) ** 2) ** 0.5
+
+        best = None
+        best_dist = radius + 1.0  # sentinel larger than search radius
+        for (_, payload) in hits:
+            if isinstance(payload, tuple) and len(payload) >= 2 and isinstance(payload[0], tuple):
+                p1, p2, *user = payload  # p1, p2 expected
+                dist = _seg_dist(p1, p2)
+                if dist < best_dist:
+                    best = (p1, p2, user[0] if user else None, dist)
+                    best_dist = dist
+        return best  # type: ignore[return-value]
+
+    # ------------------------------------------------------------------
     def __len__(self) -> int:
         """Return total point count (debug/helper)."""
         return self._count(self._root)

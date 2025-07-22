@@ -229,6 +229,11 @@ class TracingScene(QGraphicsScene):
         # --- Phase 3: Spatial index for snap/hover performance ---
         self._sp_index = QuadTree(boundary=(-1e6, -1e6, 2e6, 2e6))  # generous bounds
 
+        # ------------------------------------------------------------------
+        # Phase-4: magnet snap default flag from settings
+        # ------------------------------------------------------------------
+        self._snap_enabled: bool = self._settings.enable_snap_default()
+
     # --- Background Image ---
 
     # ------------------------------------------------------------------
@@ -415,6 +420,7 @@ class TracingScene(QGraphicsScene):
         if event.button() == Qt.LeftButton:
             # No additional scale checks needed (already validated)
             pos = self._constrained_pos(event.scenePos(), event.modifiers())  # Apply constraints on press
+            pos = self._apply_magnet_snaps(pos, event.modifiers())
 
             # Check if click is within any background item bounds (if backgrounds exist)
             can_draw = True
@@ -490,6 +496,7 @@ class TracingScene(QGraphicsScene):
             return
 
         constrained_pos = self._constrained_pos(event.scenePos(), event.modifiers())
+        constrained_pos = self._apply_magnet_snaps(constrained_pos, event.modifiers())
         self._update_temporary_line(constrained_pos)
         event.accept() # We are handling the move for the rubber band
 
@@ -830,6 +837,13 @@ class TracingScene(QGraphicsScene):
         # Phase-3: Populate spatial index for snap/hover
         for pt in self._current_polyline_points:
             self._sp_index.insert(pt.x(), pt.y(), None)  # payload not needed yet
+
+        # Phase-4: also index edges for edge-snap.  Insert segment mid-points with
+        # payload holding actual endpoints so nearest_edge() can compute true distance.
+        for a, b in zip(self._current_polyline_points, self._current_polyline_points[1:]):
+            p1 = (a.x(), a.y())
+            p2 = (b.x(), b.y())
+            self._sp_index.insert_edge(p1, p2, (p1, p2, None))
 
         self.logger.info(
             f"Finalized polyline with {len(self._current_polyline_points)} points on layer '{layer_name}'."
@@ -1580,6 +1594,55 @@ class TracingScene(QGraphicsScene):
             # SettingsService may not be fully mocked in unit-tests; ignore
             pass
 
+    # ------------------------------------------------------------------
+    # Phase-4 snapping helpers (point / edge) ---------------------------
+    # ------------------------------------------------------------------
+    def _apply_point_snap(self, pos: QPointF, radius: float = 2.0) -> QPointF:  # noqa: N802
+        """Snap *pos* to the nearest indexed vertex within *radius* (scene units)."""
+        hit = self._sp_index.nearest((pos.x(), pos.y()), radius)
+        if hit:
+            p, _ = hit
+            return QPointF(p[0], p[1])
+        return pos
+
+    def _apply_edge_snap(self, pos: QPointF, radius: float = 2.0) -> QPointF:  # noqa: N802
+        """Return perpendicular projection onto the closest edge within *radius*.
+
+        Falls back to the original *pos* when no edge lies inside the search circle.
+        """
+        hit = self._sp_index.nearest_edge((pos.x(), pos.y()), radius)
+        if not hit:
+            return pos
+        p1, p2, _payload, dist = hit
+        if dist > radius:
+            return pos
+        x1, y1 = p1
+        x2, y2 = p2
+        dx = x2 - x1
+        dy = y2 - y1
+        if dx == dy == 0:
+            return QPointF(x1, y1)
+        t = ((pos.x() - x1) * dx + (pos.y() - y1) * dy) / (dx * dx + dy * dy)
+        t = max(0.0, min(1.0, t))
+        return QPointF(x1 + t * dx, y1 + t * dy)
+
+    # ------------------------------------------------------------------
+    # Phase-4 composite snapping pipeline
+    # ------------------------------------------------------------------
+    def _apply_magnet_snaps(self, pos: QPointF, modifiers: Qt.KeyboardModifiers) -> tuple[QPointF, bool]:
+        """Return (snapped_pos, did_snap)."""
+        if not self._snap_enabled or (modifiers & Qt.ShiftModifier):
+            return pos, False
+        before = pos
+        pos = self._apply_point_snap(pos)
+        if pos != before:
+            return pos, True
+        # Try edge snap
+        pos_edge = self._apply_edge_snap(pos)
+        if pos_edge != before:
+            return pos_edge, True
+        return pos, False
+
 # ------------------------------------------------------------------
 # Undo/Redo Command
 # ------------------------------------------------------------------
@@ -1676,3 +1739,35 @@ class SetPadElevationCommand(QUndoCommand):
     # --------------------------------------------------------------
     # Generic event filter to intercept vertex-item double-clicks
     # --------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    # Phase-4 snapping helpers (point / edge) ---------------------------
+    # ------------------------------------------------------------------
+    def _apply_point_snap(self, pos: QPointF, radius: float = 2.0) -> QPointF:  # noqa: N802
+        """Snap *pos* to the nearest indexed vertex within *radius* (scene units)."""
+        hit = self._sp_index.nearest((pos.x(), pos.y()), radius)
+        if hit:
+            p, _ = hit
+            return QPointF(p[0], p[1])
+        return pos
+
+    def _apply_edge_snap(self, pos: QPointF, radius: float = 2.0) -> QPointF:  # noqa: N802
+        """Return perpendicular projection onto the closest edge within *radius*.
+
+        Falls back to the original *pos* when no edge lies inside the search circle.
+        """
+        hit = self._sp_index.nearest_edge((pos.x(), pos.y()), radius)
+        if not hit:
+            return pos
+        p1, p2, _payload, dist = hit
+        if dist > radius:
+            return pos
+        x1, y1 = p1
+        x2, y2 = p2
+        dx = x2 - x1
+        dy = y2 - y1
+        if dx == dy == 0:
+            return QPointF(x1, y1)
+        t = ((pos.x() - x1) * dx + (pos.y() - y1) * dy) / (dx * dx + dy * dy)
+        t = max(0.0, min(1.0, t))
+        return QPointF(x1 + t * dx, y1 + t * dy)
