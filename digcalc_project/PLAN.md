@@ -79,3 +79,153 @@ Import sample_site.pdf → auto-classify & Smart-Clean (Phase 2).
 Open Smart-Clean log → show gaps closed & exported layer-map diff CSV.
 Press J to batch-join road centerlines, demonstrate snap hints & Shift-override (Phase 3).
 Run pytest-bench live → display timing SLA compliance for Quad-Tree queries and Smart-Clean
+================================================================
+Phase 4 — Snapping & Magnet Mode
+Branch feature/phase-4-snap-magnet  ETA ≈ 4 dev-days (2 devs)
+================================================================
+start after Phase 3 PR merges
+```
+$ git checkout master
+$ git pull
+$ git checkout -b feature/phase-4-snap-magnet
+```
+D1 – Point / Edge Snap Hook-Up
+[ ] Extend utils.spatial_index.QuadTree with nearest-edge queries (projected distance)
+[ ] Implement point-snap (vertex-to-vertex) in ui/tracing_scene.py
+[ ] Implement edge-snap (perpendicular projection) in ui/tracing_scene.py
+[ ] Unit tests + pytest-bench: ≤ 1 ms query @ 10 k vertices
+
+D2 – Shift-Disable Override & UI Affordance
+[ ] Integrate Shift key to temporarily disable snap (resolve overlap with grid-snap)
+[ ] Cursor/magnet icon when snap active
+[ ] SettingsService flag: enable_snap_default (persisted)
+
+D3 – Perf Regression Guard
+[ ] Benchmarks for 10 k & 50 k vertex datasets
+[ ] CI fails if p50 > 1 ms (10 k) or > 2 ms (50 k)
+
+Merge gate / exit criteria
+✅ All new unit, GUI & benchmark tests green
+✅ Point & edge snap honoured in tracing demo
+✅ Quad-Tree query ≤ 1 ms (10 k verts), ≤ 2 ms (50 k verts)
+✅ Docs & CHANGELOG updated; 1 demo GIF
+
+================================================================
+Phase 5 — Elevation UX Sprint
+Branch feature/phase-5-elev-ux  ETA ≈ 3 dev-days (2 devs)
+================================================================
+D1 – Auto-Increment Wizard
+[ ] Dialog: pick first & last vertex Z → auto-fill intermediate vertices with linear grade
+[ ] Support ± slope percentage or explicit end-elevation
+[ ] Unit tests: interpolation accuracy & undo integration
+
+D2 – Batch Elevate Dialog
+[ ] Multi-select polylines → set uniform Z or slope
+[ ] Single grouped undo command
+[ ] GUI test (pytest-qt): batch elevate 3 polylines
+
+D3 – Elevation Heat-Map Preview
+[ ] Toggle in TracingScene to color-map vertices by Z range
+[ ] Refresh ≤ 100 ms for 10 k vertices
+[ ] Persist preview flag via SettingsService
+
+Exit criteria
+✅ Wizards functional in headless tests
+✅ Heat-map toggle persists & performant
+✅ Docs & screenshots updated
+
+================================================================
+Phase 6 — Auto Classification
+Branch feature/phase-6-classify  ETA ≈ 3 dev-days (1 dev + 0.5 review)
+================================================================
+D1 – Heuristic Classifier
+[ ] Assign layer based on stroke RGB distance & OCR text labels
+[ ] Plug into core/clean/rule_engine.py
+
+D2 – Bulk “Assign Surface” Panel
+[ ] Table of unclassified polylines with dropdown per row
+[ ] Apply selection → updates project layers & refresh views
+[ ] Unit tests: ≥ 90 % auto-tag accuracy on sample plans
+
+Merge gate / exit criteria
+✅ sample_site.pdf auto-tags ≥ 90 %
+✅ Bulk override UI works & persists
+✅ Golden diff updated for classify pipeline
+
+================================================================
+Phase 7 — Surface Debug View
+Branch feature/phase-7-surface-debug  ETA ≈ 2 dev-days (1 dev)
+================================================================
+D1 – Un-elevated Vertex Highlighter
+[ ] Highlight zero-Z vertices after import/editing
+
+D2 – Dangling Edge Detector
+[ ] Detect open contour chains / TIN holes
+
+D3 – TIN Preview Overlay
+[ ] Generate on-demand mesh preview in VisualizationPanel
+[ ] Render toggle, refresh ≤ 500 ms for 10 k vertices
+
+Exit criteria
+✅ Debug view flags all issues in demo project
+✅ No perf impact when disabled
+
+================================================================
+Phase 8 — Stripping Zones & Templates
+Branch feature/phase-8-stripping  ETA ≈ 2 dev-days (2 devs)
+================================================================
+D1 – Stripping Zone Tool
+[ ] Polygon tool to mark stripping area + depth/material
+
+D2 – Template Library
+[ ] CRUD dialog for templates (pad, road trench, etc.)
+[ ] Template preview in plan & profile views
+
+Exit criteria
+✅ Stripping volumes integrate with VolumeCalculator
+✅ Templates saved in Project file & reloaded
+
+================================================================
+Phase 9 — Perf & Polish
+Branch feature/phase-9-polish  ETA ≈ 3 dev-days
+================================================================
+[ ] Nightly performance regression workflow (separate CI job) – alerts on SLA breach
+[ ] Enable GitHub Dependabot & license scan; address top-severity issues
+[ ] Add .gitattributes to enforce LF endings & unify diff
+[ ] Retire stale feature flags, document remaining toggles
+[ ] Profile & optimise QuadTree, Smart-Clean & vectorizer paths
+[ ] Sweep for files > 500 lines; refactor
+[ ] black, isort, flake8, docstrings pass
+[ ] Update README/CHANGELOG; create release tag
+
+Merge gate
+✅ All CI & benchmarks within SLA
+✅ Docs complete; release note approved
+
+----------------------------------------------------------------
+Weekly demo additions (rolling)
+• Show snap vs shift-override (Phase 4)
+• Elevation heat-map & batch elevate (Phase 5)
+• Auto-classification accuracy table (Phase 6)
+• TIN debug overlay toggle (Phase 7)
+• Stripping template applied on sample project (Phase 8)
+
+===============================================================
+Buffer Week — Integration / Bug-Bash & Hardening
+Branch chore/buffer-integration  ETA = 5 calendar days (shared)
+===============================================================
+Objective: catch cross-feature regressions, polish UI consistency, clear backlog bugs before stacking new complexity.
+
+Tasks
+[ ] End-to-end exploratory test sweep on Windows/macOS/Linux
+[ ] Review goldens after Phase 5 – update & commit where behaviour is expected (Owner: **Alice**)
+[ ] Execute nightly perf workflow dry-runs; adjust thresholds
+[ ] Triage and close ≥ 90 % of open Phase ≤ 5 bugs
+[ ] Produce consolidated UX critique & apply rapid fixes (< 2 h each)
+
+Exit criteria
+✅ CI green incl. nightly perf & golden diff jobs
+✅ All demo scripts run without manual work-arounds
+✅ Remaining open bugs labelled & scoped into later phases
+
+===============================================================

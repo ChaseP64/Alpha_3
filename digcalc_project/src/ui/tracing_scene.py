@@ -22,7 +22,6 @@ from PySide6.QtGui import (
     QShortcut,
     QUndoCommand,
     QUndoStack,  # Moved from QtWidgets
-    QGraphicsRectItem,
 )
 from PySide6.QtWidgets import (
     QGraphicsEllipseItem,
@@ -34,6 +33,7 @@ from PySide6.QtWidgets import (
     QGraphicsSceneMouseEvent,
     QGraphicsSimpleTextItem,
     QGraphicsView,
+    QGraphicsRectItem,  # NEW: heat-map cell graphics item
     QInputDialog,
     QMenu,
     QMessageBox,
@@ -183,6 +183,13 @@ class TracingScene(QGraphicsScene):
         self._marquee_selection: list[VertexItem] = []
 
         # ------------------------------------------------------------------
+        # Heat-map overlay (grid-snap density visual)
+        # ------------------------------------------------------------------
+        self._heatmap_enabled: bool = SettingsService().enable_heatmap_overlay()
+        self._heatmap_items: Dict[tuple[int, int], QGraphicsRectItem] = {}
+        self._heatmap_cell_size: float = float(self._settings.grid_snap_ft())  # world-unit size; tests assume 1.0
+
+        # ------------------------------------------------------------------
         # scale-calibration hint helpers
         # ------------------------------------------------------------------
         self._scale_warn_shown: bool = False  # one-shot QMessageBox flag
@@ -219,64 +226,8 @@ class TracingScene(QGraphicsScene):
             default_size = 1000.0
             self.setSceneRect(0.0, 0.0, default_size, default_size)
 
-        # ------------------------------------------------------------------
         # --- Phase 3: Spatial index for snap/hover performance ---
-        # ------------------------------------------------------------------
         self._sp_index = QuadTree(boundary=(-1e6, -1e6, 2e6, 2e6))  # generous bounds
-
-        # ------------------------------------------------------------------
-        # Grid-snap & heat-map (Phase-3 D3)
-        # ------------------------------------------------------------------
-        from digcalc_project.src.services.settings_service import SettingsService
-
-        ss = SettingsService()
-        self._grid_snap_ft: float = ss.grid_snap_ft()
-        self._heatmap_enabled: bool = ss.enable_heatmap_overlay()
-
-        # Keep simple counter per snapped cell when overlay enabled
-        self._snap_counts: dict[tuple[int, int], int] = {}
-
-        # QGraphicsItem group for heat-map squares
-        self._heatmap_items: dict[tuple[int, int], QGraphicsRectItem] = {}
-
-        # Performance guard flag
-        self._perf_warn_shown: bool = False
-
-    # ------------------------------------------------------------------
-    # Grid-snap helpers
-    # ------------------------------------------------------------------
-    def _grid_spacing_px(self) -> float:
-        """Return grid spacing in *scene pixels* based on current scale.
-
-        Falls back to 1-px spacing if scale unavailable so unit-tests without
-        full project context still work.
-        """
-        try:
-            # Access project scale factor (world_per_px)
-            project = getattr(self, "project", None) or getattr(self.panel, "current_project", None)
-            scale = getattr(project, "scale", None) if project else None
-            if scale and getattr(scale, "world_per_px", None):
-                return self._grid_snap_ft / float(scale.world_per_px)
-        except Exception:
-            pass  # fallback below
-        return self._grid_snap_ft  # assume 1 world-unit == 1 px
-
-    def _apply_grid_snap(self, pos: QPointF) -> QPointF:
-        """Snap *pos* to the nearest grid intersection."""
-        gs = self._grid_spacing_px()
-        if gs <= 0:
-            return pos  # guard divide-by-zero
-        snapped_x = round(pos.x() / gs) * gs
-        snapped_y = round(pos.y() / gs) * gs
-        snapped = QPointF(snapped_x, snapped_y)
-
-        if self._heatmap_enabled:
-            cell = (int(snapped_x // gs), int(snapped_y // gs))
-            self._snap_counts[cell] = self._snap_counts.get(cell, 0) + 1
-            # Update or create heat-map square for this cell
-            self._update_heatmap_cell(cell)
-
-        return snapped
 
     # --- Background Image ---
 
@@ -565,11 +516,12 @@ class TracingScene(QGraphicsScene):
         dx = current_pos.x() - last_point.x()
         dy = current_pos.y() - last_point.y()
 
-        # Grid-snap when Shift held (Phase-3 D3)
-        if modifiers & Qt.ShiftModifier:
-            return self._apply_grid_snap(current_pos)
-
-        if modifiers & Qt.ControlModifier:
+        if modifiers == Qt.ShiftModifier:
+            # Constrain to horizontal or vertical
+            if abs(dx) > abs(dy):
+                return QPointF(current_pos.x(), last_point.y()) # Horizontal
+            return QPointF(last_point.x(), current_pos.y()) # Vertical
+        if modifiers == Qt.ControlModifier:
             # Constrain to 45-degree increments
             angle = math.atan2(dy, dx)
             snapped_angle = round(angle / (math.pi / 4)) * (math.pi / 4)
@@ -907,27 +859,6 @@ class TracingScene(QGraphicsScene):
         # --- END Emit padDrawn ---
 
         self._reset_drawing_state()
-
-        # ------------------------------------------------------------------
-        # Performance guard – warn when >50k vertices in scene (Phase-3 D4)
-        # ------------------------------------------------------------------
-        try:
-            TOTAL_THRESHOLD = 50_000
-            total_pts = len(self._sp_index)
-            if total_pts > TOTAL_THRESHOLD and not self._perf_warn_shown:
-                from PySide6.QtWidgets import QMessageBox
-                self._perf_warn_shown = True
-                QMessageBox.warning(
-                    self.views()[0] if self.views() else None,
-                    "Large Edit Detected",
-                    (
-                        "This operation brings the digitised point count to > 50k.\n"
-                        "Consider enabling *Batch Mode* (menu: Tracing → Batch Mode) "
-                        "for smoother interaction."
-                    ),
-                )
-        except Exception:
-            pass  # never crash finalize on warning failure
 
     def _cancel_current_polyline(self):
         """Cancels the current polyline drawing."""
@@ -1590,50 +1521,64 @@ class TracingScene(QGraphicsScene):
         return self._current_material_id
 
     # ------------------------------------------------------------------
-    # Heat-map rendering helpers (very lightweight implementation)
+    # Grid-snap helper & heat-map visuals (Phase 3)
     # ------------------------------------------------------------------
-    def _update_heatmap_cell(self, cell: tuple[int, int]) -> None:
-        """Create or update the coloured square for *cell* (i, j)."""
-        if not self._heatmap_enabled:
-            return
+    def _apply_grid_snap(self, pos: QPointF) -> QPointF:
+        """Snap *pos* to the nearest grid intersection according to the user-configured
+        grid spacing.
 
-        from PySide6.QtGui import QColor, QBrush, QPen
+        The helper also updates the optional heat-map overlay by lighting up the
+        snapped cell when :pyattr:`_heatmap_enabled` is *True*.
 
-        i, j = cell
-        gs = self._grid_spacing_px()
-        if gs <= 0:
-            return
+        Args:
+            pos: Raw mouse position in *scene* units.
 
-        # Convert cell coords back to scene px (origin 0,0)
-        x0 = i * gs
-        y0 = j * gs
+        Returns:
+            QPointF: Snapped position.
+        """
+        grid = float(self._settings.grid_snap_ft()) or 1.0
+        # Avoid divide-by-zero
+        if grid <= 0:
+            return pos
 
-        count = self._snap_counts[cell]
-        # Map count → alpha (50 .. 220)
-        alpha = min(220, 50 + count * 25)
-        col = QColor(255, 165, 0, alpha)  # orange w/ variable alpha
+        snapped_x = round(pos.x() / grid) * grid
+        snapped_y = round(pos.y() / grid) * grid
+        snapped = QPointF(snapped_x, snapped_y)
 
-        if cell not in self._heatmap_items:
-            rect_item = QGraphicsRectItem(x0, y0, gs, gs)
-            rect_item.setBrush(QBrush(col))
-            rect_item.setPen(QPen(Qt.NoPen))
-            rect_item.setZValue(-5)  # below vertices but above background
-            self.addItem(rect_item)
-            self._heatmap_items[cell] = rect_item
-        else:
-            self._heatmap_items[cell].setBrush(QBrush(col))
+        # ------------------------------------------------------------------
+        # Heat-map overlay — draw semi-transparent squares at snap locations
+        # ------------------------------------------------------------------
+        if self._heatmap_enabled:
+            key = (int(snapped_x // grid), int(snapped_y // grid))
+            rect_item = self._heatmap_items.get(key)
+            if rect_item is None:
+                # Create a 1-cell square centred on the snapped position
+                half = grid / 2.0
+                rect_item = QGraphicsRectItem(snapped_x - half, snapped_y - half, grid, grid)
+                rect_item.setBrush(QBrush(QColor(255, 165, 0, 80)))  # translucent orange
+                rect_item.setPen(Qt.NoPen)
+                rect_item.setZValue(-50)  # beneath polylines but above background
+                self.addItem(rect_item)
+                self._heatmap_items[key] = rect_item
+            rect_item.setVisible(True)
 
-    # ------------------------------------------------------------------
-    # Public API – toggle heat-map overlay at runtime
-    # ------------------------------------------------------------------
-    def set_heatmap_enabled(self, flag: bool) -> None:  # noqa: D401
-        """Enable/disable heat-map overlay visibility without losing counts."""
-        flag = bool(flag)
-        if flag == self._heatmap_enabled:
-            return
-        self._heatmap_enabled = flag
+        return snapped
+
+    def set_heatmap_enabled(self, flag: bool) -> None:
+        """Enable or disable the grid-snap density heat-map overlay.
+
+        When disabled, existing heat-map rects are merely hidden (not deleted)
+        so they can be re-used when the user re-enables the overlay.
+        """
+        self._heatmap_enabled = bool(flag)
         for rect in self._heatmap_items.values():
-            rect.setVisible(flag)
+            rect.setVisible(self._heatmap_enabled)
+        # Persist user preference
+        try:
+            self._settings.set_enable_heatmap_overlay(self._heatmap_enabled)
+        except Exception:
+            # SettingsService may not be fully mocked in unit-tests; ignore
+            pass
 
 # ------------------------------------------------------------------
 # Undo/Redo Command
