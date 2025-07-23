@@ -234,6 +234,13 @@ class TracingScene(QGraphicsScene):
         # ------------------------------------------------------------------
         self._snap_enabled: bool = self._settings.enable_snap_default()
 
+        # ------------------------------------------------------------------
+        # Phase-5: Elevation heat-map preview (per-vertex Z colour)
+        # ------------------------------------------------------------------
+        from digcalc_project.src.services.settings_service import SettingsService  # local import to avoid circular
+
+        self._z_heatmap_enabled: bool = SettingsService().enable_elev_heatmap_preview()
+
     # --- Background Image ---
 
     # ------------------------------------------------------------------
@@ -1771,3 +1778,63 @@ class SetPadElevationCommand(QUndoCommand):
         t = ((pos.x() - x1) * dx + (pos.y() - y1) * dy) / (dx * dx + dy * dy)
         t = max(0.0, min(1.0, t))
         return QPointF(x1 + t * dx, y1 + t * dy)
+
+    # ------------------------------------------------------------------
+    # Phase-5: Elevation heat-map preview (per-vertex Z colour)
+    # ------------------------------------------------------------------
+    def set_elevation_heatmap_enabled(self, flag: bool) -> None:
+        """Enable/disable per-vertex elevation colour preview.
+
+        When enabled, vertex markers are recoloured using a blue-to-red
+        gradient based on their elevation relative to the current global
+        min/max.  Disabling restores the original layer colour.
+        """
+
+        self._z_heatmap_enabled = bool(flag)
+
+        if self._z_heatmap_enabled:
+            self._refresh_elevation_heatmap()
+        else:
+            self._restore_vertex_colours()
+
+        # Persist preference (ignore failures in headless tests)
+        try:
+            from digcalc_project.src.services.settings_service import SettingsService
+
+            SettingsService().set_enable_elev_heatmap_preview(self._z_heatmap_enabled)
+        except Exception:
+            pass
+
+    # ------------------------------------------------------------------
+    def _refresh_elevation_heatmap(self) -> None:
+        """Colour all vertices according to their Z using HSV gradient."""
+
+        from PySide6.QtGui import QColor
+
+        vertices = [it for it in self.items() if hasattr(it, "z")]
+        if not vertices:
+            return
+
+        zs = [float(it.z()) for it in vertices]
+        z_min, z_max = min(zs), max(zs)
+        span = max(1e-6, z_max - z_min)
+
+        for v, z in zip(vertices, zs):
+            ratio = (z - z_min) / span  # 0-1
+            hue = 240 - int(ratio * 240)  # blue (240) → red (0)
+            colour_hex = QColor.fromHsv(hue, 255, 255).name()
+            try:
+                v.update_color(colour_hex)
+            except Exception:
+                pass
+
+    def _restore_vertex_colours(self) -> None:
+        """Reset vertex marker colours to their layer pen colour."""
+
+        for item in self.items():
+            if hasattr(item, "_layer_pen_colour") and callable(getattr(item, "_layer_pen_colour")):
+                try:
+                    default_hex = item._layer_pen_colour().name()
+                    item.update_color(default_hex)
+                except Exception:
+                    pass

@@ -63,6 +63,8 @@ class SettingsService(Singleton):
             "enable_heatmap_overlay": False,
             # Phase-4 additions
             "enable_snap_default": True,  # global magnet-snap toggle
+            # Phase-5 additions
+            "enable_elev_heatmap_preview": False,  # vertex elevation heat-map
         },
         "units": {
             "default_length": "ft",
@@ -365,6 +367,20 @@ class SettingsService(Singleton):
     def set_enable_heatmap_overlay(self, flag: bool) -> None:
         """Persist heat-map overlay enable flag."""
         self.set("tracing", "enable_heatmap_overlay", bool(flag))
+
+    # --------------------------------------------------------------
+    # Phase-5: Elevation heat-map preview toggle
+    # --------------------------------------------------------------
+
+    def enable_elev_heatmap_preview(self) -> bool:  # noqa: D401 – simple accessor
+        """Return whether the elevation heat-map preview is enabled."""
+
+        return bool(self.get("tracing", "enable_elev_heatmap_preview", False))
+
+    def set_enable_elev_heatmap_preview(self, flag: bool) -> None:
+        """Persist user preference for elevation heat-map preview."""
+
+        self.set("tracing", "enable_elev_heatmap_preview", bool(flag))
 
     # ------------------------------------------------------------------
     # Phase-4 magnet snap default toggle

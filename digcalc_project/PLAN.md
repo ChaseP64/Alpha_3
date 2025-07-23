@@ -120,14 +120,14 @@ D1 – Auto-Increment Wizard
 [x] Unit tests: interpolation accuracy & undo integration (2025-07-23)
 
 D2 – Batch Elevate Dialog
-[ ] Multi-select polylines → set uniform Z or slope
-[ ] Single grouped undo command
-[ ] GUI test (pytest-qt): batch elevate 3 polylines
+[x] Multi-select polylines → set uniform Z or slope (2025-07-23)
+[x] Single grouped undo command (2025-07-23)
+[x] GUI test (pytest-qt): batch elevate 3 polylines (2025-07-23)
 
 D3 – Elevation Heat-Map Preview
-[ ] Toggle in TracingScene to color-map vertices by Z range
+[x] Toggle in TracingScene to color-map vertices by Z range (2025-07-23)
 [ ] Refresh ≤ 100 ms for 10 k vertices
-[ ] Persist preview flag via SettingsService
+[x] Persist preview flag via SettingsService (2025-07-23)
 
 Exit criteria
 ✅ Wizards functional in headless tests
