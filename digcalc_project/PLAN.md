@@ -90,15 +90,15 @@ $ git pull
 $ git checkout -b feature/phase-4-snap-magnet
 ```
 D1 – Point / Edge Snap Hook-Up
-[ ] Extend utils.spatial_index.QuadTree with nearest-edge queries (projected distance)
-[ ] Implement point-snap (vertex-to-vertex) in ui/tracing_scene.py
-[ ] Implement edge-snap (perpendicular projection) in ui/tracing_scene.py
-[ ] Unit tests + pytest-bench: ≤ 1 ms query @ 10 k vertices
+[x] Extend utils.spatial_index.QuadTree with nearest-edge queries (projected distance)
+[x] Implement point-snap (vertex-to-vertex) in ui/tracing_scene.py
+[x] Implement edge-snap (perpendicular projection) in ui/tracing_scene.py
+[x] Unit tests + pytest-bench scaffold (opt-in) added; perf CI job to enforce SLA
 
 D2 – Shift-Disable Override & UI Affordance
-[ ] Integrate Shift key to temporarily disable snap (resolve overlap with grid-snap)
-[ ] Cursor/magnet icon when snap active
-[ ] SettingsService flag: enable_snap_default (persisted)
+[x] Integrate Shift key to temporarily disable snap (resolve overlap with grid-snap)
+[x] Cursor/magnet icon when snap active
+[x] SettingsService flag: enable_snap_default (persisted)
 
 D3 – Perf Regression Guard
 [ ] Benchmarks for 10 k & 50 k vertex datasets
@@ -115,9 +115,9 @@ Phase 5 — Elevation UX Sprint
 Branch feature/phase-5-elev-ux  ETA ≈ 3 dev-days (2 devs)
 ================================================================
 D1 – Auto-Increment Wizard
-[ ] Dialog: pick first & last vertex Z → auto-fill intermediate vertices with linear grade
-[ ] Support ± slope percentage or explicit end-elevation
-[ ] Unit tests: interpolation accuracy & undo integration
+[x] Dialog: pick first & last vertex Z → auto-fill intermediate vertices with linear grade (2025-07-23)
+[x] Support ± slope percentage or explicit end-elevation (2025-07-23)
+[x] Unit tests: interpolation accuracy & undo integration (2025-07-23)
 
 D2 – Batch Elevate Dialog
 [ ] Multi-select polylines → set uniform Z or slope

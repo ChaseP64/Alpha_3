@@ -131,3 +131,6 @@ The table below groups *remaining* methods in `MainWindow` by primary concern. T
 - [x] Phase 5: PDF Navigation Cleanup
 - [x] Phase 6: UI Builder Extraction Finish
 - [x] Phase 7: Final Cleanup & Size Check 
+
+# Phase 5 – Elevation UX Sprint (added 2025-07-23)
+- [x] D1: Auto-Increment Wizard – dialog, slope %, end elev, unit tests – 2025-07-23 
