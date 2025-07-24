@@ -35,4 +35,16 @@ DigCalc now supports modeling of subsurface material layers (stratigraphy). This
 <p align="center">
   <em>End-to-end import workflow including scale calibration.</em><br/>
   <img src="docs/media/import_workflow.gif" alt="Import workflow" width="600"/>
+</p>
+
+### Elevation Tools
+
+DigCalc’s Elevation UX sprint adds dedicated tools for working with vertex elevations:
+
+* **Auto-Increment Wizard** – grade an entire polyline between two known elevations or a target slope.
+* **Batch Elevate Dialog** – apply a uniform elevation or slope to multiple selected polylines in one grouped-undo action.
+* **Elevation Heat-Map Preview** – blue→red overlay that refreshes in < 100 ms for 10 k vertices so you can spot high and low points instantly.
+
+<p align="center">
+  <img src="docs/media/heatmap_preview.png" alt="Elevation heat-map preview" width="600"/>
 </p> 

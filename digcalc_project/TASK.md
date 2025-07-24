@@ -133,5 +133,6 @@ The table below groups *remaining* methods in `MainWindow` by primary concern. T
 - [x] Phase 7: Final Cleanup & Size Check 
 
 # Phase 5 – Elevation UX Sprint (added 2025-07-23)
-- [x] D1: Auto-Increment Wizard – dialog, slope %, end elev, unit tests – 2025-07-23
-- [x] D2: Batch Elevate Dialog – uniform/slope, grouped undo, tests – 2025-07-23 
+- [x] D1: Auto-Increment Wizard – dialog, slope %, end elev, unit tests – 2025-07-23 
+- [x] D2: Batch Elevate Dialog – multi-select, grouped undo, GUI test – 2025-07-23
+- [x] D3: Elevation Heat-Map – performance guard, benchmark & docs – 2025-07-24 

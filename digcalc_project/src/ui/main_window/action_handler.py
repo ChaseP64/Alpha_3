@@ -219,3 +219,68 @@ class ActionHandler:
                 except Exception as e:
                     self.mw.logger.exception("Failed to create daylight offset.")
                     QMessageBox.critical(self.mw, "Daylight Offset", f"Failed to create daylight offset.\n{e}") 
+
+    def bulk_assign_surfaces(self) -> None:  # noqa: D401
+        """Launch BulkAssignSurfaceDialog for polylines without a layer_class.
+
+        After user confirms, the scene and project are updated and flagged
+        modified.  A single *undo* command records the change.
+        """
+        project = self.project_controller.get_current_project()
+        if project is None:
+            return
+
+        scene = self.mw.visualization_panel.scene_2d
+        # Dump current scene state so we can rebuild later
+        state = scene.dump_scene_state()
+
+        # Collect polyline records lacking a clear layer (misc / missing)
+        unclassified: list[tuple[str, list[tuple[float, float]]]] = []  # (orig_layer, points)
+        for layer, polys in state.items():
+            if layer.lower() in ("misc", "imported", "unclassified"):
+                for pts in polys:
+                    unclassified.append((layer, pts))
+
+        if not unclassified:
+            QMessageBox.information(self.mw, "Bulk Assign Surface", "No unclassified polylines found.")
+            return
+
+        # Convert to temporary Polyline objects for the dialog
+        from digcalc_project.src.core.geom.polyline import Polyline
+        import numpy as np
+        polys_core: list[Polyline] = []
+        for _layer, pts in unclassified:
+            arr = np.asarray([[p[0], p[1]] for p in pts], dtype=float)
+            pl = Polyline(vertices=arr)
+            setattr(pl, "layer_class", "misc")
+            polys_core.append(pl)
+
+        from digcalc_project.src.ui.dialogs.bulk_assign_surface_dialog import BulkAssignSurfaceDialog
+
+        dlg = BulkAssignSurfaceDialog(self.mw)
+        dlg.set_polylines(polys_core)
+
+        def _on_done(updated: list[Polyline]):
+            # Rebuild new state dict – start by removing misc entries
+            new_state: dict[str, list[list[tuple[float, float]]]] = {}
+            for layer, polys in state.items():
+                if layer.lower() not in ("misc", "imported", "unclassified"):
+                    new_state[layer] = polys.copy()
+
+            # Append reassigned polylines
+            for pl in updated:
+                new_layer = getattr(pl, "layer_class", "misc")
+                pts = [(float(x), float(y)) for x, y in pl.vertices]
+                new_state.setdefault(new_layer.capitalize(), []).append(pts)
+
+            # Update project & scene
+            scene.load_polylines_with_layers(new_state)
+            project.traced_polylines = {
+                lyr: [list(map(tuple, pts)) for pts in polylist]  # convert to tuples
+                for lyr, polylist in new_state.items()
+            }
+            project.is_modified = True
+            self.mw.status_bar_manager.show_message("Layer assignments updated.", 3000)
+
+        dlg.assignments_ready.connect(_on_done)  # type: ignore[arg-type]
+        dlg.exec() 

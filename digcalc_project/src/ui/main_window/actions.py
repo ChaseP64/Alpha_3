@@ -265,6 +265,12 @@ class ActionManager:
         act.setStatusTip("Run Smart Clean operations and configuration.")
         self._add_attr("smart_clean_action", act)
 
+        # Bulk Assign Surface (Phase-6)
+        act = QAction("Bulk Assign Surface…", mw)
+        act.setStatusTip("Bulk re-assign layer for unclassified polylines.")
+        act.setEnabled(False)  # enabled when project & polylines present
+        self._add_attr("bulk_assign_surface_action", act)
+
         # Borehole tool ----------------------------------------------------
         act = QAction(QIcon.fromTheme("mdi.circle"), "Place Borehole", mw)
         act.setCheckable(True)

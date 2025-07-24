@@ -78,6 +78,7 @@ class SignalBinder:  # noqa: D101
         mw.daylight_action.triggered.connect(ah.daylight_offset)
         mw.masshaul_action.triggered.connect(ah.mass_haul)
         mw.smart_clean_action.triggered.connect(ah.smart_clean)
+        mw.bulk_assign_surface_action.triggered.connect(ah.bulk_assign_surfaces)
 
         mw.about_action.triggered.connect(mw.on_about)
 

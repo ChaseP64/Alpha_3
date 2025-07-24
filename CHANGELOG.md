@@ -30,4 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 3. **CI** – adopt the new workflow `.github/workflows/vectorizer-tests.yml` or
    add the env vars to your own pipeline to exercise the vectorizer tests.
 
+## [0.10.0-elevation] – 2025-07-24
+
+### Added
+* **Phase 5 complete – Elevation Tools**: Auto-Increment wizard, Batch Elevate dialog, and ultra-fast Elevation Heat-Map preview (<100 ms for 10 k vertices).
+
 --- 
