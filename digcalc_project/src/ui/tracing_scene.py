@@ -240,6 +240,8 @@ class TracingScene(QGraphicsScene):
         from digcalc_project.src.services.settings_service import SettingsService  # local import to avoid circular
 
         self._z_heatmap_enabled: bool = SettingsService().enable_elev_heatmap_preview()
+        # Phase-7: Zero-elevation vertex highlight
+        self._zero_z_highlight_enabled: bool = SettingsService().enable_zero_elev_highlight()
 
     # --- Background Image ---
 
@@ -1787,15 +1789,23 @@ class SetPadElevationCommand(QUndoCommand):
 
         When enabled, vertex markers are recoloured using a blue-to-red
         gradient based on their elevation relative to the current global
-        min/max.  Disabling restores the original layer colour.
+        min/max.  Disabling restores the original layer colour.  If the
+        *zero-elevation highlight* feature is active it is applied **after**
+        the heat-map so that 0-Z vertices remain visible.
         """
 
         self._z_heatmap_enabled = bool(flag)
 
         if self._z_heatmap_enabled:
             self._refresh_elevation_heatmap()
+            # Ensure zero-Z highlight remains on top
+            if getattr(self, "_zero_z_highlight_enabled", False):
+                self._refresh_zero_elev_highlight()
         else:
+            # Restore defaults then re-apply zero-Z highlight if needed
             self._restore_vertex_colours()
+            if getattr(self, "_zero_z_highlight_enabled", False):
+                self._refresh_zero_elev_highlight()
 
         # Persist preference (ignore failures in headless tests)
         try:
@@ -1861,6 +1871,52 @@ class SetPadElevationCommand(QUndoCommand):
             try:
                 v.update_color(_hue_to_hex(int(h)))
             except Exception:  # pragma: no cover – non-critical UI failures
+                pass
+
+    # ------------------------------------------------------------------
+    # Phase-7: Zero-elevation vertex highlighter
+    # ------------------------------------------------------------------
+    def set_zero_elev_highlight_enabled(self, flag: bool) -> None:
+        """Toggle highlighting of vertices whose Z == 0 (±1 µft).
+
+        When enabled, such vertices are coloured bright magenta so users can
+        easily spot un-elevated data that would cause holes in a surface mesh.
+        The highlight co-exists with the elevation heat-map – it is applied
+        *after* the heat-map so it always remains visible.
+        """
+        self._zero_z_highlight_enabled = bool(flag)
+
+        if self._zero_z_highlight_enabled:
+            self._refresh_zero_elev_highlight()
+        else:
+            # Re-apply whichever colouring mode is currently active
+            if getattr(self, "_z_heatmap_enabled", False):
+                self._refresh_elevation_heatmap()
+            else:
+                self._restore_vertex_colours()
+
+        # Persist preference (best-effort; ignore failures in headless tests)
+        try:
+            from digcalc_project.src.services.settings_service import SettingsService
+            SettingsService().set_enable_zero_elev_highlight(self._zero_z_highlight_enabled)
+        except Exception:
+            pass
+
+    def _refresh_zero_elev_highlight(self) -> None:
+        """Recolour vertices with *z ≈ 0* using a bright magenta tint."""
+        import math
+        # Iterate only items that expose a ``z()`` accessor (VertexItem)
+        vertices = [it for it in self.items() if hasattr(it, "z")]
+        if not vertices:
+            return
+
+        MAGENTA_HEX = "#ff00ff"
+        for v in vertices:
+            try:
+                if math.isclose(float(v.z()), 0.0, abs_tol=1e-9):
+                    v.update_color(MAGENTA_HEX)
+            except Exception:
+                # Ignore any non-critical failures (e.g., item deleted mid-loop)
                 pass
 
     def _restore_vertex_colours(self) -> None:

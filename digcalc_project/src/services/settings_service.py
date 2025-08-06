@@ -65,6 +65,8 @@ class SettingsService(Singleton):
             "enable_snap_default": True,  # global magnet-snap toggle
             # Phase-5 additions
             "enable_elev_heatmap_preview": False,  # vertex elevation heat-map
+            # Phase-7 additions
+            "enable_zero_elev_highlight": True,  # highlight vertices with zero elevation
         },
         "units": {
             "default_length": "ft",
@@ -381,6 +383,17 @@ class SettingsService(Singleton):
         """Persist user preference for elevation heat-map preview."""
 
         self.set("tracing", "enable_elev_heatmap_preview", bool(flag))
+
+    # ------------------------------------------------------------------
+    # Phase-7: Zero-elevation vertex highlight toggle
+    # ------------------------------------------------------------------
+    def enable_zero_elev_highlight(self) -> bool:  # noqa: D401 – simple accessor
+        """Return whether highlighting of zero-elevation vertices is enabled."""
+        return bool(self.get("tracing", "enable_zero_elev_highlight", True))
+
+    def set_enable_zero_elev_highlight(self, flag: bool) -> None:
+        """Persist user preference for zero-elevation vertex highlighting."""
+        self.set("tracing", "enable_zero_elev_highlight", bool(flag))
 
     # ------------------------------------------------------------------
     # Phase-4 magnet snap default toggle

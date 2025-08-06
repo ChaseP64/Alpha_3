@@ -152,6 +152,8 @@ class MenuBuilder:
 
         tracing_menu.addSeparator()
         tracing_menu.addAction(mw.heatmap_overlay_action)
+        tracing_menu.addAction(mw.zero_elev_highlight_action)
+        tracing_menu.addAction(mw.tin_preview_action)
         self._add_attr("tracing_menu", tracing_menu)
 
         # ----------------------------- Help ----------------------------

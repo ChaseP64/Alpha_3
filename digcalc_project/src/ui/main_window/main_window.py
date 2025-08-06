@@ -468,6 +468,10 @@ class MainWindow(QMainWindow):
         # Hook heat-map overlay toggle
         if hasattr(self, "heatmap_overlay_action"):
             self.heatmap_overlay_action.toggled.connect(self._on_toggle_heatmap_overlay)
+        if hasattr(self, "zero_elev_highlight_action"):
+            self.zero_elev_highlight_action.toggled.connect(self._on_toggle_zero_elev_highlight)
+        if hasattr(self, "tin_preview_action"):
+            self.tin_preview_action.toggled.connect(self._on_toggle_tin_preview)
 
     def _create_menus(self):
         """Build menus via MenuBuilder helper class."""
@@ -1199,6 +1203,36 @@ class MainWindow(QMainWindow):
                 scene.set_heatmap_enabled(checked)
         except Exception:
             pass
+
+    # ------------------------------------------------------------------
+    # Phase-7: Zero-elevation vertex highlight toggle handler
+    # ------------------------------------------------------------------
+    @Slot()
+    def _on_toggle_zero_elev_highlight(self, checked: bool) -> None:  # noqa: D401
+        """Handle user toggle of the zero-Z vertex highlight feature."""
+        from digcalc_project.src.services.settings_service import SettingsService
+        SettingsService().set_enable_zero_elev_highlight(checked)
+
+        # Propagate to scene
+        try:
+            scene = self.visualization_panel.scene_2d  # type: ignore[attr-defined]
+            if hasattr(scene, "set_zero_elev_highlight_enabled"):
+                scene.set_zero_elev_highlight_enabled(checked)
+        except Exception:
+            pass
+
+    # ------------------------------------------------------------------
+    # Phase-7: TIN Preview Overlay toggle handler
+    # ------------------------------------------------------------------
+    @Slot()
+    def _on_toggle_tin_preview(self, checked: bool) -> None:  # noqa: D401
+        """Toggle wireframe TIN preview overlay in the 3D view."""
+        try:
+            panel = self.visualization_panel
+            if hasattr(panel, "set_tin_preview_enabled"):
+                panel.set_tin_preview_enabled(checked)
+        except Exception as exc:
+            self.logger.warning("Failed to toggle TIN preview: %s", exc)
 
     @Slot()
     def _on_application_quit(self) -> None:  # noqa: D401 – stub for CI

@@ -236,6 +236,18 @@ class ActionManager:
         act.setChecked(SettingsService().enable_heatmap_overlay())
         self._add_attr("heatmap_overlay_action", act)
 
+        # Zero-elevation highlight toggle (Phase-7) ------------------------
+        act = QAction("Highlight Zero-Z Vertices", mw, checkable=True)
+        act.setStatusTip("Highlight vertices with zero elevation (magenta)")
+        act.setChecked(SettingsService().enable_zero_elev_highlight())
+        self._add_attr("zero_elev_highlight_action", act)
+
+        # TIN preview overlay toggle (Phase-7 D3) ---------------------------
+        act = QAction("TIN Preview Overlay", mw, checkable=True)
+        act.setStatusTip("Show wireframe TIN overlay for selected surfaces")
+        act.setChecked(False)
+        self._add_attr("tin_preview_action", act)
+
         # ------------------------------------------------------------------
         # PDF Vectorizer (feature-flagged by DIGCALC_PDF_VEC).  When the
         # environment variable is explicitly set to "0" the action is *not*

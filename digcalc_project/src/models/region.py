@@ -16,6 +16,7 @@ class Region:
     strip_depth_ft: Optional[float] = None   # None → fallback to global default
     # Accept meters input for convenience (tests use strip_depth_m)
     strip_depth_m: Optional[float] = field(default=None, repr=False, compare=False)
+    material_id: Optional[int] = None  # Material to assign when stripping applied
 
     def __post_init__(self):
         # Convert meters to feet if provided and ft not already set
@@ -29,6 +30,7 @@ class Region:
             "name": self.name,
             "polygon": self.polygon,
             "strip_depth_ft": self.strip_depth_ft,
+            "material_id": self.material_id,
         }
 
     @classmethod
@@ -38,5 +40,6 @@ class Region:
             name=d["name"],
             polygon=[tuple(pt) for pt in d["polygon"]],
             strip_depth_ft=d.get("strip_depth_ft"),
+            material_id=d.get("material_id"),
         )
 

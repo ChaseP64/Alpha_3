@@ -274,6 +274,10 @@ class VisualizationPanel(QWidget):
         # 3-D cut/fill mesh no longer rendered here (handled in PvDock if needed)
         # self._dz_mesh_item = None  # deprecated placeholder # Removed
 
+        # Phase-7: TIN preview overlay management
+        self._tin_preview_enabled: bool = False
+        self._tin_preview_actors: Dict[str, Any] = {}  # surface name → PyVista actor
+
         # gl = _LegacyGLStub()  # type: ignore # Removed
         # Legacy conditional constant (always True now that PyVista is required)
         # HAS_3D = True # Removed
@@ -1155,17 +1159,57 @@ class VisualizationPanel(QWidget):
             self.clear_cutfill_map() # Clear any partial state
 
     def clear_cutfill_map(self):
-        """Removes the cut/fill map from the 2D and 3D views."""
-        self.logger.debug("Clearing cut/fill map visualization.")
-        if self._dz_image_item:
-            if self.scene_2d and self._dz_image_item in self.scene_2d.items():
-                 try:
-                     self.scene_2d.removeItem(self._dz_image_item)
-                 except RuntimeError as e:
-                     self.logger.warning(f"Error removing 2D map item (might be deleted): {e}")
-            self._dz_image_item = None
+        """Remove cut/fill overlay from the 2-D view and 3-D plot."""
+        if self._dz_image_item and self._dz_image_item in self.scene_2d.items():
+            self.scene_2d.removeItem(self._dz_image_item)
+        self._dz_image_item = None
 
-        # Visibility state (_cutfill_visible) is managed by the action/MainWindow
+    # ------------------------------------------------------------------
+    # Phase-7: TIN preview overlay helpers
+    # ------------------------------------------------------------------
+    def set_tin_preview_enabled(self, flag: bool) -> None:
+        """Enable/disable wireframe TIN overlay for all project surfaces.
+
+        The overlay is rendered in the shared PyVista plotter as a white
+        wireframe mesh.  Enabling repeatedly refreshes the overlay to include
+        any newly added or rebuilt surfaces.
+        """
+        self._tin_preview_enabled = bool(flag)
+
+        if not self.current_project:
+            return
+
+        if self._tin_preview_enabled:
+            self._add_tin_preview_actors()
+        else:
+            self._remove_tin_preview_actors()
+
+    def _add_tin_preview_actors(self) -> None:
+        plotter = get_plotter()
+        for name, surf in self.current_project.surfaces.items():
+            if name in self._tin_preview_actors:
+                continue  # already present
+            try:
+                mesh = surface_to_polydata(surf)
+                actor = plotter.add_mesh(mesh, style="wireframe", color="white", line_width=1)
+                self._tin_preview_actors[name] = actor
+            except Exception as exc:
+                logger.warning("TIN preview failed for surface '%s': %s", name, exc)
+
+        if self.view_3d.isVisible():
+            plotter.render()
+
+    def _remove_tin_preview_actors(self) -> None:
+        plotter = get_plotter()
+        for name, actor in list(self._tin_preview_actors.items()):
+            try:
+                plotter.remove_actor(actor, reset_camera=False)
+            except Exception:
+                pass
+            self._tin_preview_actors.pop(name, None)
+        if self.view_3d.isVisible():
+            plotter.render()
+
 
     # --- End Cut/Fill Map Methods ---
 
