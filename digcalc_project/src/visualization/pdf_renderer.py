@@ -10,7 +10,7 @@ Uses PyMuPDF (fitz) to load and render PDF pages as QImage objects.
 import logging
 import sys
 import typing  # Import typing
-from typing import List, Optional, TypeAlias, Any
+from typing import Any, List, Optional, TypeAlias
 
 # --- Dependency Handling ---
 # Check for PyMuPDF (fitz)
@@ -26,14 +26,17 @@ else:
         print("Please install it: pip install PyMuPDF", file=sys.stderr)
         fitz = None  # Indicate missing library
 
+
 # Check for PySide6 (this block handles runtime)
 # Define _MissingQtType outside the try-except block so it's always defined.
 class _MissingQtType:  # pylint: disable=too-few-public-methods
     """Placeholder type used when PySide6 is unavailable at runtime."""
 
+
 try:
     from PySide6.QtGui import QImage
     from PySide6.QtWidgets import QApplication  # Needed for __main__ test
+
     # QPixmap can be created from QImage if needed later
 except ImportError:
     print("Error: PySide6 library not found.", file=sys.stderr)
@@ -51,7 +54,6 @@ except ImportError:
 
 class PDFRendererError(Exception):
     """Custom exception for PDF Renderer errors."""
-
 
 
 class PDFRenderer:
@@ -107,28 +109,30 @@ class PDFRenderer:
             self._load_and_render_pages()
         except FileNotFoundError:
             self.logger.error(f"PDF file not found: {self.pdf_path}")
-            raise # Re-raise FileNotFoundError
+            raise  # Re-raise FileNotFoundError
         except Exception as e:
-            self.logger.error(f"Failed to open or process PDF '{self.pdf_path}': {e}", exc_info=True)
+            self.logger.error(
+                f"Failed to open or process PDF '{self.pdf_path}': {e}", exc_info=True
+            )
             # Ensure doc is closed if partially opened before error
             if self.doc:
                 try:
                     self.doc.close()
                 except Exception:
-                    pass # Ignore errors during close on error path
+                    pass  # Ignore errors during close on error path
                 self.doc = None
             raise PDFRendererError(f"Failed to open or process PDF: {e}") from e
 
     def _load_and_render_pages(self):
         """Internal method to iterate through pages and render them."""
         if not self.doc:
-            return # Should not happen if __init__ succeeded
+            return  # Should not happen if __init__ succeeded
 
         # Type check hint for self.doc within the method if needed
         if typing.TYPE_CHECKING:
             assert self.doc is not None
 
-        self._rendered_pages = [] # Clear any previous renders
+        self._rendered_pages = []  # Clear any previous renders
         self.logger.info(f"Rendering {self.doc.page_count} pages at {self.dpi} DPI...")
 
         for i, page in enumerate(self.doc):
@@ -136,10 +140,14 @@ class PDFRenderer:
             try:
                 # Render page to a pixmap using specified DPI
                 # Using matrix allows for future scaling/rotation during render if needed
-                self.logger.debug(f"Calculating matrix for page {page_num} using self.dpi = {self.dpi}")
-                mat = fitz.Matrix(self.dpi / 72, self.dpi / 72) # Standard conversion
-                pix = page.get_pixmap(matrix=mat, alpha=False) # Render as RGB for simplicity now
-                self.logger.debug(f"Page {page_num}: Got pixmap (w={pix.width}, h={pix.height}, colorspace={pix.colorspace.name})")
+                self.logger.debug(
+                    f"Calculating matrix for page {page_num} using self.dpi = {self.dpi}"
+                )
+                mat = fitz.Matrix(self.dpi / 72, self.dpi / 72)  # Standard conversion
+                pix = page.get_pixmap(matrix=mat, alpha=False)  # Render as RGB for simplicity now
+                self.logger.debug(
+                    f"Page {page_num}: Got pixmap (w={pix.width}, h={pix.height}, colorspace={pix.colorspace.name})"
+                )
 
                 # Determine QImage format - Assuming RGB for now
                 fmt = QImage.Format.Format_RGB888
@@ -152,12 +160,13 @@ class PDFRenderer:
                 self.logger.debug(f"Page {page_num} rendered and converted to QImage.")
 
             except Exception as e:
-                self.logger.error(f"Failed to render or convert page {page_num}: {e}", exc_info=True)
+                self.logger.error(
+                    f"Failed to render or convert page {page_num}: {e}", exc_info=True
+                )
                 # Append None for failed pages to keep indices correct?
                 # For now, just skip adding it, but log the error.
 
         self.logger.info(f"Finished rendering. Stored {len(self._rendered_pages)} page images.")
-
 
     def get_page_image(self, page_number: int) -> Optional[Any]:
         """Retrieves the rendered QImage for a specific page.
@@ -171,7 +180,9 @@ class PDFRenderer:
 
         """
         if not 1 <= page_number <= len(self._rendered_pages):
-            self.logger.warning(f"Invalid page number requested: {page_number}. Max page: {len(self._rendered_pages)}")
+            self.logger.warning(
+                f"Invalid page number requested: {page_number}. Max page: {len(self._rendered_pages)}"
+            )
             return None
 
         # Return the QImage (0-based index)
@@ -196,20 +207,22 @@ class PDFRenderer:
                 self.doc = None
             except Exception as e:
                 self.logger.error(f"Error closing PDF document: {e}", exc_info=True)
-        self._rendered_pages = [] # Clear rendered images on close
+        self._rendered_pages = []  # Clear rendered images on close
 
 
 # --- Example Usage / Basic Test ---
 if __name__ == "__main__":
     # Basic logging setup for testing
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
 
     # Ensure libraries loaded for test execution
     if fitz is None or QImage is _MissingQtType or QApplication is _MissingQtType:
         sys.exit("Exiting: Required libraries not found.")
 
     # Need a QApplication instance for QImage handling, even if not showing GUI
-    app = QApplication.instance() # Check if already exists
+    app = QApplication.instance()  # Check if already exists
     if not app:
         app = QApplication(sys.argv)
 
@@ -221,7 +234,7 @@ if __name__ == "__main__":
     renderer: Optional[PDFRenderer] = None
     try:
         # Create renderer instance (loads and renders pages)
-        renderer = PDFRenderer(pdf_path=pdf_file, dpi=96) # Lower DPI for faster testing
+        renderer = PDFRenderer(pdf_path=pdf_file, dpi=96)  # Lower DPI for faster testing
 
         if renderer:
             orig_pages = renderer.get_original_page_count()
@@ -235,7 +248,9 @@ if __name__ == "__main__":
                 # Try getting the first page image
                 first_page_img = renderer.get_page_image(1)
                 if first_page_img:
-                    print(f"First page image dimensions: {first_page_img.width()}x{first_page_img.height()}")
+                    print(
+                        f"First page image dimensions: {first_page_img.width()}x{first_page_img.height()}"
+                    )
                     # Optionally save the image for verification
                     # save_path = "test_page_1.png"
                     # first_page_img.save(save_path)

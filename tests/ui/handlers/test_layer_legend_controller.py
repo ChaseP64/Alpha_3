@@ -45,7 +45,9 @@ def test_on_layer_visibility_toggled(mock_main_window):
     mock_project.get_layer_by_name.assert_called_once_with("TestLayer")
     assert mock_layer.is_visible is False
     mock_main_window._trigger_layer_visibility_update.assert_called_once_with("TestLayer", False)
-    mock_main_window.visualization_panel.set_layer_visible.assert_called_once_with("TestLayer", False)
+    mock_main_window.visualization_panel.set_layer_visible.assert_called_once_with(
+        "TestLayer", False
+    )
 
 
 def test_on_layer_visibility_changed(mock_main_window):
@@ -63,5 +65,7 @@ def test_on_layer_visibility_changed(mock_main_window):
 
     mock_project.get_layer_by_name.assert_called_once_with("TestLayer")
     assert mock_layer.is_visible is True
-    mock_main_window.visualization_panel.scene_2d.setLayerVisible.assert_called_once_with("TestLayer", True)
-    mock_main_window.legend_dock.set_layer_visibility.assert_called_once_with("TestLayer", True) 
+    mock_main_window.visualization_panel.scene_2d.setLayerVisible.assert_called_once_with(
+        "TestLayer", True
+    )
+    mock_main_window.legend_dock.set_layer_visibility.assert_called_once_with("TestLayer", True)

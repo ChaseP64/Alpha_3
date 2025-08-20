@@ -16,10 +16,11 @@ from importlib import import_module
 from types import ModuleType
 from typing import TYPE_CHECKING
 
-
 # Lazily proxy to the real calculations module ------------------------------
 _module: ModuleType = import_module("digcalc_project.src.core.calculations.volume_calculator")
 VolumeCalculator = _module.VolumeCalculator  # type: ignore[attr-defined]
 
 if TYPE_CHECKING:  # pragma: no cover – mypy only
-    from digcalc_project.src.core.calculations.volume_calculator import VolumeCalculator as _VolCalc  # noqa: F401 
+    from digcalc_project.src.core.calculations.volume_calculator import (  # noqa: F401
+        VolumeCalculator as _VolCalc,
+    )

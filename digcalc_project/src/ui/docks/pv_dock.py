@@ -5,28 +5,29 @@ from importlib import import_module
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction, QKeySequence, QCloseEvent, QColor
+from PySide6.QtGui import QAction, QCloseEvent, QColor, QKeySequence
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QDockWidget,
-    QLabel,
-    QToolBar,
+    QFileDialog,
     QHBoxLayout,
+    QInputDialog,
+    QLabel,
+    QMenu,
+    QSlider,
+    QToolBar,
+    QToolButton,
     QVBoxLayout,
     QWidget,
-    QSlider,
-    QCheckBox,
-    QToolButton,
-    QFileDialog,
-    QMenu,
-    QInputDialog,
 )
+
+from digcalc_project.src.utils.array_cache import load_grid
 
 # ----------------------------------------------------------------------------
 # Local imports
 # ----------------------------------------------------------------------------
 from ..pv_plotter_singleton import get_plotter
-from digcalc_project.src.utils.array_cache import load_grid
 
 if TYPE_CHECKING:  # pragma: no cover
     from digcalc_project.src.models.mesh_actor import MeshActor
@@ -43,6 +44,7 @@ if TYPE_CHECKING:
 
 import logging
 import os
+
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -183,7 +185,7 @@ class PvDock(QDockWidget):
 
         # State holders for section-plane tool
         self._plane_widget = None  # type: ignore
-        self._vtk_plane = None     # type: ignore
+        self._vtk_plane = None  # type: ignore
 
         # Initial population and loading
         self._populate_combo()
@@ -196,10 +198,14 @@ class PvDock(QDockWidget):
         # Connect project signals
         if hasattr(self.main, "project_controller"):
             pc = self.main.project_controller
-            if hasattr(pc, "surfaces_rebuilt"): pc.surfaces_rebuilt.connect(self._on_surfaces_rebuilt)
-            if hasattr(pc, "project_modified"): pc.project_modified.connect(self._on_surfaces_rebuilt)
-            if hasattr(pc, "surfacesChanged"): pc.surfacesChanged.connect(self._on_surfaces_rebuilt)
-            if hasattr(pc, "project_loaded"): pc.project_loaded.connect(self.load_project)
+            if hasattr(pc, "surfaces_rebuilt"):
+                pc.surfaces_rebuilt.connect(self._on_surfaces_rebuilt)
+            if hasattr(pc, "project_modified"):
+                pc.project_modified.connect(self._on_surfaces_rebuilt)
+            if hasattr(pc, "surfacesChanged"):
+                pc.surfacesChanged.connect(self._on_surfaces_rebuilt)
+            if hasattr(pc, "project_loaded"):
+                pc.project_loaded.connect(self.load_project)
 
         # --- NEW: Connect layer-dock signals for sync with 3-D actors (Task 7-A) ---
         for dock_name in ("layer_dock", "legend_dock", "strata_manager_dock"):
@@ -283,8 +289,10 @@ class PvDock(QDockWidget):
             surf = getattr(proj, f"{name.lower()}_surface", None)
         if surf is None:
             if self._current_actor:
-                try: self._current_actor.SetVisibility(False)
-                except Exception: pass
+                try:
+                    self._current_actor.SetVisibility(False)
+                except Exception:
+                    pass
             return
 
         from digcalc_project.src.utils.surface_to_polydata import surface_to_polydata
@@ -304,14 +312,18 @@ class PvDock(QDockWidget):
 
         try:
             if self._current_actor is not None:
-                try: self._current_actor.SetVisibility(False)
-                except Exception: pass
-            
+                try:
+                    self._current_actor.SetVisibility(False)
+                except Exception:
+                    pass
+
             disp_mesh = self._prepare_display_mesh(mesh)
-            
+
             # Check if 'dz' scalars exist for cut/fill coloring
-            if 'dz' in disp_mesh.point_data:
-                self._current_actor = self.plotter.add_mesh(disp_mesh, scalars="dz", cmap="RdYlGn_r")
+            if "dz" in disp_mesh.point_data:
+                self._current_actor = self.plotter.add_mesh(
+                    disp_mesh, scalars="dz", cmap="RdYlGn_r"
+                )
             else:
                 # Fallback to coloring by Z-height for single surfaces
                 self._current_actor = self.plotter.add_mesh(disp_mesh, cmap="terrain")
@@ -324,6 +336,7 @@ class PvDock(QDockWidget):
             # ------------------------------------------------------------------
             try:
                 from digcalc_project.src.models.mesh_actor import MeshActor
+
                 self.mesh_actors[name] = MeshActor(
                     surface_name=name,
                     mesh=mesh,
@@ -335,6 +348,7 @@ class PvDock(QDockWidget):
                 # In very stripped-down test environments QColor/pyvista may be
                 # unavailable.  Fallback to SimpleNamespace with the essentials.
                 from types import SimpleNamespace
+
                 self.mesh_actors[name] = SimpleNamespace(
                     surface_name=name,
                     mesh=mesh,
@@ -351,7 +365,7 @@ class PvDock(QDockWidget):
             print(f"3-D view fallback due to error hiding actor: {exc}")
             self.plotter.clear()
             # Apply same logic in fallback
-            if 'dz' in mesh.point_data:
+            if "dz" in mesh.point_data:
                 self._current_actor = self.plotter.add_mesh(mesh, scalars="dz", cmap="RdYlGn_r")
             else:
                 self._current_actor = self.plotter.add_mesh(mesh, cmap="terrain")
@@ -361,7 +375,8 @@ class PvDock(QDockWidget):
                 if hasattr(self.plotter, "add_axes"):
                     self.plotter.add_axes()
                 else:
-                    import pyvista as pv 
+                    import pyvista as pv
+
                     axes_actor = pv.Arrow() if hasattr(pv, "Arrow") else None
                     self.plotter.add_orientation_widget(axes_actor)
             except Exception as exc:
@@ -370,15 +385,15 @@ class PvDock(QDockWidget):
 
         # MSAA (if available) - Note: This is also set in plotter.enable_anti_aliasing()
         if self.plotter.ren_win:
-            self.plotter.ren_win.SetMultiSamples(4) # Explicitly set samples if desired
-        
+            self.plotter.ren_win.SetMultiSamples(4)  # Explicitly set samples if desired
+
         # Camera defaults (Task 4 / PLAN.md Phase 3.1)
-        self.plotter.camera_position = 'iso'
+        self.plotter.camera_position = "iso"
         # Reset camera to frame the current scene content tightly
         # It's good to do this after all actors for the current view are set up.
-        if self.plotter.renderer.actors: # Only reset if there are actors
+        if self.plotter.renderer.actors:  # Only reset if there are actors
             self.plotter.reset_camera(bounds=self.plotter.renderer.bounds)
-        else: # Fallback if no actors, e.g. after a clear
+        else:  # Fallback if no actors, e.g. after a clear
             self.plotter.reset_camera()
 
         # ensure legend updated after mesh_actors populated
@@ -454,8 +469,9 @@ class PvDock(QDockWidget):
         # ------------------------------------------------------------------
         if hasattr(project, "surfaces") and isinstance(project.surfaces, dict):
             try:
-                from digcalc_project.src.models.mesh_actor import MeshActor
                 from PySide6.QtGui import QColor
+
+                from digcalc_project.src.models.mesh_actor import MeshActor
             except Exception:
                 MeshActor = None  # type: ignore
                 QColor = None  # type: ignore
@@ -472,6 +488,7 @@ class PvDock(QDockWidget):
                     )
                 else:
                     from types import SimpleNamespace
+
                     self.mesh_actors[surf_name] = SimpleNamespace(
                         surface_name=surf_name,
                         mesh=None,
@@ -500,12 +517,12 @@ class PvDock(QDockWidget):
             return
 
         cache_dir = os.path.join(project.get_cache_dir(), "strata")
-        
+
         for surface in sorted(project.strata.surfaces, key=lambda s: s.id):
             material = project.strata.get_material(surface.material_id)
             if not material:
                 continue
-            
+
             mat_name = material.name.replace(" ", "_")
             filename = f"strata_cache_{project.id}_{mat_name}.npz"
             path = os.path.join(cache_dir, filename)
@@ -516,31 +533,37 @@ class PvDock(QDockWidget):
 
             try:
                 grid_data, meta = load_grid(path)
-                
+
                 # Reconstruct grid coordinates from metadata
-                x_coords = np.arange(meta['x_min'], meta['x_min'] + meta['cell_size'] * grid_data.shape[1], meta['cell_size'])
-                y_coords = np.arange(meta['y_min'], meta['y_min'] + meta['cell_size'] * grid_data.shape[0], meta['cell_size'])
-                
+                x_coords = np.arange(
+                    meta["x_min"],
+                    meta["x_min"] + meta["cell_size"] * grid_data.shape[1],
+                    meta["cell_size"],
+                )
+                y_coords = np.arange(
+                    meta["y_min"],
+                    meta["y_min"] + meta["cell_size"] * grid_data.shape[0],
+                    meta["cell_size"],
+                )
+
                 # Ensure coordinate arrays match grid dimensions
-                x_coords = x_coords[:grid_data.shape[1]]
-                y_coords = y_coords[:grid_data.shape[0]]
+                x_coords = x_coords[: grid_data.shape[1]]
+                y_coords = y_coords[: grid_data.shape[0]]
 
                 xx, yy = np.meshgrid(x_coords, y_coords)
 
                 # Create a pyvista structured grid
                 mesh = pv.StructuredGrid(xx, yy, grid_data)
                 mesh.active_scalars_name = "Elevation"
-                
+
                 actor = self.plotter.add_mesh(
-                    mesh,
-                    color=material.colour,
-                    name=f"Strata: {material.name}"
+                    mesh, color=material.colour, name=f"Strata: {material.name}"
                 )
                 self.strata_actors[material.id] = actor
 
             except Exception as e:
                 logger.exception(f"Failed to load or render strata surface from {path}: {e}")
-        
+
         # Apply initial visibility and opacity based on checkbox state
         self._set_strata_visibility(self.strata_chk.isChecked())
 
@@ -567,9 +590,9 @@ class PvDock(QDockWidget):
 
         # Sort surfaces shallowest to deepest (assuming ID is the order)
         sorted_surfaces = sorted(proj.strata.surfaces, key=lambda s: s.id)
-        
+
         opacities = [1.0, 0.7, 0.5]  # The opacity ladder
-        
+
         for i, surface in enumerate(sorted_surfaces):
             actor = self.strata_actors.get(surface.material_id)
             if actor:
@@ -577,7 +600,7 @@ class PvDock(QDockWidget):
                 opacity = opacities[i] if i < len(opacities) else 0.3
                 actor.GetProperty().SetOpacity(opacity)
                 actor.SetVisibility(True)
-        
+
         self.plotter.render()
 
     def _on_surfaces_rebuilt(self):
@@ -617,13 +640,14 @@ class PvDock(QDockWidget):
         The plotter is managed by the application lifecycle (on quit).
         """
         self.hide()
-        event.ignore() # Ignore the event to prevent widget deletion
+        event.ignore()  # Ignore the event to prevent widget deletion
 
     def showEvent(self, event):
         """Ensure the singleton PyVista interactor is embedded in this dock when shown."""
         super().showEvent(event)
         try:
             from digcalc_project.src.ui.pv_plotter_singleton import get_plotter
+
             plotter = get_plotter()
         except Exception:
             return
@@ -652,6 +676,7 @@ class PvDock(QDockWidget):
         """Detach the PyVista interactor so that it can be re-parented elsewhere."""
         try:
             from digcalc_project.src.ui.pv_plotter_singleton import get_plotter
+
             plotter = get_plotter()
             if plotter.interactor.parent() is self:
                 # Remove from layout but keep widget alive (parentless).
@@ -741,7 +766,9 @@ class PvDock(QDockWidget):
         Assumes the mesh in mesh_actor is already a pv.PolyData object.
         """
         if not mesh_actor or not mesh_actor.mesh or not hasattr(mesh_actor.mesh, "n_points"):
-            print(f"Invalid MeshActor or mesh provided for surface: {mesh_actor.surface_name if mesh_actor else 'Unknown'}")
+            print(
+                f"Invalid MeshActor or mesh provided for surface: {mesh_actor.surface_name if mesh_actor else 'Unknown'}"
+            )
             return
 
         try:
@@ -764,15 +791,18 @@ class PvDock(QDockWidget):
             # Note: self.plotter.add_mesh returns the vtkActor
             pv_actor = self.plotter.add_mesh(
                 disp_mesh,
-                color=mesh_actor.color.name() if mesh_actor.color else None, # QColor to hex/name string
-                style=mesh_actor.representation, # 'surface', 'wireframe', 'points'
+                color=(
+                    mesh_actor.color.name() if mesh_actor.color else None
+                ),  # QColor to hex/name string
+                style=mesh_actor.representation,  # 'surface', 'wireframe', 'points'
                 opacity=mesh_actor.opacity,
-                show_edges=mesh_actor.representation == "surface_with_edges", # Custom handling might be needed for this style
+                show_edges=mesh_actor.representation
+                == "surface_with_edges",  # Custom handling might be needed for this style
                 edge_color=mesh_actor.edge_color.name() if mesh_actor.edge_color else None,
                 line_width=mesh_actor.line_width,
                 point_size=mesh_actor.point_size,
                 name=mesh_actor.surface_name,
-                smooth_shading=True # Defaulting to smooth shading, can be a MeshActor property
+                smooth_shading=True,  # Defaulting to smooth shading, can be a MeshActor property
             )
             # Apply current Z-exaggeration factor
             try:
@@ -780,7 +810,7 @@ class PvDock(QDockWidget):
             except Exception:
                 pass
             pv_actor.SetVisibility(mesh_actor.visible)
-            mesh_actor.actor = pv_actor # Store the PyVista actor back into our dataclass
+            mesh_actor.actor = pv_actor  # Store the PyVista actor back into our dataclass
             self.mesh_actors[mesh_actor.surface_name] = mesh_actor
             print(f"Actor for '{mesh_actor.surface_name}' added to plotter and registry.")
 
@@ -806,6 +836,7 @@ class PvDock(QDockWidget):
             try:
                 # Import VTK locally to avoid dependency if not used
                 from vtk import vtkPlane
+
                 # Shared geometric plane (stores origin/normal)
                 self._vtk_plane = vtkPlane()
 
@@ -1024,7 +1055,9 @@ class PvDock(QDockWidget):
     # ------------------------------------------------------------------
     def _take_screenshot(self):
         """Prompt user for PNG path and save a screenshot."""
-        path, _ = QFileDialog.getSaveFileName(self, "Save PNG", "digcalc_view.png", "PNG files (*.png)")
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Save PNG", "digcalc_view.png", "PNG files (*.png)"
+        )
         if path:
             try:
                 if hasattr(self.plotter, "screenshot"):

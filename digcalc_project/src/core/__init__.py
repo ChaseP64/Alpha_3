@@ -1,2 +1,1 @@
-"""Package initialization for core module.
-"""
+"""Package initialization for core module."""

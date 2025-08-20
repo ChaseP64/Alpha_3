@@ -3,11 +3,12 @@ from __future__ import annotations
 # src/ui/tracing_scene.py
 import logging
 import math
-from collections.abc import Sequence
 import os  # <-- added for _show_scale_warning
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, TypeAlias
 
 from PySide6.QtCore import QLineF, QPointF, QRectF, QSize, Qt, Signal
+from PySide6.QtGui import QUndoStack  # Moved from QtWidgets
 from PySide6.QtGui import (
     QAction,
     QBrush,
@@ -21,8 +22,8 @@ from PySide6.QtGui import (
     QPixmap,
     QShortcut,
     QUndoCommand,
-    QUndoStack,  # Moved from QtWidgets
 )
+from PySide6.QtWidgets import QGraphicsRectItem  # NEW: heat-map cell graphics item
 from PySide6.QtWidgets import (
     QGraphicsEllipseItem,
     QGraphicsItem,
@@ -33,7 +34,6 @@ from PySide6.QtWidgets import (
     QGraphicsSceneMouseEvent,
     QGraphicsSimpleTextItem,
     QGraphicsView,
-    QGraphicsRectItem,  # NEW: heat-map cell graphics item
     QInputDialog,
     QMenu,
     QMessageBox,
@@ -60,17 +60,18 @@ from digcalc_project.src.utils.spatial_index import QuadTree  # NEW: spatial ind
 
 # --- MODIFIED: Use TYPE_CHECKING for PolylineData ---
 if TYPE_CHECKING:
-    from ..models.project import Project, PolylineData
+    from ..models.project import PolylineData, Project
     from .visualization_panel import VisualizationPanel
 else:
     # Provide a runtime fallback (e.g., dict or Any)
-    PolylineData = Any # Or Dict[str, Any] if it's always a dict structure
-    VisualizationPanel = Any # <<< Add fallback for runtime
+    PolylineData = Any  # Or Dict[str, Any] if it's always a dict structure
+    VisualizationPanel = Any  # <<< Add fallback for runtime
 # --- END MODIFIED ---
 
 # --- NEW: Define Type Alias ---
 LayerPolylineDict: TypeAlias = Dict[str, List[List[Tuple[float, float]]]]
 # --- END NEW ---
+
 
 class TracingScene(QGraphicsScene):
     """A custom QGraphicsScene for interactive polyline tracing over a background image,
@@ -116,9 +117,9 @@ class TracingScene(QGraphicsScene):
         """
         super().__init__(parent)
         self.logger = logging.getLogger(__name__)
-        self.parent_view = view # Store reference to the parent view
-        self.panel = panel # Store reference to the panel
-        self.project: Optional['Project'] = None # Explicitly initialize project attribute
+        self.parent_view = view  # Store reference to the parent view
+        self.panel = panel  # Store reference to the panel
+        self.project: Optional["Project"] = None  # Explicitly initialize project attribute
         # Settings access – used for tracing enable flag and elevation mode
         self._settings = SettingsService()
 
@@ -160,6 +161,7 @@ class TracingScene(QGraphicsScene):
                 self.logger.debug("Local Backspace activated (vertex undo)")
                 if self._is_drawing:
                     self._undo_last_vertex()
+
             sc.activated.connect(_local_backspace)
 
             self._undo_shortcut = sc
@@ -187,7 +189,9 @@ class TracingScene(QGraphicsScene):
         # ------------------------------------------------------------------
         self._heatmap_enabled: bool = SettingsService().enable_heatmap_overlay()
         self._heatmap_items: Dict[tuple[int, int], QGraphicsRectItem] = {}
-        self._heatmap_cell_size: float = float(self._settings.grid_snap_ft())  # world-unit size; tests assume 1.0
+        self._heatmap_cell_size: float = float(
+            self._settings.grid_snap_ft()
+        )  # world-unit size; tests assume 1.0
 
         # ------------------------------------------------------------------
         # scale-calibration hint helpers
@@ -237,8 +241,6 @@ class TracingScene(QGraphicsScene):
         # ------------------------------------------------------------------
         # Phase-5: Elevation heat-map preview (per-vertex Z colour)
         # ------------------------------------------------------------------
-        from digcalc_project.src.services.settings_service import SettingsService  # local import to avoid circular
-
         self._z_heatmap_enabled: bool = SettingsService().enable_elev_heatmap_preview()
         # Phase-7: Zero-elevation vertex highlight
         self._zero_z_highlight_enabled: bool = SettingsService().enable_zero_elev_highlight()
@@ -249,11 +251,11 @@ class TracingScene(QGraphicsScene):
     # Background layer helpers (multi‑page stacking)
     # ------------------------------------------------------------------
 
-    def addBackgroundLayer(self, pixmap: QPixmap, z: float | None = None) -> None: # noqa: N802
+    def addBackgroundLayer(self, pixmap: QPixmap, z: float | None = None) -> None:  # noqa: N802
         """Add a new PDF page pixmap as a background layer."""
         item = QGraphicsPixmapItem(pixmap)
         if z is None:
-            z = -(len(self._background_items) + 1) # stack downwards
+            z = -(len(self._background_items) + 1)  # stack downwards
         item.setZValue(z)
         item.setFlag(QGraphicsItem.ItemIsSelectable, False)
         item.setFlag(QGraphicsItem.ItemIsMovable, False)
@@ -264,7 +266,7 @@ class TracingScene(QGraphicsScene):
         self.setSceneRect(self.itemsBoundingRect())
         self.pageRectChanged.emit()
 
-    def removeBackgroundLayer(self, index: int) -> None: # noqa: N802
+    def removeBackgroundLayer(self, index: int) -> None:  # noqa: N802
         """Remove a background layer by its index in the stack."""
         if 0 <= index < len(self._background_items):
             item = self._background_items.pop(index)
@@ -290,13 +292,13 @@ class TracingScene(QGraphicsScene):
             self.addBackgroundLayer(QPixmap.fromImage(image))
         else:
             # If image is None, clear scene rect or set to default
-            self.setSceneRect(self.itemsBoundingRect()) # Update rect even if empty
-            self.pageRectChanged.emit() # Emit signal
+            self.setSceneRect(self.itemsBoundingRect())  # Update rect even if empty
+            self.pageRectChanged.emit()  # Emit signal
 
     # ------------------------------------------------------------------
     # Backward‑compat helper – some code paths call *setBackgroundImage*.
     # ------------------------------------------------------------------
-    def setBackgroundImage(self, pixmap: QPixmap): # camelCase alias
+    def setBackgroundImage(self, pixmap: QPixmap):  # camelCase alias
         """Qt slot‑style camel‑case alias for :py:meth:`set_background_image`."""
         img = pixmap.toImage() if isinstance(pixmap, QPixmap) else None
         self.set_background_image(img)
@@ -308,6 +310,7 @@ class TracingScene(QGraphicsScene):
         """
         self.logger.debug("fit_current_page called, emitting pageRectChanged.")
         self.pageRectChanged.emit()
+
     # --- END NEW ---
 
     # --- Drawing Control ---
@@ -379,7 +382,7 @@ class TracingScene(QGraphicsScene):
             self.logger.debug("Drawing mode explicitly disabled, current polyline cancelled.")
         # Reset cursor when tracing stops
         if self.parent_view:
-             # Restore appropriate cursor based on view's drag mode
+            # Restore appropriate cursor based on view's drag mode
             cursor = Qt.ArrowCursor
             if self.parent_view.dragMode() == QGraphicsView.DragMode.ScrollHandDrag:
                 cursor = Qt.OpenHandCursor
@@ -398,7 +401,9 @@ class TracingScene(QGraphicsScene):
 
         # Borehole tool click handling
         if panel.drawing_mode.name == "BOREHOLE" and event.button() == Qt.LeftButton:
-            self.logger.info("Borehole mode click at (%.2f, %.2f)", event.scenePos().x(), event.scenePos().y())
+            self.logger.info(
+                "Borehole mode click at (%.2f, %.2f)", event.scenePos().x(), event.scenePos().y()
+            )
             scene_pos = event.scenePos()
             panel.boreholePointPicked.emit(scene_pos.x(), scene_pos.y())
             # exit borehole mode (handled by panel or caller)
@@ -413,7 +418,7 @@ class TracingScene(QGraphicsScene):
         # ---------------- Pre-flight scale validation ----------------
         if event.button() == Qt.LeftButton:
             # Use self.project directly, which is set by VisualizationPanel.set_project
-            proj_to_check = self.project # No need for getattr if always initialized
+            proj_to_check = self.project  # No need for getattr if always initialized
 
             if self._scale_invalid(proj_to_check):
                 QMessageBox.warning(
@@ -428,13 +433,17 @@ class TracingScene(QGraphicsScene):
         # --- Tracing is Enabled ---
         if event.button() == Qt.LeftButton:
             # No additional scale checks needed (already validated)
-            pos = self._constrained_pos(event.scenePos(), event.modifiers())  # Apply constraints on press
+            pos = self._constrained_pos(
+                event.scenePos(), event.modifiers()
+            )  # Apply constraints on press
             pos = self._apply_magnet_snaps(pos, event.modifiers())
 
             # Check if click is within any background item bounds (if backgrounds exist)
             can_draw = True
             if self._background_items:
-                can_draw = any(bg.sceneBoundingRect().contains(pos) for bg in self._background_items)
+                can_draw = any(
+                    bg.sceneBoundingRect().contains(pos) for bg in self._background_items
+                )
 
             if can_draw:
                 if not self._is_drawing:
@@ -489,7 +498,9 @@ class TracingScene(QGraphicsScene):
             # Pass other non-left clicks to base class
             super().mousePressEvent(event)
 
-        if event.button() == Qt.LeftButton and not self.itemAt(event.scenePos(), self.views()[0].transform()):
+        if event.button() == Qt.LeftButton and not self.itemAt(
+            event.scenePos(), self.views()[0].transform()
+        ):
             # Start marquee selection
             self._marquee_origin = event.scenePos()
             if self._rubber_band is None:
@@ -507,7 +518,7 @@ class TracingScene(QGraphicsScene):
         constrained_pos = self._constrained_pos(event.scenePos(), event.modifiers())
         constrained_pos = self._apply_magnet_snaps(constrained_pos, event.modifiers())
         self._update_temporary_line(constrained_pos)
-        event.accept() # We are handling the move for the rubber band
+        event.accept()  # We are handling the move for the rubber band
 
         if self._rubber_band and self._marquee_origin is not None:
             rect = QRectF(self._marquee_origin, event.scenePos()).normalized()
@@ -526,7 +537,7 @@ class TracingScene(QGraphicsScene):
 
         """
         if not self._current_polyline_points:
-            return current_pos # No previous point to constrain relative to
+            return current_pos  # No previous point to constrain relative to
 
         last_point = self._current_polyline_points[-1]
         dx = current_pos.x() - last_point.x()
@@ -535,8 +546,8 @@ class TracingScene(QGraphicsScene):
         if modifiers == Qt.ShiftModifier:
             # Constrain to horizontal or vertical
             if abs(dx) > abs(dy):
-                return QPointF(current_pos.x(), last_point.y()) # Horizontal
-            return QPointF(last_point.x(), current_pos.y()) # Vertical
+                return QPointF(current_pos.x(), last_point.y())  # Horizontal
+            return QPointF(last_point.x(), current_pos.y())  # Vertical
         if modifiers == Qt.ControlModifier:
             # Constrain to 45-degree increments
             angle = math.atan2(dy, dx)
@@ -632,8 +643,8 @@ class TracingScene(QGraphicsScene):
             self._undo_last_vertex()
             event.accept()
         elif event.key() == Qt.Key_Escape:
-             self._cancel_current_polyline()
-             event.accept()
+            self._cancel_current_polyline()
+            event.accept()
         else:
             # Allow other keys (like modifiers) to pass through
             super().keyPressEvent(event)
@@ -641,25 +652,29 @@ class TracingScene(QGraphicsScene):
     # --- Helper to get active layer ---
     def _get_active_layer_name(self) -> str:
         """Safely gets the active layer name from the parent panel."""
-        active_layer = "Default" # Fallback
+        active_layer = "Default"  # Fallback
         # --- MODIFIED: Use stored panel reference ---
         if self.panel and hasattr(self.panel, "active_layer_name"):
             active_layer = self.panel.active_layer_name
         else:
-            self.logger.warning("Could not get active_layer_name: Panel reference or attribute missing.")
+            self.logger.warning(
+                "Could not get active_layer_name: Panel reference or attribute missing."
+            )
         # --- END MODIFIED ---
         return active_layer
 
     # --- NEW: Override mouseReleaseEvent to detect selection ---
-    def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent | QMouseEvent): # Allow QMouseEvent from view
+    def mouseReleaseEvent(
+        self, event: QGraphicsSceneMouseEvent | QMouseEvent
+    ):  # Allow QMouseEvent from view
         """Overrides mouseReleaseEvent to emit selectionChanged signal
         when a selectable item (polyline) is clicked.
         """
         # Check if the parent view handled panning
         if self.parent_view and hasattr(self.parent_view, "_panning") and self.parent_view._panning:
-             # If view was panning, don't process release for selection in scene
-             # The view's release handler should reset state
-             return
+            # If view was panning, don't process release for selection in scene
+            # The view's release handler should reset state
+            return
 
         # Important: Call super implementation to handle standard selection behavior first!
         super().mouseReleaseEvent(event)
@@ -671,13 +686,15 @@ class TracingScene(QGraphicsScene):
             # Filter for QGraphicsPathItem specifically if needed
             selected_item = selected_items[0]
             if isinstance(selected_item, PolylineItem):  # Ensure it's a traced polyline
-                 # Store reference for convenience
-                 self._selected_polyline = selected_item
-                 self.logger.debug(f"Selection changed, emitting signal for item: {selected_item}")
-                 self.selectionChanged.emit(selected_item)
+                # Store reference for convenience
+                self._selected_polyline = selected_item
+                self.logger.debug(f"Selection changed, emitting signal for item: {selected_item}")
+                self.selectionChanged.emit(selected_item)
             else:
-                 self.logger.debug(f"Selection changed, but item is not a QGraphicsPathItem: {type(selected_item)}")
-                 self.selectionChanged.emit(None)
+                self.logger.debug(
+                    f"Selection changed, but item is not a QGraphicsPathItem: {type(selected_item)}"
+                )
+                self.selectionChanged.emit(None)
 
         elif not selected_items:
             # Emit None if selection is cleared
@@ -689,7 +706,9 @@ class TracingScene(QGraphicsScene):
             band_rect = self._rubber_band.geometry()
             # Map band rect from view coords to scene
             scene_rect = self.views()[0].mapToScene(band_rect).boundingRect()
-            self._marquee_selection = [item for item in self.items(scene_rect) if isinstance(item, VertexItem)]
+            self._marquee_selection = [
+                item for item in self.items(scene_rect) if isinstance(item, VertexItem)
+            ]
             for v in self._marquee_selection:
                 v.setPen(v.pen().color().lighter())
             return
@@ -711,7 +730,7 @@ class TracingScene(QGraphicsScene):
         ellipse.setAcceptedMouseButtons(Qt.NoButton)
         ellipse.setFlag(QGraphicsItem.ItemIsSelectable, False)
         ellipse.setFlag(QGraphicsItem.ItemIsMovable, False)
-        ellipse.setZValue(10) # Ensure vertices are drawn above lines/background
+        ellipse.setZValue(10)  # Ensure vertices are drawn above lines/background
         self.addItem(ellipse)
         self._current_vertices_items.append(ellipse)
 
@@ -725,7 +744,7 @@ class TracingScene(QGraphicsScene):
         _ = self._constrained_pos(current_pos, Qt.NoModifier)  # noqa: F841
 
         # Use the already constrained position from mouseMoveEvent
-        pos_to_draw_to = current_pos # Use the position passed in (already constrained)
+        pos_to_draw_to = current_pos  # Use the position passed in (already constrained)
 
         if self._temporary_line_item:
             # Update existing line
@@ -734,7 +753,9 @@ class TracingScene(QGraphicsScene):
             # Create new line
             self._temporary_line_item = QGraphicsLineItem(QLineF(last_point, pos_to_draw_to))
             self._temporary_line_item.setPen(self._rubber_band_pen)
-            self._temporary_line_item.setZValue(5) # Draw rubber band above background but below vertices
+            self._temporary_line_item.setZValue(
+                5
+            )  # Draw rubber band above background but below vertices
             self.addItem(self._temporary_line_item)
 
     def _finalize_current_polyline(self, layer_name: str):
@@ -752,30 +773,40 @@ class TracingScene(QGraphicsScene):
         # ------------------------------------------------------------------
 
         scene_points: list[QPointF] = list(self._current_polyline_points)  # draw with these
-        world_points: list[QPointF] = [QPointF(*self._scene_to_world(p)) for p in scene_points]  # meta only
+        world_points: list[QPointF] = [
+            QPointF(*self._scene_to_world(p)) for p in scene_points
+        ]  # meta only
 
         # --- Determine initial pen and layer_id for the PolylineItem ---
         layer_color_hex = self._get_layer_color_from_project(layer_name)
         initial_pen: QPen
-        default_pen_width = self._finalized_polyline_pen.widthF() if self._finalized_polyline_pen else 2.0
+        default_pen_width = (
+            self._finalized_polyline_pen.widthF() if self._finalized_polyline_pen else 2.0
+        )
 
         if layer_color_hex:
             color = QColor(layer_color_hex)
             if color.isValid():
                 initial_pen = QPen(color, default_pen_width)
             else:
-                self.logger.warning(f"Invalid color '{layer_color_hex}' for layer '{layer_name}'. Using default pen.")
-                initial_pen = QPen(self._finalized_polyline_pen.color(), default_pen_width) # Use default color, custom width
+                self.logger.warning(
+                    f"Invalid color '{layer_color_hex}' for layer '{layer_name}'. Using default pen."
+                )
+                initial_pen = QPen(
+                    self._finalized_polyline_pen.color(), default_pen_width
+                )  # Use default color, custom width
         else:
             self.logger.debug(f"No color defined for layer '{layer_name}'. Using default pen.")
-            initial_pen = QPen(self._finalized_polyline_pen.color(), default_pen_width) # Use default color, custom width
+            initial_pen = QPen(
+                self._finalized_polyline_pen.color(), default_pen_width
+            )  # Use default color, custom width
         # --- End Determine initial pen ---
 
         poly_item = PolylineItem(
             points=scene_points,
             layer_pen=initial_pen,  # Pass the determined pen
             mode="interpolated" if getattr(self, "_current_mode", False) else "entered",
-            layer_id=layer_name  # Pass the layer_name as layer_id
+            layer_id=layer_name,  # Pass the layer_name as layer_id
         )
 
         # NEW: Store strata-contour metadata ---------------------------------------
@@ -828,7 +859,7 @@ class TracingScene(QGraphicsScene):
                 main_win = self.parent_view.window() if self.parent_view else None
                 undo_stack = getattr(main_win, "undoStack", None) if main_win else None
                 for v, z_val in zip(verts, self._current_z_values):
-                    if z_val is None: # User might have cancelled for a specific point
+                    if z_val is None:  # User might have cancelled for a specific point
                         continue
                     if undo_stack:
                         undo_stack.push(EditVertexZCommand(v, z_val))
@@ -836,7 +867,7 @@ class TracingScene(QGraphicsScene):
                         v.set_z(z_val)
         # Elevation workflow for modes other than *point* (e.g., interpolate, line)
         # or if point mode Z value pre-collection was not applicable/failed
-        elif self._elev_mode != "point": # Catches other modes, or if point mode didn't run above
+        elif self._elev_mode != "point":  # Catches other modes, or if point mode didn't run above
             try:
                 self._apply_elevation_workflow(poly_item)
             except Exception as exc:
@@ -859,7 +890,7 @@ class TracingScene(QGraphicsScene):
         )
 
         # --- Prepare 3D world points for the signal ---
-        scene_3d_points = poly_item.get_vertices_scene_3d() # List[Tuple[float, float, float]]
+        scene_3d_points = poly_item.get_vertices_scene_3d()  # List[Tuple[float, float, float]]
         world_3d_points = []
         for sx, sy, sz in scene_3d_points:
             # Convert scene X,Y to world X,Y; keep Z as is (already world Z from elevation workflow)
@@ -873,9 +904,14 @@ class TracingScene(QGraphicsScene):
         # --- Emit padDrawn if polyline belongs to "pads" layer and is closed ---
         # This uses the original 2D world_points for its contract.
         try:
-            pad_points_2d = [(p.x(), p.y()) for p in world_points] # world_points is original 2D list
+            pad_points_2d = [
+                (p.x(), p.y()) for p in world_points
+            ]  # world_points is original 2D list
             if layer_name.lower() == "pads" and self._path_is_closed(pad_points_2d):
-                self.logger.debug("padDrawn emitted for closed pad on 'pads' layer with %d vertices", len(pad_points_2d))
+                self.logger.debug(
+                    "padDrawn emitted for closed pad on 'pads' layer with %d vertices",
+                    len(pad_points_2d),
+                )
                 self.padDrawn.emit(pad_points_2d)
         except Exception as e:
             self.logger.error(f"Failed to evaluate/emit padDrawn: {e}", exc_info=True)
@@ -895,22 +931,24 @@ class TracingScene(QGraphicsScene):
             removed_marker = self._current_vertices_items.pop()
             if removed_marker in self.items():
                 self.removeItem(removed_marker)
-            self.logger.debug(f"Undid last vertex at: {removed_point.x():.2f}, {removed_point.y():.2f}")
+            self.logger.debug(
+                f"Undid last vertex at: {removed_point.x():.2f}, {removed_point.y():.2f}"
+            )
             # Update the temporary line to the new last point
             if self._current_polyline_points:
-                 # Need current mouse pos - tricky. Get from view? Or just remove temp line?
-                 # For now, just remove it until next mouse move.
-                 if self._temporary_line_item:
-                     if self._temporary_line_item in self.items():
-                         self.removeItem(self._temporary_line_item)
-                     self._temporary_line_item = None
+                # Need current mouse pos - tricky. Get from view? Or just remove temp line?
+                # For now, just remove it until next mouse move.
+                if self._temporary_line_item:
+                    if self._temporary_line_item in self.items():
+                        self.removeItem(self._temporary_line_item)
+                    self._temporary_line_item = None
             else:
-                 # If only one point was left after undo, cancel drawing
-                 self._cancel_current_polyline()
+                # If only one point was left after undo, cancel drawing
+                self._cancel_current_polyline()
 
         elif len(self._current_polyline_points) == 1:
-             # If only the starting point remains, cancel the whole line
-             self._cancel_current_polyline()
+            # If only the starting point remains, cancel the whole line
+            self._cancel_current_polyline()
 
     def _reset_drawing_state(self):
         """Resets all temporary items and flags related to the current drawing operation."""
@@ -1005,19 +1043,21 @@ class TracingScene(QGraphicsScene):
             return
 
         try:
-            parent = self.parent_view # self.views()[0] if self.views() else None
+            parent = self.parent_view  # self.views()[0] if self.views() else None
             # Use a more informative message
             QMessageBox.information(
-                parent, # Parent widget
+                parent,  # Parent widget
                 "Scale Required for Tracing",
                 "The project scale has not been set or is invalid. "
                 "Please calibrate the scale using 'Tracing > Calibrate Scale...' "
                 "or by clicking the scale indicator in the status bar before you can trace.",
-                QMessageBox.StandardButton.Ok
+                QMessageBox.StandardButton.Ok,
             )
         except Exception as e:
             # Log minimally if dialog fails, but don't spam during normal operation
-            logging.getLogger(__name__).error(f"Failed to show scale warning dialog: {e}", exc_info=False)
+            logging.getLogger(__name__).error(
+                f"Failed to show scale warning dialog: {e}", exc_info=False
+            )
 
     def _apply_elevation_workflow(self, poly_item: PolylineItem) -> None:
         """Run the elevation-prompt workflow for *poly_item* based on *self._elev_mode*."""
@@ -1091,20 +1131,20 @@ class TracingScene(QGraphicsScene):
         """Prompt for uniform Z for all vertices in current polyline."""
         # This could also be a custom dialog; using QInputDialog for simplicity.
         z_val, ok = QInputDialog.getDouble(
-            self.parent_view, # Parent to the view
+            self.parent_view,  # Parent to the view
             "Set Uniform Elevation",
             "Enter elevation (Z value):",
             0.0,  # Default value
             -1_000_000,  # Min value
             1_000_000,  # Max value
-            3,    # Decimals
+            3,  # Decimals
         )
         return z_val, ok
 
     def set_elevation_mode(self, mode: str) -> None:
         """Set the elevation entry mode."""
         self._elev_mode = mode
-        self._prompt_mode = mode # Keep alias updated
+        self._prompt_mode = mode  # Keep alias updated
         self._settings.set_tracing_elev_mode(mode)
 
     # ------------------------------------------------------------------
@@ -1117,18 +1157,20 @@ class TracingScene(QGraphicsScene):
         """
         scale_is_actually_invalid = True
         if proj_arg and proj_arg.scale:
-            if (proj_arg.scale.world_per_paper_in is not None and
-                proj_arg.scale.world_per_paper_in > 0 and
-                proj_arg.scale.render_dpi_at_cal > 0):
+            if (
+                proj_arg.scale.world_per_paper_in is not None
+                and proj_arg.scale.world_per_paper_in > 0
+                and proj_arg.scale.render_dpi_at_cal > 0
+            ):
                 scale_is_actually_invalid = False
-        
+
         if scale_is_actually_invalid:
             # Only show the pop-up warning if it hasn't been shown before for this session or if scale became invalid again.
             self._show_scale_warning()
-        
+
         # Always update the visual overlay to reflect the current scale status.
         self._update_noscale_overlay()
-        
+
         return scale_is_actually_invalid
 
     # ------------------------------------------------------------------
@@ -1148,7 +1190,7 @@ class TracingScene(QGraphicsScene):
         if enable:
             proj_to_check = self.project
             if self._scale_invalid(proj_to_check):
-                pass # self._show_scale_warning() # No longer needed here
+                pass  # self._show_scale_warning() # No longer needed here
 
         self._tracing_enabled = enable
 
@@ -1193,13 +1235,15 @@ class TracingScene(QGraphicsScene):
                 PolylineData format assumes a list/tuple of (x, y) tuples/lists.
 
         """
-        self.clear_finalized_polylines() # Clear existing before loading
+        self.clear_finalized_polylines()  # Clear existing before loading
 
         for layer_name, polylines in polylines_by_layer.items():
             self.logger.debug(f"Loading {len(polylines)} polylines for layer '{layer_name}'")
             for poly_data in polylines:
                 if not poly_data or len(poly_data) < 2:
-                    self.logger.warning(f"Skipping invalid polyline data for layer '{layer_name}': {poly_data}")
+                    self.logger.warning(
+                        f"Skipping invalid polyline data for layer '{layer_name}': {poly_data}"
+                    )
                     continue
 
                 try:
@@ -1224,12 +1268,14 @@ class TracingScene(QGraphicsScene):
 
                     self.addItem(polyline_item)
                 except (TypeError, IndexError, ValueError) as e:
-                    self.logger.error(f"Error processing polyline data for layer '{layer_name}': {poly_data}. Error: {e}")
+                    self.logger.error(
+                        f"Error processing polyline data for layer '{layer_name}': {poly_data}. Error: {e}"
+                    )
 
         self.logger.info(f"Finished loading polylines for {len(polylines_by_layer)} layers.")
         # Update scene rect after loading all items
         self.setSceneRect(self.itemsBoundingRect())
-        self.pageRectChanged.emit() # Emit signal after loading
+        self.pageRectChanged.emit()  # Emit signal after loading
 
     def dump_scene_state(self) -> LayerPolylineDict:
         """Serializes all finalized PolylineItems into a dictionary by layer.
@@ -1245,16 +1291,18 @@ class TracingScene(QGraphicsScene):
                 layer_name = item.layer_name
                 # Ensure points are in world coordinates with Z values
                 # PolylineItem.points_3d() should provide this directly.
-                points_3d = item.points_3d() # This should be List[Tuple[float,float,float]]
+                points_3d = item.points_3d()  # This should be List[Tuple[float,float,float]]
                 # Convert to simple list of tuples for serialization if not already
                 # Assuming points_3d() already returns the correct serializable format
                 if layer_name not in state:
                     state[layer_name] = []
-                state[layer_name].append(points_3d) # Add the list of 3D points
-        self.logger.debug(f"Dumped scene state with {sum(len(v) for v in state.values())} polylines across {len(state)} layers.")
+                state[layer_name].append(points_3d)  # Add the list of 3D points
+        self.logger.debug(
+            f"Dumped scene state with {sum(len(v) for v in state.values())} polylines across {len(state)} layers."
+        )
         return state
 
-    def setLayerVisible(self, layer_name: str, visible: bool) -> None: # noqa: N802
+    def setLayerVisible(self, layer_name: str, visible: bool) -> None:  # noqa: N802
         """Sets the visibility of all polyline items associated with a layer."""
         count = 0
         for item in self.items():
@@ -1291,7 +1339,9 @@ class TracingScene(QGraphicsScene):
         path: QPainterPath = item.path()
         return [(path.elementAt(i).x, path.elementAt(i).y) for i in range(path.elementCount())]
 
-    def add_offset_breakline(self, pts3d: list[tuple[float, float, float]], *, push_to_undo: bool = True):
+    def add_offset_breakline(
+        self, pts3d: list[tuple[float, float, float]], *, push_to_undo: bool = True
+    ):
         """Add a 3-D aware offset breakline to the scene.
 
         If *push_to_undo* is True (default), an AddPolylineCommand is pushed onto the
@@ -1358,11 +1408,14 @@ class TracingScene(QGraphicsScene):
             bulk = QAction("Bulk Z offset…", menu)
 
             def _bulk():
-                dz, ok = QInputDialog.getDouble(self.views()[0], "Bulk Z offset", "Δ feet:", 0.0, decimals=3)
+                dz, ok = QInputDialog.getDouble(
+                    self.views()[0], "Bulk Z offset", "Δ feet:", 0.0, decimals=3
+                )
                 if ok and abs(dz) > 1e-9:
                     from digcalc_project.src.ui.commands.bulk_offset_z_command import (
                         BulkOffsetZCommand,
                     )
+
                     main_win = self.views()[0].window()
                     if hasattr(main_win, "undoStack"):
                         main_win.undoStack.push(BulkOffsetZCommand(self._marquee_selection, dz))
@@ -1423,7 +1476,9 @@ class TracingScene(QGraphicsScene):
             msg.show()
         except Exception as e:
             # Log minimally, e.g., if no views are available
-            logging.getLogger(__name__).warning(f"Failed to show scale warning dialog: {e}", exc_info=False)
+            logging.getLogger(__name__).warning(
+                f"Failed to show scale warning dialog: {e}", exc_info=False
+            )
 
     # ------------------------------------------------------------------
     # Layer-colour propagation
@@ -1462,43 +1517,61 @@ class TracingScene(QGraphicsScene):
 
         if items_refreshed_count == 0:
             if target_item is None:
-                self.logger.warning(f"TracingScene.refresh_layer_item: No items found for layer_id {layer_id}")
+                self.logger.warning(
+                    f"TracingScene.refresh_layer_item: No items found for layer_id {layer_id}"
+                )
         else:
             pass
-        
+
         self.update()
 
     def _get_layer_color_from_project(self, layer_id: str) -> Optional[str]:
         """Helper to retrieve the color for a given layer_id from the current project."""
         # This internal helper consolidates the color retrieval logic
         colour_hex = None
-        proj = None # Initialize to None
+        proj = None  # Initialize to None
         try:
             # Try to get project from self.project first, then from panel
-            proj = getattr(self, "project", None) 
+            proj = getattr(self, "project", None)
             if proj is None:
                 proj = getattr(self.panel, "current_project", None)
-            
+
             if proj:
                 # proj.layers is a list of Layer objects
-                if hasattr(proj, 'layers') and isinstance(proj.layers, list):
-                    pass # No specific logging needed here for normal operation
-                
-                lyr = proj.get_layer(layer_id) # This uses project.get_layer(layer_id)
-                if lyr and hasattr(lyr, 'line_color'):
+                if hasattr(proj, "layers") and isinstance(proj.layers, list):
+                    pass  # No specific logging needed here for normal operation
+
+                lyr = proj.get_layer(layer_id)  # This uses project.get_layer(layer_id)
+                if lyr and hasattr(lyr, "line_color"):
                     colour_hex = lyr.line_color
                 elif lyr:
-                    self.logger.warning(f"      [TracingScene._get_layer_color] Layer '{layer_id}' found (id: {id(lyr)}), but has no 'line_color' attribute or it's None. Layer object: {lyr}")
+                    self.logger.warning(
+                        f"      [TracingScene._get_layer_color] Layer '{layer_id}' found (id: {id(lyr)}), but has no 'line_color' attribute or it's None. Layer object: {lyr}"
+                    )
                 else:
                     # Log available layer IDs if layer is not found
-                    available_layer_ids = [layer.id for layer in proj.layers if hasattr(layer, 'id')] if hasattr(proj, 'layers') and isinstance(proj.layers, list) else []
-                    self.logger.warning(f"      [TracingScene._get_layer_color] Layer with id '{layer_id}' NOT FOUND in project (Project ID: {id(proj)}). Available layer IDs: {available_layer_ids}")
+                    available_layer_ids = (
+                        [layer.id for layer in proj.layers if hasattr(layer, "id")]
+                        if hasattr(proj, "layers") and isinstance(proj.layers, list)
+                        else []
+                    )
+                    self.logger.warning(
+                        f"      [TracingScene._get_layer_color] Layer with id '{layer_id}' NOT FOUND in project (Project ID: {id(proj)}). Available layer IDs: {available_layer_ids}"
+                    )
             else:
-                self.logger.error("      [TracingScene._get_layer_color] Project object (proj) is None or not found.")
+                self.logger.error(
+                    "      [TracingScene._get_layer_color] Project object (proj) is None or not found."
+                )
         except AttributeError as ae:
-            self.logger.error(f"AttributeError in _get_layer_color_from_project for layer {layer_id}: {ae}", exc_info=False) # Keep log lean
+            self.logger.error(
+                f"AttributeError in _get_layer_color_from_project for layer {layer_id}: {ae}",
+                exc_info=False,
+            )  # Keep log lean
         except Exception as e:
-            self.logger.error(f"Error retrieving color for layer {layer_id} in _get_layer_color_from_project: {e}", exc_info=False) # Keep log lean
+            self.logger.error(
+                f"Error retrieving color for layer {layer_id} in _get_layer_color_from_project: {e}",
+                exc_info=False,
+            )  # Keep log lean
         return colour_hex
 
     # ------------------------------------------------------------------
@@ -1511,10 +1584,15 @@ class TracingScene(QGraphicsScene):
             bh = item.data(0)
             try:
                 from digcalc_project.src.models.strata_models import BoreholeLog
+
                 if isinstance(bh, BoreholeLog):
                     lines = [f"BH-{bh.id:02d}"]
                     for ld in bh.layers:
-                        mat_name = self.panel.current_project.strata.materials[ld.material_id-1].name if getattr(self.panel.current_project,'strata',None) else "Mat"
+                        mat_name = (
+                            self.panel.current_project.strata.materials[ld.material_id - 1].name
+                            if getattr(self.panel.current_project, "strata", None)
+                            else "Mat"
+                        )
                         lines.append(f"{mat_name} {ld.top_z:.0f}–{ld.bottom_z:.0f} ft")
                     QToolTip.showText(event.screenPos(), "\n".join(lines))
                     return
@@ -1638,7 +1716,9 @@ class TracingScene(QGraphicsScene):
     # ------------------------------------------------------------------
     # Phase-4 composite snapping pipeline
     # ------------------------------------------------------------------
-    def _apply_magnet_snaps(self, pos: QPointF, modifiers: Qt.KeyboardModifiers) -> tuple[QPointF, bool]:
+    def _apply_magnet_snaps(
+        self, pos: QPointF, modifiers: Qt.KeyboardModifiers
+    ) -> tuple[QPointF, bool]:
         """Return (snapped_pos, did_snap)."""
         if not self._snap_enabled or (modifiers & Qt.ShiftModifier):
             return pos, False
@@ -1652,9 +1732,11 @@ class TracingScene(QGraphicsScene):
             return pos_edge, True
         return pos, False
 
+
 # ------------------------------------------------------------------
 # Undo/Redo Command
 # ------------------------------------------------------------------
+
 
 class AddPolylineCommand(QUndoCommand):
     """QUndoCommand to add/remove a polyline item from the scene."""
@@ -1667,6 +1749,7 @@ class AddPolylineCommand(QUndoCommand):
         else:
             # Assume iterable of (x,y,?) tuples – create path (ignore z)
             from PySide6.QtCore import QPointF
+
             path = QPainterPath()
             pts = list(item_or_pts)
             if not pts:
@@ -1701,7 +1784,10 @@ class AddPolylineCommand(QUndoCommand):
     @staticmethod
     def _path_is_closed(pts: list[tuple[float, float]], tol: float = 1e-6) -> bool:
         """Return True if path is closed (first & last vertices coincide within *tol*)."""
-        return len(pts) > 2 and abs(pts[0][0] - pts[-1][0]) < tol and abs(pts[0][1] - pts[-1][1]) < tol
+        return (
+            len(pts) > 2 and abs(pts[0][0] - pts[-1][0]) < tol and abs(pts[0][1] - pts[-1][1]) < tol
+        )
+
 
 class SetPadElevationCommand(QUndoCommand):
     """QUndoCommand to add/remove a *pad* polyline (closed polygon) with constant elevation."""
@@ -1859,6 +1945,7 @@ class SetPadElevationCommand(QUndoCommand):
         # when thousands of vertices fall into the same bucket.
         # ------------------------------------------------------------------
         colour_cache: dict[int, str] = {}
+
         def _hue_to_hex(h: int) -> str:
             if h not in colour_cache:
                 colour_cache[h] = QColor.fromHsv(h, 255, 255).name()
@@ -1898,6 +1985,7 @@ class SetPadElevationCommand(QUndoCommand):
         # Persist preference (best-effort; ignore failures in headless tests)
         try:
             from digcalc_project.src.services.settings_service import SettingsService
+
             SettingsService().set_enable_zero_elev_highlight(self._zero_z_highlight_enabled)
         except Exception:
             pass
@@ -1905,6 +1993,7 @@ class SetPadElevationCommand(QUndoCommand):
     def _refresh_zero_elev_highlight(self) -> None:
         """Recolour vertices with *z ≈ 0* using a bright magenta tint."""
         import math
+
         # Iterate only items that expose a ``z()`` accessor (VertexItem)
         vertices = [it for it in self.items() if hasattr(it, "z")]
         if not vertices:

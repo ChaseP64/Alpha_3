@@ -9,9 +9,9 @@ so the rest of the code (menus/tool-bars, signal wiring, tests) can continue
 referencing attributes like ``main_window.open_project_action`` unchanged.
 """
 
-from typing import TYPE_CHECKING
 import logging
 import os
+from typing import TYPE_CHECKING
 
 from PySide6.QtGui import QAction, QActionGroup, QIcon, QKeySequence
 from PySide6.QtWidgets import QStyle
@@ -159,8 +159,7 @@ class ActionManager:
         self._add_attr("generate_report_action", act)
 
         # Export Report Action --------------------------------------------
-        act = QAction(mw.style().standardIcon(QStyle.SP_DialogSaveButton),
-                      "Export Report…", mw)
+        act = QAction(mw.style().standardIcon(QStyle.SP_DialogSaveButton), "Export Report…", mw)
         act.setStatusTip("Export PDF report with CSV tables.")
         self._add_attr("export_action", act)
 
@@ -233,6 +232,7 @@ class ActionManager:
         # Tracing heat-map overlay toggle --------------------------------
         act = QAction("Heat-Map Overlay", mw, checkable=True)
         from digcalc_project.src.services.settings_service import SettingsService
+
         act.setChecked(SettingsService().enable_heatmap_overlay())
         self._add_attr("heatmap_overlay_action", act)
 
@@ -297,4 +297,9 @@ class ActionManager:
         # Settings → Strata -----------------------------------------------
         act = QAction("Strata…", mw)
         act.triggered.connect(mw._on_strata_settings)
-        self._add_attr("strata_settings_action", act) 
+        self._add_attr("strata_settings_action", act)
+
+        # Templates (Phase-8 D2) ------------------------------------------
+        act = QAction("Templates…", mw)
+        act.setStatusTip("Open the Template Library for pads, trenches, etc.")
+        self._add_attr("templates_action", act)

@@ -13,7 +13,7 @@ stub in a future sprint.
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, Tuple, Sequence
+from typing import Optional, Sequence, Tuple
 
 import numpy as np
 
@@ -78,7 +78,9 @@ class Polyline:
     # Geometry helpers --------------------------------------------------
     # ------------------------------------------------------------------
     @staticmethod
-    def join_colinear(poly: "Polyline", *, angle_tol_deg: float = 1.0, dist_tol: float = 1e-8) -> "Polyline":
+    def join_colinear(
+        poly: "Polyline", *, angle_tol_deg: float = 1.0, dist_tol: float = 1e-8
+    ) -> "Polyline":
         """Return a simplified copy with intermediate *nearly-colinear* vertices removed.
 
         The algorithm walks the vertex chain and discards any interior vertex
@@ -253,10 +255,34 @@ class Polyline:
                     other = remaining[i]
                     # Collect candidate endpoint pairs (base_end, other_start/other_end)
                     combos = [
-                        (base.vertices[0], base.vertices[1] - base.vertices[0], "prepend", other.vertices[-1], other.vertices[-2] - other.vertices[-1]),
-                        (base.vertices[0], base.vertices[1] - base.vertices[0], "prepend", other.vertices[0], other.vertices[1] - other.vertices[0]),
-                        (base.vertices[-1], base.vertices[-1] - base.vertices[-2], "append", other.vertices[0], other.vertices[1] - other.vertices[0]),
-                        (base.vertices[-1], base.vertices[-1] - base.vertices[-2], "append", other.vertices[-1], other.vertices[-2] - other.vertices[-1]),
+                        (
+                            base.vertices[0],
+                            base.vertices[1] - base.vertices[0],
+                            "prepend",
+                            other.vertices[-1],
+                            other.vertices[-2] - other.vertices[-1],
+                        ),
+                        (
+                            base.vertices[0],
+                            base.vertices[1] - base.vertices[0],
+                            "prepend",
+                            other.vertices[0],
+                            other.vertices[1] - other.vertices[0],
+                        ),
+                        (
+                            base.vertices[-1],
+                            base.vertices[-1] - base.vertices[-2],
+                            "append",
+                            other.vertices[0],
+                            other.vertices[1] - other.vertices[0],
+                        ),
+                        (
+                            base.vertices[-1],
+                            base.vertices[-1] - base.vertices[-2],
+                            "append",
+                            other.vertices[-1],
+                            other.vertices[-2] - other.vertices[-1],
+                        ),
                     ]
 
                     joined = False
@@ -270,7 +296,9 @@ class Polyline:
                         else:
                             dir_base_u = _unit(dir_base)
                             dir_other_u = _unit(dir_other)
-                            cos_ang = abs(dir_base_u.dot(dir_other_u))  # absolute – we allow 180° as straight
+                            cos_ang = abs(
+                                dir_base_u.dot(dir_other_u)
+                            )  # absolute – we allow 180° as straight
                             angle_ok = cos_ang >= cos_ang_thresh
                         if not angle_ok:
                             continue
@@ -305,7 +333,7 @@ class Polyline:
                         i += 1
             merged.append(base)
 
-        return merged 
+        return merged
 
     # ------------------------------------------------------------------
     @staticmethod
@@ -371,4 +399,4 @@ class Polyline:
     def compress_hq(poly: "Polyline") -> "Polyline":
         """Higher-quality compression (phase-2) – half default tolerances."""
 
-        return Polyline.compress(poly, dist_tol=0.05, angle_tol_deg=0.5) 
+        return Polyline.compress(poly, dist_tol=0.05, angle_tol_deg=0.5)

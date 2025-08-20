@@ -15209,3 +15209,58 @@ AttributeError: 'MainWindow' object has no attribute 'status_bar_manager'
 2025-07-07 12:33:04,607 - digcalc_project.src.visualization.pdf_renderer - INFO - Closing PDF document: C:/Users/Tracy/Desktop/DigCalc/Structural Plans - Stout Roofing 3-12-25.pdf
 2025-07-07 12:33:04,686 - digcalc_project.src.ui.main_window.main_window - INFO - Closing application.
 2025-07-07 12:33:04,715 - digcalc_project.src.main - INFO - Application exited with code 0
+2025-08-20 13:35:53,203 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-08-20 13:40:50,080 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-08-20 14:08:57,894 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-08-20 14:10:12,324 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-08-20 14:12:53,464 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-08-20 14:12:53,527 - digcalc_project.src.main - ERROR - Fatal error in main application: cannot access local variable 'SettingsService' where it is not associated with a value
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 69, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 166, in __init__
+    self._init_ui()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 431, in _init_ui
+    self.visualization_panel = VisualizationPanel(self)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\visualization_panel.py", line 269, in __init__
+    self._init_ui()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\visualization_panel.py", line 314, in _init_ui
+    self.scene_2d = TracingScene(self.view_2d, self, self)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\tracing_scene.py", line 124, in __init__
+    self._settings = SettingsService()
+                     ^^^^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'SettingsService' where it is not associated with a value
+2025-08-20 14:15:33,046 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-08-20 14:15:33,074 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-08-20 14:15:33,120 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-08-20 14:15:33,121 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-08-20 14:15:33,122 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-08-20 14:15:33,141 - digcalc_project.src.ui.main_window.main_window - INFO - _create_shortcuts called – shortcuts skipped in test mode.
+2025-08-20 14:15:33,147 - digcalc_project.src.main - ERROR - Fatal error in main application: 'types.SimpleNamespace' object has no attribute 'bulk_assign_surfaces'
+Traceback (most recent call last):
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\main.py", line 69, in main
+    window = MainWindow()
+             ^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 302, in __init__
+    self._connect_signals()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\main_window.py", line 484, in _connect_signals
+    self._signals = SignalBinder(self)
+                    ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\signal_binder.py", line 17, in __init__
+    self._bind()
+  File "C:\Users\Tracy\Desktop\DigCalc\digcalc_project\src\ui\main_window\signal_binder.py", line 84, in _bind
+    mw.bulk_assign_surface_action.triggered.connect(ah.bulk_assign_surfaces)
+                                                    ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'types.SimpleNamespace' object has no attribute 'bulk_assign_surfaces'
+2025-08-20 14:17:49,972 - digcalc_project.src.main - INFO - Starting DigCalc application
+2025-08-20 14:17:49,999 - digcalc_project.src.services.settings_service - INFO - Settings saved to C:\Users\Tracy\.digcalc\settings.json
+2025-08-20 14:17:50,015 - digcalc_project.src.ui.main_window.dock_manager - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-08-20 14:17:50,017 - digcalc_project.src.ui.main_window.main_window - WARNING - StrataManagerDock unavailable – using stub (cannot import name 'QAction' from 'PySide6.QtWidgets' (C:\Users\Tracy\AppData\Local\Programs\Python\Python311\Lib\site-packages\PySide6\QtWidgets.pyd))
+2025-08-20 14:17:50,017 - digcalc_project.src.ui.project_controller - INFO - ProjectController initialized with default project object.
+2025-08-20 14:17:50,024 - digcalc_project.src.ui.main_window.main_window - INFO - _create_shortcuts called – shortcuts skipped in test mode.
+2025-08-20 14:18:29,249 - digcalc_project.src.ui.main_window.main_window - INFO - Close event triggered.
+2025-08-20 14:18:29,249 - digcalc_project.src.ui.main_window.main_window - INFO - Closing application.
+2025-08-20 14:18:29,269 - digcalc_project.src.main - INFO - Application exited with code 0

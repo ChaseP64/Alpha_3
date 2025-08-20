@@ -7,7 +7,7 @@ across the UI without bloating the main-window module.
 
 from __future__ import annotations
 
-from PySide6.QtCore import Signal, Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QLabel
 
 __all__ = ["ClickableLabel"]
@@ -28,4 +28,4 @@ class ClickableLabel(QLabel):
     def mouseReleaseEvent(self, event):  # noqa: D401 – Qt override
         if event.button() == Qt.LeftButton:
             self.clicked.emit()
-        super().mouseReleaseEvent(event) 
+        super().mouseReleaseEvent(event)

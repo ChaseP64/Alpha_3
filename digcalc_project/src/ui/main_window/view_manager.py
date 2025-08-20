@@ -1,6 +1,6 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
 
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .main_window import MainWindow
@@ -10,7 +10,7 @@ class ViewManager:
     """Owns 2-D / 3-D mode toggling and view-related helpers."""
 
     def __init__(self, mw: "MainWindow") -> None:
-        self.mw = mw                # keep back-ref for scene / panel access
+        self.mw = mw  # keep back-ref for scene / panel access
 
     # ---------- public slots ---------- #
     def view_2d(self) -> None:
@@ -30,7 +30,7 @@ class ViewManager:
     def fit_view_to_scene(self) -> None:
         """Zoom extents in current view."""
         vp = self.mw.visualization_panel
-        if hasattr(vp, 'is_2d') and vp.is_2d():
+        if hasattr(vp, "is_2d") and vp.is_2d():
             if hasattr(vp, "view_2d") and hasattr(vp.view_2d, "fit_to_scene"):
                 vp.view_2d.fit_to_scene()
         else:
@@ -47,4 +47,4 @@ class ViewManager:
 
         # Example: only show the PvDock in "3-D mode"
         if hasattr(self.mw, "pv_dock"):
-            self.mw.pv_dock.setVisible(is_3d) 
+            self.mw.pv_dock.setVisible(is_3d)

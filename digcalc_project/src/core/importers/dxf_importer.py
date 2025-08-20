@@ -17,7 +17,7 @@ from ...models.surface import Point3D, Surface, Triangle
 
 class DXFImporter:
     """Importer for DXF (CAD) files.
-    
+
     This class provides methods to read DXF files and extract
     3D point and line data to create a Surface model.
     """
@@ -28,11 +28,11 @@ class DXFImporter:
 
     def import_surface(self, filename: str, surface_name: str) -> Optional[Surface]:
         """Import a surface from a DXF file.
-        
+
         Args:
             filename: Path to the DXF file
             surface_name: Name for the created surface
-            
+
         Returns:
             Surface object or None if import failed
 
@@ -70,7 +70,9 @@ class DXFImporter:
             surface.add_triangle(t3)
             surface.add_triangle(t4)
 
-            self.logger.info(f"Imported surface with {len(surface.points)} points and {len(surface.triangles)} triangles")
+            self.logger.info(
+                f"Imported surface with {len(surface.points)} points and {len(surface.triangles)} triangles"
+            )
             return surface
 
         except Exception as e:
@@ -79,10 +81,10 @@ class DXFImporter:
 
     def extract_3d_faces(self, modelspace) -> List[Tuple[Point3D, Point3D, Point3D]]:
         """Extract 3D faces from the DXF modelspace.
-        
+
         Args:
             modelspace: DXF modelspace object
-            
+
         Returns:
             List of triangulated faces as tuples of Point3D
 
@@ -106,10 +108,10 @@ class DXFImporter:
 
     def extract_points(self, modelspace) -> List[Point3D]:
         """Extract points from the DXF modelspace.
-        
+
         Args:
             modelspace: DXF modelspace object
-            
+
         Returns:
             List of Point3D objects
 
@@ -126,10 +128,10 @@ class DXFImporter:
 
     def extract_polylines(self, modelspace) -> List[List[Point3D]]:
         """Extract polylines from the DXF modelspace.
-        
+
         Args:
             modelspace: DXF modelspace object
-            
+
         Returns:
             List of polylines, each as a list of Point3D objects
 
@@ -147,13 +149,15 @@ class DXFImporter:
         # For the skeleton, return an empty list
         return []
 
-    def extract_contours(self, modelspace, filter_layer: Optional[str] = None) -> Dict[float, List[List[Point3D]]]:
+    def extract_contours(
+        self, modelspace, filter_layer: Optional[str] = None
+    ) -> Dict[float, List[List[Point3D]]]:
         """Extract contour lines from the DXF modelspace.
-        
+
         Args:
             modelspace: DXF modelspace object
             filter_layer: Optional layer name to filter by
-            
+
         Returns:
             Dict mapping elevations to lists of polylines
 
@@ -186,10 +190,10 @@ class DXFImporter:
 
     def get_available_layers(self, filename: str) -> List[str]:
         """Get the list of available layers in a DXF file.
-        
+
         Args:
             filename: Path to the DXF file
-            
+
         Returns:
             List of layer names
 

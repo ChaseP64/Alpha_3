@@ -5,26 +5,29 @@ import pytest
 
 # Import paths aligned with existing tests – no Alpha_3 package prefix
 from digcalc_project.src.models.strata_models import (
+    BoreholeLog,
+    LayerDepth,
     Material,
     StrataStack,
-    LayerDepth,
-    BoreholeLog,
 )
+from digcalc_project.src.services.interpolation_service import IDWInterpolator
+
 # Use a lightweight stub for Surface bounds during interpolation
 
-from digcalc_project.src.services.interpolation_service import IDWInterpolator
 
 class MockProject:
     """A mock project class for testing purposes."""
+
     def __init__(self, base_grid=0.0, min_thickness=0.0):
         self.base_grid = base_grid
         self.min_thickness = min_thickness
+
 
 @pytest.fixture
 def simple_planar_stack():
     """Creates a StrataStack with three boreholes defining a simple plane."""
     material = Material(id=1, name="Silt", colour="#C0C0C0")
-    
+
     # Plane: Z = 0.1*X + 0.2*Y + 5
     boreholes = [
         BoreholeLog(
@@ -46,9 +49,10 @@ def simple_planar_stack():
             layers=[LayerDepth(material_id=1, top_z=0.1 * 30 + 0.2 * 60 + 5, bottom_z=0.0)],
         ),  # Z≈20
     ]
-    
+
     stack = StrataStack(id=1, materials=[material], boreholes=boreholes)
     return stack
+
 
 @pytest.fixture
 def existing_surface():
@@ -59,13 +63,14 @@ def existing_surface():
     bounds = (0.0, 0.0, 0.0, 100.0, 100.0, 0.0)
     return SimpleNamespace(bounds=bounds, crs=None)
 
+
 def test_idw_plane(simple_planar_stack, existing_surface):
     """
     Tests that the IDWInterpolator can accurately reproduce a planar surface
     from three borehole points.
     """
     interpolator = IDWInterpolator()
-    project = MockProject(base_grid=1.0) # Use a 1m grid
+    project = MockProject(base_grid=1.0)  # Use a 1m grid
 
     surfaces = interpolator.generate_surfaces(project, simple_planar_stack, existing_surface)
 
@@ -81,7 +86,7 @@ def test_idw_plane(simple_planar_stack, existing_surface):
     grid = strata_surface.grid_data
     known_points = np.array([(b.x, b.y) for b in simple_planar_stack.boreholes])
     known_values = np.array([b.layers[0].top_z for b in simple_planar_stack.boreholes])
-    
+
     interpolated_values = []
     for x, y in known_points:
         # Convert world coords to grid indices
@@ -90,8 +95,8 @@ def test_idw_plane(simple_planar_stack, existing_surface):
         interpolated_values.append(grid[iy, ix])
 
     interpolated_values = np.array(interpolated_values)
-    
-    rmse = np.sqrt(np.mean((known_values - interpolated_values)**2))
+
+    rmse = np.sqrt(np.mean((known_values - interpolated_values) ** 2))
 
     # 4. Assert that the error is negligible
-    assert rmse < 1e-6 
+    assert rmse < 1e-6

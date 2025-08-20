@@ -2,12 +2,12 @@ import pytest
 
 pytest.importorskip("PySide6")
 
-from PySide6.QtWidgets import QApplication, QGraphicsView
-from PySide6.QtGui import QPen, QColor
 from PySide6.QtCore import QPointF
+from PySide6.QtGui import QColor, QPen
+from PySide6.QtWidgets import QApplication, QGraphicsView
 
-from digcalc_project.src.ui.tracing_scene import TracingScene
 from digcalc_project.src.ui.items.polyline_item import PolylineItem
+from digcalc_project.src.ui.tracing_scene import TracingScene
 
 
 class _Panel:
@@ -28,8 +28,8 @@ def scene_with_vertices(qtbot):
     p_item = PolylineItem([QPointF(0, 0), QPointF(10, 0)], pen)
 
     verts = p_item.vertices()
-    verts[0].set_z(0.0)   # zero-elevation vertex – should be highlighted
-    verts[1].set_z(8.5)   # non-zero – should keep default colour
+    verts[0].set_z(0.0)  # zero-elevation vertex – should be highlighted
+    verts[1].set_z(8.5)  # non-zero – should keep default colour
 
     scene.addItem(p_item)
     return scene, verts

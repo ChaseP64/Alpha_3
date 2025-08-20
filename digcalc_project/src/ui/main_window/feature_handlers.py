@@ -7,17 +7,17 @@ Extraction step 2-3 of MainWindow refactor.  The real logic still lives in
 move the heavy implementations without breaking the application.
 """
 
-from typing import TYPE_CHECKING
 import logging
+from typing import TYPE_CHECKING
 
-from PySide6.QtWidgets import QDialog, QMessageBox, QFileDialog
+from PySide6.QtWidgets import QDialog, QFileDialog, QMessageBox
 
 from ...core.calculations.volume_calculator import VolumeCalculator
 from ...core.geometry.surface_builder import SurfaceBuilder, SurfaceBuilderError
 from ...ui.dialogs.build_surface_dialog import BuildSurfaceDialog
 from ...ui.dialogs.report_dialog import ReportDialog
-from ...ui.dialogs.volume_calculation_dialog import VolumeCalculationDialog
 from ...ui.dialogs.scale_calibration_dialog import ScaleCalibrationDialog
+from ...ui.dialogs.volume_calculation_dialog import VolumeCalculationDialog
 
 if TYPE_CHECKING:  # pragma: no cover
     from .main_window import MainWindow
@@ -49,7 +49,11 @@ class FeatureHandlers:  # noqa: D101
         try:
             from .view_mode_handler import ViewModeHandler  # local import
 
-            if not hasattr(mw, "view_mode_handler") or isinstance(mw.view_mode_handler, type(lambda: None)) or mw.view_mode_handler.__class__.__name__ == 'SimpleNamespace':
+            if (
+                not hasattr(mw, "view_mode_handler")
+                or isinstance(mw.view_mode_handler, type(lambda: None))
+                or mw.view_mode_handler.__class__.__name__ == "SimpleNamespace"
+            ):
                 mw.view_mode_handler = ViewModeHandler(mw)  # type: ignore[attr-defined]
         except Exception as exc:
             self.logger.warning("ViewModeHandler unavailable – using stub (%s)", exc)
@@ -62,6 +66,7 @@ class FeatureHandlers:  # noqa: D101
                 setattr(mw.view_mode_handler, "_set_tracing_elev_mode", _stub_set_elev_mode)
             else:
                 from types import SimpleNamespace
+
                 mw.view_mode_handler = SimpleNamespace(_set_tracing_elev_mode=_stub_set_elev_mode)
 
         self._connect_signals()
@@ -89,7 +94,11 @@ class FeatureHandlers:  # noqa: D101
     def on_calculate_volume(self):
         project = self._mw.project_controller.get_current_project()
         if not project or len(project.surfaces) < 2:
-            QMessageBox.warning(self._mw, "Cannot Calculate Volumes", "Please ensure at least two surfaces exist in the project.")
+            QMessageBox.warning(
+                self._mw,
+                "Cannot Calculate Volumes",
+                "Please ensure at least two surfaces exist in the project.",
+            )
             return
 
         surface_names = list(project.surfaces.keys())
@@ -102,42 +111,65 @@ class FeatureHandlers:  # noqa: D101
                 try:
                     existing_surface = project.get_surface(existing_name)
                     proposed_surface = project.get_surface(proposed_name)
-                    if not existing_surface or not proposed_surface: raise ValueError("Selected surface(s) not found.")
-                    
+                    if not existing_surface or not proposed_surface:
+                        raise ValueError("Selected surface(s) not found.")
+
                     calculator = VolumeCalculator(project)
-                    results = calculator.calculate_surface_to_surface(surface1=existing_surface, surface2=proposed_surface, grid_resolution=resolution)
-                    
+                    results = calculator.calculate_surface_to_surface(
+                        surface1=existing_surface,
+                        surface2=proposed_surface,
+                        grid_resolution=resolution,
+                    )
+
                     report_dialog = ReportDialog(
-                        existing_surface_name=existing_name, proposed_surface_name=proposed_name,
-                        grid_resolution=resolution, cut_volume=results["cut_volume"],
-                        fill_volume=results["fill_volume"], net_volume=results["net_volume"], parent=self._mw
+                        existing_surface_name=existing_name,
+                        proposed_surface_name=proposed_name,
+                        grid_resolution=resolution,
+                        cut_volume=results["cut_volume"],
+                        fill_volume=results["fill_volume"],
+                        net_volume=results["net_volume"],
+                        parent=self._mw,
                     )
                     report_dialog.exec()
                 except Exception as e:
-                    QMessageBox.critical(self._mw, "Calculation Error", f"Failed to calculate volumes:\n{e}")
+                    QMessageBox.critical(
+                        self._mw, "Calculation Error", f"Failed to calculate volumes:\n{e}"
+                    )
 
     def on_build_surface(self):
         project = self._mw.project_controller.get_current_project()
         if not project or not project.traced_polylines:
             return
 
-        layers_with_elevation = [layer for layer, polys in project.traced_polylines.items() if any(p.get("elevation") is not None for p in polys if isinstance(p, dict))]
+        layers_with_elevation = [
+            layer
+            for layer, polys in project.traced_polylines.items()
+            if any(p.get("elevation") is not None for p in polys if isinstance(p, dict))
+        ]
         if not layers_with_elevation:
             return
 
         dlg = BuildSurfaceDialog(project, self._mw)
         if dlg.exec() == QDialog.Accepted:
             selected_layer, surface_name = dlg.layer(), dlg.surface_name()
-            if not selected_layer or not surface_name: return
-            
+            if not selected_layer or not surface_name:
+                return
+
             surface_name = project.get_unique_surface_name(surface_name)
-            
+
             try:
-                valid_polys = [p for p in project.traced_polylines.get(selected_layer, []) if isinstance(p, dict) and p.get("elevation") is not None]
-                if not valid_polys: raise SurfaceBuilderError("No polylines with elevation.")
-                
+                valid_polys = [
+                    p
+                    for p in project.traced_polylines.get(selected_layer, [])
+                    if isinstance(p, dict) and p.get("elevation") is not None
+                ]
+                if not valid_polys:
+                    raise SurfaceBuilderError("No polylines with elevation.")
+
                 current_layer_rev = project.layer_revisions.get(selected_layer, 0)
-                surface = SurfaceBuilder.build_from_polylines(selected_layer, valid_polys, current_layer_rev)
+                surface = SurfaceBuilder.build_from_polylines(
+                    selected_layer, valid_polys, current_layer_rev
+                )
                 surface.name = surface_name
                 project.add_surface(surface)
                 self._mw.visualization_panel.display_surface(surface)
@@ -152,7 +184,8 @@ class FeatureHandlers:  # noqa: D101
 
     def on_export_report(self):
         path, _ = QFileDialog.getSaveFileName(self._mw, "Save PDF", "", "PDF files (*.pdf)")
-        if not path: return
+        if not path:
+            return
         # Logic to generate and save report would go here
 
     def on_mass_haul(self):
@@ -167,9 +200,18 @@ class FeatureHandlers:  # noqa: D101
         project = self._mw.project_controller.get_current_project()
         if not project or not self._mw.visualization_panel.has_pdf():
             return
-        
-        current_pixmap = self._mw.visualization_panel._pdf_bg_item.pixmap() if self._mw.visualization_panel._pdf_bg_item else None
-        dlg = ScaleCalibrationDialog(parent=self._mw, project=project, scene=self._mw.visualization_panel.scene_2d, page_pixmap=current_pixmap)
+
+        current_pixmap = (
+            self._mw.visualization_panel._pdf_bg_item.pixmap()
+            if self._mw.visualization_panel._pdf_bg_item
+            else None
+        )
+        dlg = ScaleCalibrationDialog(
+            parent=self._mw,
+            project=project,
+            scene=self._mw.visualization_panel.scene_2d,
+            page_pixmap=current_pixmap,
+        )
         dlg.finished.connect(lambda result: self._on_scale_dialog_done(dlg, result))
         dlg.open()
 
@@ -186,4 +228,4 @@ class FeatureHandlers:  # noqa: D101
                 scene = getattr(self._mw.visualization_panel, "scene_2d", None)
                 if scene and hasattr(scene, "invalidate_cache"):
                     scene.invalidate_cache()
-        dlg.deleteLater() 
+        dlg.deleteLater()

@@ -6,6 +6,7 @@ from uuid import uuid4
 
 Point2D = Tuple[float, float]
 
+
 @dataclass(slots=True)
 class Region:
     """Named polygon with optional stripping depth (ft)."""
@@ -13,7 +14,7 @@ class Region:
     id: str = field(default_factory=lambda: str(uuid4()))
     name: str = "Unnamed Region"
     polygon: List[Point2D] = field(default_factory=list)
-    strip_depth_ft: Optional[float] = None   # None → fallback to global default
+    strip_depth_ft: Optional[float] = None  # None → fallback to global default
     # Accept meters input for convenience (tests use strip_depth_m)
     strip_depth_m: Optional[float] = field(default=None, repr=False, compare=False)
     material_id: Optional[int] = None  # Material to assign when stripping applied
@@ -42,4 +43,3 @@ class Region:
             strip_depth_ft=d.get("strip_depth_ft"),
             material_id=d.get("material_id"),
         )
-

@@ -1,6 +1,6 @@
 import pytest
 
-from digcalc_project.src.models.project import Project, PolylineData
+from digcalc_project.src.models.project import PolylineData, Project
 
 
 def test_traced_polyline_serializes_strata_flag():
@@ -20,4 +20,4 @@ def test_traced_polyline_serializes_strata_flag():
     assert "Layer1" in ser
     saved = ser["Layer1"][0]
     assert saved["is_strata"] is True
-    assert saved["material_id"] == 1 
+    assert saved["material_id"] == 1

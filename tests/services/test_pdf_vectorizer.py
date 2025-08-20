@@ -1,10 +1,10 @@
+import os
 import tempfile
 from pathlib import Path
-import os
-import pytest
 
-import numpy as np
 import fitz
+import numpy as np
+import pytest
 
 # Skip entire module when vectorizer feature is disabled
 if os.getenv("DIGCALC_PDF_VEC") != "1":
@@ -50,4 +50,4 @@ def test_pdf_vectorizer_two_lines(tmp_path):
     assert isinstance(ser, list) and ser
     first = ser[0]
     assert "vertices" in first and isinstance(first["vertices"], list)
-    assert first["src_page"] == 1 
+    assert first["src_page"] == 1

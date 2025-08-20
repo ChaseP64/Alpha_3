@@ -8,11 +8,13 @@ Author: DigCalc Team
 """
 
 import logging
+import os
 import sys
 from pathlib import Path
 
 # Application imports
 from PySide6.QtWidgets import QApplication
+
 from .ui.main_window.main_window import MainWindow
 from .utils.logging_utils import setup_logging
 
@@ -25,7 +27,7 @@ from .utils.logging_utils import setup_logging
 def main():
     """Main entry point for the DigCalc application.
     Initializes the application, sets up logging, and launches the UI.
-    
+
     Returns:
         int: Exit code (0 for success)
 
@@ -37,6 +39,27 @@ def main():
     logger.info("Starting DigCalc application")
 
     try:
+        # Ensure Qt uses the packaged plugins (avoid mixing with system Qt)
+        try:
+            from PySide6.QtCore import QLibraryInfo
+
+            # Ensure Qt loads the correct plugin dir and DLLs bundled with PySide6
+            plugins = QLibraryInfo.location(QLibraryInfo.PluginsPath)
+            if plugins and os.path.isdir(plugins):
+                os.environ.setdefault("QT_PLUGIN_PATH", plugins)
+
+            # On Windows, add the Qt binaries directory so the right Qt6*.dll are used
+            if sys.platform.startswith("win"):
+                bin_dir = QLibraryInfo.location(QLibraryInfo.BinariesPath)
+                if bin_dir and os.path.isdir(bin_dir):
+                    try:
+                        os.add_dll_directory(bin_dir)  # type: ignore[attr-defined]
+                    except Exception:
+                        # Fallback: prepend to PATH if add_dll_directory is unavailable
+                        os.environ["PATH"] = bin_dir + os.pathsep + os.environ.get("PATH", "")
+        except Exception:
+            pass
+
         # Create Qt application
         app = QApplication(sys.argv)
         app.setApplicationName("DigCalc")

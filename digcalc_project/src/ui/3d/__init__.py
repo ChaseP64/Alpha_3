@@ -6,8 +6,8 @@ and external scripts still expect the old import path, so we provide this
 shim that forwards attribute access to the new package.
 """
 
-from importlib import import_module as _import_module
 import sys as _sys
+from importlib import import_module as _import_module
 
 # Import the new package
 _new_pkg = _import_module("..three_d", package=__name__)
@@ -18,4 +18,4 @@ _new_pkg = _import_module("..three_d", package=__name__)
 _sys.modules[__name__] = _new_pkg
 
 # Expose public attributes
-globals().update(_new_pkg.__dict__) 
+globals().update(_new_pkg.__dict__)

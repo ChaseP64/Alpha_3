@@ -9,7 +9,7 @@ into per-vertex Z values that follow a straight-line grade between the first
 and last vertex (specified either explicitly or via slope percentage).
 """
 
-from typing import Iterable, Sequence, Tuple, List, Optional
+from typing import Iterable, List, Optional, Sequence, Tuple
 
 import numpy as np
 
@@ -21,6 +21,7 @@ __all__ = [
 # -----------------------------------------------------------------------------
 # Public helpers
 # -----------------------------------------------------------------------------
+
 
 def interpolate_z_linear(
     xy: Sequence[Tuple[float, float]] | np.ndarray,
@@ -88,4 +89,4 @@ def interpolate_z_linear(
 
     # Interpolate Z for each vertex proportional to distance along chain
     z_values = first_z + (cum_dist / total_len) * dz_total
-    return z_values.tolist() 
+    return z_values.tolist()

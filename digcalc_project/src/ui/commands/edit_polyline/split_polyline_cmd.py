@@ -18,11 +18,11 @@ Limitations
 from typing import List
 
 from PySide6.QtCore import QPointF
-from PySide6.QtGui import QUndoCommand, QPen
+from PySide6.QtGui import QPen, QUndoCommand
 from PySide6.QtWidgets import QGraphicsScene
 
-from digcalc_project.src.ui.items.vertex_item import VertexItem
 from digcalc_project.src.ui.items.polyline_item import PolylineItem
+from digcalc_project.src.ui.items.vertex_item import VertexItem
 
 __all__ = ["SplitPolylineCommand"]
 
@@ -83,4 +83,4 @@ class SplitPolylineCommand(QUndoCommand):
         verts = self._poly.vertices()
         verts.clear()
         verts.extend(self._orig_vertices)
-        self._poly._rebuild_path()  # type: ignore[attr-defined] 
+        self._poly._rebuild_path()  # type: ignore[attr-defined]

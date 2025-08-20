@@ -1,7 +1,7 @@
 """DigCalc UI - PolylineItem
 
 Interactive polyline graphics item composed of one or more :class:`VertexItem` cross-hair
-handles. Each vertex can be dragged, automatically updating the polyline path 
+handles. Each vertex can be dragged, automatically updating the polyline path
 in real-time.  The item supports two *mode*s (for future use):
 
 - ``"entered"`` (default): a straight-line polyline connecting vertices in order.
@@ -10,18 +10,17 @@ in real-time.  The item supports two *mode*s (for future use):
 
 from __future__ import annotations
 
+import logging
 from typing import List, Tuple
 
-from PySide6.QtCore import QObject, QPointF, Signal, Qt
-from PySide6.QtGui import QPainterPath, QPen, QColor
+from PySide6.QtCore import QObject, QPointF, Qt, Signal
+from PySide6.QtGui import QColor, QPainterPath, QPen
 from PySide6.QtWidgets import QGraphicsPathItem
 
 from digcalc_project.src.tools.spline import catmull_rom
 from digcalc_project.src.tools.spline import sample as spline_sample
 
 from .vertex_item import VertexItem
-
-import logging
 
 # Module-level logger
 logger = logging.getLogger(__name__)
@@ -216,10 +215,15 @@ class PolylineItem(QObject, QGraphicsPathItem):
     # ------------------------------------------------------------------
     def update_color(self, hex_colour: str):
         """Update the item's pen colour *in-place* and refresh vertices."""
-        import sys # For print
-        print(f"PolylineItem {self}: update_color CALLED with {hex_colour=}", flush=True, file=sys.stderr)
+        import sys  # For print
+
+        print(
+            f"PolylineItem {self}: update_color CALLED with {hex_colour=}",
+            flush=True,
+            file=sys.stderr,
+        )
         from PySide6.QtGui import QColor
-        
+
         new_color = QColor(hex_colour)
         if not new_color.isValid():
             logger.warning(
@@ -261,7 +265,7 @@ class PolylineItem(QObject, QGraphicsPathItem):
         for v in self._vertex_items:
             if hasattr(v, "update_color"):
                 v.update_color(hex_colour)
-        self.update() 
+        self.update()
 
 
 __all__ = ["PolylineItem"]

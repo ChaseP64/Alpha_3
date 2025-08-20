@@ -19,8 +19,8 @@ import pytest
 pytest.importorskip("scipy", reason="SciPy required for VolumeCalculator tests")
 
 from digcalc_project.src.core.calculators.volume_calculator import VolumeCalculator
-from digcalc_project.src.models.surface import Surface
 from digcalc_project.src.models.project import Project
+from digcalc_project.src.models.surface import Surface
 
 
 def _build_slope_surface(name: str, spacing: float = 10.0) -> Surface:
@@ -55,4 +55,4 @@ def test_baseline_cut_fill_accuracy():
 
     assert res["net"] == pytest.approx(0.0, abs=1.0)
     assert res["cut"] == pytest.approx(353.96, rel=0.01)  # 12,500 ft³ -> m³
-    assert res["fill"] == pytest.approx(353.96, rel=0.01) 
+    assert res["fill"] == pytest.approx(353.96, rel=0.01)

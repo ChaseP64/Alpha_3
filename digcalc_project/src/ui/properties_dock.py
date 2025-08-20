@@ -34,21 +34,22 @@ from ..services.settings_service import SettingsService
 # Define module-level logger
 logger = logging.getLogger(__name__)
 
+
 class PropertiesDock(QDockWidget):
     """A dock widget to display and edit properties of selected items.
     Uses tabs for different item types (Polyline, Region).
     """
 
     # Signals emitted when the 'Apply' button is clicked for each type.
-    polylineEdited = Signal(str, int, float) # layer_name, polyline_index, new_elevation
-    regionUpdated = Signal(Region)           # Updated Region object
+    polylineEdited = Signal(str, int, float)  # layer_name, polyline_index, new_elevation
+    regionUpdated = Signal(Region)  # Updated Region object
     # Signal emitted when a setting affecting rebuilds is changed
     settingsChanged = Signal()
 
     def __init__(self, parent=None):
         """Initialize the PropertiesDock."""
         super().__init__("Properties", parent)
-        self.setObjectName("PropertiesDock") # Important for saving/restoring state
+        self.setObjectName("PropertiesDock")  # Important for saving/restoring state
         self.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         self.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
 
@@ -57,8 +58,8 @@ class PropertiesDock(QDockWidget):
         self.setWidget(self.tabs)
 
         # --- State ---
-        self._current_polyline_info: Optional[Tuple[str, int]] = None # tuple(layer_name, index)
-        self._current_region: Optional[Region] = None # Currently selected Region object
+        self._current_polyline_info: Optional[Tuple[str, int]] = None  # tuple(layer_name, index)
+        self._current_region: Optional[Region] = None  # Currently selected Region object
 
         # --- Initialize Tabs ---
         self._create_polyline_tab()
@@ -67,7 +68,7 @@ class PropertiesDock(QDockWidget):
         self._create_tracing_tab()
 
         # --- Hide initially ---
-        self.tabs.setCurrentIndex(0) # Show Polyline tab by default if needed
+        self.tabs.setCurrentIndex(0)  # Show Polyline tab by default if needed
         self.hide()
 
         # Use module-level logger
@@ -106,7 +107,7 @@ class PropertiesDock(QDockWidget):
             apply_button.setEnabled(False)
             apply_button.clicked.connect(self._apply_polyline)
         if cancel_button:
-            cancel_button.clicked.connect(self._cancel) # Generic cancel hides dock
+            cancel_button.clicked.connect(self._cancel)  # Generic cancel hides dock
 
         # --- Layout ---
         layout.addLayout(form_layout)
@@ -126,8 +127,8 @@ class PropertiesDock(QDockWidget):
         self.region_name_edit.setToolTip("Enter a name for this region.")
 
         self.region_strip_depth_spin = QDoubleSpinBox()
-        self.region_strip_depth_spin.setRange(0.0, 20.0) # Range 0-20 ft
-        self.region_strip_depth_spin.setDecimals(1)      # 0.1 steps
+        self.region_strip_depth_spin.setRange(0.0, 20.0)  # Range 0-20 ft
+        self.region_strip_depth_spin.setDecimals(1)  # 0.1 steps
         self.region_strip_depth_spin.setStepType(QDoubleSpinBox.AdaptiveDecimalStepType)
         self.region_strip_depth_spin.setSuffix(" ft")
         # Use special value text to indicate default
@@ -135,7 +136,9 @@ class PropertiesDock(QDockWidget):
         # Set minimum to a value slightly below 0 to allow setting 0 explicitly
         # Or rely on the special value text. Let's try the latter first.
         # self.region_strip_depth_spin.setMinimum(-0.01) # Alternative approach
-        self.region_strip_depth_spin.setToolTip("Stripping depth (leave as '(Default)' to use global setting).")
+        self.region_strip_depth_spin.setToolTip(
+            "Stripping depth (leave as '(Default)' to use global setting)."
+        )
         self.region_strip_depth_spin.setEnabled(False)
         self.region_name_edit.setEnabled(False)
 
@@ -196,10 +199,12 @@ class PropertiesDock(QDockWidget):
         # Spline sample spacing
         self._spline_sampling_spin = QDoubleSpinBox()
         self._spline_sampling_spin.setRange(0.1, 10.0)
-        self._spline_sampling_spin.setDecimals(1) # Match range step
+        self._spline_sampling_spin.setDecimals(1)  # Match range step
         self._spline_sampling_spin.setSingleStep(0.1)
         self._spline_sampling_spin.setSuffix(" ft")
-        self._spline_sampling_spin.setToolTip("Distance between samples along smoothed polylines (splines).")
+        self._spline_sampling_spin.setToolTip(
+            "Distance between samples along smoothed polylines (splines)."
+        )
         self._spline_sampling_spin.setValue(settings.smooth_sampling_ft())
         self._spline_sampling_spin.valueChanged.connect(self._update_smooth_sampling)
 
@@ -292,12 +297,12 @@ class PropertiesDock(QDockWidget):
         # If no specific item is selected, maybe show the tracing tab?
         # Or just hide as before.
         # Let's stick to hiding for now unless explicitly told otherwise.
-        if not self.isVisible(): # Keep hidden if already hidden
-             pass # self.hide()
+        if not self.isVisible():  # Keep hidden if already hidden
+            pass  # self.hide()
         elif self.tabs.currentWidget() not in [self.polyline_tab, self.region_tab, self.vertex_tab]:
-             # If some other tab was visible (e.g. Tracing), maybe keep it?
-             # Let's reconsider this - standard behaviour is probably to hide if nothing relevant selected.
-             self.hide()
+            # If some other tab was visible (e.g. Tracing), maybe keep it?
+            # Let's reconsider this - standard behaviour is probably to hide if nothing relevant selected.
+            self.hide()
         # Previous logic: self.hide() if no item matched. Let's restore that simplicity.
         self.hide()
 
@@ -307,7 +312,9 @@ class PropertiesDock(QDockWidget):
         current_elevation = float(elevation) if elevation is not None else 0.0
         self._polyline_elev_spin.setValue(current_elevation)
         self._polyline_elev_spin.setEnabled(True)
-        self.polyline_tab.findChild(QDialogButtonBox).button(QDialogButtonBox.Apply).setEnabled(True)
+        self.polyline_tab.findChild(QDialogButtonBox).button(QDialogButtonBox.Apply).setEnabled(
+            True
+        )
         self._current_polyline_info = (layer_name, index)
         # sync checkbox state
         # Attempt to find the polyline item in the scene via main window reference
@@ -317,7 +324,9 @@ class PropertiesDock(QDockWidget):
         polyline_item = None
         if main_win and hasattr(main_win, "_selected_scene_item"):
             polyline_item = main_win._selected_scene_item
-        self.smooth_chk.setChecked(bool(polyline_item and getattr(polyline_item, "mode", "entered") == "interpolated"))
+        self.smooth_chk.setChecked(
+            bool(polyline_item and getattr(polyline_item, "mode", "entered") == "interpolated")
+        )
         logger.debug(f"Loaded polyline: Layer='{layer_name}', Index={index}, Elevation={elevation}")
 
     def load_region(self, region: Region):
@@ -325,16 +334,20 @@ class PropertiesDock(QDockWidget):
         self._current_region = region
         self.region_name_edit.setText(region.name)
         if region.strip_depth_ft is None:
-             # Display special text when depth is None (use default)
-             self.region_strip_depth_spin.setValue(self.region_strip_depth_spin.minimum() - 1) # Hacky way to show special text
+            # Display special text when depth is None (use default)
+            self.region_strip_depth_spin.setValue(
+                self.region_strip_depth_spin.minimum() - 1
+            )  # Hacky way to show special text
         else:
-             self.region_strip_depth_spin.setValue(float(region.strip_depth_ft))
+            self.region_strip_depth_spin.setValue(float(region.strip_depth_ft))
 
         # Enable editing
         self.region_name_edit.setEnabled(True)
         self.region_strip_depth_spin.setEnabled(True)
         self._region_apply_button.setEnabled(True)
-        logger.debug(f"Loaded region: ID='{region.id}', Name='{region.name}', StripDepth={region.strip_depth_ft}")
+        logger.debug(
+            f"Loaded region: ID='{region.id}', Name='{region.name}', StripDepth={region.strip_depth_ft}"
+        )
 
     def clear_selection(self):
         """Clears all tabs and disables editing."""
@@ -342,14 +355,17 @@ class PropertiesDock(QDockWidget):
         self._polyline_layer_label.setText("<i>None selected</i>")
         self._polyline_elev_spin.setValue(0.0)
         self._polyline_elev_spin.setEnabled(False)
-        apply_btn_poly = self.polyline_tab.findChild(QDialogButtonBox).button(QDialogButtonBox.Apply)
-        if apply_btn_poly: apply_btn_poly.setEnabled(False)
+        apply_btn_poly = self.polyline_tab.findChild(QDialogButtonBox).button(
+            QDialogButtonBox.Apply
+        )
+        if apply_btn_poly:
+            apply_btn_poly.setEnabled(False)
         self._current_polyline_info = None
 
         # Clear Region Tab
         self.region_name_edit.clear()
         # Reset spinbox to show special value text
-        self.region_strip_depth_spin.setValue(self.region_strip_depth_spin.minimum() -1)
+        self.region_strip_depth_spin.setValue(self.region_strip_depth_spin.minimum() - 1)
         self.region_name_edit.setEnabled(False)
         self.region_strip_depth_spin.setEnabled(False)
         self._region_apply_button.setEnabled(False)
@@ -364,7 +380,9 @@ class PropertiesDock(QDockWidget):
         if self._current_polyline_info:
             layer, idx = self._current_polyline_info
             new_elevation = self._polyline_elev_spin.value()
-            logger.info(f"Apply Polyline: Layer='{layer}', Index={idx}, New Elev={new_elevation:.2f}")
+            logger.info(
+                f"Apply Polyline: Layer='{layer}', Index={idx}, New Elev={new_elevation:.2f}"
+            )
             self.polylineEdited.emit(layer, idx, new_elevation)
             # self.hide() # Keep dock open after apply? User preference.
         else:
@@ -373,24 +391,31 @@ class PropertiesDock(QDockWidget):
     def _apply_region_changes(self):
         """Updates the current Region object and emits 'regionUpdated'."""
         if self._current_region:
-            updated_region = self._current_region # Work on the stored region object
+            updated_region = self._current_region  # Work on the stored region object
             old_name = updated_region.name
             old_depth = updated_region.strip_depth_ft
 
             # Get new name
             new_name = self.region_name_edit.text().strip()
-            updated_region.name = new_name if new_name else "Unnamed Region" # Ensure name isn't empty
+            updated_region.name = (
+                new_name if new_name else "Unnamed Region"
+            )  # Ensure name isn't empty
 
             # Get new strip depth
             # Check if the spinbox is showing the special value text
-            if self.region_strip_depth_spin.text() == self.region_strip_depth_spin.specialValueText():
-                new_depth = None # Use default
+            if (
+                self.region_strip_depth_spin.text()
+                == self.region_strip_depth_spin.specialValueText()
+            ):
+                new_depth = None  # Use default
             else:
                 new_depth = self.region_strip_depth_spin.value()
 
             updated_region.strip_depth_ft = new_depth
 
-            logger.info(f"Apply Region: ID='{updated_region.id}', Name='{old_name}'->{updated_region.name}', Depth={old_depth}->{updated_region.strip_depth_ft}")
+            logger.info(
+                f"Apply Region: ID='{updated_region.id}', Name='{old_name}'->{updated_region.name}', Depth={old_depth}->{updated_region.strip_depth_ft}"
+            )
             self.regionUpdated.emit(updated_region)
             # self.hide() # Keep dock open?
         else:
@@ -417,6 +442,7 @@ class PropertiesDock(QDockWidget):
             from digcalc_project.src.ui.commands.edit_vertex_z_command import (
                 EditVertexZCommand,
             )
+
             # Access undoStack via main window
             main_win = self.parent()
             if main_win and hasattr(main_win, "undoStack"):

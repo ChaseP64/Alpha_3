@@ -36,12 +36,14 @@ else:
     try:
         from shapely.geometry import LineString, Point  # type: ignore
     except ImportError:  # pragma: no cover
+
         class _GeometryStub:  # fallback for runtime when Shapely missing
             def __init__(self, *args, **kwargs):
                 pass
 
         LineString = _GeometryStub  # type: ignore
         Point = _GeometryStub  # type: ignore
+
 
 @dataclass(slots=True)
 class HaulStation:
@@ -78,6 +80,7 @@ class HaulStationList(List[HaulStation]):
 # ---------------------------------------------------------------------------
 # Public helpers
 # ---------------------------------------------------------------------------
+
 
 def build_mass_haul(
     surface_ref: Surface,

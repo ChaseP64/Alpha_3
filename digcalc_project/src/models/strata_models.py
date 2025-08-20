@@ -17,12 +17,13 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
 import numpy as np
-from .surface import Surface
 
+from .surface import Surface
 
 # ---------------------------------------------------------------------------
 # Basic material / layer definitions
 # ---------------------------------------------------------------------------
+
 
 @dataclass(slots=True)
 class Material:
@@ -72,7 +73,7 @@ class StrataLayer:
     """
 
     material_id: int  #: Material identifier (matches Material.id)
-    top_z: float      #: Elevation (ft) of the layer *top*
+    top_z: float  #: Elevation (ft) of the layer *top*
 
     # Optional compatibility attribute; ignored by the current tests but
     # helpful if callers treat StrataLayer interchangeably with LayerDepth.
@@ -100,8 +101,8 @@ class LayerDepth:
     """Material interval in a borehole."""
 
     material_id: int  # reference to Material.id
-    top_z: float      # elevation (ft) of layer *top*
-    bottom_z: float   # elevation (ft) of layer *base*
+    top_z: float  # elevation (ft) of layer *top*
+    bottom_z: float  # elevation (ft) of layer *base*
 
     def __hash__(self):
         return hash((self.material_id, self.top_z, self.bottom_z))
@@ -193,6 +194,7 @@ class BoreholeLog:
 # Interpolated strata surfaces
 # ---------------------------------------------------------------------------
 
+
 @dataclass(slots=True)
 class StrataSurface:
     """Boundary surface between two materials.
@@ -252,6 +254,7 @@ class StrataSurface:
 # ---------------------------------------------------------------------------
 # Aggregate container
 # ---------------------------------------------------------------------------
+
 
 @dataclass(slots=True)
 class StrataStack:
@@ -333,6 +336,4 @@ class StrataStack:
         return i
 
 
-__all__ = [
-    "Material", "StrataLayer", "LayerDepth", "BoreholeLog", "StrataSurface", "StrataStack"
-] 
+__all__ = ["Material", "StrataLayer", "LayerDepth", "BoreholeLog", "StrataSurface", "StrataStack"]

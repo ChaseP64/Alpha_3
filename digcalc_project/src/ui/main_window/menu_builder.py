@@ -9,11 +9,11 @@ bar. All created menus are stored back on the main window under names like
 ``file_menu`` for backwards-compatibility.
 """
 
-from typing import TYPE_CHECKING
 import logging
+from typing import TYPE_CHECKING
 
 from PySide6.QtGui import QAction, QActionGroup, QIcon
-from PySide6.QtWidgets import QMenuBar, QToolBar, QLabel, QSizePolicy
+from PySide6.QtWidgets import QLabel, QMenuBar, QSizePolicy, QToolBar
 
 from ...services.settings_service import SettingsService  # type: ignore
 
@@ -36,7 +36,7 @@ class MenuBuilder:
     # ------------------------------------------------------------------
     def _add_attr(self, name: str, obj) -> None:
         setattr(self._mw, name, obj)  # expose on MainWindow
-        setattr(self, name, obj)      # also on builder
+        setattr(self, name, obj)  # also on builder
 
     # ------------------------------------------------------------------
     # Main build routine (verbatim from old _create_menus)
@@ -114,6 +114,13 @@ class MenuBuilder:
         settings_menu.addAction(mw.smart_clean_action)
         self._add_attr("settings_menu", settings_menu)
 
+        # ----------------------------- Tools ---------------------------
+        tools_menu = self._mb.addMenu("Tools")
+        if hasattr(mw, "action_manager") and hasattr(mw.action_manager, "templates_action"):
+            mw.templates_action = mw.action_manager.templates_action
+            tools_menu.addAction(mw.templates_action)
+        self._add_attr("tools_menu", tools_menu)
+
         # ----------------------------- Tracing -------------------------
         tracing_menu = self._mb.addMenu("Tracing")
         tracing_menu.addAction(mw.toggle_trace_mode_action)
@@ -171,4 +178,5 @@ class MenuBuilder:
         mw.import_menu = import_menu
         mw.view_menu = view_menu
         mw.analysis_menu = analysis_menu
-        mw.help_menu = help_menu 
+        mw.tools_menu = tools_menu
+        mw.help_menu = help_menu

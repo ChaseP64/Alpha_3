@@ -30,8 +30,8 @@ def test_handle_key_press_delete_with_selection(mock_main_window):
     """Test that Delete key press calls the polyline handler when an item is selected."""
     # Arrange
     handler = KeyBindingHandler(mock_main_window)
-    mock_main_window.polyline_handler._selected_scene_item = MagicMock() # Simulate selection
-    
+    mock_main_window.polyline_handler._selected_scene_item = MagicMock()  # Simulate selection
+
     event = QKeyEvent(QKeyEvent.KeyPress, Qt.Key_Delete, Qt.NoModifier)
 
     # Act
@@ -46,8 +46,8 @@ def test_handle_key_press_delete_no_selection(mock_main_window):
     """Test that Delete key press is ignored when nothing is selected."""
     # Arrange
     handler = KeyBindingHandler(mock_main_window)
-    mock_main_window.polyline_handler._selected_scene_item = None # No selection
-    
+    mock_main_window.polyline_handler._selected_scene_item = None  # No selection
+
     event = QKeyEvent(QKeyEvent.KeyPress, Qt.Key_Delete, Qt.NoModifier)
 
     # Act
@@ -69,4 +69,4 @@ def test_handle_key_press_other_key(mock_main_window):
 
     # Assert
     mock_main_window.polyline_handler._delete_selected_polyline.assert_not_called()
-    assert not event.isAccepted() 
+    assert not event.isAccepted()

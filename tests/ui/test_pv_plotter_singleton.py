@@ -6,9 +6,9 @@ These tests patch the heavy ``pyvistaqt`` dependency with a lightweight dummy
 class so that they run in headless CI environments.
 """
 
-from types import ModuleType
 import importlib
 import sys
+from types import ModuleType
 from typing import Any, Generator
 
 import pytest
@@ -27,8 +27,8 @@ class _DummyPlotter:  # pylint: disable=too-few-public-methods
     def enable_anti_aliasing(self) -> None:  # noqa: D401
         self.enable_anti_aliasing_called = True
 
-    def enable_trackball_style(self) -> None: # noqa: D401 # Added for Task 4 compatibility
-        self.enable_trackball_style_called = True # noqa: D401
+    def enable_trackball_style(self) -> None:  # noqa: D401 # Added for Task 4 compatibility
+        self.enable_trackball_style_called = True  # noqa: D401
 
     # Convenience for tests that might call ``close`` later on.
     def close(self) -> None:  # noqa: D401
@@ -64,7 +64,9 @@ def test_singleton_returns_same_instance() -> None:  # noqa: D401
     plotter_1 = helper.get_plotter()
     plotter_2 = helper.get_plotter()
     assert plotter_1 is plotter_2, "Expected get_plotter() to return singleton instance"
-    assert plotter_1.enable_anti_aliasing_called is True, "Anti-aliasing should be enabled on creation"
+    assert (
+        plotter_1.enable_anti_aliasing_called is True
+    ), "Anti-aliasing should be enabled on creation"
 
 
 def test_singleton_recreates_after_manual_reset() -> None:  # noqa: D401
@@ -73,4 +75,4 @@ def test_singleton_recreates_after_manual_reset() -> None:  # noqa: D401
     # Manually reset the singleton (simulates PvDock cleanup + GC).
     helper._plotter = None  # pylint: disable=protected-access
     second = helper.get_plotter()
-    assert first is not second, "A new instance should be created after reset" 
+    assert first is not second, "A new instance should be created after reset"

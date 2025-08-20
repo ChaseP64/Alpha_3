@@ -15,4 +15,4 @@ def test_mesh_actor_defaults():
     assert ma.visible is True
 
     # Runtime-only field should be uninitialised
-    assert ma.actor is None 
+    assert ma.actor is None

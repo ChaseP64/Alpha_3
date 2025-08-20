@@ -33,14 +33,13 @@ class PDFReportGenerator:
         """Initialize the PDF report generator."""
         self.logger = logging.getLogger(__name__)
 
-    def generate_calculation_report(self, calculation: VolumeCalculation,
-                                   output_file: str) -> bool:
+    def generate_calculation_report(self, calculation: VolumeCalculation, output_file: str) -> bool:
         """Generate a PDF report for a volume calculation.
-        
+
         Args:
             calculation: Volume calculation
             output_file: Output file path
-            
+
         Returns:
             bool: True if successful, False otherwise
 
@@ -78,14 +77,13 @@ class PDFReportGenerator:
             self.logger.exception(f"Error generating PDF report: {e}")
             return False
 
-    def generate_surface_report(self, surface: Surface,
-                              output_file: str) -> bool:
+    def generate_surface_report(self, surface: Surface, output_file: str) -> bool:
         """Generate a PDF report for a surface.
-        
+
         Args:
             surface: Surface
             output_file: Output file path
-            
+
         Returns:
             bool: True if successful, False otherwise
 
@@ -105,7 +103,9 @@ class PDFReportGenerator:
             self.logger.info(f"  - Type: {surface.surface_type}")
             self.logger.info(f"  - Points: {len(surface.points)}")
             self.logger.info(f"  - Triangles: {len(surface.triangles)}")
-            self.logger.info(f"  - Bounds: X({surface.x_min}, {surface.x_max}), Y({surface.y_min}, {surface.y_max}), Z({surface.z_min}, {surface.z_max})")
+            self.logger.info(
+                f"  - Bounds: X({surface.x_min}, {surface.x_max}), Y({surface.y_min}, {surface.y_max}), Z({surface.z_min}, {surface.z_max})"
+            )
 
             # Create a dummy PDF by writing a text file
             self._create_dummy_surface_report(surface, output_file)
@@ -116,10 +116,9 @@ class PDFReportGenerator:
             self.logger.exception(f"Error generating PDF report: {e}")
             return False
 
-    def _create_dummy_report(self, calculation: VolumeCalculation,
-                           output_file: str) -> None:
+    def _create_dummy_report(self, calculation: VolumeCalculation, output_file: str) -> None:
         """Create a dummy report text file for the skeleton implementation.
-        
+
         Args:
             calculation: Volume calculation
             output_file: Output file path
@@ -160,10 +159,9 @@ class PDFReportGenerator:
                 for mat_name, vol in calculation.material_volumes.items():
                     f.write(f"{mat_name}: {vol:.2f} cu yd\n")
 
-    def _create_dummy_surface_report(self, surface: Surface,
-                                   output_file: str) -> None:
+    def _create_dummy_surface_report(self, surface: Surface, output_file: str) -> None:
         """Create a dummy surface report text file for the skeleton implementation.
-        
+
         Args:
             surface: Surface
             output_file: Output file path
@@ -213,12 +211,14 @@ class PDFReportGenerator:
 
         data = [["Bottom", "Top", "Cut", "Fill"]]
         for s in slices:
-            data.append([
-                f"{s.z_bottom:.2f}",
-                f"{s.z_top:.2f}",
-                f"{s.cut:.1f}",
-                f"{s.fill:.1f}",
-            ])
+            data.append(
+                [
+                    f"{s.z_bottom:.2f}",
+                    f"{s.z_top:.2f}",
+                    f"{s.cut:.1f}",
+                    f"{s.fill:.1f}",
+                ]
+            )
 
         table = Table(data, hAlign="LEFT")
         self.story.append(table)
@@ -267,62 +267,85 @@ class PDFReportGenerator:
         self.story.append(Paragraph(f"Free-haul distance: {free_ft:.1f} ft", styles["Normal"]))
         self.story.append(Spacer(1, 12))
 
+
 styles = getSampleStyleSheet()
+
 
 def h2(txt, story):
     story.append(Paragraph(txt, styles["Heading2"]))
 
+
 def sp(story, h=12):
     story.append(Spacer(1, h))
 
+
 def add_job_summary(story, project, settings):
     h2("Job summary", story)
-    data=[["Project",project.name],
-          ["Date",datetime.now().strftime("%Y-%m-%d %H:%M")],
-          ["Default strip depth (ft)",settings.strip_depth_default()],
-          ["Slice thickness (ft)",settings.slice_thickness_default()],
-          ["Free-haul distance (ft)",settings.slice_thickness_default()]]
-    story.append(Table(data,colWidths=[200,200])); sp(story)
+    data = [
+        ["Project", project.name],
+        ["Date", datetime.now().strftime("%Y-%m-%d %H:%M")],
+        ["Default strip depth (ft)", settings.strip_depth_default()],
+        ["Slice thickness (ft)", settings.slice_thickness_default()],
+        ["Free-haul distance (ft)", settings.slice_thickness_default()],
+    ]
+    story.append(Table(data, colWidths=[200, 200]))
+    sp(story)
 
 
 def add_region_table(story, region_rows):
-    if not region_rows: return
+    if not region_rows:
+        return
     h2("Region volumes", story)
-    data=[["Region","Area","Depth","Cut","Fill","Net"]]
+    data = [["Region", "Area", "Depth", "Cut", "Fill", "Net"]]
     for r in region_rows:
-        data.append([r.name,f"{r.area:.0f}",r.depth or "Def",
-                     f"{r.cut:.1f}",f"{r.fill:.1f}",
-                     f"{r.fill-r.cut:+.1f}"])
-    tbl=Table(data,hAlign="LEFT")
-    tbl.setStyle([("BACKGROUND",(0,0),(-1,0),colors.lightgrey)])
-    story.append(tbl); sp(story)
+        data.append(
+            [
+                r.name,
+                f"{r.area:.0f}",
+                r.depth or "Def",
+                f"{r.cut:.1f}",
+                f"{r.fill:.1f}",
+                f"{r.fill-r.cut:+.1f}",
+            ]
+        )
+    tbl = Table(data, hAlign="LEFT")
+    tbl.setStyle([("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey)])
+    story.append(tbl)
+    sp(story)
 
 
 def add_slice_table(story, slices):
-    if not slices: return
+    if not slices:
+        return
     h2("Slice volumes", story)
-    data=[["Bottom","Top","Cut","Fill"]]
+    data = [["Bottom", "Top", "Cut", "Fill"]]
     for s in slices:
-        data.append([f"{s.z_bottom:.2f}",f"{s.z_top:.2f}",
-                     f"{s.cut:.1f}",f"{s.fill:.1f}"])
-    tbl=Table(data,hAlign="LEFT")
-    tbl.setStyle([("BACKGROUND",(0,0),(-1,0),colors.lightgrey)])
+        data.append([f"{s.z_bottom:.2f}", f"{s.z_top:.2f}", f"{s.cut:.1f}", f"{s.fill:.1f}"])
+    tbl = Table(data, hAlign="LEFT")
+    tbl.setStyle([("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey)])
     story.append(tbl)
 
     # bar-chart
-    fig,ax=plt.subplots(figsize=(4,2))
-    y=[s.z_bottom for s in slices]
-    cut=[s.cut for s in slices]
-    fill=[s.fill for s in slices]
-    ax.barh(y,cut,color="red",label="Cut")
-    ax.barh(y,fill,color="green",label="Fill",left=cut)
-    ax.invert_yaxis(); ax.set_xlabel("ft³"); ax.legend()
-    buf=BytesIO(); fig.savefig(buf,format="png",dpi=150); plt.close(fig)
-    buf.seek(0); story.append(Image(buf,width=300,height=150)); sp(story)
+    fig, ax = plt.subplots(figsize=(4, 2))
+    y = [s.z_bottom for s in slices]
+    cut = [s.cut for s in slices]
+    fill = [s.fill for s in slices]
+    ax.barh(y, cut, color="red", label="Cut")
+    ax.barh(y, fill, color="green", label="Fill", left=cut)
+    ax.invert_yaxis()
+    ax.set_xlabel("ft³")
+    ax.legend()
+    buf = BytesIO()
+    fig.savefig(buf, format="png", dpi=150)
+    plt.close(fig)
+    buf.seek(0)
+    story.append(Image(buf, width=300, height=150))
+    sp(story)
 
 
 def add_mass_haul(story, png_path, free_ft):
-    if not png_path: return
+    if not png_path:
+        return
     h2("Mass-Haul diagram", story)
     story.append(Image(png_path, width=400, height=200))
     story.append(Paragraph(f"Free-haul distance: {free_ft} ft", styles["Normal"]))

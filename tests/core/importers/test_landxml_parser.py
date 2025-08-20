@@ -199,7 +199,7 @@ class TestLandXMLParser:
         # Verify the North/East swap (CgPoints use North,East,Elev order)
         assert points[0].x == 100.0  # East
         assert points[0].y == 200.0  # North
-        assert points[0].z == 50.0   # Elevation
+        assert points[0].z == 50.0  # Elevation
 
     def test_validate_with_valid_data(self, sample_landxml_path: str):
         """Test validation with valid data."""
@@ -254,7 +254,9 @@ class TestLandXMLParser:
         assert len(surface.triangles) > 0
 
     @patch("core.geometry.tin_generator.TINGenerator")
-    def test_create_surface_without_triangles(self, mock_tin_generator, landxml_with_points_only_path: str):
+    def test_create_surface_without_triangles(
+        self, mock_tin_generator, landxml_with_points_only_path: str
+    ):
         """Test creating a surface from parsed LandXML data without triangles."""
         parser = LandXMLParser()
 

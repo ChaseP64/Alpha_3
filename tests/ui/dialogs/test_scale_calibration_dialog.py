@@ -16,9 +16,7 @@ try:
     )
 except ImportError:  # pragma: no cover – fallback for alternative paths during CI
     from src.models.project import Project  # type: ignore
-    from src.ui.dialogs.scale_calibration_dialog import (
-        ScaleCalibrationDialog,  # type: ignore
-    )
+    from src.ui.dialogs.scale_calibration_dialog import ScaleCalibrationDialog  # type: ignore
 
 # Skip tests entirely if pytest-qt (qt_api) is not available
 if not qt_api:
@@ -30,7 +28,7 @@ if not qt_api:
 def mock_project():
     project = MagicMock(spec=Project)
     project.pdf_background_path = "dummy.pdf"
-    project.pdf_background_dpi = 96.0 # Default DPI for tests
+    project.pdf_background_dpi = 96.0  # Default DPI for tests
     project.pdf_background_page = 1
     # Add any other attributes accessed by ScaleCalibrationDialog
     return project
@@ -99,8 +97,7 @@ def test_pick_uses_global_when_pdf_view_visible(qtbot, pdf_view_widget, mock_pro
 # ---------------------------------------------------------------------------
 # Happy-path scale-calibration round-trip (ID 6-b / 6-c)
 # ---------------------------------------------------------------------------
-@pytest.mark.parametrize(
-    "units,val", [("ft", 20.0), ("yd", 6.667), ("m", 6.096)])
+@pytest.mark.parametrize("units,val", [("ft", 20.0), ("yd", 6.667), ("m", 6.096)])
 def test_scale_calibration_dialog_roundtrip(qtbot, units, val, mock_project):
     """Simulate user picking two points 96 px apart and entering *val* in *units*."""
     pix = QPixmap(200, 200)  # Dummy blank pixmap

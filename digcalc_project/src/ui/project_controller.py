@@ -28,9 +28,10 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 # --- Inherit from QObject ---
 class ProjectController(QObject):
-# --- End Inherit ---
+    # --- End Inherit ---
     """Manages the lifecycle and state of the DigCalc project.
 
     Acts as the intermediary between the UI (MainWindow) and the
@@ -48,7 +49,7 @@ class ProjectController(QObject):
     project_closed = Signal()
     project_modified = Signal()
     surfaces_rebuilt = Signal()  # Emitted after surfaces are rebuilt so views can refresh
-    surfacesChanged = Signal()   # Emitted when lowest/composite surfaces refresh
+    surfacesChanged = Signal()  # Emitted when lowest/composite surfaces refresh
     # --- End Define ---
 
     def __init__(self, main_window: "MainWindow"):
@@ -98,10 +99,9 @@ class ProjectController(QObject):
             pass
         # --- End Emit ---
 
-
     def get_current_project(self) -> Optional[Project]:
-         """Returns the currently active project."""
-         return self.current_project
+        """Returns the currently active project."""
+        return self.current_project
 
     # --------------------------------------------------------------------------
     # Project Actions (Slots for MainWindow signals)
@@ -142,7 +142,7 @@ class ProjectController(QObject):
 
         """
         if not self._should_save_project():
-            return True # No unsaved changes, safe to proceed
+            return True  # No unsaved changes, safe to proceed
 
         self.logger.debug("Project has unsaved changes. Prompting user.")
         reply = QMessageBox.question(
@@ -151,18 +151,20 @@ class ProjectController(QObject):
             f"""Project '{self.current_project.name}' has unsaved changes.
 Do you want to save them?""",
             QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
-            QMessageBox.Save, # Default button
+            QMessageBox.Save,  # Default button
         )
 
         if reply == QMessageBox.Save:
             self.logger.debug("User chose to Save.")
-            return self.on_save_project() # Returns True if save successful/cancelled, False if failed critically
+            return (
+                self.on_save_project()
+            )  # Returns True if save successful/cancelled, False if failed critically
         if reply == QMessageBox.Discard:
             self.logger.debug("User chose to Discard changes.")
-            return True # Safe to proceed without saving
+            return True  # Safe to proceed without saving
         # reply == QMessageBox.Cancel
         self.logger.debug("User chose to Cancel.")
-        return False # Operation cancelled, do not proceed
+        return False  # Operation cancelled, do not proceed
 
     # --- Renamed to set_project_modified and emit signal ---
     def set_project_modified(self, modified: bool = True):
@@ -174,6 +176,7 @@ Do you want to save them?""",
             self.project_modified.emit()
             # --- End Emit ---
             # self.main_window._update_window_title() # Let signal handle this
+
     # --- End Rename ---
 
     # --------------------------------------------------------------------------
@@ -212,21 +215,30 @@ Do you want to save them?""",
                 continue  # Skip surfaces without a source layer
 
             polylines = project.traced_polylines.get(src_layer, [])
-            valid_polys = [p for p in polylines if isinstance(p, dict) and p.get("elevation") is not None]
+            valid_polys = [
+                p for p in polylines if isinstance(p, dict) and p.get("elevation") is not None
+            ]
             if not valid_polys:
-                self.logger.info("Layer '%s' has no valid polylines with elevation for rebuilding '%s'.", src_layer, surf_name)
+                self.logger.info(
+                    "Layer '%s' has no valid polylines with elevation for rebuilding '%s'.",
+                    src_layer,
+                    surf_name,
+                )
                 continue
 
             try:
-                new_surf = SurfaceBuilder.build_from_polylines(src_layer, valid_polys, project.layer_revisions.get(src_layer, 0))
+                new_surf = SurfaceBuilder.build_from_polylines(
+                    src_layer, valid_polys, project.layer_revisions.get(src_layer, 0)
+                )
                 new_surf.name = surf_name  # Keep original name
                 new_surf.source_layer_name = src_layer
                 project.surfaces[surf_name] = new_surf
                 rebuilt_count += 1
 
                 # Update visualization if possible
-                if hasattr(self.main_window, "visualization_panel") and \
-                   hasattr(self.main_window.visualization_panel, "update_surface_mesh"):
+                if hasattr(self.main_window, "visualization_panel") and hasattr(
+                    self.main_window.visualization_panel, "update_surface_mesh"
+                ):
                     self.main_window.visualization_panel.update_surface_mesh(new_surf)
             except SurfaceBuilderError as e:
                 self.logger.error("Failed to rebuild surface '%s': %s", surf_name, e)
@@ -255,7 +267,9 @@ Do you want to save them?""",
         )
 
         if not self.current_project:
-            self.logger.warning("rebuild_surfaces_for_layers called but there is no active project.")
+            self.logger.warning(
+                "rebuild_surfaces_for_layers called but there is no active project."
+            )
             return
 
         project = self.current_project
@@ -267,20 +281,29 @@ Do you want to save them?""",
                 continue
 
             polylines = project.traced_polylines.get(src_layer, [])
-            valid_polys = [p for p in polylines if isinstance(p, dict) and p.get("elevation") is not None]
+            valid_polys = [
+                p for p in polylines if isinstance(p, dict) and p.get("elevation") is not None
+            ]
             if not valid_polys:
-                self.logger.info("Layer '%s' has no valid polylines with elevation for rebuilding '%s'.", src_layer, surf_name)
+                self.logger.info(
+                    "Layer '%s' has no valid polylines with elevation for rebuilding '%s'.",
+                    src_layer,
+                    surf_name,
+                )
                 continue
 
             try:
-                new_surf = SurfaceBuilder.build_from_polylines(src_layer, valid_polys, project.layer_revisions.get(src_layer, 0))
+                new_surf = SurfaceBuilder.build_from_polylines(
+                    src_layer, valid_polys, project.layer_revisions.get(src_layer, 0)
+                )
                 new_surf.name = surf_name
                 new_surf.source_layer_name = src_layer
                 project.surfaces[surf_name] = new_surf
                 rebuilt_count += 1
 
-                if hasattr(self.main_window, "visualization_panel") and \
-                   hasattr(self.main_window.visualization_panel, "update_surface_mesh"):
+                if hasattr(self.main_window, "visualization_panel") and hasattr(
+                    self.main_window.visualization_panel, "update_surface_mesh"
+                ):
                     self.main_window.visualization_panel.update_surface_mesh(new_surf)
             except SurfaceBuilderError as e:
                 self.logger.error("Failed to rebuild surface '%s': %s", surf_name, e)
@@ -308,9 +331,11 @@ Do you want to save them?""",
         to ``project.surfaces`` using the key ``"Lowest"`` so downstream UI
         elements can find it by name.
         """
-        if (self.current_project
-                and self.current_project.get_surface("Design Surface")
-                and self.current_project.get_surface("Existing Surface")):
+        if (
+            self.current_project
+            and self.current_project.get_surface("Design Surface")
+            and self.current_project.get_surface("Existing Surface")
+        ):
             design = self.current_project.get_surface("Design Surface")
             existing = self.current_project.get_surface("Existing Surface")
             try:

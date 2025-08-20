@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pyvista as pv
 
-if TYPE_CHECKING: # pragma: no cover
-    from digcalc_project.src.models.surface import Surface, Point3D # Assumed path
+if TYPE_CHECKING:  # pragma: no cover
+    from digcalc_project.src.models.surface import Point3D, Surface  # Assumed path
 
 logger = logging.getLogger(__name__)
 
@@ -48,9 +48,7 @@ def surface_to_polydata(surf: "Surface") -> pv.PolyData:
             logger.error(
                 f"Surface '{surf.name}' vertex coordinates have incorrect shape: {vertex_coordinates.shape}. Expected (N, 3)."
             )
-            raise ValueError(
-                "vertices must be a list of (x,y,z) tuples or Nx3 array"
-            )
+            raise ValueError("vertices must be a list of (x,y,z) tuples or Nx3 array")
 
         vertex_coordinates = np.ascontiguousarray(vertex_coordinates)
         point_id_to_index_map = {p.id: i for i, p in enumerate(point_list)}
@@ -97,9 +95,7 @@ def surface_to_polydata(surf: "Surface") -> pv.PolyData:
         logger.error(
             f"Surface '{surf.name}' vertex coordinates have incorrect shape: {vertex_coordinates.shape}. Expected (N, 3)."
         )
-        raise ValueError(
-            "vertices must be a list of (x,y,z) tuples or Nx3 array"
-        )
+        raise ValueError("vertices must be a list of (x,y,z) tuples or Nx3 array")
 
     vertex_coordinates = np.ascontiguousarray(vertex_coordinates)
 
@@ -123,4 +119,4 @@ def surface_to_polydata(surf: "Surface") -> pv.PolyData:
         # No triangles – point cloud with vertices cells
         mesh = pv.PolyData(vertex_coordinates)
 
-    return mesh 
+    return mesh

@@ -1,6 +1,7 @@
 import numpy as np
-from digcalc_project.src.models.strata_models import StrataSurface, StrataStack, Material
+
 from digcalc_project.src.core.calculators.volume_calculator import build_cumulative_arrays
+from digcalc_project.src.models.strata_models import Material, StrataStack, StrataSurface
 
 
 def _make_flat_surface(mat_id: int, z: float, grid_shape=(5, 5)):
@@ -23,9 +24,9 @@ def test_build_cumulative_arrays_flat_layers():
     stack = StrataStack(id=1, materials=[material1, material2, material3], boreholes=[])
     stack.surfaces = surfaces  # Attach generated surfaces
 
-    top_z, bottom_z = build_cumulative_arrays(stack, base_grid=np.zeros((5,5)))
+    top_z, bottom_z = build_cumulative_arrays(stack, base_grid=np.zeros((5, 5)))
 
     # For stacked flat layers: top_z should equal the shallowest surface (0.0)
     # and bottom_z the deepest (20.0)
     assert np.allclose(top_z, 0.0)
-    assert np.allclose(bottom_z, 20.0) 
+    assert np.allclose(bottom_z, 20.0)

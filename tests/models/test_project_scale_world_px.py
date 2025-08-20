@@ -1,4 +1,3 @@
-
 from digcalc_project.src.models.project_scale import ProjectScale
 
 DPI = 150.0

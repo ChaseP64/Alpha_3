@@ -2,11 +2,11 @@
 
 import numpy as np
 import pytest
-from pytestqt.qtbot import QtBot
 from PySide6.QtWidgets import QApplication
+from pytestqt.qtbot import QtBot
 
-from digcalc_project.src.ui.dialogs.bulk_assign_surface_dialog import BulkAssignSurfaceDialog
 from digcalc_project.src.core.geom.polyline import Polyline
+from digcalc_project.src.ui.dialogs.bulk_assign_surface_dialog import BulkAssignSurfaceDialog
 
 
 @pytest.fixture
@@ -43,4 +43,4 @@ def test_bulk_assign_dialog(qtbot: QtBot, sample_polys):
         "existing",
         "proposed",
         "subgrade",
-    ] 
+    ]

@@ -1,0 +1,17 @@
+* text=auto eol=lf
+
+# Treat common data files as text
+*.md text
+*.yml text
+*.yaml text
+*.toml text
+*.json text
+*.csv text
+
+# Keep binary assets as-is
+*.png binary
+*.jpg binary
+*.gif binary
+*.pdf binary
+
+

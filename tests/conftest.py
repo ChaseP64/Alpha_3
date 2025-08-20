@@ -1,11 +1,12 @@
 """Global test fixtures for environments without pytest-mock installed."""
+
 import importlib
-import sys
-import types
-from pathlib import Path
 import os
+import sys
 import tempfile
+import types
 from collections.abc import Generator
+from pathlib import Path
 
 import pytest
 
@@ -33,12 +34,14 @@ if legacy_src_dir.exists() and str(legacy_src_dir) not in sys.path:
 # Attempt to set PyVista to off-screen rendering for tests
 try:
     import pyvista as pv
+
     pv.global_vars.off_screen = True
 except ImportError:
     pass  # PyVista not installed
-except AttributeError: # For older PyVista versions that might use pv.OFF_SCREEN
+except AttributeError:  # For older PyVista versions that might use pv.OFF_SCREEN
     try:
         import pyvista as pv
+
         pv.OFF_SCREEN = True
     except Exception:
         pass
@@ -61,9 +64,11 @@ def mocker(monkeypatch):
         # If pytest-mock is installed, use the real fixture to avoid surprises.
         # pylint: disable=import-error
         import pytest_mock  # noqa: F401
+
         # Request the real fixture from pytest's fixture store.
         return pytest.MockerFixture(monkeypatch)  # type: ignore[attr-defined]
     except Exception:  # pragma: no cover – fall back to tiny stub
+
         class _StubMocker:
             def __init__(self, _mp):
                 self._mp = _mp
@@ -109,7 +114,7 @@ def benchmark():
 @pytest.fixture
 def temp_dir() -> Generator[str, None, None]:
     """Create a temporary directory for test files.
-    
+
     Returns:
         Path to a temporary directory
 
@@ -117,9 +122,11 @@ def temp_dir() -> Generator[str, None, None]:
     with tempfile.TemporaryDirectory() as tmp_dir:
         yield tmp_dir
 
+
 # ---------------------------------------------------------------------------
 # Fixture helpers – sample boreholes / project (Phase 0-5)
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def sample_boreholes_csv_path() -> Path:
@@ -139,6 +146,7 @@ def sample_project(sample_project_json_path: Path) -> Project:
     proj = Project.load(str(sample_project_json_path))
     assert proj is not None, "Failed to load sample project fixture"
     return proj
+
 
 # ---------------------------------------------------------------------------
 # Additional fixtures required by UI tests

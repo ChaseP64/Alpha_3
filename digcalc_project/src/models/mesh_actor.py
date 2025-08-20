@@ -36,4 +36,4 @@ class MeshActor:
     visible: bool = True
 
     # Runtime-only field (excluded from serialisation)
-    actor: Optional[pv.Actor] = None 
+    actor: Optional[pv.Actor] = None

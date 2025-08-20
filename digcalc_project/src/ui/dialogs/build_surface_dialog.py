@@ -19,11 +19,13 @@ from PySide6.QtWidgets import (
 # --- Standard try/except import ---
 try:
     from ...models.project import Project
+
     logger.debug("Successfully imported Project model.")
 except ImportError:
     logger.error("Failed relative import of Project model. Defining as object.", exc_info=True)
-    Project = object # Define as object if import fails
+    Project = object  # Define as object if import fails
 # --- End Import ---
+
 
 class BuildSurfaceDialog(QDialog):
     """Dialog for selecting the source layer and naming the new surface
@@ -32,7 +34,7 @@ class BuildSurfaceDialog(QDialog):
 
     # --- Use the potentially imported Project or fallback object ---
     def __init__(self, project: Optional[Project], parent: Optional[QWidget] = None):
-    # --- END ---
+        # --- END ---
         super().__init__(parent)
         self.setWindowTitle("Build Surface from Layer")
 
@@ -40,11 +42,13 @@ class BuildSurfaceDialog(QDialog):
         # Check if the loaded 'Project' is the actual class or the fallback 'object'
         self._project_model_available = Project is not object
         if not self._project_model_available:
-             logger.critical("Project model could not be imported. Dialog cannot function properly.")
-             self.project = None
+            logger.critical("Project model could not be imported. Dialog cannot function properly.")
+            self.project = None
         # Perform isinstance check against the imported Project class
         elif project is not None and not isinstance(project, Project):
-            logger.error(f"Incorrect type passed for project: expected {Project}, got {type(project)}")
+            logger.error(
+                f"Incorrect type passed for project: expected {Project}, got {type(project)}"
+            )
             self.project = None
         else:
             self.project = project
@@ -75,10 +79,10 @@ class BuildSurfaceDialog(QDialog):
         main_layout.addWidget(self.button_box)
 
         # --- Populate and Connect ---
-        self._populate_layers() # Uses self._project_model_available now
+        self._populate_layers()  # Uses self._project_model_available now
         self.layer_combo.currentTextChanged.connect(self._update_default_name)
         self._update_default_name(self.layer_combo.currentText())
-        self._validate() # Uses self._project_model_available now
+        self._validate()  # Uses self._project_model_available now
         self.layer_combo.currentIndexChanged.connect(self._validate)
         self.name_edit.textChanged.connect(self._validate)
 
@@ -91,25 +95,27 @@ class BuildSurfaceDialog(QDialog):
         # --- FIX: Use self._project_model_available flag ---
         # if self.project and _ProjectModel and self.project.traced_polylines:
         if self.project and self._project_model_available and self.project.traced_polylines:
-        # --- END FIX ---
+            # --- END FIX ---
             for layer_name, polylines in self.project.traced_polylines.items():
                 # Add safety check for dictionary format inside loop
-                has_elevation = any(p.get("elevation") is not None for p in polylines if isinstance(p, dict))
+                has_elevation = any(
+                    p.get("elevation") is not None for p in polylines if isinstance(p, dict)
+                )
                 if has_elevation:
                     layers_found.append(layer_name)
                 else:
-                    logger.debug(f"Layer '{layer_name}' skipped (no polylines with elevation)." )
+                    logger.debug(f"Layer '{layer_name}' skipped (no polylines with elevation).")
 
         if layers_found:
             self.layer_combo.addItems(sorted(layers_found))
             self.layer_combo.setEnabled(True)
         else:
             if not self._project_model_available:
-                 placeholder = "<Project model error>"
+                placeholder = "<Project model error>"
             elif not self.project:
-                 placeholder = "<No project>"
-            else: # Project exists, but no suitable layers found
-                 placeholder = "<No layers with elevation data>"
+                placeholder = "<No project>"
+            else:  # Project exists, but no suitable layers found
+                placeholder = "<No layers with elevation data>"
             self.layer_combo.addItem(placeholder)
             self.layer_combo.setEnabled(False)
 
@@ -120,17 +126,23 @@ class BuildSurfaceDialog(QDialog):
         """Updates the default surface name based on the selected layer."""
         # --- FIX: Check project existence and model availability ---
         # if layer_name and not layer_name.startswith("<") and self.project and _ProjectModel:
-        if layer_name and not layer_name.startswith("<") and self.project and self._project_model_available:
-        # --- END FIX ---
+        if (
+            layer_name
+            and not layer_name.startswith("<")
+            and self.project
+            and self._project_model_available
+        ):
+            # --- END FIX ---
             default_name = f"{layer_name}_Surface"
             current_text = self.name_edit.text()
-            is_default_pattern = current_text.endswith("_Surface") and \
-                                (self.project and current_text[:-8] in self.project.traced_polylines)
+            is_default_pattern = current_text.endswith("_Surface") and (
+                self.project and current_text[:-8] in self.project.traced_polylines
+            )
             if not current_text or is_default_pattern:
-                 self.name_edit.setText(default_name)
+                self.name_edit.setText(default_name)
             logger.debug(f"Default surface name potentially updated to: {default_name}")
         elif not layer_name or layer_name.startswith("<"):
-             self.name_edit.clear()
+            self.name_edit.clear()
 
     @Slot()
     def _validate(self):
@@ -143,7 +155,7 @@ class BuildSurfaceDialog(QDialog):
         # --- FIX: Check project existence and model availability ---
         # if self.project and _ProjectModel and is_name_valid:
         if self.project and self._project_model_available and is_name_valid:
-        # --- END FIX ---
+            # --- END FIX ---
             is_name_unique = surface_name not in self.project.surfaces
 
         can_accept = is_layer_valid and is_name_valid and is_name_unique

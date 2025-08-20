@@ -56,8 +56,9 @@ _CONVERSION_TO_FEET = {
 _CONVERSION_FROM_FEET = {
     "ft": 1.0,
     "yd": 1 / 3.0,
-    "m": 0.3048, # 1 foot in meters
+    "m": 0.3048,  # 1 foot in meters
 }
+
 
 # ---------------------------------------------------------------------------
 class _PointPicker(QObject):
@@ -109,9 +110,11 @@ class _PointPicker(QObject):
         self._view = None  # Drop reference
         self.deleteLater()
 
+
 # ---------------------------------------------------------------------------
 # Global point picker – captures clicks on main PDF view
 # ---------------------------------------------------------------------------
+
 
 class _GlobalPointPicker(QObject):
     """Capture two clicks on *target_view* (a QGraphicsView) and emit scene coords.
@@ -164,6 +167,7 @@ class _GlobalPointPicker(QObject):
             pass  # Defensive – ignore if already detached
         self._view = None
         self.deleteLater()
+
 
 # ---------------------------------------------------------------------------
 class ScaleCalibrationDialog(QDialog):
@@ -225,7 +229,7 @@ class ScaleCalibrationDialog(QDialog):
 
         dist_row = QHBoxLayout()
         dist_row.addWidget(QLabel("Real-world distance:"))
-        dist_row.addWidget(self._dist_spin, 1) # Spin box takes available space
+        dist_row.addWidget(self._dist_spin, 1)  # Spin box takes available space
         dist_row.addWidget(self._units_combo)
 
         # Preset buttons row
@@ -233,7 +237,7 @@ class ScaleCalibrationDialog(QDialog):
         # Note: These presets are currently hardcoded to "ft" values.
         # They will set the numeric value, and the current unit suffix will apply.
         for val in (10, 20, 50, 100):
-            btn = QPushButton(f"{val} ft", self) # Label indicates "ft"
+            btn = QPushButton(f"{val} ft", self)  # Label indicates "ft"
             btn.clicked.connect(lambda _=False, v=val: self._dist_spin.setValue(v))
             presets_row.addWidget(btn)
         presets_row.addStretch()
@@ -301,7 +305,9 @@ class ScaleCalibrationDialog(QDialog):
         self.tabs.addTab(enter_tab, "Enter Scale")
 
         # Dialog buttons -----------------------------------------------------
-        self._btn_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel, self)
+        self._btn_box = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel, self
+        )
         self._btn_box.accepted.connect(self._on_accept)
         self._btn_box.rejected.connect(self.reject)
         ok_button = self._btn_box.button(QDialogButtonBox.StandardButton.Ok)
@@ -359,7 +365,7 @@ class ScaleCalibrationDialog(QDialog):
         # Get the last persisted scale from settings (always in ft or m per inch)
         persisted_unit, persisted_val_per_inch = SettingsService().last_scale()
 
-        display_value = persisted_val_per_inch # Default to the stored value
+        display_value = persisted_val_per_inch  # Default to the stored value
 
         if persisted_unit == "ft":
             if unit_code == "yd":
@@ -370,7 +376,7 @@ class ScaleCalibrationDialog(QDialog):
             if unit_code == "ft":
                 display_value = persisted_val_per_inch / 0.3048  # m/in -> ft/in
             elif unit_code == "yd":
-                display_value = persisted_val_per_inch / 0.9144 # m/in -> yd/in
+                display_value = persisted_val_per_inch / 0.9144  # m/in -> yd/in
 
         # If unit_code is the same as persisted_unit, display_value remains persisted_val_per_inch
 
@@ -449,20 +455,24 @@ class ScaleCalibrationDialog(QDialog):
         self._scene.addItem(self._ruler_item)
 
         self._span_px = math.hypot(p2.x() - p1.x(), p2.y() - p1.y())
-        self._info_lbl.setText(f"Span: {self._span_px:.1f} px – Enter distance for this span and press OK.")
+        self._info_lbl.setText(
+            f"Span: {self._span_px:.1f} px – Enter distance for this span and press OK."
+        )
         self._pick_btn.setEnabled(True)
         self._validate_ready()
 
     def _clear_overlay(self):
         for it in self._dot_items:
-            if it.scene() == self._scene: # Check if item is still in scene
+            if it.scene() == self._scene:  # Check if item is still in scene
                 self._scene.removeItem(it)
         self._dot_items.clear()
-        if self._ruler_item and self._ruler_item.scene() == self._scene: # Check if item is still in scene
+        if (
+            self._ruler_item and self._ruler_item.scene() == self._scene
+        ):  # Check if item is still in scene
             self._scene.removeItem(self._ruler_item)
         self._ruler_item = None
-        self._span_px = 0.0 # Reset span when clearing
-        self._p1, self._p2 = None, None # Reset points
+        self._span_px = 0.0  # Reset span when clearing
+        self._p1, self._p2 = None, None  # Reset points
         self._info_lbl.setText("Click *Pick Points…* and then select two points on the plan.")
         self._validate_ready()
 
@@ -506,7 +516,9 @@ class ScaleCalibrationDialog(QDialog):
                         world_per_px = world_per_in / dpi
                     else:
                         world_per_px = 0.0
-                self.lbl_helper.setText(f"~{world_per_px:.4f} {self.combo_units.currentText()}/px @ {dpi} dpi")
+                self.lbl_helper.setText(
+                    f"~{world_per_px:.4f} {self.combo_units.currentText()}/px @ {dpi} dpi"
+                )
             except Exception:
                 self.lbl_helper.setText("")
 
@@ -536,7 +548,9 @@ class ScaleCalibrationDialog(QDialog):
         else:
             dpi = float(self._project.pdf_background_dpi) if self._project else 96.0
             if dpi <= 0:
-                QMessageBox.warning(self, "Scale Calibration", "Invalid or unknown PDF DPI; cannot build scale.")
+                QMessageBox.warning(
+                    self, "Scale Calibration", "Invalid or unknown PDF DPI; cannot build scale."
+                )
                 return
 
             units = self.combo_units.currentText()
@@ -560,7 +574,11 @@ class ScaleCalibrationDialog(QDialog):
             self._project.scale = self._scale
 
         # Persist settings: Convert to ft or m for SettingsService
-        unit_to_persist = self._units_combo.currentText() if self.tabs.currentIndex()==0 else self.combo_units.currentText()
+        unit_to_persist = (
+            self._units_combo.currentText()
+            if self.tabs.currentIndex() == 0
+            else self.combo_units.currentText()
+        )
         value_to_persist = getattr(self._scale, "world_per_in", None)
         if unit_to_persist in ("ft", "m") and value_to_persist:
             SettingsService().set_last_scale(unit_to_persist, value_to_persist)
@@ -571,7 +589,11 @@ class ScaleCalibrationDialog(QDialog):
         """Returns the DPI at which the currently displayed PDF page (for calibration)
         was rendered. This comes from the project settings.
         """
-        if self._project and self._project.pdf_background_path and self._project.pdf_background_dpi > 0:
+        if (
+            self._project
+            and self._project.pdf_background_path
+            and self._project.pdf_background_dpi > 0
+        ):
             # Ensure a PDF is actually loaded in the project and has a valid DPI set
             return float(self._project.pdf_background_dpi)
         # Fallback or error condition if no PDF is loaded or DPI is invalid
@@ -581,10 +603,10 @@ class ScaleCalibrationDialog(QDialog):
             "Scale Calibration Error",
             "Cannot determine rendering DPI. Please ensure a PDF is loaded with a valid DPI setting in the project.",
         )
-        return 96.0 # Or raise an error / return a value that signals failure
+        return 96.0  # Or raise an error / return a value that signals failure
 
     # ------------------------------------------------------------------
-    def result_scale(self) -> ProjectScale | None: # Changed to allow None if not accepted
+    def result_scale(self) -> ProjectScale | None:  # Changed to allow None if not accepted
         """Return the calculated ProjectScale instance, or None if not set."""
         return self._scale
 

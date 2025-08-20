@@ -14,6 +14,7 @@ from PySide6 import QtWidgets
 
 # PySide6 imports
 from PySide6.QtCore import QSize, Qt, Signal, Slot
+from PySide6.QtGui import QUndoStack  # Added for global undo/redo
 from PySide6.QtGui import (  # Added QPixmap
     QAction,
     QActionGroup,
@@ -22,8 +23,8 @@ from PySide6.QtGui import (  # Added QPixmap
     QKeySequence,
     QPixmap,
     QShortcut,
-    QUndoStack,  # Added for global undo/redo
 )
+from PySide6.QtWidgets import QApplication  # Added for aboutToQuit
 from PySide6.QtWidgets import (
     QDialog,
     QDockWidget,
@@ -40,7 +41,6 @@ from PySide6.QtWidgets import (
     QTreeWidgetItem,
     QVBoxLayout,
     QWidget,
-    QApplication, # Added for aboutToQuit
 )
 
 # from src.controllers.pdf_controller import PdfController # OLD
@@ -51,14 +51,13 @@ from digcalc_project.src.controllers.pdf_controller import PdfController  # NEW
 from digcalc_project.src.services.pdf_service import PdfService  # NEW
 
 # --- End PDF Imports ---# existing imports …
-from digcalc_project.src.services.settings_service import (
-    SettingsService,  # <-- add this
-)
+from digcalc_project.src.services.settings_service import SettingsService  # <-- add this
 
 # --- End Import Check ---
-from digcalc_project.src.ui.dialogs.scale_calibration_dialog import (
-    ScaleCalibrationDialog,  # NEW
-)
+from digcalc_project.src.ui.dialogs.scale_calibration_dialog import ScaleCalibrationDialog  # NEW
+
+# --- NEW: Layer Legend Dock ---
+from digcalc_project.src.ui.docks.layer_legend_dock import LayerLegendDock
 
 # from src.ui.docks.pdf_thumbnail_dock import PdfThumbnailDock # OLD
 from digcalc_project.src.ui.docks.pdf_thumbnail_dock import PdfThumbnailDock  # NEW
@@ -67,15 +66,12 @@ from digcalc_project.src.ui.docks.pdf_thumbnail_dock import PdfThumbnailDock  # 
 # from src.ui.project_controller import ProjectController # OLD
 from digcalc_project.src.ui.project_controller import ProjectController  # NEW
 
-# --- Surface rebuild manager ---
-from .surface_rebuild_manager import SurfaceRebuildManager
-
 from ...core.calculations.volume_calculator import VolumeCalculator
 from ...core.geometry.surface_builder import SurfaceBuilder, SurfaceBuilderError
 
 # Local imports - Use relative paths (two levels up)
 from ...models.project import PolylineData, Project
-from ...visualization.pdf_renderer import PDFRenderer, PDFRendererError
+from ...models.strata_models import StrataStack
 from ...ui.dialogs.build_surface_dialog import BuildSurfaceDialog
 from ...ui.dialogs.elevation_dialog import ElevationDialog
 
@@ -85,14 +81,16 @@ from ...ui.dialogs.report_dialog import ReportDialog
 from ...ui.dialogs.volume_calculation_dialog import VolumeCalculationDialog
 from ...ui.project_panel import ProjectPanel
 from ...ui.properties_dock import PropertiesDock
+from ...ui.pv_plotter_singleton import _plotter as plotter_instance  # Import for shutdown
+from ...ui.pv_plotter_singleton import (
+    get_plotter,
+)
 from ...ui.visualization_panel import VisualizationPanel
-
-# --- NEW: Layer Legend Dock ---
-from digcalc_project.src.ui.docks.layer_legend_dock import LayerLegendDock
-
-from ...ui.pv_plotter_singleton import get_plotter, _plotter as plotter_instance # Import for shutdown
-from ...models.strata_models import StrataStack
+from ...visualization.pdf_renderer import PDFRenderer, PDFRendererError
 from ..widgets.clickable_label import ClickableLabel
+
+# --- Surface rebuild manager ---
+from .surface_rebuild_manager import SurfaceRebuildManager
 
 logger = logging.getLogger(__name__)
 
@@ -104,8 +102,7 @@ class MainWindow(QMainWindow):
     """
 
     def __init__(self):
-        """Initialize the main window and its components.
-        """
+        """Initialize the main window and its components."""
         super().__init__()
 
         self.logger = logging.getLogger(__name__)
@@ -125,31 +122,36 @@ class MainWindow(QMainWindow):
 
         # --- NEW: UI State Manager (Phase-2 refactor) ---
         from .ui_state_manager import UIStateManager  # Local import to avoid early circular refs
+
         self.ui_state = UIStateManager(self)
         # --- END NEW ---
 
         # --- NEW: PDF Event Handler (Phase-2 refactor) ---
         from .pdf_event_handler import PDFEventHandler
+
         self.pdf_handler = PDFEventHandler(self)
         # --- END NEW ---
 
         # --- NEW: Feature Handlers (Phase-2 refactor) ---
         from .feature_handlers import FeatureHandlers
+
         self.feature_handlers = FeatureHandlers(self)
         # --- END NEW ---
 
         # --- PDF Service and Controller ---
         # Instantiate PdfService (should likely be singleton or passed in if shared)
         # self.pdf_service = PdfService(self) # Incorrect - Singleton takes no args
-        self.pdf_service = PdfService() # Correct instantiation for Singleton
+        self.pdf_service = PdfService()  # Correct instantiation for Singleton
         # self.pdf_controller = PdfController(self.pdf_service, self) # Incorrect - __init__ takes only parent
-        self.pdf_controller = PdfController(self) # Pass only parent
+        self.pdf_controller = PdfController(self)  # Pass only parent
         # --- End PDF Service ---
 
         self._selected_scene_item: Optional[QGraphicsPathItem] = None
         self.pdf_dpi_setting = 300
-        self._last_volume_calculation_params: Optional[dict] = None # Cache params
-        self._last_dz_cache: Optional[Tuple[np.ndarray, np.ndarray, np.ndarray]] = None # Cache dz grid
+        self._last_volume_calculation_params: Optional[dict] = None  # Cache params
+        self._last_dz_cache: Optional[Tuple[np.ndarray, np.ndarray, np.ndarray]] = (
+            None  # Cache dz grid
+        )
         self._last_pad_elev: float | None = None  # Remember last pad elevation
 
         # --- Rebuild Engine Members ---
@@ -185,6 +187,7 @@ class MainWindow(QMainWindow):
         # ------------------------------------------------------------------
         try:
             from .status_bar_manager import StatusBarManager  # local import
+
             self.status_bar_manager = StatusBarManager(self)  # type: ignore[attr-defined]
         except Exception as exc:  # pragma: no cover – make CI friendly
             self.logger.warning("StatusBarManager unavailable – using stub (%s)", exc)
@@ -211,12 +214,18 @@ class MainWindow(QMainWindow):
         # Only create the legacy *scale_pill* when the full StatusBarManager
         # could *not* be initialised (head-less CI runs).  The real manager
         # already owns a pill widget – duplicating it would clutter the UI.
-        if not hasattr(self, "status_bar_manager") or self.status_bar_manager.__class__.__name__.startswith("_Stub"):
-            self.scale_pill = ClickableLabel("Scale: —")  # Use the ClickableLabel class defined earlier
+        if not hasattr(
+            self, "status_bar_manager"
+        ) or self.status_bar_manager.__class__.__name__.startswith("_Stub"):
+            self.scale_pill = ClickableLabel(
+                "Scale: —"
+            )  # Use the ClickableLabel class defined earlier
             self.scale_pill.setObjectName("scalePill")
             self.scale_pill.setMargin(4)  # Margin in pixels
             # Base style, colour will be set in _update_scale_pill
-            self.scale_pill.setStyleSheet("QLabel#scalePill { border-radius: 8px; padding: 2px 5px; }")
+            self.scale_pill.setStyleSheet(
+                "QLabel#scalePill { border-radius: 8px; padding: 2px 5px; }"
+            )
             self.scale_pill.clicked.connect(self.on_scale_calibration)
 
             # Ensure status bar exists and add the pill
@@ -235,12 +244,16 @@ class MainWindow(QMainWindow):
         # AttributeError in head-less test environments.
         # ------------------------------------------------------------------
         try:
-            from .polyline_interaction_handler import PolylineInteractionHandler  # local import to avoid circulars
+            from .polyline_interaction_handler import (  # local import to avoid circulars
+                PolylineInteractionHandler,
+            )
+
             self.polyline_handler = PolylineInteractionHandler(self)  # type: ignore[attr-defined]
             # Minimal stub for tests that expect a ``view_mode_handler`` with
             # a ``_fit_view_to_scene`` callable.  The real implementation
             # lives in production-only modules which are too heavy for CI.
             from types import SimpleNamespace  # local import
+
             # Provide a stub with the methods SignalBinder expects.
             stub_ns = SimpleNamespace(  # type: ignore[attr-defined]
                 on_view_2d=self.on_view_2d,
@@ -255,8 +268,12 @@ class MainWindow(QMainWindow):
                 smart_clean=lambda *a, **k: None,
                 on_toggle_tracing_mode=lambda *a, **k: None,
             )
-            self.view_mode_handler = self.view_mode_handler if hasattr(self, "view_mode_handler") else stub_ns
-            self.action_handler = self.action_handler if hasattr(self, "action_handler") else stub_ns
+            self.view_mode_handler = (
+                self.view_mode_handler if hasattr(self, "view_mode_handler") else stub_ns
+            )
+            self.action_handler = (
+                self.action_handler if hasattr(self, "action_handler") else stub_ns
+            )
             self.scene_handler = self.scene_handler if hasattr(self, "scene_handler") else stub_ns
         except Exception as exc:  # pragma: no cover – defensive
             self.logger.warning("PolylineInteractionHandler unavailable – using stub (%s)", exc)
@@ -269,6 +286,7 @@ class MainWindow(QMainWindow):
         # ---------------------------------------------
         try:
             from .layer_legend_controller import LayerLegendController  # type: ignore
+
             self.layer_legend_controller = LayerLegendController(self)  # type: ignore[attr-defined]
         except Exception as exc:  # pragma: no cover
             self.logger.warning("LayerLegendController unavailable – using stub (%s)", exc)
@@ -306,12 +324,14 @@ class MainWindow(QMainWindow):
         # NEW: connect strata-contour toggle to TracingScene
         if hasattr(self.legend_dock, "strataContourModeChanged"):
             self.legend_dock.strataContourModeChanged.connect(
-                lambda enabled: getattr(self.visualization_panel.scene_2d, "set_strata_contour_mode", lambda *_: None)(enabled)
+                lambda enabled: getattr(
+                    self.visualization_panel.scene_2d, "set_strata_contour_mode", lambda *_: None
+                )(enabled)
             )
 
         # --- Connect application quit signal for plotter cleanup (Task 2 / PLAN.md) ---
         app = QApplication.instance()
-        if app: # Should always exist in a running Qt app
+        if app:  # Should always exist in a running Qt app
             app.aboutToQuit.connect(self._on_application_quit)
 
         # ------------------------------------------------------------------
@@ -320,7 +340,10 @@ class MainWindow(QMainWindow):
         # AttributeError in head-less test environments.
         # ------------------------------------------------------------------
         try:
-            from .polyline_interaction_handler import PolylineInteractionHandler  # local import to avoid circulars
+            from .polyline_interaction_handler import (  # local import to avoid circulars
+                PolylineInteractionHandler,
+            )
+
             self.polyline_handler = PolylineInteractionHandler(self)  # type: ignore[attr-defined]
         except Exception as exc:  # pragma: no cover – defensive
             self.logger.warning("PolylineInteractionHandler unavailable – using stub (%s)", exc)
@@ -334,6 +357,7 @@ class MainWindow(QMainWindow):
         # -----------------------------------------------------------
         try:
             from .layer_legend_controller import LayerLegendController  # lazy import
+
             self.layer_legend_controller = LayerLegendController(self)  # type: ignore[attr-defined]
         except Exception as exc:  # pragma: no cover – headless fallback
             self.logger.warning("LayerLegendController unavailable – using stub (%s)", exc)
@@ -352,6 +376,7 @@ class MainWindow(QMainWindow):
         if not hasattr(self, "layer_legend_controller"):
             try:
                 from .layer_legend_controller import LayerLegendController  # type: ignore
+
                 self.layer_legend_controller = LayerLegendController(self)  # type: ignore[attr-defined]
             except Exception as exc:  # pragma: no cover – fallback for headless CI
                 self.logger.warning("LayerLegendController unavailable – using stub (%s)", exc)
@@ -375,6 +400,7 @@ class MainWindow(QMainWindow):
         # ------------------------------------------------------------------
         if not hasattr(self, "action_handler"):
             from types import SimpleNamespace  # local import
+
             self.action_handler = SimpleNamespace(  # type: ignore[attr-defined]
                 calculate_volume=lambda *a, **k: None,
                 build_surface=lambda *a, **k: None,
@@ -387,6 +413,7 @@ class MainWindow(QMainWindow):
 
         if not hasattr(self, "scene_handler"):
             from types import SimpleNamespace
+
             self.scene_handler = SimpleNamespace(  # type: ignore[attr-defined]
                 on_toggle_tracing_mode=lambda *a, **k: None,
             )
@@ -417,6 +444,7 @@ class MainWindow(QMainWindow):
         # ------------------------------------------------------------------
         try:
             from digcalc_project.src.ui.docks.strata_manager_dock import StrataManagerDock
+
             self.strata_manager_dock = StrataManagerDock(self)  # type: ignore[attr-defined]
             self.addDockWidget(Qt.RightDockWidgetArea, self.strata_manager_dock)
 
@@ -505,23 +533,31 @@ class MainWindow(QMainWindow):
 
     def _on_visualization_failed(self, surface_name: str, error_msg: str):
         """Handle visualization failure.
-        
+
         Args:
             surface_name: Name of the surface that failed to visualize
             error_msg: Error message
 
         """
-        self.statusBar().showMessage(f"Failed to visualize surface '{surface_name}': {error_msg}", 5000)
+        self.statusBar().showMessage(
+            f"Failed to visualize surface '{surface_name}': {error_msg}", 5000
+        )
         self.logger.error(f"Visualization failed for surface '{surface_name}': {error_msg}")
-        QMessageBox.warning(self, "Visualization Error",
-                            f"Could not visualize surface '{surface_name}'.\nReason: {error_msg}")
+        QMessageBox.warning(
+            self,
+            "Visualization Error",
+            f"Could not visualize surface '{surface_name}'.\nReason: {error_msg}",
+        )
 
     def on_calculate_volume(self):
         """Handle the 'Calculate Volumes' action."""
         project = self.project_controller.get_current_project()
         if not project or len(project.surfaces) < 2:
-            QMessageBox.warning(self, "Cannot Calculate Volumes",
-                                "Please ensure at least two surfaces exist in the project.")
+            QMessageBox.warning(
+                self,
+                "Cannot Calculate Volumes",
+                "Please ensure at least two surfaces exist in the project.",
+            )
             self.logger.warning("Volume calculation attempted with insufficient surfaces.")
             return
 
@@ -535,7 +571,9 @@ class MainWindow(QMainWindow):
             if selection and resolution > 0:
                 existing_name = selection["existing"]
                 proposed_name = selection["proposed"]
-                self.logger.info(f"Starting volume calculation: Existing='{existing_name}', Proposed='{proposed_name}', Resolution={resolution}")
+                self.logger.info(
+                    f"Starting volume calculation: Existing='{existing_name}', Proposed='{proposed_name}', Resolution={resolution}"
+                )
                 self.statusBar().showMessage(f"Calculating volumes (Grid: {resolution})...", 0)
 
                 try:
@@ -544,10 +582,10 @@ class MainWindow(QMainWindow):
                     proposed_surface = project.get_surface(proposed_name)
 
                     if not existing_surface or not proposed_surface:
-                         raise ValueError("Selected surface(s) not found in project.")
+                        raise ValueError("Selected surface(s) not found in project.")
 
                     if not existing_surface.points or not proposed_surface.points:
-                         raise ValueError("Selected surface(s) have no data points for calculation.")
+                        raise ValueError("Selected surface(s) have no data points for calculation.")
 
                     # VolumeCalculator expects the active Project so it can
                     # extend bounding boxes with regions and log context.
@@ -561,8 +599,13 @@ class MainWindow(QMainWindow):
                     fill_volume = results["fill_volume"]
                     net_volume = results["net_volume"]
 
-                    self.statusBar().showMessage(f"Calculation complete: Cut={cut_volume:.2f}, Fill={fill_volume:.2f}, Net={net_volume:.2f}", 5000)
-                    self.logger.info(f"Volume calculation successful: Cut={cut_volume:.2f}, Fill={fill_volume:.2f}, Net={net_volume:.2f}")
+                    self.statusBar().showMessage(
+                        f"Calculation complete: Cut={cut_volume:.2f}, Fill={fill_volume:.2f}, Net={net_volume:.2f}",
+                        5000,
+                    )
+                    self.logger.info(
+                        f"Volume calculation successful: Cut={cut_volume:.2f}, Fill={fill_volume:.2f}, Net={net_volume:.2f}"
+                    )
 
                     report_dialog = ReportDialog(
                         existing_surface_name=existing_name,
@@ -578,16 +621,19 @@ class MainWindow(QMainWindow):
 
                 except Exception as e:
                     self.logger.exception(f"Error during volume calculation: {e}")
-                    QMessageBox.critical(self, "Calculation Error",
-                                         f"Failed to calculate volumes:\n{e}")
+                    QMessageBox.critical(
+                        self, "Calculation Error", f"Failed to calculate volumes:\n{e}"
+                    )
                     self.statusBar().showMessage("Volume calculation failed.", 5000)
             else:
-                 if resolution <= 0:
+                if resolution <= 0:
                     self.logger.warning("Volume calculation cancelled: Invalid grid resolution.")
-                    QMessageBox.warning(self, "Invalid Input", "Grid resolution must be greater than zero.")
-                 else:
+                    QMessageBox.warning(
+                        self, "Invalid Input", "Grid resolution must be greater than zero."
+                    )
+                else:
                     self.logger.warning("Volume calculation cancelled: Invalid surface selection.")
-                 self.statusBar().showMessage("Calculation cancelled.", 3000)
+                self.statusBar().showMessage("Calculation cancelled.", 3000)
         else:
             self.logger.info("Volume calculation dialog cancelled by user.")
             self.statusBar().showMessage("Calculation cancelled.", 3000)
@@ -599,7 +645,7 @@ class MainWindow(QMainWindow):
         if self.project_controller._confirm_close_project():
             # Perform any MainWindow-specific cleanup before closing
             if hasattr(self, "visualization_panel"):
-                 self.visualization_panel.clear_pdf_background()
+                self.visualization_panel.clear_pdf_background()
             self.logger.info("Closing application.")
             event.accept()
         else:
@@ -679,7 +725,9 @@ class MainWindow(QMainWindow):
             self.polyline_handler._on_item_selected(item)
 
     @Slot(str, int, float)
-    def _apply_elevation_edit(self, layer_name: str, index: int, new_elevation: Optional[float]):  # noqa: D401 – delegate
+    def _apply_elevation_edit(
+        self, layer_name: str, index: int, new_elevation: Optional[float]
+    ):  # noqa: D401 – delegate
         """Delegate to PolylineInteractionHandler implementation."""
         if hasattr(self, "polyline_handler"):
             self.polyline_handler._apply_elevation_edit(layer_name, index, new_elevation)
@@ -696,9 +744,7 @@ class MainWindow(QMainWindow):
 
         # Check if Delete key is pressed and an item is selected
         if key == Qt.Key_Delete and self._selected_scene_item is not None:
-            self.logger.debug(
-                "Delete key pressed for selected item: %s", self._selected_scene_item
-            )
+            self.logger.debug("Delete key pressed for selected item: %s", self._selected_scene_item)
             # Delegate deletion logic to PolylineInteractionHandler
             if hasattr(self, "polyline_handler"):
                 self.polyline_handler._delete_selected_polyline()
@@ -728,23 +774,26 @@ class MainWindow(QMainWindow):
             self.ui_state.update_view_actions_state()
 
     # --- END NEW ---
- # --- Restore Method for Controller to Update UI ---
+    # --- Restore Method for Controller to Update UI ---
     def _update_ui_for_project(self, project: Optional[Project]):
         """Update all relevant UI components based on the (new) project state."""
-        self.logger.info(f"[_update_ui_for_project] Called with project: {project.name if project else 'None'}") # ADDED LOG
+        self.logger.info(
+            f"[_update_ui_for_project] Called with project: {project.name if project else 'None'}"
+        )  # ADDED LOG
 
         self._update_window_title()
-        self._update_layer_tree() # project_panel.update_project_tree()
+        self._update_layer_tree()  # project_panel.update_project_tree()
 
-        if hasattr(self, "project_panel"): self.project_panel.set_project(project)
-        self._update_analysis_actions_state() # Update menu/toolbar item enabled state
-        self._update_pdf_controls() # Update PDF controls based on project state
-        self._update_window_title() # Update window title
+        if hasattr(self, "project_panel"):
+            self.project_panel.set_project(project)
+        self._update_analysis_actions_state()  # Update menu/toolbar item enabled state
+        self._update_pdf_controls()  # Update PDF controls based on project state
+        self._update_window_title()  # Update window title
         if hasattr(self, "prop_dock"):
-            self.prop_dock.clear_selection() # Clear properties dock
-            if self._selected_scene_item is None: # Don't hide if something is selected
+            self.prop_dock.clear_selection()  # Clear properties dock
+            if self._selected_scene_item is None:  # Don't hide if something is selected
                 self.prop_dock.hide()
-        self._clear_cutfill_state() # Clear any stale cut/fill viz
+        self._clear_cutfill_state()  # Clear any stale cut/fill viz
         # --- Ensure view actions are updated after project load/change ---
         self._update_view_actions_state()
         # --- End ensure ---
@@ -774,7 +823,9 @@ class MainWindow(QMainWindow):
                 self.pdf_thumbnail_dock.hide()
 
         # Update visualization panel with the project (this will load surfaces, PDF, etc.)
-        self.logger.info(f"[_update_ui_for_project] About to call self.visualization_panel.set_project with: {project.name if project else 'None'}") # ADDED LOG
+        self.logger.info(
+            f"[_update_ui_for_project] About to call self.visualization_panel.set_project with: {project.name if project else 'None'}"
+        )  # ADDED LOG
         self.visualization_panel.set_project(project)
 
         # Update scale pill based on the project's scale status
@@ -782,23 +833,24 @@ class MainWindow(QMainWindow):
 
     # --- Restore Method to Update Window Title ---
     def _update_window_title(self):
-         """Sets the main window title based on the current project name and dirty state."""
-         # Check if project_controller exists before accessing it
-         if not hasattr(self, "project_controller"):
-              self.setWindowTitle("DigCalc") # Default title if controller not ready
-              return
-         project = self.project_controller.get_current_project()
-         base_title = "DigCalc"
-         if project:
-             title = f"{project.name} - {base_title}"
-             if project.filepath:
-                 # Ensure Path is imported (add 'from pathlib import Path' at the top if missing)
-                 title += f" [{Path(project.filepath).name}]"
-             if project.is_dirty:
-                 title += " *" # Indicate unsaved changes
-             self.setWindowTitle(title)
-         else:
-             self.setWindowTitle(base_title)
+        """Sets the main window title based on the current project name and dirty state."""
+        # Check if project_controller exists before accessing it
+        if not hasattr(self, "project_controller"):
+            self.setWindowTitle("DigCalc")  # Default title if controller not ready
+            return
+        project = self.project_controller.get_current_project()
+        base_title = "DigCalc"
+        if project:
+            title = f"{project.name} - {base_title}"
+            if project.filepath:
+                # Ensure Path is imported (add 'from pathlib import Path' at the top if missing)
+                title += f" [{Path(project.filepath).name}]"
+            if project.is_dirty:
+                title += " *"  # Indicate unsaved changes
+            self.setWindowTitle(title)
+        else:
+            self.setWindowTitle(base_title)
+
     # --- End Restore ---
     # --- NEW: Slot for Building Surface ---
     @Slot()
@@ -830,8 +882,8 @@ class MainWindow(QMainWindow):
         # --- END FIX ---
 
         if not layers_with_elevation:
-             # ... (no layers with elevation message) ...
-             return
+            # ... (no layers with elevation message) ...
+            return
 
         # Pass project to dialog
         dlg = BuildSurfaceDialog(project, self)
@@ -840,14 +892,14 @@ class MainWindow(QMainWindow):
             surface_name = dlg.surface_name()
 
             if not selected_layer or not surface_name:
-                 # ... (dialog error handling) ...
-                 return
+                # ... (dialog error handling) ...
+                return
 
             # Use project variable
             unique_surface_name = project.get_unique_surface_name(surface_name)
             if unique_surface_name != surface_name:
-                 # ... (adjust name) ...
-                 surface_name = unique_surface_name
+                # ... (adjust name) ...
+                surface_name = unique_surface_name
 
             # ... (logging and status) ...
 
@@ -856,31 +908,33 @@ class MainWindow(QMainWindow):
             try:
                 # Use project variable
                 polylines_to_build = project.traced_polylines.get(selected_layer, [])
-                
-                # Filter polylines: include if they have a top-level elevation 
+
+                # Filter polylines: include if they have a top-level elevation
                 # OR if their points are 3D.
                 temp_valid_polys = []
                 for p_data in polylines_to_build:
                     if not isinstance(p_data, dict):
                         continue
-                    
+
                     # Condition 1: Top-level elevation exists
                     if p_data.get("elevation") is not None:
                         temp_valid_polys.append(p_data)
-                        continue # Polyline is valid, no need to check points
-                    
+                        continue  # Polyline is valid, no need to check points
+
                     # Condition 2: Points list contains 3D coordinates
                     points = p_data.get("points")
                     if isinstance(points, list) and points:
                         first_point = points[0]
                         if isinstance(first_point, (list, tuple)) and len(first_point) == 3:
-                            if isinstance(first_point[2], (int, float)): # Check if Z is a number
+                            if isinstance(first_point[2], (int, float)):  # Check if Z is a number
                                 temp_valid_polys.append(p_data)
-                
+
                 valid_polys_for_build = temp_valid_polys
-                
+
                 if not valid_polys_for_build:
-                    raise SurfaceBuilderError(f"Layer '{selected_layer}' has no polylines with suitable elevation data for building.")
+                    raise SurfaceBuilderError(
+                        f"Layer '{selected_layer}' has no polylines with suitable elevation data for building."
+                    )
 
                 # Use project variable
                 current_layer_rev = project.layer_revisions.get(selected_layer, 0)
@@ -888,23 +942,25 @@ class MainWindow(QMainWindow):
 
                 surface = SurfaceBuilder.build_from_polylines(
                     layer_name=selected_layer,
-                    polylines_data=valid_polys_for_build, # Pass the filtered list
+                    polylines_data=valid_polys_for_build,  # Pass the filtered list
                     revision=current_layer_rev,
                 )
                 surface.name = surface_name
                 # Use project variable
                 project.add_surface(surface)
                 # --- CHANGE THIS LINE ---
-                self.visualization_panel.display_surface(surface) # Use display_surface
+                self.visualization_panel.display_surface(surface)  # Use display_surface
                 # --- END CHANGE ---
                 # ... (rest of UI updates and error handling) ...
 
                 if hasattr(self, "project_panel"):
                     self.project_panel._update_tree()
                 # --- ADD THIS ---
-                self._update_analysis_actions_state() # Check if calc button should be enabled
+                self._update_analysis_actions_state()  # Check if calc button should be enabled
                 # --- END ADD ---
-                self.statusBar().showMessage(f"Surface '{surface_name}' created from layer '{selected_layer}'.", 5000)
+                self.statusBar().showMessage(
+                    f"Surface '{surface_name}' created from layer '{selected_layer}'.", 5000
+                )
                 # Update the view action states now that content has changed
                 self._update_view_actions_state()
 
@@ -913,22 +969,25 @@ class MainWindow(QMainWindow):
                     self.project_controller.surfaces_rebuilt.emit()
 
                 # Update visualization - Use display_surface (defined in Part 4)
-                # --- CHANGE THIS LINE --- 
+                # --- CHANGE THIS LINE ---
                 if hasattr(self.visualization_panel, "display_surface"):
                     self.visualization_panel.display_surface(surface)
                 # --- END CHANGE ---
 
             except SurfaceBuilderError as e:
-                 logger.error(f"Surface build failed: {e}", exc_info=True)
-                 QMessageBox.warning(self, "Build Surface Error", str(e))
-                 self.statusBar().showMessage("Surface build failed.", 5000)
+                logger.error(f"Surface build failed: {e}", exc_info=True)
+                QMessageBox.warning(self, "Build Surface Error", str(e))
+                self.statusBar().showMessage("Surface build failed.", 5000)
             except Exception as e:
-                 logger.exception(f"Unexpected error during surface build: {e}")
-                 QMessageBox.critical(self, "Build Surface Error", f"An unexpected error occurred:\n{e}")
-                 self.statusBar().showMessage("Surface build failed (unexpected error).", 5000)
+                logger.exception(f"Unexpected error during surface build: {e}")
+                QMessageBox.critical(
+                    self, "Build Surface Error", f"An unexpected error occurred:\n{e}"
+                )
+                self.statusBar().showMessage("Surface build failed (unexpected error).", 5000)
         else:
-             logger.info("Build Surface dialog cancelled by user.")
-             self.statusBar().showMessage("Build surface cancelled.", 3000)
+            logger.info("Build Surface dialog cancelled by user.")
+            self.statusBar().showMessage("Build surface cancelled.", 3000)
+
     # --- END NEW ---
 
     # --- NEW: Rebuild Helpers ---
@@ -944,7 +1003,8 @@ class MainWindow(QMainWindow):
 
     def _rebuild_surface_now(self, project: Project, surface_name: str):
         """Rebuilds a specific surface if necessary."""
-        if not project: return # Check passed project
+        if not project:
+            return  # Check passed project
         surf = project.surfaces.get(surface_name)
 
         if not surf or not surf.source_layer_name:
@@ -955,46 +1015,60 @@ class MainWindow(QMainWindow):
         # Use project variable
         current_layer_rev = project.layer_revisions.get(layer, 0)
 
-        self.logger.debug(f"Rebuild check for '{surface_name}': Layer='{layer}', CurrentLayerRev={current_layer_rev}, SurfaceSavedRev={surf.source_layer_revision}")
+        self.logger.debug(
+            f"Rebuild check for '{surface_name}': Layer='{layer}', CurrentLayerRev={current_layer_rev}, SurfaceSavedRev={surf.source_layer_revision}"
+        )
 
         # --- Check if already up-to-date ---
-        if surf.source_layer_revision is not None and surf.source_layer_revision == current_layer_rev:
-             # --- Add specific log here ---
-             self.logger.info(f"CONDITION MET: Surface '{surface_name}' revision ({surf.source_layer_revision}) matches current layer revision ({current_layer_rev}). Skipping rebuild.")
-             # --- End add ---
-             self.logger.debug(f" -> Surface '{surface_name}' is already up-to-date (Revision {current_layer_rev}). Skipping rebuild.")
-             if surf.is_stale:
-                  # Restore original code to clear stale state
-                  surf.is_stale = False
-                  # Use project variable
-                  project.is_modified = True
-                  if hasattr(self.project_panel, "_update_tree_item_text"):
-                      self.project_panel._update_tree_item_text(surf.name)
-             return
+        if (
+            surf.source_layer_revision is not None
+            and surf.source_layer_revision == current_layer_rev
+        ):
+            # --- Add specific log here ---
+            self.logger.info(
+                f"CONDITION MET: Surface '{surface_name}' revision ({surf.source_layer_revision}) matches current layer revision ({current_layer_rev}). Skipping rebuild."
+            )
+            # --- End add ---
+            self.logger.debug(
+                f" -> Surface '{surface_name}' is already up-to-date (Revision {current_layer_rev}). Skipping rebuild."
+            )
+            if surf.is_stale:
+                # Restore original code to clear stale state
+                surf.is_stale = False
+                # Use project variable
+                project.is_modified = True
+                if hasattr(self.project_panel, "_update_tree_item_text"):
+                    self.project_panel._update_tree_item_text(surf.name)
+            return
 
-        self.logger.debug(f" -> Surface '{surface_name}' needs rebuild (SavedRev={surf.source_layer_revision} != CurrentRev={current_layer_rev}).")
+        self.logger.debug(
+            f" -> Surface '{surface_name}' needs rebuild (SavedRev={surf.source_layer_revision} != CurrentRev={current_layer_rev})."
+        )
         # ... (rest of rebuild logic) ...
 
         polys_data = project.traced_polylines.get(layer, [])
         valid_polys = [
-            p for p in polys_data
-            if isinstance(p, dict) and p.get("elevation") is not None
+            p for p in polys_data if isinstance(p, dict) and p.get("elevation") is not None
         ]
 
         if not valid_polys:
-            logger.warning(f"Layer '{layer}' has no valid polylines with elevation to rebuild surface '{surface_name}'. Marking as stale.")
+            logger.warning(
+                f"Layer '{layer}' has no valid polylines with elevation to rebuild surface '{surface_name}'. Marking as stale."
+            )
             surf.is_stale = True
             project.is_modified = True
-            if hasattr(self.project_panel, "_update_tree_item_text"): # Check if method exists
+            if hasattr(self.project_panel, "_update_tree_item_text"):  # Check if method exists
                 self.project_panel._update_tree_item_text(surf.name)
             return
 
-        self.statusBar().showMessage(f"Rebuilding surface '{surface_name}' from layer '{layer}'...", 0)
+        self.statusBar().showMessage(
+            f"Rebuilding surface '{surface_name}' from layer '{layer}'...", 0
+        )
         try:
             # Use SurfaceBuilder directly
             new_surf = SurfaceBuilder.build_from_polylines(layer, valid_polys, current_layer_rev)
-            new_surf.name = surface_name # Keep the original name
-            new_surf.is_stale = False # Mark as not stale
+            new_surf.name = surface_name  # Keep the original name
+            new_surf.is_stale = False  # Mark as not stale
 
             # Replace in project (use project variable)
             project.surfaces[surface_name] = new_surf
@@ -1004,31 +1078,40 @@ class MainWindow(QMainWindow):
             if hasattr(self.visualization_panel, "display_surface"):
                 self.visualization_panel.display_surface(new_surf)
             else:
-                 logger.error("VisualizationPanel does not have 'display_surface' method.")
+                logger.error("VisualizationPanel does not have 'display_surface' method.")
 
             # Update project panel
-            if hasattr(self.project_panel, "_update_tree_item_text"): # Check if method exists
+            if hasattr(self.project_panel, "_update_tree_item_text"):  # Check if method exists
                 self.project_panel._update_tree_item_text(new_surf.name)
 
-            self.logger.info(f"Successfully rebuilt surface '{surface_name}' from layer '{layer}' (New Rev: {current_layer_rev}).")
+            self.logger.info(
+                f"Successfully rebuilt surface '{surface_name}' from layer '{layer}' (New Rev: {current_layer_rev})."
+            )
             self.statusBar().showMessage(f"Surface '{surface_name}' rebuilt successfully.", 3000)
 
         except SurfaceBuilderError as e:
             logger.error(f"Failed to rebuild surface '{surface_name}': {e}")
-            QMessageBox.warning(self, "Rebuild Failed", f"Could not rebuild surface '{surface_name}':\n{e}")
+            QMessageBox.warning(
+                self, "Rebuild Failed", f"Could not rebuild surface '{surface_name}':\n{e}"
+            )
             self.statusBar().showMessage(f"Rebuild failed for '{surface_name}'.", 5000)
             surf.is_stale = True
             project.is_modified = True
-            if hasattr(self.project_panel, "_update_tree_item_text"): # Check if method exists
+            if hasattr(self.project_panel, "_update_tree_item_text"):  # Check if method exists
                 self.project_panel._update_tree_item_text(surf.name)
         except Exception as e:
             logger.exception(f"Unexpected error rebuilding surface '{surface_name}'")
-            QMessageBox.critical(self, "Rebuild Error", f"An unexpected error occurred rebuilding '{surface_name}':\n{e}")
+            QMessageBox.critical(
+                self,
+                "Rebuild Error",
+                f"An unexpected error occurred rebuilding '{surface_name}':\n{e}",
+            )
             self.statusBar().showMessage(f"Rebuild error for '{surface_name}'.", 5000)
             surf.is_stale = True
             project.is_modified = True
-            if hasattr(self.project_panel, "_update_tree_item_text"): # Check if method exists
-                 self.project_panel._update_tree_item_text(surf.name)
+            if hasattr(self.project_panel, "_update_tree_item_text"):  # Check if method exists
+                self.project_panel._update_tree_item_text(surf.name)
+
     # --- End Rebuild Helpers ---
 
     def _clear_cutfill_state(self):
@@ -1042,15 +1125,22 @@ class MainWindow(QMainWindow):
         self.visualization_panel.clear_cutfill_map()
 
     @Slot(float, float, float, np.ndarray, np.ndarray, np.ndarray, bool)
-    def _on_volume_computed(self, cut: float, fill: float, net: float,
-                            dz_grid: Optional[np.ndarray],
-                            gx: Optional[np.ndarray],
-                            gy: Optional[np.ndarray],
-                            generate_map: bool):
+    def _on_volume_computed(
+        self,
+        cut: float,
+        fill: float,
+        net: float,
+        dz_grid: Optional[np.ndarray],
+        gx: Optional[np.ndarray],
+        gy: Optional[np.ndarray],
+        generate_map: bool,
+    ):
         """Handles the results of a volume calculation, including updating the cut/fill map.
         "
         """
-        self.logger.info(f"Volume computed: Cut={cut:.2f}, Fill={fill:.2f}, Net={net:.2f}, GenerateMap={generate_map}")
+        self.logger.info(
+            f"Volume computed: Cut={cut:.2f}, Fill={fill:.2f}, Net={net:.2f}, GenerateMap={generate_map}"
+        )
         # Display results (e.g., in a dialog or status bar)
         # Keep existing report dialog logic
         report_dialog = ReportDialog(cut, fill, net, self)
@@ -1068,9 +1158,11 @@ class MainWindow(QMainWindow):
                 self.visualization_panel.set_cutfill_visible(True)
                 self.logger.info("Cut/Fill map generated and displayed.")
             except Exception as e:
-                 self.logger.error(f"Failed to update visualization panel with cut/fill map: {e}", exc_info=True)
-                 QMessageBox.warning(self, "Map Error", f"Could not display the cut/fill map: {e}")
-                 self._clear_cutfill_state() # Reset on error
+                self.logger.error(
+                    f"Failed to update visualization panel with cut/fill map: {e}", exc_info=True
+                )
+                QMessageBox.warning(self, "Map Error", f"Could not display the cut/fill map: {e}")
+                self._clear_cutfill_state()  # Reset on error
         else:
             # If map wasn't generated or data was invalid, ensure it's cleared/disabled
             self.logger.info("Cut/Fill map not generated or data invalid, ensuring it is cleared.")
@@ -1194,6 +1286,7 @@ class MainWindow(QMainWindow):
     def _on_toggle_heatmap_overlay(self, checked: bool) -> None:  # noqa: D401
         """Handle user toggle of heat-map overlay setting."""
         from digcalc_project.src.services.settings_service import SettingsService
+
         SettingsService().set_enable_heatmap_overlay(checked)
 
         # Propagate to scene
@@ -1211,6 +1304,7 @@ class MainWindow(QMainWindow):
     def _on_toggle_zero_elev_highlight(self, checked: bool) -> None:  # noqa: D401
         """Handle user toggle of the zero-Z vertex highlight feature."""
         from digcalc_project.src.services.settings_service import SettingsService
+
         SettingsService().set_enable_zero_elev_highlight(checked)
 
         # Propagate to scene
@@ -1247,6 +1341,7 @@ class MainWindow(QMainWindow):
         """
         try:
             from ..pv_plotter_singleton import reset_plotter  # type: ignore
+
             reset_plotter()
         except Exception:
             # Either plotting backend not present or helper unavailable – fine

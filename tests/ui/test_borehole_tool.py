@@ -19,7 +19,8 @@ def main_window(qtbot):
     # ensure project exists with strata stack and one material so dialog combo has entry
     project = win.project_controller.get_current_project()
     if project.strata is None:
-        from digcalc_project.src.models.strata_models import StrataStack, Material
+        from digcalc_project.src.models.strata_models import Material, StrataStack
+
         project.strata = StrataStack(id=1, materials=[Material(id=1, name="Clay")])
     yield win
     win.close()
@@ -52,7 +53,9 @@ def test_borehole_place_and_undo(qtbot, main_window):
             break
     assert dlg is not None, "Editor dialog did not appear"
     qtbot.waitExposed(dlg)
-    qtbot.mouseClick(dlg.button_box.button(dlg.button_box.StandardButton.Ok), Qt.MouseButton.LeftButton)
+    qtbot.mouseClick(
+        dlg.button_box.button(dlg.button_box.StandardButton.Ok), Qt.MouseButton.LeftButton
+    )
 
     qtbot.waitUntil(lambda: _ellipse_count(scene) == before + 1)
 
@@ -62,4 +65,4 @@ def test_borehole_place_and_undo(qtbot, main_window):
 
 
 def test_true():
-    assert True 
+    assert True

@@ -26,6 +26,7 @@ def test_project_scale_from_direct():
     # Test ft_per_px alias
     assert scale.ft_per_px == scale.world_per_px
 
+
 def test_project_scale_from_ratio_ft():
     """Test creating ProjectScale using from_ratio with feet."""
     # Example: 1 inch on paper = 600 inches in world (which is 50 ft)
@@ -37,12 +38,13 @@ def test_project_scale_from_ratio_ft():
     assert scale.ratio_numer == 1.0
     assert scale.ratio_denom == 600.0
     assert scale.render_dpi_at_cal == 96.0
-    assert abs(scale.world_per_paper_in - 50.0) < 1e-9 # (600/1) / 12
+    assert abs(scale.world_per_paper_in - 50.0) < 1e-9  # (600/1) / 12
     assert isinstance(scale.calibrated_at, datetime)
 
     # Test world_per_px calculation
     # (50 ft/paper_in) / (96 px/paper_in) = 50/96 ft/px
     assert abs(scale.world_per_px - (50.0 / 96.0)) < 1e-9
+
 
 def test_project_scale_from_ratio_m():
     """Test creating ProjectScale using from_ratio with meters."""
@@ -55,16 +57,19 @@ def test_project_scale_from_ratio_m():
     assert scale.ratio_numer == 1.0
     assert scale.ratio_denom == 1000.0
     assert scale.render_dpi_at_cal == 100.0
-    assert abs(scale.world_per_paper_in - 25.4) < 1e-9 # (1000/1) * 0.0254
+    assert abs(scale.world_per_paper_in - 25.4) < 1e-9  # (1000/1) * 0.0254
     assert isinstance(scale.calibrated_at, datetime)
 
     # Test world_per_px calculation
     # (25.4 m/paper_in) / (100 px/paper_in) = 25.4/100 m/px
     assert abs(scale.world_per_px - (25.4 / 100.0)) < 1e-9
 
+
 def test_project_scale_from_two_point():
     """Test creating ProjectScale using the from_two_point factory method."""
-    scale = ProjectScale.from_two_point(world_units="yd", world_per_paper_in=10.0, render_dpi_at_cal=200.0)
+    scale = ProjectScale.from_two_point(
+        world_units="yd", world_per_paper_in=10.0, render_dpi_at_cal=200.0
+    )
     assert scale.input_method == "two_point"
     assert scale.world_units == "yd"
     assert scale.world_per_paper_in == 10.0
@@ -76,17 +81,19 @@ def test_project_scale_from_two_point():
     # Test world_per_px calculation
     assert scale.world_per_px == 10.0 / 200.0
 
+
 def test_world_per_px_calculation_direct():
     """Test the world_per_px property calculation for direct entry."""
     scale = ProjectScale(
         input_method="direct_entry",
         world_units="ft",
-        world_per_paper_in=20.0, # 20 ft per paper inch
-        render_dpi_at_cal=100.0,   # 100 pixels per paper inch
+        world_per_paper_in=20.0,  # 20 ft per paper inch
+        render_dpi_at_cal=100.0,  # 100 pixels per paper inch
     )
     # Expected: (20 ft / paper_in) / (100 px / paper_in) = 0.2 ft / px
     assert abs(scale.world_per_px - 0.2) < 1e-9
-    assert abs(scale.ft_per_px - 0.2) < 1e-9 # Alias check
+    assert abs(scale.ft_per_px - 0.2) < 1e-9  # Alias check
+
 
 def test_world_per_px_calculation_ratio():
     """Test the world_per_px property calculation for ratio entry."""
@@ -97,8 +104,8 @@ def test_world_per_px_calculation_ratio():
         input_method="ratio",
         world_units="ft",
         ratio_numer=1.0,
-        ratio_denom=240.0, # implies 240 world inches for 1 paper inch
-        world_per_paper_in=20.0, # Derived: (240/1)/12
+        ratio_denom=240.0,  # implies 240 world inches for 1 paper inch
+        world_per_paper_in=20.0,  # Derived: (240/1)/12
         render_dpi_at_cal=100.0,
     )
     # Expected: (20 ft / paper_in) / (100 px / paper_in) = 0.2 ft / px
@@ -111,12 +118,13 @@ def test_world_per_px_calculation_ratio():
         input_method="ratio",
         world_units="m",
         ratio_numer=1.0,
-        ratio_denom=100.0, # implies 100 world inches for 1 paper inch
-        world_per_paper_in=2.54, # Derived: (100/1) * 0.0254
+        ratio_denom=100.0,  # implies 100 world inches for 1 paper inch
+        world_per_paper_in=2.54,  # Derived: (100/1) * 0.0254
         render_dpi_at_cal=100.0,
     )
     # Expected: (2.54 m / paper_in) / (100 px / paper_in) = 0.0254 m / px
     assert abs(scale_m.world_per_px - 0.0254) < 1e-9
+
 
 def test_world_per_px_missing_world_per_paper_in():
     """Test world_per_px raises error if world_per_paper_in is missing and not calculable."""
@@ -125,12 +133,13 @@ def test_world_per_px_missing_world_per_paper_in():
     # The current ProjectScale model has world_per_paper_in as Optional.
     with pytest.raises(ValueError, match="world_per_paper_in is not set"):
         scale = ProjectScale(
-            input_method="direct_entry", # Or any other if world_per_paper_in isn't auto-calculated
+            input_method="direct_entry",  # Or any other if world_per_paper_in isn't auto-calculated
             world_units="ft",
             # world_per_paper_in is missing
             render_dpi_at_cal=100.0,
         )
-        _ = scale.world_per_px # Access the property
+        _ = scale.world_per_px  # Access the property
+
 
 def test_world_per_px_zero_dpi():
     """Test world_per_px raises error if render_dpi_at_cal is zero."""
@@ -139,17 +148,18 @@ def test_world_per_px_zero_dpi():
             input_method="direct_entry",
             world_units="ft",
             world_per_paper_in=20.0,
-            render_dpi_at_cal=0.0, # Invalid DPI
+            render_dpi_at_cal=0.0,  # Invalid DPI
         )
         _ = scale.world_per_px
 
-    with pytest.raises(ValidationError): # Pydantic validation should catch this first
+    with pytest.raises(ValidationError):  # Pydantic validation should catch this first
         ProjectScale(
             input_method="direct_entry",
             world_units="ft",
             world_per_paper_in=20.0,
             render_dpi_at_cal=0.0,
         )
+
 
 def test_pydantic_validations():
     """Test Pydantic field validations."""
@@ -171,16 +181,22 @@ def test_pydantic_validations():
     with pytest.raises(ValidationError):
         ProjectScale(input_method="direct_entry", world_per_paper_in=10, render_dpi_at_cal=-100)
 
+
 # Test aliases
 def test_inch_ft_alias():
     """Test inch_ft convenience alias."""
     # world_per_paper_in = 20 ft / paper_in
     # inch_ft (paper_in / world_ft) = 1 / 20 = 0.05
     scale = ProjectScale.from_direct(value=20.0, units="ft", render_dpi=100.0)
-    assert abs(scale.inch_ft - (1.0/20.0)) < 1e-9
+    assert abs(scale.inch_ft - (1.0 / 20.0)) < 1e-9
 
     with pytest.raises(ZeroDivisionError):
-        empty_scale = ProjectScale(input_method="direct_entry", world_per_paper_in=0, render_dpi_at_cal=100, world_units="ft")
+        empty_scale = ProjectScale(
+            input_method="direct_entry",
+            world_per_paper_in=0,
+            render_dpi_at_cal=100,
+            world_units="ft",
+        )
         # This will fail pydantic validation first, but if it didn't:
         # _ = empty_scale.inch_ft
 
@@ -191,7 +207,7 @@ def test_pixel_ft_alias():
     # render_dpi_at_cal = 100 px / paper_in
     # pixel_ft (px / world_ft) = render_dpi_at_cal / world_per_paper_in = 100 / 20 = 5
     scale = ProjectScale.from_direct(value=20.0, units="ft", render_dpi=100.0)
-    assert abs(scale.pixel_ft - (100.0/20.0)) < 1e-9
+    assert abs(scale.pixel_ft - (100.0 / 20.0)) < 1e-9
 
     # Test zero world_per_paper_in (should be caught by Pydantic validation if not optional)
     # If world_per_paper_in is None or 0, pixel_ft should handle it (e.g. return 0 or raise)
@@ -204,8 +220,11 @@ def test_pixel_ft_alias():
     # assert scale_zero_world.pixel_ft == 0 # based on current logic in model.
 
     # If world_per_paper_in is None
-    scale_none_world = ProjectScale(input_method="direct_entry", render_dpi_at_cal=100, world_units="ft") # world_per_paper_in is None
-    assert scale_none_world.pixel_ft == 0 # Relies on world_per_paper_in property being None
+    scale_none_world = ProjectScale(
+        input_method="direct_entry", render_dpi_at_cal=100, world_units="ft"
+    )  # world_per_paper_in is None
+    assert scale_none_world.pixel_ft == 0  # Relies on world_per_paper_in property being None
+
 
 def test_to_dict_serialization():
     """Test the to_dict method for serialization."""
@@ -213,9 +232,9 @@ def test_to_dict_serialization():
     scale = ProjectScale(
         input_method="ratio",
         world_units="m",
-        world_per_paper_in=2.54, # 1in * (100in/in_paper) * (0.0254m/in_world)
+        world_per_paper_in=2.54,  # 1in * (100in/in_paper) * (0.0254m/in_world)
         ratio_numer=1.0,
-        ratio_denom=100.0, # 1:100 (paper_in : world_in)
+        ratio_denom=100.0,  # 1:100 (paper_in : world_in)
         render_dpi_at_cal=96.0,
         calibrated_at=dt,
     )
@@ -229,7 +248,7 @@ def test_to_dict_serialization():
     assert scale_dict["render_dpi_at_cal"] == 96.0
     assert scale_dict["calibrated_at"] == dt.isoformat()
     # Check derived properties are also in the dict
-    assert "pixel_ft" in scale_dict # This name is a bit misleading if units are 'm'
+    assert "pixel_ft" in scale_dict  # This name is a bit misleading if units are 'm'
     assert "inch_ft" in scale_dict  # This name is also misleading if units are 'm'
 
     # world_per_px = 2.54 / 96
@@ -237,6 +256,7 @@ def test_to_dict_serialization():
     assert abs(scale_dict["pixel_ft"] - (96.0 / 2.54)) < 1e-9
     # inch_ft is 1 / world_per_paper_in = 1 / 2.54
     assert abs(scale_dict["inch_ft"] - (1.0 / 2.54)) < 1e-9
+
 
 def test_from_dict_deserialization():
     """Test the from_dict class method for deserialization."""
@@ -261,6 +281,7 @@ def test_from_dict_deserialization():
     assert scale.ratio_numer is None
     assert scale.ratio_denom is None
 
+
 def test_from_dict_missing_optional_fields():
     """Test from_dict with missing optional fields (ratio_numer, ratio_denom)."""
     dt_iso = datetime.utcnow().isoformat()
@@ -273,9 +294,10 @@ def test_from_dict_missing_optional_fields():
         "render_dpi_at_cal": 150.0,
         "calibrated_at": dt_iso,
     }
-    scale = ProjectScale.from_dict(data) # Pydantic will use defaults or None for optionals
+    scale = ProjectScale.from_dict(data)  # Pydantic will use defaults or None for optionals
     assert scale.ratio_numer is None
     assert scale.ratio_denom is None
+
 
 def test_world_per_px_dynamic_calculation_for_ratio_if_world_per_paper_in_is_none():
     """Test if world_per_px can dynamically calculate from ratio components
@@ -287,7 +309,7 @@ def test_world_per_px_dynamic_calculation_for_ratio_if_world_per_paper_in_is_non
         world_units="ft",
         # world_per_paper_in=None, # Explicitly None
         ratio_numer=1.0,
-        ratio_denom=600.0, # 1:600 inches -> 50 ft/in
+        ratio_denom=600.0,  # 1:600 inches -> 50 ft/in
         render_dpi_at_cal=100.0,
     )
     # Expected world_per_paper_in from ratio parts = (600/1)/12 = 50 ft/in
@@ -299,7 +321,7 @@ def test_world_per_px_dynamic_calculation_for_ratio_if_world_per_paper_in_is_non
         world_units="m",
         # world_per_paper_in=None,
         ratio_numer=1.0,
-        ratio_denom=100.0, # 1:100 inches -> 100 * 0.0254 = 2.54 m/in
+        ratio_denom=100.0,  # 1:100 inches -> 100 * 0.0254 = 2.54 m/in
         render_dpi_at_cal=100.0,
     )
     # Expected world_per_paper_in from ratio parts = (100/1) * 0.0254 = 2.54 m/in
@@ -320,7 +342,9 @@ def test_world_per_px_dynamic_calculation_for_ratio_if_world_per_paper_in_is_non
     # The dynamic calculation is a fallback.
 
     # Re-test `from_ratio` to ensure `world_per_paper_in` is set
-    scale_m_via_factory = ProjectScale.from_ratio(numer=1.0, denom=100.0, units="m", render_dpi=100.0)
+    scale_m_via_factory = ProjectScale.from_ratio(
+        numer=1.0, denom=100.0, units="m", render_dpi=100.0
+    )
     assert abs(scale_m_via_factory.world_per_paper_in - (100.0 * 0.0254)) < 1e-9
     assert abs(scale_m_via_factory.world_per_px - ((100.0 * 0.0254) / 100.0)) < 1e-9
 

@@ -16,7 +16,7 @@ from .file_parser import FileParser, FileParserError
 
 class DXFParser(FileParser):
     """Parser for DXF (AutoCAD) files.
-    
+
     This is a stub implementation that will be expanded in the future.
     Currently it wraps the existing DXFImporter class.
     """
@@ -33,7 +33,7 @@ class DXFParser(FileParser):
     @classmethod
     def get_supported_extensions(cls) -> List[str]:
         """Get the list of file extensions supported by this parser.
-        
+
         Returns:
             List of file extensions
 
@@ -47,7 +47,7 @@ class DXFParser(FileParser):
         Args:
             file_path: Path to the DXF file
             options: Optional dictionary of parser-specific options (e.g., layer_name)
-            
+
         Returns:
             Surface object (currently None as not implemented)
 
@@ -55,7 +55,7 @@ class DXFParser(FileParser):
         self.logger.info(f"Parsing DXF file: {file_path} with options: {options}")
         self._file_path = file_path
         options = options or {}
-        layer_filter = options.get("layer_name") # Get layer name from options
+        layer_filter = options.get("layer_name")  # Get layer name from options
 
         # Reset internal state
         self._points = []
@@ -103,7 +103,7 @@ class DXFParser(FileParser):
 
     def validate(self) -> bool:
         """Validate the parsed data.
-        
+
         Returns:
             bool: True if data is valid, False otherwise
 
@@ -113,7 +113,7 @@ class DXFParser(FileParser):
 
     def get_points(self) -> List[Point3D]:
         """Get points from the parsed data.
-        
+
         Returns:
             List of Point3D objects
 
@@ -122,7 +122,7 @@ class DXFParser(FileParser):
 
     def get_contours(self) -> Dict[float, List[List[Point3D]]]:
         """Get contour lines from the parsed data.
-        
+
         Returns:
             Dictionary mapping elevations to lists of polylines
 
@@ -132,7 +132,7 @@ class DXFParser(FileParser):
     def get_layers(self) -> List[str]:
         """Get the list of layers in the DXF file.
         (Currently returns layers found during last parse attempt)
-        
+
         Returns:
             List of layer names
 
@@ -140,16 +140,16 @@ class DXFParser(FileParser):
         # Ideally, this would be a class method or helper that peeks
         # into the file without full parsing, like peek_headers in CSVParser
         if not self._file_path:
-             self.logger.warning("Cannot get layers: No file path set. Call parse first?")
-             return []
+            self.logger.warning("Cannot get layers: No file path set. Call parse first?")
+            return []
         try:
-             # Attempt to read layers quickly if not already cached
-             # Placeholder: Use a simplified importer or ezdxf directly here
-             # layers = quick_peek_dxf_layers(self._file_path)
-             # self._layers = layers
-             pass # For stub, rely on layers potentially found in parse
+            # Attempt to read layers quickly if not already cached
+            # Placeholder: Use a simplified importer or ezdxf directly here
+            # layers = quick_peek_dxf_layers(self._file_path)
+            # self._layers = layers
+            pass  # For stub, rely on layers potentially found in parse
         except Exception as e:
-             self.logger.error(f"Could not peek layers from {self._file_path}: {e}")
-             return []
+            self.logger.error(f"Could not peek layers from {self._file_path}: {e}")
+            return []
 
         return self._layers

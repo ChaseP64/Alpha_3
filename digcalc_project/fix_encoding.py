@@ -12,10 +12,10 @@ from pathlib import Path
 
 def fix_file_encoding(file_path: Path) -> bool:
     """Fix encoding issues in a single file.
-    
+
     Args:
         file_path: Path to the file
-        
+
     Returns:
         True if fixed, False if no changes or error
 
@@ -53,8 +53,9 @@ def fix_file_encoding(file_path: Path) -> bool:
                 except Exception:
                     print("  ⚠ UTF-16 failed, attempting direct binary cleanup...")
                     # Last resort: just remove all non-ASCII and control characters
-                    printable_content = bytes("".join(chr(c) if 32 <= c < 127 else " "
-                                              for c in cleaned_content), "utf-8")
+                    printable_content = bytes(
+                        "".join(chr(c) if 32 <= c < 127 else " " for c in cleaned_content), "utf-8"
+                    )
                     file_path.write_bytes(printable_content)
                     print("  ✓ Sanitized binary content")
                     return True
@@ -84,10 +85,10 @@ def fix_file_encoding(file_path: Path) -> bool:
 
 def recreate_file(file_path: Path) -> bool:
     """Recreate a problematic file by copying content line by line.
-    
+
     Args:
         file_path: Path to the file
-        
+
     Returns:
         True if fixed, False if error
 
@@ -139,11 +140,11 @@ def recreate_file(file_path: Path) -> bool:
 
 def fix_directory(directory: Path, include_subdirs: bool = True) -> int:
     """Fix encoding issues in all Python files in a directory.
-    
+
     Args:
         directory: Path to directory
         include_subdirs: Whether to process subdirectories
-        
+
     Returns:
         Number of files fixed
 
@@ -182,10 +183,10 @@ def fix_directory(directory: Path, include_subdirs: bool = True) -> int:
 
 def create_init_files(directory: Path) -> int:
     """Create clean __init__.py files in directories.
-    
+
     Args:
         directory: Root directory to start from
-        
+
     Returns:
         Number of files created
 

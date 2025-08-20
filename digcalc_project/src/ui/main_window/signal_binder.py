@@ -1,8 +1,9 @@
 from __future__ import annotations
+
 """Centralises the verbose Qt-signal wiring previously in ``MainWindow._connect_signals``."""
 
-from typing import TYPE_CHECKING
 import logging
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
     from .main_window import MainWindow
@@ -24,7 +25,9 @@ class SignalBinder:  # noqa: D101
         mw.new_project_action.triggered.connect(mw.project_controller.on_new_project)
         mw.open_project_action.triggered.connect(mw.project_controller.on_open_project)
         mw.save_project_action.triggered.connect(mw.project_controller.on_save_project)
-        mw.save_project_as_action.triggered.connect(lambda: mw.project_controller.on_save_project(save_as=True))
+        mw.save_project_as_action.triggered.connect(
+            lambda: mw.project_controller.on_save_project(save_as=True)
+        )
         mw.exit_action.triggered.connect(mw.close)
 
         # Trace-PDF action
@@ -71,14 +74,24 @@ class SignalBinder:  # noqa: D101
 
         # Analysis actions
         ah = mw.action_handler
-        mw.calculate_volume_action.triggered.connect(ah.calculate_volume)
-        mw.build_surface_action.triggered.connect(ah.build_surface)
-        mw.generate_report_action.triggered.connect(ah.generate_report)
-        mw.export_action.triggered.connect(ah.export_report)
-        mw.daylight_action.triggered.connect(ah.daylight_offset)
-        mw.masshaul_action.triggered.connect(ah.mass_haul)
-        mw.smart_clean_action.triggered.connect(ah.smart_clean)
-        mw.bulk_assign_surface_action.triggered.connect(ah.bulk_assign_surfaces)
+        if hasattr(ah, "calculate_volume"):
+            mw.calculate_volume_action.triggered.connect(ah.calculate_volume)
+        if hasattr(ah, "build_surface"):
+            mw.build_surface_action.triggered.connect(ah.build_surface)
+        if hasattr(ah, "generate_report"):
+            mw.generate_report_action.triggered.connect(ah.generate_report)
+        if hasattr(ah, "export_report"):
+            mw.export_action.triggered.connect(ah.export_report)
+        if hasattr(ah, "daylight_offset"):
+            mw.daylight_action.triggered.connect(ah.daylight_offset)
+        if hasattr(ah, "mass_haul"):
+            mw.masshaul_action.triggered.connect(ah.mass_haul)
+        if hasattr(ah, "smart_clean"):
+            mw.smart_clean_action.triggered.connect(ah.smart_clean)
+        if hasattr(ah, "bulk_assign_surfaces") and hasattr(mw, "bulk_assign_surface_action"):
+            mw.bulk_assign_surface_action.triggered.connect(ah.bulk_assign_surfaces)
+        if hasattr(mw, "templates_action") and hasattr(ah, "open_template_library"):
+            mw.templates_action.triggered.connect(ah.open_template_library)
 
         mw.about_action.triggered.connect(mw.on_about)
 
@@ -101,8 +114,14 @@ class SignalBinder:  # noqa: D101
                 mw.pdf_controller.pageSelected.connect(pdf._on_pdf_page_selected)
 
         # Tracing-mode radio buttons update SettingsService
-        mw.trace_point_action.triggered.connect(lambda _=False: mw.view_mode_handler._set_tracing_elev_mode("point"))
-        mw.trace_interpolate_action.triggered.connect(lambda _=False: mw.view_mode_handler._set_tracing_elev_mode("interpolate"))
-        mw.trace_line_action.triggered.connect(lambda _=False: mw.view_mode_handler._set_tracing_elev_mode("line"))
+        mw.trace_point_action.triggered.connect(
+            lambda _=False: mw.view_mode_handler._set_tracing_elev_mode("point")
+        )
+        mw.trace_interpolate_action.triggered.connect(
+            lambda _=False: mw.view_mode_handler._set_tracing_elev_mode("interpolate")
+        )
+        mw.trace_line_action.triggered.connect(
+            lambda _=False: mw.view_mode_handler._set_tracing_elev_mode("line")
+        )
 
-        logger.debug("Signal binding complete") 
+        logger.debug("Signal binding complete")

@@ -8,9 +8,9 @@ from __future__ import annotations
 
 from typing import Optional
 
-from PySide6.QtGui import QUndoCommand, QPen, QBrush
-from PySide6.QtWidgets import QGraphicsEllipseItem, QGraphicsScene
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QBrush, QPen, QUndoCommand
+from PySide6.QtWidgets import QGraphicsEllipseItem, QGraphicsScene
 
 from digcalc_project.src.models.strata_models import BoreholeLog, StrataStack
 
@@ -81,4 +81,4 @@ class AddBoreholeCommand(QUndoCommand):
     # ------------------------------------------------------------------
     def undo(self) -> None:  # noqa: D401
         self._stack.boreholes = [bh for bh in self._stack.boreholes if bh.id != self._bh.id]
-        self._remove_symbol() 
+        self._remove_symbol()

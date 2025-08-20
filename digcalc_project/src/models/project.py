@@ -15,16 +15,18 @@ import os
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
-from pydantic import BaseModel, Field, PrivateAttr, ConfigDict
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 from typing_extensions import TypedDict
 
 from .calculation import VolumeCalculation
+from .layer import Layer  # ADDED: Runtime import for Layer
 from .project_scale import ProjectScale  # NEW Pydantic model
 from .region import Region
-from .surface import Surface
-from .layer import Layer  # ADDED: Runtime import for Layer
 from .strata_models import StrataStack  # NEW import
+from .surface import Surface
+from .template import Template
 
 # Configure logging for the module
 logger = logging.getLogger(__name__)
@@ -33,6 +35,7 @@ logger = logging.getLogger(__name__)
 # if not logger.hasHandlers():
 #     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
+
 def _migrate_v1_to_v2(data: dict) -> dict:
     """Ensures the 'regions' key exists for loading older project versions."""
     if "regions" not in data:
@@ -40,12 +43,14 @@ def _migrate_v1_to_v2(data: dict) -> dict:
         data["regions"] = []
     return data
 
+
 # Type alias for clarity on the new polyline data structure
 class PolylineData(TypedDict):
     points: List[Union[Tuple[float, float], Tuple[float, float, float]]]
     elevation: Optional[float]
     is_strata: bool
     material_id: Optional[str]
+
 
 # Type alias for the main storage structure
 TracedPolylinesType = Dict[str, List[PolylineData]]
@@ -55,6 +60,7 @@ DEFAULT_LAYER = "Default Layer"
 # ------------------------------------------------------------------
 # Helper dict subclass BEFORE Project class so it's defined when referenced
 # ------------------------------------------------------------------
+
 
 class _LayerDict(dict):
     """Dictionary that also supports list-like append/extend for test convenience."""
@@ -85,10 +91,12 @@ class _LayerDict(dict):
                 raise KeyError(key) from exc
         return super().__getitem__(key)
 
+
 class Project(BaseModel):
     """
     Top-level model for a DigCalc project.
     """
+
     name: str = "Untitled Project"
     filepath: Optional[str] = None
     is_modified: bool = False
@@ -101,6 +109,7 @@ class Project(BaseModel):
     calculations: list[VolumeCalculation] = Field(default_factory=list)
     scale: ProjectScale | None = None
     regions: list[Region] = Field(default_factory=list)
+    templates: list[Template] = Field(default_factory=list)
     metadata: dict = Field(default_factory=dict)
     flags: list[str] = Field(default_factory=list)
     strata: StrataStack | None = None
@@ -112,7 +121,7 @@ class Project(BaseModel):
     # Store polylines as dict mapping layer name -> list of polylines
     # where each polyline is a list of (x, y) tuples
     traced_polylines: TracedPolylinesType = field(default_factory=dict)
-    is_dirty: bool = False # Track if project has unsaved changes
+    is_dirty: bool = False  # Track if project has unsaved changes
     # --- NEW: Layer Revisions ---
     # Dictionary to track revisions of layers (used for surface staleness)
     layer_revisions: Dict[str, int] = field(default_factory=lambda: defaultdict(int))
@@ -122,7 +131,12 @@ class Project(BaseModel):
     layer_objects: list["Layer"] = field(default_factory=list)
 
     # Pydantic config
-    model_config = ConfigDict(arbitrary_types_allowed=True, populate_by_name=True, extra="allow", ignored_types=(property,))
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        populate_by_name=True,
+        extra="allow",
+        ignored_types=(property,),
+    )
 
     # Author/creator meta-data
     author: str = "Unknown"
@@ -147,55 +161,55 @@ class Project(BaseModel):
         flat_list = []
         for layer_name in self.traced_polylines:
             for polyline_data in self.traced_polylines[layer_name]:
-                if "points" in polyline_data: # Check for robustness
+                if "points" in polyline_data:  # Check for robustness
                     flat_list.append(polyline_data["points"])
         return flat_list
 
     def add_surface(self, surface: Surface) -> None:
         """Add a surface to the project using its name as the key.
         Ensures the surface has a unique name before adding.
-        
+
         Args:
             surface: Surface to add
 
         """
         # Ensure name is unique before adding
         unique_name = self.get_unique_surface_name(surface.name)
-        surface.name = unique_name # Update surface name if modified
+        surface.name = unique_name  # Update surface name if modified
 
-        self.surfaces[surface.name] = surface # Use name as key
+        self.surfaces[surface.name] = surface  # Use name as key
         self.modified_at = datetime.datetime.now()
         logger.info(f"Surface '{surface.name}' added to project")
 
     def remove_surface(self, surface_name: str) -> bool:
         """Remove a surface from the project by name.
-        
+
         Args:
             surface_name: Name of the surface to remove
-            
+
         Returns:
             bool: True if surface was removed, False otherwise
 
         """
         if surface_name in self.surfaces:
-            del self.surfaces[surface_name] # Remove by key
+            del self.surfaces[surface_name]  # Remove by key
             self.modified_at = datetime.datetime.now()
             logger.info(f"Surface '{surface_name}' removed from project")
             return True
         logger.warning(f"Attempted to remove non-existent surface: '{surface_name}'")
         return False
 
-    def get_surface(self, name: str) -> Optional[Surface]: # Renamed for clarity
+    def get_surface(self, name: str) -> Optional[Surface]:  # Renamed for clarity
         """Get a surface by name directly from the dictionary.
-        
+
         Args:
             name: Surface name
-            
+
         Returns:
             Surface or None if not found
 
         """
-        return self.surfaces.get(name) # Use dict.get for safety
+        return self.surfaces.get(name)  # Use dict.get for safety
 
     def get_unique_surface_name(self, base_name: str) -> str:
         """Generates a unique surface name within the project.
@@ -220,7 +234,7 @@ class Project(BaseModel):
 
     def add_calculation(self, calculation: VolumeCalculation) -> None:
         """Add a volume calculation to the project.
-        
+
         Args:
             calculation: Volume calculation to add
 
@@ -232,11 +246,11 @@ class Project(BaseModel):
 
     def add_traced_polyline(
         self,
-        polyline: PolylineData, # Expect only the dictionary format now
+        polyline: PolylineData,  # Expect only the dictionary format now
         layer_name: str = "Existing Surface",
         revision_map: Optional[Dict[str, int]] = None,
-        strata: Optional[StrataStack] = None, # Add strata parameter
-    ) -> Optional[int]: # Return index on success, None on failure
+        strata: Optional[StrataStack] = None,  # Add strata parameter
+    ) -> Optional[int]:  # Return index on success, None on failure
         """Adds a traced polyline (as a PolylineData dictionary) to the specified layer.
 
         Args:
@@ -253,8 +267,10 @@ class Project(BaseModel):
         """
         # Validate the input dictionary
         if not isinstance(polyline, dict) or "points" not in polyline:
-            logger.warning(f"Invalid polyline data format provided for layer '{layer_name}'. Expected dict with 'points'. Skipping.")
-            return None # Failure
+            logger.warning(
+                f"Invalid polyline data format provided for layer '{layer_name}'. Expected dict with 'points'. Skipping."
+            )
+            return None  # Failure
 
         points_list = polyline.get("points")
         # Ensure points_list is actually a list before checking length
@@ -265,13 +281,20 @@ class Project(BaseModel):
             )
             return None  # Failure
 
-        elevation_val = polyline.get("elevation") # Will be None if MainWindow sent 3D points
+        elevation_val = polyline.get("elevation")  # Will be None if MainWindow sent 3D points
         # This logic correctly infers a uniform elevation if all Zs in 3D points are the same
         # and leaves elevation_val as None if Zs are different or points are 2D.
         if elevation_val is None and points_list:
             first_point_for_z_check = points_list[0]
-            if isinstance(first_point_for_z_check, (list, tuple)) and len(first_point_for_z_check) == 3:
-                z_values_in_points = {pt[2] for pt in points_list if isinstance(pt, (list, tuple)) and len(pt) == 3 and pt[2] is not None}
+            if (
+                isinstance(first_point_for_z_check, (list, tuple))
+                and len(first_point_for_z_check) == 3
+            ):
+                z_values_in_points = {
+                    pt[2]
+                    for pt in points_list
+                    if isinstance(pt, (list, tuple)) and len(pt) == 3 and pt[2] is not None
+                }
                 if len(z_values_in_points) == 1:
                     elevation_val = z_values_in_points.pop()
 
@@ -309,25 +332,33 @@ class Project(BaseModel):
                     z_desc = f"Uniform Z: {stored_uniform_elev} (all points at this Z)"
                 else:
                     # Check if all Zs are actually 0.0 or a mix
-                    all_zs = {pt[2] for pt in stored_points if isinstance(pt, (list, tuple)) and len(pt) == 3 and pt[2] is not None}
-                    if not all_zs: # No Z values or all are None
-                         z_desc = "2D points, Z assumed 0.0"
+                    all_zs = {
+                        pt[2]
+                        for pt in stored_points
+                        if isinstance(pt, (list, tuple)) and len(pt) == 3 and pt[2] is not None
+                    }
+                    if not all_zs:  # No Z values or all are None
+                        z_desc = "2D points, Z assumed 0.0"
                     elif len(all_zs) == 1:
-                         # This case should have been caught by elevation_val logic above, but for safety:
-                         z_desc = f"Uniform Z: {all_zs.pop()} (all points at this Z)"
+                        # This case should have been caught by elevation_val logic above, but for safety:
+                        z_desc = f"Uniform Z: {all_zs.pop()} (all points at this Z)"
                     else:
-                         z_desc = "Per-vertex Z"
-            elif stored_uniform_elev is not None: # 2D points with uniform elevation
+                        z_desc = "Per-vertex Z"
+            elif stored_uniform_elev is not None:  # 2D points with uniform elevation
                 z_desc = f"Uniform Z: {stored_uniform_elev}"
-            else: # 2D points, no uniform elevation
+            else:  # 2D points, no uniform elevation
                 z_desc = "2D points, Z assumed 0.0"
-        elif stored_uniform_elev is not None: # No points but has elevation? Unlikely. 
-             z_desc = f"Uniform Z: {stored_uniform_elev} (no points?)"
+        elif stored_uniform_elev is not None:  # No points but has elevation? Unlikely.
+            z_desc = f"Uniform Z: {stored_uniform_elev} (no points?)"
 
         logger.info(
             "Added polyline to layer '%s' (Index: %s, Points: %s, Elev: %s, New Rev: %s, Strata: %s).",
-            layer_name, new_index, len(stored_points), z_desc, new_revision,
-            polyline_obj_to_store.get('is_strata')
+            layer_name,
+            new_index,
+            len(stored_points),
+            z_desc,
+            new_revision,
+            polyline_obj_to_store.get("is_strata"),
         )
 
         # Ensure the layer object itself exists in self.layers
@@ -337,7 +368,7 @@ class Project(BaseModel):
             if layer_obj.name == layer_name:
                 existing_layer = layer_obj
                 break
-        
+
         if existing_layer is None:
             # Create a new Layer object with default settings if it doesn't exist
             # For now, using layer_name as id. Consider UUID if names aren't guaranteed unique by project.
@@ -346,30 +377,42 @@ class Project(BaseModel):
             new_layer = Layer(id=layer_name, name=layer_name, line_color=default_line_color)
             # --- END MODIFIED ---
             self.layer_objects.append(new_layer)  # Append to list for UI/styling
-            logger.info(f"[Project.add_traced_polyline] Created new Layer object: '{layer_name}' with default settings. ID(self): {id(self)}")
+            logger.info(
+                f"[Project.add_traced_polyline] Created new Layer object: '{layer_name}' with default settings. ID(self): {id(self)}"
+            )
         else:
-            logger.debug(f"[Project.add_traced_polyline] Layer '{layer_name}' already exists. ID(self): {id(self)}")
+            logger.debug(
+                f"[Project.add_traced_polyline] Layer '{layer_name}' already exists. ID(self): {id(self)}"
+            )
 
         if not isinstance(self.traced_polylines[layer_name], list):
-            logger.warning(f"Unexpected data type for layer '{layer_name}' polylines: {type(self.traced_polylines[layer_name])}")
+            logger.warning(
+                f"Unexpected data type for layer '{layer_name}' polylines: {type(self.traced_polylines[layer_name])}"
+            )
 
-        return new_index # Success, return index
+        return new_index  # Success, return index
 
     def remove_polyline(self, layer_name: str, polyline_index: int) -> bool:
         """Removes a polyline from a layer by its index."""
-        if layer_name in self.traced_polylines and 0 <= polyline_index < len(self.traced_polylines[layer_name]):
+        if layer_name in self.traced_polylines and 0 <= polyline_index < len(
+            self.traced_polylines[layer_name]
+        ):
             removed = self.traced_polylines[layer_name].pop(polyline_index)
 
             # --- Bump Revision ---
             new_revision = self._bump_layer_revision(layer_name)
             # --- End Bump ---
 
-            logger.info(f"Removed polyline at index {polyline_index} from layer '{layer_name}' (Elevation: {removed.get('elevation')}, New Rev: {new_revision}).")
-            if not self.traced_polylines[layer_name]: # Remove layer if empty
+            logger.info(
+                f"Removed polyline at index {polyline_index} from layer '{layer_name}' (Elevation: {removed.get('elevation')}, New Rev: {new_revision})."
+            )
+            if not self.traced_polylines[layer_name]:  # Remove layer if empty
                 del self.traced_polylines[layer_name]
                 logger.info(f"Removed empty layer: '{layer_name}'")
             return True
-        logger.warning(f"Could not remove polyline: Layer '{layer_name}' or index {polyline_index} not found.")
+        logger.warning(
+            f"Could not remove polyline: Layer '{layer_name}' or index {polyline_index} not found."
+        )
         return False
 
     def clear_traced_polylines(self):
@@ -377,10 +420,10 @@ class Project(BaseModel):
         if self.traced_polylines:
             # Keep is_dirty and modified_at updates if you want clearing to be an undoable/savable action
             # For now, let's assume clearing is a direct action and doesn't dirty the project unless polylines existed.
-            if any(self.traced_polylines.values()): # Only dirty if there was something to clear
+            if any(self.traced_polylines.values()):  # Only dirty if there was something to clear
                 self.is_dirty = True
                 self.modified_at = datetime.datetime.now()
-            self.traced_polylines.clear() 
+            self.traced_polylines.clear()
 
     def get_layers(self) -> List[str]:
         """Returns a list of layer names that contain traced polylines."""
@@ -389,7 +432,7 @@ class Project(BaseModel):
     def get_layer(self, layer_id: str) -> Optional["Layer"]:
         """Return the Layer with matching id from self.layers."""
         for lyr in self.layer_objects:
-            if getattr(lyr, "id", None) == layer_id: # Check id attribute
+            if getattr(lyr, "id", None) == layer_id:  # Check id attribute
                 return lyr
         return None
 
@@ -400,7 +443,11 @@ class Project(BaseModel):
             serializable_polys = []
             if isinstance(polys, list):
                 for poly_data in polys:
-                    if isinstance(poly_data, dict) and "points" in poly_data and isinstance(poly_data["points"], list):
+                    if (
+                        isinstance(poly_data, dict)
+                        and "points" in poly_data
+                        and isinstance(poly_data["points"], list)
+                    ):
                         # Ensure points are lists of numbers [x, y]
                         serializable_points = []
                         for pt in poly_data["points"]:
@@ -410,12 +457,14 @@ class Project(BaseModel):
                                 serializable_points.append([pt[0], pt[1]])
                             elif len(pt) >= 3:
                                 serializable_points.append([pt[0], pt[1], pt[2]])
-                        serializable_polys.append({
-                            "points": serializable_points,
-                            "elevation": poly_data.get("elevation"),
-                            "is_strata": poly_data.get("is_strata"),
-                            "material_id": poly_data.get("material_id"),
-                        })
+                        serializable_polys.append(
+                            {
+                                "points": serializable_points,
+                                "elevation": poly_data.get("elevation"),
+                                "is_strata": poly_data.get("is_strata"),
+                                "material_id": poly_data.get("material_id"),
+                            }
+                        )
             serializable_data[layer] = serializable_polys
         return serializable_data
 
@@ -423,7 +472,9 @@ class Project(BaseModel):
         """Saves the project data to a file in JSON format."""
         save_path = filename or self.filepath
         if not save_path:
-            logger.error("Cannot save project: No filename provided and project has no associated file.")
+            logger.error(
+                "Cannot save project: No filename provided and project has no associated file."
+            )
             return False
 
         self.filepath = save_path
@@ -433,13 +484,15 @@ class Project(BaseModel):
         try:
             scale_dict_data = None
             if self.scale:
-                scale_dict_data = self.scale.dict(exclude_none=True) # Use Pydantic's .dict()
+                scale_dict_data = self.scale.dict(exclude_none=True)  # Use Pydantic's .dict()
                 # Ensure datetime is ISO format string for JSON
-                if "calibrated_at" in scale_dict_data and isinstance(scale_dict_data["calibrated_at"], datetime.datetime):
+                if "calibrated_at" in scale_dict_data and isinstance(
+                    scale_dict_data["calibrated_at"], datetime.datetime
+                ):
                     scale_dict_data["calibrated_at"] = scale_dict_data["calibrated_at"].isoformat()
 
             data_to_save = {
-                "version": 2, # Bump version due to scale model change
+                "version": 2,  # Bump version due to scale model change
                 "name": self.name,
                 "description": self.description,
                 "created_at": self.created_at.isoformat(),
@@ -448,13 +501,14 @@ class Project(BaseModel):
                 "surfaces": {name: s.to_dict() for name, s in self.surfaces.items()},
                 "calculations": [c.to_dict() for c in self.calculations],
                 "regions": [r.to_dict() for r in self.regions],
+                "templates": [t.to_dict() for t in self.templates],
                 "metadata": self.metadata,
-                "scale": scale_dict_data, # Use the processed dict
+                "scale": scale_dict_data,  # Use the processed dict
                 "pdf_background_path": self.pdf_background_path,
                 "pdf_background_page": self.pdf_background_page,
                 "pdf_background_dpi": self.pdf_background_dpi,
                 "traced_polylines": self._serialisable_polylines(),
-                "layer_revisions": dict(self.layer_revisions), # Convert defaultdict
+                "layer_revisions": dict(self.layer_revisions),  # Convert defaultdict
                 "flags": self.flags,
                 "strata": self.strata.to_dict() if self.strata else None,
             }
@@ -462,7 +516,7 @@ class Project(BaseModel):
             with open(self.filepath, "w") as f:
                 json.dump(data_to_save, f, indent=4)
 
-            self.is_dirty = False # Mark as saved
+            self.is_dirty = False  # Mark as saved
             logger.info("Project saved successfully.")
             return True
 
@@ -473,7 +527,7 @@ class Project(BaseModel):
     @classmethod
     def load(cls, filename: str, pdf_service: Optional[Any] = None) -> Optional[Project]:
         """Loads a project from a JSON file."""
-        migrated = False # Track if any migration occurred
+        migrated = False  # Track if any migration occurred
 
         if not Path(filename).is_file():
             logger.error(f"Load failed: Project file not found at '{filename}'")
@@ -487,11 +541,11 @@ class Project(BaseModel):
 
             # --- Migration ---
             if project_version < 2:
-                 before_scale = data.get("scale")
-                 data = _migrate_project_scale_v1_to_v2(data)
-                 # Mark only if migration actually introduced/modified scale
-                 if data.get("scale") != before_scale:
-                     migrated = True
+                before_scale = data.get("scale")
+                data = _migrate_project_scale_v1_to_v2(data)
+                # Mark only if migration actually introduced/modified scale
+                if data.get("scale") != before_scale:
+                    migrated = True
 
             # Convert legacy world_per_in to ProjectScale (v3 shim)
             if project_version < 3:
@@ -518,8 +572,12 @@ class Project(BaseModel):
             # Load simple attributes
             project.description = data.get("description", "")
             try:
-                project.created_at = datetime.datetime.fromisoformat(data.get("created_at", datetime.datetime.now().isoformat()))
-                project.modified_at = datetime.datetime.fromisoformat(data.get("modified_at", project.created_at.isoformat()))
+                project.created_at = datetime.datetime.fromisoformat(
+                    data.get("created_at", datetime.datetime.now().isoformat())
+                )
+                project.modified_at = datetime.datetime.fromisoformat(
+                    data.get("modified_at", project.created_at.isoformat())
+                )
             except (ValueError, TypeError):
                 logger.warning("Invalid date format in project file, using current time.")
                 project.created_at = datetime.datetime.now()
@@ -536,7 +594,10 @@ class Project(BaseModel):
                     project.scale = ProjectScale(**scale_data)
                 except Exception as e_scale:
                     # If parsing fails, log it but continue with scale as None
-                    logging.getLogger(__name__).error(f"Failed to load/parse ProjectScale data: {e_scale}. Scale set to None.", exc_info=False)
+                    logging.getLogger(__name__).error(
+                        f"Failed to load/parse ProjectScale data: {e_scale}. Scale set to None.",
+                        exc_info=False,
+                    )
                     project.scale = None
             else:
                 project.scale = None
@@ -547,43 +608,68 @@ class Project(BaseModel):
                 for name, surface_data in surfaces_data.items():
                     try:
                         surface = Surface.from_dict(surface_data)
-                        project.surfaces[name] = surface # Add directly to dict
+                        project.surfaces[name] = surface  # Add directly to dict
                     except Exception as e_surf:
                         logger.error(f"Failed to load surface '{name}': {e_surf}", exc_info=True)
             else:
-                logger.warning("Surface data in project file is not a dictionary. Skipping surface load.")
+                logger.warning(
+                    "Surface data in project file is not a dictionary. Skipping surface load."
+                )
 
             # --- Load PDF Background Info (Directly from top level) ---
-            project.pdf_background_path = data.get("pdf_background_path") # Can be None
+            project.pdf_background_path = data.get("pdf_background_path")  # Can be None
             project.pdf_background_page = data.get("pdf_background_page", 1)
             project.pdf_background_dpi = data.get("pdf_background_dpi", 150)
             if project.pdf_background_path:
                 if not Path(project.pdf_background_path).is_file():
-                     logger.warning(f"PDF background path '{project.pdf_background_path}' in project file does not exist or is not accessible.")
+                    logger.warning(
+                        f"PDF background path '{project.pdf_background_path}' in project file does not exist or is not accessible."
+                    )
                 else:
-                     logger.info(f"Found PDF background path in project file: {project.pdf_background_path}")
+                    logger.info(
+                        f"Found PDF background path in project file: {project.pdf_background_path}"
+                    )
             else:
-                 logger.info("No PDF background path found in project file.")
+                logger.info("No PDF background path found in project file.")
 
             # --- Load Traced Polylines (Handle legacy list and new format) ---
             polylines_raw = data.get("traced_polylines", {})
             loaded_polylines_dict: TracedPolylinesType = {}
             if isinstance(polylines_raw, list):
                 # Handle legacy format: list of polylines (list of points)
-                logger.warning("Migrating legacy traced polylines (list) to new dictionary format under 'Legacy Traces' layer.")
+                logger.warning(
+                    "Migrating legacy traced polylines (list) to new dictionary format under 'Legacy Traces' layer."
+                )
                 legacy_polys_as_dicts = []
                 for poly_points in polylines_raw:
                     if isinstance(poly_points, list) and len(poly_points) >= 2:
                         try:
-                            points_tuples = [tuple(map(float, pt)) if isinstance(pt, list) and len(pt)==2 else tuple(pt) for pt in poly_points]
-                            if len(points_tuples) >= 2: # Check if conversion yielded enough valid points
-                                legacy_polys_as_dicts.append({"points": points_tuples, "elevation": None})
+                            points_tuples = [
+                                (
+                                    tuple(map(float, pt))
+                                    if isinstance(pt, list) and len(pt) == 2
+                                    else tuple(pt)
+                                )
+                                for pt in poly_points
+                            ]
+                            if (
+                                len(points_tuples) >= 2
+                            ):  # Check if conversion yielded enough valid points
+                                legacy_polys_as_dicts.append(
+                                    {"points": points_tuples, "elevation": None}
+                                )
                             else:
-                                logger.warning(f"Skipping invalid points within legacy polyline list: {poly_points}")
+                                logger.warning(
+                                    f"Skipping invalid points within legacy polyline list: {poly_points}"
+                                )
                         except (TypeError, ValueError) as conv_err:
-                             logger.warning(f"Error converting points in legacy polyline list: {conv_err}. Skipping: {poly_points}")
+                            logger.warning(
+                                f"Error converting points in legacy polyline list: {conv_err}. Skipping: {poly_points}"
+                            )
                     else:
-                         logger.warning(f"Skipping invalid item during legacy polyline migration: {poly_points}")
+                        logger.warning(
+                            f"Skipping invalid item during legacy polyline migration: {poly_points}"
+                        )
                 if legacy_polys_as_dicts:
                     loaded_polylines_dict["Legacy Traces"] = legacy_polys_as_dicts
                     migrated = True  # Mark dirty due to schema upgrade
@@ -594,26 +680,49 @@ class Project(BaseModel):
                     if isinstance(polys, list):
                         valid_polys = []
                         for p_data in polys:
-                            if isinstance(p_data, dict) and "points" in p_data and isinstance(p_data["points"], list):
+                            if (
+                                isinstance(p_data, dict)
+                                and "points" in p_data
+                                and isinstance(p_data["points"], list)
+                            ):
                                 try:
-                                    p_data["points"] = [tuple(map(float, pt)) if isinstance(pt, list) and len(pt)==2 else tuple(pt) for pt in p_data["points"]]
+                                    p_data["points"] = [
+                                        (
+                                            tuple(map(float, pt))
+                                            if isinstance(pt, list) and len(pt) == 2
+                                            else tuple(pt)
+                                        )
+                                        for pt in p_data["points"]
+                                    ]
                                     # Ensure elevation key exists
                                     p_data["elevation"] = p_data.get("elevation")
-                                    if len(p_data["points"]) >= 2: # Ensure enough valid points after conversion
-                                         valid_polys.append(p_data)
+                                    if (
+                                        len(p_data["points"]) >= 2
+                                    ):  # Ensure enough valid points after conversion
+                                        valid_polys.append(p_data)
                                     else:
-                                         logger.warning(f"Skipping polyline dict with < 2 valid points in layer '{layer}'. Data: {p_data}")
+                                        logger.warning(
+                                            f"Skipping polyline dict with < 2 valid points in layer '{layer}'. Data: {p_data}"
+                                        )
                                 except (TypeError, ValueError) as conv_err:
-                                      logger.warning(f"Error converting points in polyline dict: {conv_err}. Skipping polyline in layer '{layer}'. Data: {p_data}")
+                                    logger.warning(
+                                        f"Error converting points in polyline dict: {conv_err}. Skipping polyline in layer '{layer}'. Data: {p_data}"
+                                    )
                             else:
-                                logger.warning(f"Skipping invalid polyline data structure in layer '{layer}': {p_data}")
+                                logger.warning(
+                                    f"Skipping invalid polyline data structure in layer '{layer}': {p_data}"
+                                )
                         if valid_polys:
-                             loaded_polylines_dict[layer] = valid_polys
+                            loaded_polylines_dict[layer] = valid_polys
                     else:
-                         logger.warning(f"Invalid data type for layer '{layer}' polylines: {type(polys)}. Skipping layer.")
+                        logger.warning(
+                            f"Invalid data type for layer '{layer}' polylines: {type(polys)}. Skipping layer."
+                        )
             else:
                 # Keep this warning as it indicates a potentially corrupt file
-                logger.warning(f"Traced polyline data found but is in an unexpected format: {type(polylines_raw)}")
+                logger.warning(
+                    f"Traced polyline data found but is in an unexpected format: {type(polylines_raw)}"
+                )
 
             project.traced_polylines = loaded_polylines_dict
 
@@ -627,7 +736,9 @@ class Project(BaseModel):
                     saved_rev = surface.source_layer_revision
                     if saved_rev is None or saved_rev != current_rev:
                         surface.is_stale = True
-                        logger.info(f"Marking loaded surface '{surface_name}' as stale (SavedRev={saved_rev}, CurrentRev={current_rev}).")
+                        logger.info(
+                            f"Marking loaded surface '{surface_name}' as stale (SavedRev={saved_rev}, CurrentRev={current_rev})."
+                        )
                     else:
                         surface.is_stale = False
                 else:
@@ -635,6 +746,9 @@ class Project(BaseModel):
 
             # --- Load Regions ---
             project.regions = [Region.from_dict(r) for r in data.get("regions", [])]
+
+            # --- Load Templates ---
+            project.templates = [Template.from_dict(t) for t in data.get("templates", [])]
 
             # --- Load Strata (optional) ---
             strata_data = data.get("strata")
@@ -656,7 +770,9 @@ class Project(BaseModel):
             logger.error(f"Load failed: Invalid JSON format in '{filename}': {e}")
             return None
         except Exception as e:
-            logger.exception(f"Load failed: Unexpected error reading project file '{filename}': {e}")
+            logger.exception(
+                f"Load failed: Unexpected error reading project file '{filename}': {e}"
+            )
             return None
 
     def __repr__(self) -> str:
@@ -679,13 +795,16 @@ class Project(BaseModel):
         """
         self.layer_revisions[layer_name] += 1
         new_revision = self.layer_revisions[layer_name]
-        self.is_dirty = True # Bumping revision counts as modification
+        self.is_dirty = True  # Bumping revision counts as modification
         logger.debug(f"Bumped layer '{layer_name}' revision to {new_revision}")
         return new_revision
+
     # --- END NEW ---
+
 
 # --- NEW: Migration helper for ProjectScale v1 (dataclass) to v2 (Pydantic) ---
 # This should be defined at the module level in project.py
+
 
 def _migrate_project_scale_v1_to_v2(data: dict) -> dict:
     """Migrates old ProjectScale (dataclass-like dict) to new Pydantic ProjectScale structure."""
@@ -698,7 +817,7 @@ def _migrate_project_scale_v1_to_v2(data: dict) -> dict:
     # Old fields: px_per_in, world_units, world_per_in
     # New fields: input_method, world_units, world_per_paper_in, ratio_numer, ratio_denom, render_dpi_at_cal, calibrated_at
     try:
-        px_per_in = float(scale_data_v1.get("px_per_in", 96.0)) # Default if missing
+        px_per_in = float(scale_data_v1.get("px_per_in", 96.0))  # Default if missing
         world_units = str(scale_data_v1.get("world_units", "ft"))
         world_per_in = float(scale_data_v1.get("world_per_in", 0.0))
 
@@ -706,24 +825,31 @@ def _migrate_project_scale_v1_to_v2(data: dict) -> dict:
         # We don't have ratio_numer/denom for old data.
         # calibrated_at will be set to now by Pydantic default_factory if not provided.
         new_scale_data = {
-            "input_method": "two_point", # Assume old scales were effectively two-point or direct
+            "input_method": "two_point",  # Assume old scales were effectively two-point or direct
             "world_units": world_units,
             "world_per_paper_in": world_per_in,
             "render_dpi_at_cal": px_per_in,
-            "ratio_numer": None, # Not available in old format
-            "ratio_denom": None, # Not available in old format
+            "ratio_numer": None,  # Not available in old format
+            "ratio_denom": None,  # Not available in old format
             # "calibrated_at": datetime.datetime.utcnow().isoformat() # Or let Pydantic handle default
         }
         data["scale"] = new_scale_data
-        logger.info(f"Successfully migrated scale data for project. New scale dict: {new_scale_data}")
+        logger.info(
+            f"Successfully migrated scale data for project. New scale dict: {new_scale_data}"
+        )
     except Exception as e:
-        logger.error(f"Error migrating old scale data: {e}. Old scale data: {scale_data_v1}. Scale will be discarded.", exc_info=True)
-        data["scale"] = None # Discard problematic old scale data
+        logger.error(
+            f"Error migrating old scale data: {e}. Old scale data: {scale_data_v1}. Scale will be discarded.",
+            exc_info=True,
+        )
+        data["scale"] = None  # Discard problematic old scale data
     return data
+
 
 # Ensure existing migration functions are compatible or updated if they also touch 'scale'
 # def _migrate_v2_add_scale(st: dict) -> dict: ...
 # def _migrate_v1_to_v2(data: dict) -> dict: ... # This one was for regions, should be fine
+
 
 def _migrate_v2_add_scale(data: dict, project_render_dpi: float | None) -> dict:
     """Legacy projects (≤ v0.3) stored a bare `world_per_in` float.
@@ -752,7 +878,10 @@ def _migrate_v2_add_scale(data: dict, project_render_dpi: float | None) -> dict:
         data["scale"] = scale_obj.dict(exclude_none=True)
     except Exception as exc:
         # Keep this warning as it indicates a potential issue with legacy data conversion
-        logger.warning(f"Failed to convert legacy scale for world_per_in '{world_per_in}': {exc}", exc_info=False)
+        logger.warning(
+            f"Failed to convert legacy scale for world_per_in '{world_per_in}': {exc}",
+            exc_info=False,
+        )
         data["scale"] = None
         data["flags"] = data.get("flags", []) + ["scale-invalid"]
 

@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import json
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -16,7 +17,9 @@ except ImportError:
 TracedPolylinesType = Dict[str, List[PolylineData]]
 
 
-def _poly(*points: Tuple[float, float], elevation: Optional[float] = None, **kwargs) -> PolylineData:
+def _poly(
+    *points: Tuple[float, float], elevation: Optional[float] = None, **kwargs
+) -> PolylineData:
     """Creates a PolylineData dictionary from points and an optional elevation."""
     # This structure must match the PolylineData TypedDict definition
     data: PolylineData = {"points": list(points), "elevation": elevation}
@@ -34,7 +37,9 @@ def test_layer_storage_basic(caplog):
     pr.add_traced_polyline(_poly((10, 0), (10, 1), elevation=20.0), "Proposed Surface")
 
     # Test adding a polyline with fewer than 2 points (should be ignored)
-    pr.add_traced_polyline(_poly((5, 5), elevation=5.5), "Should Be Ignored") # This will be ignored by add_traced_polyline
+    pr.add_traced_polyline(
+        _poly((5, 5), elevation=5.5), "Should Be Ignored"
+    )  # This will be ignored by add_traced_polyline
 
     assert set(pr.traced_polylines.keys()) == {
         "Existing Surface",
@@ -43,7 +48,7 @@ def test_layer_storage_basic(caplog):
 
     assert len(pr.traced_polylines["Existing Surface"]) == 2
     assert len(pr.traced_polylines["Proposed Surface"]) == 1
-    assert "Should Be Ignored" not in pr.traced_polylines # Verify invalid polyline wasn't added
+    assert "Should Be Ignored" not in pr.traced_polylines  # Verify invalid polyline wasn't added
 
     # Check structure of added data
     assert pr.traced_polylines["Existing Surface"][0]["points"] == [(0.0, 0.0), (1.0, 1.0)]
@@ -80,8 +85,9 @@ def test_save_and_load_roundtrip(tmp_path: Path):
     assert not pr2.is_dirty, "is_dirty should be False after load"
 
     # Compare loaded Python object structure against original Python structure
-    assert pr2.traced_polylines == polyline_data_new_format, \
-        "Loaded polylines structure should match the original input structure"
+    assert (
+        pr2.traced_polylines == polyline_data_new_format
+    ), "Loaded polylines structure should match the original input structure"
 
 
 def test_legacy_migration(tmp_path: Path, caplog):
@@ -95,7 +101,7 @@ def test_legacy_migration(tmp_path: Path, caplog):
         "name": "legacy_project",
         "created_at": "2023-01-01T12:00:00",
         "modified_at": "2023-01-01T13:00:00",
-        "traced_polylines": legacy_poly_points_list, # The old list format
+        "traced_polylines": legacy_poly_points_list,  # The old list format
     }
     file = tmp_path / "legacy.json"
     file.write_text(json.dumps(legacy_data))
@@ -105,7 +111,9 @@ def test_legacy_migration(tmp_path: Path, caplog):
     assert pr is not None, "Legacy project load should succeed"
 
     # Check migration results
-    assert list(pr.traced_polylines.keys()) == ["Legacy Traces"], "Only 'Legacy Traces' layer should exist"
+    assert list(pr.traced_polylines.keys()) == [
+        "Legacy Traces"
+    ], "Only 'Legacy Traces' layer should exist"
     migrated_layer = pr.traced_polylines["Legacy Traces"]
     assert len(migrated_layer) == 2, "Both polylines should be migrated"
 
@@ -117,7 +125,7 @@ def test_legacy_migration(tmp_path: Path, caplog):
     assert isinstance(migrated_layer[0]["points"], list)
     # Ensure points are tuples after load
     assert all(isinstance(pt, tuple) for pt in migrated_layer[0]["points"])
-    assert migrated_layer[0]["points"] == [(0.0, 0.0), (1.0, 1.0)] # Compare points (now tuples)
+    assert migrated_layer[0]["points"] == [(0.0, 0.0), (1.0, 1.0)]  # Compare points (now tuples)
 
     assert isinstance(migrated_layer[1], dict)
     assert migrated_layer[1]["elevation"] is None
@@ -151,7 +159,7 @@ def test_load_invalid_polyline_format(tmp_path: Path, caplog):
 
     # Check logger warning for invalid format
     assert "Traced polyline data found but is in an unexpected format" in caplog.text
-    assert "<class 'str'>" in caplog.text # Check that the type was logged
+    assert "<class 'str'>" in caplog.text  # Check that the type was logged
 
 
 def test_load_missing_polylines_key(tmp_path: Path, caplog):

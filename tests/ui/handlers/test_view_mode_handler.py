@@ -46,4 +46,6 @@ def test_set_tracing_elev_mode(mock_main_window):
     handler._set_tracing_elev_mode("interpolate")
 
     mock_settings.set.assert_called_once_with("tracing.elevation_mode", "interpolate")
-    mock_main_window.visualization_panel.scene_2d.set_elevation_mode.assert_called_once_with("interpolate") 
+    mock_main_window.visualization_panel.scene_2d.set_elevation_mode.assert_called_once_with(
+        "interpolate"
+    )

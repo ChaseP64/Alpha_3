@@ -19,21 +19,25 @@ from PySide6.QtWidgets import (
 # Local imports - Use relative paths
 # Assuming parser types might be needed for isinstance checks or methods
 from ...core.importers.csv_parser import CSVParser
-from ...core.importers.file_parser import (
-    FileParser,  # Import base or specific parsers as needed
-)
+from ...core.importers.file_parser import FileParser  # Import base or specific parsers as needed
 
 
 class ImportOptionsDialog(QDialog):
     """Dialog for configuring import options for various file types."""
 
-    def __init__(self, parent: Optional[QWidget], parser: FileParser, default_name: str, filename: Optional[str] = None):
+    def __init__(
+        self,
+        parent: Optional[QWidget],
+        parser: FileParser,
+        default_name: str,
+        filename: Optional[str] = None,
+    ):
         super().__init__(parent)
         self.setWindowTitle("Import Options")
         self.parser = parser
-        self.filename = filename # Store filename for potential use (e.g., CSV header peek)
-        self.setMinimumWidth(400) # Increase minimum width for better layout
-        self.logger = logging.getLogger(__name__) # Added logger
+        self.filename = filename  # Store filename for potential use (e.g., CSV header peek)
+        self.setMinimumWidth(400)  # Increase minimum width for better layout
+        self.logger = logging.getLogger(__name__)  # Added logger
 
         layout = QVBoxLayout(self)
         form_layout = QFormLayout()
@@ -64,14 +68,14 @@ class ImportOptionsDialog(QDialog):
 
         self.setLayout(layout)
         self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
-        self.adjustSize() # Adjust size to fit contents
+        self.adjustSize()  # Adjust size to fit contents
 
     def get_surface_name(self) -> str:
         """Get the desired surface name entered by the user."""
         name = self.name_edit.text().strip()
         if not name:
-             self.logger.warning("Surface name was empty, using default.")
-             name = "Imported Surface" # Provide a fallback
+            self.logger.warning("Surface name was empty, using default.")
+            name = "Imported Surface"  # Provide a fallback
         return name
 
     def _add_parser_options(self, layout: QFormLayout):
@@ -133,17 +137,19 @@ class ImportOptionsDialog(QDialog):
         elif delimiter_text == " ":
             delimiter = " "
         else:
-            delimiter = delimiter_text # Use the text directly
+            delimiter = delimiter_text  # Use the text directly
 
-        if not delimiter: # Handle empty case gracefully
-             self.logger.debug("Delimiter text is empty, defaulting to comma for header peek.")
-             delimiter = ","
+        if not delimiter:  # Handle empty case gracefully
+            self.logger.debug("Delimiter text is empty, defaulting to comma for header peek.")
+            delimiter = ","
 
         self.logger.debug(f"Updating CSV columns: Skip={skip_rows}, Delimiter='{delimiter!r}'")
 
         try:
             # Ensure peek_headers can handle the potential delimiter
-            headers = self.parser.peek_headers(self.filename, num_lines=skip_rows + 1, delimiter=delimiter)
+            headers = self.parser.peek_headers(
+                self.filename, num_lines=skip_rows + 1, delimiter=delimiter
+            )
 
             # Clear existing items before adding new ones
             self.combo_x.clear()
@@ -155,13 +161,15 @@ class ImportOptionsDialog(QDialog):
                 self.combo_x.addItems(headers)
                 self.combo_y.addItems(headers)
                 self.combo_z.addItems(headers)
-                self._try_preselect_columns(headers) # Attempt to guess columns
+                self._try_preselect_columns(headers)  # Attempt to guess columns
             else:
-                 self.logger.warning(f"No headers could be read from '{self.filename}' with skip={skip_rows}, delim='{delimiter!r}'")
-                 err_msg = "- Cannot read headers -"
-                 self.combo_x.addItem(err_msg)
-                 self.combo_y.addItem(err_msg)
-                 self.combo_z.addItem(err_msg)
+                self.logger.warning(
+                    f"No headers could be read from '{self.filename}' with skip={skip_rows}, delim='{delimiter!r}'"
+                )
+                err_msg = "- Cannot read headers -"
+                self.combo_x.addItem(err_msg)
+                self.combo_y.addItem(err_msg)
+                self.combo_z.addItem(err_msg)
 
         except Exception as e:
             self.logger.exception(f"Error peeking headers for '{self.filename}': {e}")
@@ -199,11 +207,11 @@ class ImportOptionsDialog(QDialog):
 
         # If some were not preselected, default to first columns if possible
         if not selected_x and len(headers) > 0:
-             self.combo_x.setCurrentIndex(0)
+            self.combo_x.setCurrentIndex(0)
         if not selected_y and len(headers) > 1:
-             self.combo_y.setCurrentIndex(1)
+            self.combo_y.setCurrentIndex(1)
         if not selected_z and len(headers) > 2:
-             self.combo_z.setCurrentIndex(2)
+            self.combo_z.setCurrentIndex(2)
 
     def get_options(self) -> Dict:
         """Get the parser-specific options selected by the user."""
@@ -212,13 +220,13 @@ class ImportOptionsDialog(QDialog):
             # Handle delimiter text carefully
             delimiter_text = self.combo_delimiter.currentText()
             if delimiter_text == "\t":
-                 delimiter = "\t"
+                delimiter = "\t"
             elif delimiter_text == " ":
-                 delimiter = " "
+                delimiter = " "
             else:
-                 delimiter = delimiter_text
+                delimiter = delimiter_text
 
-            options["delimiter"] = delimiter if delimiter else "," # Default to comma if empty
+            options["delimiter"] = delimiter if delimiter else ","  # Default to comma if empty
             options["skip_rows"] = self.spin_skip_rows.value()
 
             x_col = self.combo_x.currentText()
@@ -226,17 +234,28 @@ class ImportOptionsDialog(QDialog):
             z_col = self.combo_z.currentText()
 
             # Basic validation: ensure columns are selected and different if possible
-            if x_col and y_col and z_col and not x_col.startswith("-") and not y_col.startswith("-") and not z_col.startswith("-"):
-                 cols = {x_col, y_col, z_col}
-                 if len(cols) < 3:
-                      self.logger.warning("Duplicate columns selected for X, Y, Z. Parser might behave unexpectedly.")
-                      # Maybe show a warning dialog here?
-                 options["x_col"] = x_col
-                 options["y_col"] = y_col
-                 options["z_col"] = z_col
+            if (
+                x_col
+                and y_col
+                and z_col
+                and not x_col.startswith("-")
+                and not y_col.startswith("-")
+                and not z_col.startswith("-")
+            ):
+                cols = {x_col, y_col, z_col}
+                if len(cols) < 3:
+                    self.logger.warning(
+                        "Duplicate columns selected for X, Y, Z. Parser might behave unexpectedly."
+                    )
+                    # Maybe show a warning dialog here?
+                options["x_col"] = x_col
+                options["y_col"] = y_col
+                options["z_col"] = z_col
             else:
-                 self.logger.error("Invalid column selection (missing or error state). Options not fully set.")
-                 # Potentially raise an error or return indication of failure?
+                self.logger.error(
+                    "Invalid column selection (missing or error state). Options not fully set."
+                )
+                # Potentially raise an error or return indication of failure?
 
         # Add elif blocks for other parsers
         # elif isinstance(self.parser, DXFParser):

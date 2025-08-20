@@ -14,8 +14,8 @@ Usage
 >>> diff = diff_percentage(polylines, ref)
 """
 
-from pathlib import Path
 import json
+from pathlib import Path
 from typing import List
 
 import numpy as np
@@ -34,6 +34,7 @@ __all__ = [
 # ---------------------------------------------------------------------------
 # Serialisation helpers
 # ---------------------------------------------------------------------------
+
 
 def to_jsonable(polylines: List[Polyline]):  # noqa: D401 – helper
     """Convert *polylines* to a JSON-serialisable structure."""
@@ -83,6 +84,7 @@ def load_golden(path: str | Path) -> List[Polyline]:  # noqa: D401
 # Diff helper
 # ---------------------------------------------------------------------------
 
+
 def diff_percentage(a: List[Polyline], b: List[Polyline]) -> float:  # noqa: D401
     """Return percentage difference between two polyline lists.
 
@@ -105,4 +107,4 @@ def diff_percentage(a: List[Polyline], b: List[Polyline]) -> float:  # noqa: D40
 
     # Treat discrepancy proportional to max_dist (ft).  Assuming map scale
     pct = min(100.0, (max_dist / 1.0) * 100)  # 1 ft reference scale
-    return pct 
+    return pct

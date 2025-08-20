@@ -11,14 +11,13 @@ import sys
 from typing import Optional
 
 
-def setup_logging(log_level: int = logging.INFO,
-                 log_file: Optional[str] = None) -> None:
+def setup_logging(log_level: int = logging.INFO, log_file: Optional[str] = None) -> None:
     """Set up application logging with the specified configuration.
-    
+
     Args:
         log_level: The logging level (default: logging.INFO)
         log_file: Optional path to a log file. If None, logs to console only.
-    
+
     Returns:
         None
 
@@ -58,10 +57,10 @@ def setup_logging(log_level: int = logging.INFO,
 
 def get_logger(name: str) -> logging.Logger:
     """Get a logger with the specified name.
-    
+
     Args:
         name: Name for the logger (typically __name__)
-    
+
     Returns:
         Logger: Configured logger instance
 

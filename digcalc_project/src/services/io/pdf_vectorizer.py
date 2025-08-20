@@ -7,10 +7,10 @@ Implementation will be completed in Steps 2–4.
 """
 
 from pathlib import Path
-from typing import List, Callable
+from typing import Callable, List
 
-import numpy as np
 import fitz  # PyMuPDF
+import numpy as np
 
 from ...core.geom.polyline import Polyline
 
@@ -59,13 +59,17 @@ class PDFVectorizer:
         if not pdf_path.exists():
             raise FileNotFoundError(pdf_path)
 
+        import logging
+        import time
+
+        t_open = time.perf_counter()
         with fitz.open(pdf_path) as doc:
             try:
                 page = doc.load_page(page_no)
             except ValueError as exc:
                 raise IndexError(f"Page index out of range: {page_no}") from exc
-
             drawings = self._extract_graphics(page)
+        t_after_extract = time.perf_counter()
 
         polylines: list[Polyline] = []
 
@@ -75,7 +79,7 @@ class PDFVectorizer:
         next_emit = 5000  # emit every 5k segments
 
         for poly, stroke_rgb, dash in drawings:
-            
+
             # normalise coordinates to world units
             norm_vertices = self._normalize(poly.vertices, scale, offset)
             poly.vertices = norm_vertices  # type: ignore[misc]
@@ -92,7 +96,19 @@ class PDFVectorizer:
         # ------------------------------------------------------------------
         # Post-processing: merge dash segments, simplify, smart-clean
         # ------------------------------------------------------------------
+        t_before_post = time.perf_counter()
         polylines = self._post_process(polylines)
+        t_done = time.perf_counter()
+
+        try:
+            logging.getLogger(__name__).debug(
+                "PDF vectorize timings: open+extract=%.2f ms, normalize=%.2f ms, post=%.2f ms",
+                (t_after_extract - t_open) * 1000.0,
+                (t_before_post - t_after_extract) * 1000.0,
+                (t_done - t_before_post) * 1000.0,
+            )
+        except Exception:
+            pass
 
         if progress_cb:
             progress_cb(total_segs, total_segs)  # ensure 100 %
@@ -102,7 +118,9 @@ class PDFVectorizer:
     # ------------------------------------------------------------------
     # Internal helpers – concrete implementations (Step-2)
     # ------------------------------------------------------------------
-    def _extract_graphics(self, page: "fitz.Page") -> list[tuple[Polyline, tuple[int, int, int] | None, tuple[float, ...] | None]]:
+    def _extract_graphics(
+        self, page: "fitz.Page"
+    ) -> list[tuple[Polyline, tuple[int, int, int] | None, tuple[float, ...] | None]]:
         """Return stroke-only polylines already flattened plus colour & dash info."""
 
         results: list[tuple[Polyline, tuple[int, int, int] | None, tuple[float, ...] | None]] = []
@@ -161,7 +179,9 @@ class PDFVectorizer:
     def _post_process(self, polylines: list[Polyline]) -> list[Polyline]:
         """Run dash merge, colinear simplification, and smart clean."""
 
-        from digcalc_project.src.services.cleaners.smart_clean import auto_run  # local import to avoid heavy deps at startup
+        from digcalc_project.src.services.cleaners.smart_clean import (  # local import to avoid heavy deps at startup
+            auto_run,
+        )
 
         grouped = group_by_style(polylines)
         merged: list[Polyline] = []
@@ -196,6 +216,7 @@ class PDFVectorizer:
             )
         return serialised
 
+
 # ------------------------------------------------------------------
 # Helper functions for dashed-stroke detection & polyline grouping
 # ------------------------------------------------------------------
@@ -208,7 +229,9 @@ def _is_dashed(dash: tuple[float, ...] | None) -> bool:
     return bool(dash and any(seg > 0 for seg in dash))
 
 
-def _merge_dashes(polylines: list["Polyline"], *, dist_tol: float = 1e-3, angle_tol_deg: float = 1.0) -> list["Polyline"]:
+def _merge_dashes(
+    polylines: list["Polyline"], *, dist_tol: float = 1e-3, angle_tol_deg: float = 1.0
+) -> list["Polyline"]:
     """Merge small dashed *segments* that form a long straight line.
 
     This simplistic implementation joins consecutive polylines whose end &
@@ -222,6 +245,7 @@ def _merge_dashes(polylines: list["Polyline"], *, dist_tol: float = 1e-3, angle_
     current = polylines[0].copy()
 
     import math
+
     for nxt in polylines[1:]:
         # Distance between endpoints
         if math.hypot(*(current.vertices[-1] - nxt.vertices[0])) > dist_tol:
@@ -232,10 +256,12 @@ def _merge_dashes(polylines: list["Polyline"], *, dist_tol: float = 1e-3, angle_
         # Direction vectors
         v1 = current.vertices[-1] - current.vertices[-2]
         v2 = nxt.vertices[1] - nxt.vertices[0] if len(nxt.vertices) > 1 else v1
+
         # Normalise
         def _unit(v):
             n = math.hypot(*v)
             return v / n if n else v
+
         if v1.shape != v2.shape:
             merged.append(current)
             current = nxt.copy()
@@ -261,4 +287,4 @@ def group_by_style(polylines: list["Polyline"]):
     for pl in polylines:
         key = (pl.stroke_rgb, tuple(pl.dash or ()))
         groups[key].append(pl)
-    return groups 
+    return groups

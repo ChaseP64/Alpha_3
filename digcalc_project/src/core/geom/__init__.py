@@ -1,3 +1,3 @@
 from .polyline import Polyline
 
-__all__ = ["Polyline"] 
+__all__ = ["Polyline"]

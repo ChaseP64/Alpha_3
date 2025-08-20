@@ -21,7 +21,7 @@ class PdfService(QObject):
     """Qt object emitting signals when PDF pages/thumbnails become available."""
 
     # Signals -----------------------------------------------------------------------------------
-    documentLoaded: Signal = Signal(int)           # page_count
+    documentLoaded: Signal = Signal(int)  # page_count
     thumbnailReady: Signal = Signal(int, QPixmap)  # (page, pixmap)
 
     # -----------------------------------------------------------------------------------------

@@ -2,11 +2,13 @@
 Handles user interactions related to polylines in the main window,
 such as drawing, selection, editing, and deletion.
 """
+
 from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING, Optional
 
-from PySide6.QtCore import QObject, Slot, Qt
+from PySide6.QtCore import QObject, Qt, Slot
 from PySide6.QtWidgets import QGraphicsItem, QGraphicsPathItem, QMessageBox
 
 from ...models.project import PolylineData
@@ -73,7 +75,9 @@ class PolylineInteractionHandler(QObject):
             item.setData(1, new_index)
             mw.project_panel._update_tree()
             mw._update_layer_tree()
-            mw.statusBar().showMessage(f"Polyline with per-vertex Z added to layer '{layer_name}'.", 3000)
+            mw.statusBar().showMessage(
+                f"Polyline with per-vertex Z added to layer '{layer_name}'.", 3000
+            )
 
             if mw.visualization_panel:
                 mw.visualization_panel.scene_2d.refresh_layer_item(layer_name, target_item=item)
@@ -92,6 +96,7 @@ class PolylineInteractionHandler(QObject):
 
         if mw._last_pad_elev is None:
             from ..dialogs.pad_elevation_dialog import PadElevationDialog
+
             dlg = PadElevationDialog(parent=mw)
             if dlg.exec() == QGraphicsPathItem.Accepted:
                 mw._last_pad_elev = dlg.elevation()
@@ -102,15 +107,20 @@ class PolylineInteractionHandler(QObject):
         project = mw.project_controller.get_current_project()
         surface = project.get_surface_by_name("Proposed")
         if not surface:
-            QMessageBox.warning(mw, "No Proposed Surface", "A 'Proposed' surface must exist to create a pad.")
+            QMessageBox.warning(
+                mw, "No Proposed Surface", "A 'Proposed' surface must exist to create a pad."
+            )
             return
 
         from ...core.geometry.surface_builder import SurfaceBuilder
+
         try:
             SurfaceBuilder.add_pad_to_surface(surface, points2d, pad_elevation)
             project.is_modified = True
             mw.visualization_panel.display_surface(surface)
-            mw.statusBar().showMessage(f"Pad added to 'Proposed' surface at elevation {pad_elevation}.", 5000)
+            mw.statusBar().showMessage(
+                f"Pad added to 'Proposed' surface at elevation {pad_elevation}.", 5000
+            )
             mw.project_controller.on_project_modified()
         except Exception as e:
             logger.exception("Failed to add pad to surface.")
@@ -149,15 +159,13 @@ class PolylineInteractionHandler(QObject):
 
         polyline_data = project.get_polyline(layer_name, index)
         if not polyline_data:
-            logger.error(f"Could not find polyline at index {index} in layer '{layer_name}' to update.")
+            logger.error(
+                f"Could not find polyline at index {index} in layer '{layer_name}' to update."
+            )
             return
 
         if "points" in polyline_data and polyline_data["points"]:
-            old_z = (
-                polyline_data["points"][0][2]
-                if len(polyline_data["points"][0]) > 2
-                else "N/A"
-            )
+            old_z = polyline_data["points"][0][2] if len(polyline_data["points"][0]) > 2 else "N/A"
 
             # Only update if the value actually changed (avoid churn)
             elevation_changed: bool = False
@@ -190,9 +198,7 @@ class PolylineInteractionHandler(QObject):
 
             # Refresh the 2-D scene item if it exists
             if hasattr(mw.visualization_panel, "scene_2d"):
-                scene_item = mw.visualization_panel.scene_2d.find_item_by_index(
-                    layer_name, index
-                )
+                scene_item = mw.visualization_panel.scene_2d.find_item_by_index(layer_name, index)
                 if scene_item:
                     mw.visualization_panel.scene_2d.refresh_layer_item(
                         layer_name, target_item=scene_item
@@ -219,32 +225,32 @@ class PolylineInteractionHandler(QObject):
             return
 
         item = self._selected_scene_item
-        
+
         # Layer name may be stored either under custom role (UserRole+1) in the
         # real app *or* role 0 in stripped-down test fixtures.  Try both.
         layer_name_val = item.data(Qt.UserRole + 1)
         if layer_name_val is None:
             layer_name_val = item.data(0)
-        
+
         index_val = item.data(1)
-        
+
         layer_name = ""
         index = -1
 
         if isinstance(layer_name_val, str):
             layer_name = layer_name_val
-        
+
         if isinstance(index_val, int):
             index = index_val
-        
+
         # Handle test fixtures where both are in role 1
         elif isinstance(index_val, str) and layer_name == "":
-             layer_name = index_val
-             index = 0
+            layer_name = index_val
+            index = 0
 
         if index == -1:
-             # Can't proceed without a valid index
-             return
+            # Can't proceed without a valid index
+            return
 
         reply = QMessageBox.question(
             mw,

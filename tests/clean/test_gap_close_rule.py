@@ -13,4 +13,4 @@ def test_gap_close_rule_merges_segments():
     RuleRegistry.register(GapCloseRule)
 
     result = RuleRegistry.evaluate([pl1, pl2])
-    assert len(result) == 1 
+    assert len(result) == 1

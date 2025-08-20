@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Unit tests for CSVParser.
 
-This module contains tests for the CSVParser class which handles importing 
+This module contains tests for the CSVParser class which handles importing
 point data from CSV files.
 """
 
@@ -245,7 +245,8 @@ class TestCSVParser:
         # Verify TINGenerator was called correctly
         mock_tin_generator.assert_called_once()
         mock_generator_instance.generate_from_points.assert_called_once_with(
-            parser._points, "Test Surface",
+            parser._points,
+            "Test Surface",
         )
 
         # Verify surface was created

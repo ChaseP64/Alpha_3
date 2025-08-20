@@ -14,9 +14,10 @@ import numpy as np
 # Define logger at module level
 logger = logging.getLogger(__name__)
 
+
 class Point3D:
     """Represents a 3D point with x, y, z coordinates.
-    
+
     Attributes:
         x: X coordinate (East)
         y: Y coordinate (North)
@@ -27,7 +28,7 @@ class Point3D:
 
     def __init__(self, x: float, y: float, z: float, point_id: Optional[str] = None):
         """Initialize a 3D point.
-        
+
         Args:
             x: X coordinate (East)
             y: Y coordinate (North)
@@ -53,9 +54,9 @@ class Point3D:
         if not isinstance(other, Point3D):
             return False
         return (
-            abs(self.x - other.x) < 1e-6 and
-            abs(self.y - other.y) < 1e-6 and
-            abs(self.z - other.z) < 1e-6
+            abs(self.x - other.x) < 1e-6
+            and abs(self.y - other.y) < 1e-6
+            and abs(self.z - other.z) < 1e-6
         )
 
     def __hash__(self) -> int:
@@ -84,18 +85,18 @@ class Point3D:
 
 class Triangle:
     """Represents a triangle in 3D space, defined by three points.
-    
+
     Attributes:
         p1, p2, p3: The three points defining the triangle
         id: Unique identifier for the triangle
 
     """
 
-    logger = logging.getLogger(__name__) # Add logger instance
+    logger = logging.getLogger(__name__)  # Add logger instance
 
     def __init__(self, p1: Point3D, p2: Point3D, p3: Point3D, triangle_id: Optional[str] = None):
         """Initialize a triangle.
-        
+
         Args:
             p1, p2, p3: The three points defining the triangle
             triangle_id: Optional unique identifier for the triangle
@@ -152,13 +153,15 @@ class Triangle:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any], points_map: Optional[Dict[str, Point3D]] = None) -> "Triangle":
+    def from_dict(
+        cls, data: Dict[str, Any], points_map: Optional[Dict[str, Point3D]] = None
+    ) -> "Triangle":
         """Create triangle from dictionary representation.
-        
+
         Args:
             data: Dictionary representation of triangle
             points_map: Optional map of point IDs to Point3D objects for linking
-        
+
         Returns:
             Triangle object
 
@@ -170,17 +173,19 @@ class Triangle:
             p2_id = data["p2"].get("id") if isinstance(data.get("p2"), dict) else None
             p3_id = data["p3"].get("id") if isinstance(data.get("p3"), dict) else None
 
-            if p1_id and p2_id and p3_id: # Ensure we got IDs
-                 # Use the ID as the key, fallback to creating from dict if ID not in map (shouldn't happen)
-                 p1 = points_map.get(p1_id, Point3D.from_dict(data["p1"]))
-                 p2 = points_map.get(p2_id, Point3D.from_dict(data["p2"]))
-                 p3 = points_map.get(p3_id, Point3D.from_dict(data["p3"]))
+            if p1_id and p2_id and p3_id:  # Ensure we got IDs
+                # Use the ID as the key, fallback to creating from dict if ID not in map (shouldn't happen)
+                p1 = points_map.get(p1_id, Point3D.from_dict(data["p1"]))
+                p2 = points_map.get(p2_id, Point3D.from_dict(data["p2"]))
+                p3 = points_map.get(p3_id, Point3D.from_dict(data["p3"]))
             else:
-                 # Fallback if point data doesn't look like expected dicts with IDs
-                 cls.logger.warning("Could not extract point IDs from triangle data during deserialization. Creating new points.")
-                 p1 = Point3D.from_dict(data["p1"])
-                 p2 = Point3D.from_dict(data["p2"])
-                 p3 = Point3D.from_dict(data["p3"])
+                # Fallback if point data doesn't look like expected dicts with IDs
+                cls.logger.warning(
+                    "Could not extract point IDs from triangle data during deserialization. Creating new points."
+                )
+                p1 = Point3D.from_dict(data["p1"])
+                p2 = Point3D.from_dict(data["p2"])
+                p3 = Point3D.from_dict(data["p3"])
 
         else:
             # Create new points if no map provided
@@ -193,7 +198,7 @@ class Triangle:
 
 class Surface:
     """Represents a 3D surface composed of points and triangles.
-    
+
     Attributes:
         name: Name of the surface
         points: Dictionary of points in the surface
@@ -218,7 +223,7 @@ class Surface:
         source_layer_revision: Optional[int] = None,
     ):
         """Initialize a surface.
-        
+
         Args:
             name: Name of the surface
             points: Dictionary of points in the surface
@@ -242,7 +247,7 @@ class Surface:
 
     def add_point(self, point: Point3D) -> None:
         """Add a point to the surface.
-        
+
         Args:
             point: Point to add
 
@@ -251,7 +256,7 @@ class Surface:
 
     def add_triangle(self, triangle: Triangle) -> None:
         """Add a triangle to the surface.
-        
+
         Args:
             triangle: Triangle to add
 
@@ -271,7 +276,9 @@ class Surface:
     grid_spacing: Optional[float] = None
     grid_origin: Optional[Tuple[float, float]] = None  # (x0, y0)
 
-    def set_grid_data(self, grid_data: "np.ndarray", spacing: float, origin: Tuple[float, float]) -> None:
+    def set_grid_data(
+        self, grid_data: "np.ndarray", spacing: float, origin: Tuple[float, float]
+    ) -> None:
         """Attach a numpy *grid_data* array to this Surface.
 
         The grid is assumed to be regularly spaced at *spacing* in both the X and
@@ -347,7 +354,7 @@ class Surface:
 
     def get_bounds(self) -> Optional[Tuple[float, float, float, float]]:
         """Get the bounds of the surface.
-        
+
         Returns:
             Tuple (xmin, ymin, xmax, ymax) or None if surface is empty
 
@@ -366,7 +373,7 @@ class Surface:
 
     def get_elevation_range(self) -> Optional[Tuple[float, float]]:
         """Get the elevation range of the surface.
-        
+
         Returns:
             Tuple (zmin, zmax) or None if surface is empty
 
@@ -416,7 +423,9 @@ class Surface:
 
         # --- Handle legacy list format for points ---
         if isinstance(points_data, list):
-            logger.warning(f"Loading legacy surface '{data.get('name', 'Unknown')}' with list of points.")
+            logger.warning(
+                f"Loading legacy surface '{data.get('name', 'Unknown')}' with list of points."
+            )
             # Assume list contains point data dicts, generate IDs if missing
             for i, p_data in enumerate(points_data):
                 if isinstance(p_data, dict):
@@ -428,13 +437,15 @@ class Surface:
                 else:
                     logger.warning(f"Skipping invalid point data in list at index {i}: {p_data}")
         elif isinstance(points_data, dict):
-             # --- Standard dictionary format ---
-             for pid, p_data in points_data.items():
-                  points_dict[pid] = Point3D.from_dict(p_data)
+            # --- Standard dictionary format ---
+            for pid, p_data in points_data.items():
+                points_dict[pid] = Point3D.from_dict(p_data)
         else:
-             logger.error(f"Invalid format for points data in surface '{data.get('name', 'Unknown')}': {type(points_data)}")
-             # Proceed with empty points dict? Or raise error?
-             # Let's proceed with empty for now.
+            logger.error(
+                f"Invalid format for points data in surface '{data.get('name', 'Unknown')}': {type(points_data)}"
+            )
+            # Proceed with empty points dict? Or raise error?
+            # Let's proceed with empty for now.
 
         # Deserialize triangles, linking to points
         triangles_dict: Dict[str, Triangle] = {}
@@ -442,7 +453,9 @@ class Surface:
 
         # --- Handle legacy list format for triangles ---
         if isinstance(triangles_data, list):
-            logger.warning(f"Loading legacy surface '{data.get('name', 'Unknown')}' with list of triangles.")
+            logger.warning(
+                f"Loading legacy surface '{data.get('name', 'Unknown')}' with list of triangles."
+            )
             # Assume list contains triangle data dicts
             for i, t_data in enumerate(triangles_data):
                 if isinstance(t_data, dict):
@@ -454,12 +467,14 @@ class Surface:
                 else:
                     logger.warning(f"Skipping invalid triangle data in list at index {i}: {t_data}")
         elif isinstance(triangles_data, dict):
-             # --- Standard dictionary format ---
-             for tid, t_data in triangles_data.items():
-                  triangles_dict[tid] = Triangle.from_dict(t_data, points_dict)
+            # --- Standard dictionary format ---
+            for tid, t_data in triangles_data.items():
+                triangles_dict[tid] = Triangle.from_dict(t_data, points_dict)
         else:
-             logger.error(f"Invalid format for triangles data in surface '{data.get('name', 'Unknown')}': {type(triangles_data)}")
-             # Proceed with empty triangles dict.
+            logger.error(
+                f"Invalid format for triangles data in surface '{data.get('name', 'Unknown')}': {type(triangles_data)}"
+            )
+            # Proceed with empty triangles dict.
 
         # Create the Surface instance
         surface = cls(

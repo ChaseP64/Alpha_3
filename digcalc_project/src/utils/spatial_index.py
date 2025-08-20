@@ -169,7 +169,9 @@ class QuadTree(Generic[_T]):
         my = 0.5 * (p1[1] + p2[1])
         self.insert(mx, my, payload)
 
-    def nearest_edge(self, centre: Point, radius: float) -> tuple[tuple[Point, Point], _T, float] | None:
+    def nearest_edge(
+        self, centre: Point, radius: float
+    ) -> tuple[tuple[Point, Point], _T, float] | None:
         """Return the closest edge *(p1, p2, payload, dist)* within *radius*.
 
         The *payload* must be a ``(p1, p2, user_data)`` triple or similar so
@@ -199,7 +201,7 @@ class QuadTree(Generic[_T]):
 
         best = None
         best_dist = radius + 1.0  # sentinel larger than search radius
-        for (_, payload) in hits:
+        for _, payload in hits:
             if isinstance(payload, tuple) and len(payload) >= 2 and isinstance(payload[0], tuple):
                 p1, p2, *user = payload  # p1, p2 expected
                 dist = _seg_dist(p1, p2)
@@ -218,4 +220,4 @@ class QuadTree(Generic[_T]):
         n = len(node.points)
         if node.children:
             n += sum(QuadTree._count(c) for c in node.children)
-        return n 
+        return n

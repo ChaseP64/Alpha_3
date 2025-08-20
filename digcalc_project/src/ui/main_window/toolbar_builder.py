@@ -2,14 +2,14 @@ from __future__ import annotations
 
 """Toolbar construction helper for DigCalc MainWindow."""
 
-from typing import TYPE_CHECKING
 import logging
+from typing import TYPE_CHECKING
 
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import (
-    QToolBar,
     QLabel,
     QSpinBox,
+    QToolBar,
 )
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -108,4 +108,4 @@ class ToolbarBuilder:  # noqa: D101 – simple helper
         mw.import_toolbar = imp_tb
         mw.pdf_toolbar = pdf_tb
         mw.view_toolbar = view_tb
-        mw.tools_toolbar = tools_tb 
+        mw.tools_toolbar = tools_tb

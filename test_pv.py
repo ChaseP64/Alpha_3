@@ -1,12 +1,15 @@
-import pyvista as pv
 import traceback
+
+import pyvista as pv
 
 print(f"PyVista version: {pv.__version__}")
 
 try:
     print("\nTesting basic PyVista Plotter...")
     # Test with a basic Plotter first, not BackgroundPlotter
-    plotter = pv.Plotter(notebook=False, off_screen=True) # Ensure off_screen for non-interactive test
+    plotter = pv.Plotter(
+        notebook=False, off_screen=True
+    )  # Ensure off_screen for non-interactive test
     print("pv.Plotter initialized successfully.")
     sphere = pv.Sphere()
     plotter.add_mesh(sphere)
@@ -22,16 +25,20 @@ except Exception as e:
 try:
     print("\nTesting PyVistaQt BackgroundPlotter...")
     from pyvistaqt import BackgroundPlotter
+
     # Attempt to get QApplication instance if available, otherwise None
     try:
         from PySide6.QtWidgets import QApplication
+
         app = QApplication.instance()
-        if app is None: # pragma: no cover
-            print("No QApplication instance found, attempting to create one for BackgroundPlotter test.")
+        if app is None:  # pragma: no cover
+            print(
+                "No QApplication instance found, attempting to create one for BackgroundPlotter test."
+            )
             # For a minimal script, we might need to create one if BackgroundPlotter expects it
             # However, BackgroundPlotter(app=None) should also work.
             # app = QApplication([]) # Uncomment if BackgroundPlotter specifically needs an active app
-            pass 
+            pass
     except ImportError:
         app = None
         print("PySide6 not available for app instance in BackgroundPlotter test.")
@@ -49,4 +56,4 @@ except Exception as e:
     print(f"ERROR during PyVistaQt BackgroundPlotter test: {e}")
     traceback.print_exc()
 
-print("\nMinimal test script finished.") 
+print("\nMinimal test script finished.")

@@ -21,12 +21,13 @@ Returns:
     A shared ``BackgroundPlotter`` instance configured for DigCalc.
 """
 
+import logging
+
 # ---------------------------------------------------------------------------
 # Standard library imports
 # ---------------------------------------------------------------------------
 import os
-from typing import Optional, TYPE_CHECKING
-import logging
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:  # pragma: no cover – only needed for type checkers
     from pyvistaqt import BackgroundPlotter
@@ -39,7 +40,8 @@ _plotter: Optional["BackgroundPlotter"] = None
 # ---------------------------------------------------------------------------
 
 from types import SimpleNamespace  # moved to module scope so both branches share it
-from PySide6.QtWidgets import QWidget, QApplication  # lightweight import
+
+from PySide6.QtWidgets import QApplication, QWidget  # lightweight import
 
 
 class _HeadlessPlotter:  # pylint: disable=too-few-public-methods
@@ -199,6 +201,7 @@ class _HeadlessPlotter:  # pylint: disable=too-few-public-methods
     # ------------------------------------------------------------------
     def add_plane_widget(self, *_a, callback=None, **_k):  # noqa: D401, ANN001
         """Return a minimal stub with the subset of API used by PvDock."""
+
         class _DummyPlaneWidget:  # pylint: disable=too-few-public-methods
             def __init__(self, cb):
                 self._enabled = True
@@ -258,11 +261,11 @@ def _create_plotter() -> "BackgroundPlotter":  # pragma: no cover – runtime si
     plotter: Optional["BackgroundPlotter"] = None
 
     try:
+        from PySide6.QtWidgets import QApplication  # ADD THIS IMPORT
         from pyvistaqt import BackgroundPlotter  # local import – heavyweight
-        from PySide6.QtWidgets import QApplication # ADD THIS IMPORT
 
         logger.debug("Attempting to create real pyvistaqt.BackgroundPlotter...")
-        
+
         # --- EXPLICITLY GET APP INSTANCE ---
         app_instance = QApplication.instance()
         if app_instance is None:
@@ -274,7 +277,7 @@ def _create_plotter() -> "BackgroundPlotter":  # pragma: no cover – runtime si
             # if an app is later created or if it can operate headlessly before attaching.
         # --- END EXPLICIT GET ---
 
-        plotter = BackgroundPlotter(show=False, app=app_instance) # MODIFY THIS LINE
+        plotter = BackgroundPlotter(show=False, app=app_instance)  # MODIFY THIS LINE
         logger.debug("Real BackgroundPlotter created. Configuring...")
 
         if hasattr(plotter, "enable_anti_aliasing"):
@@ -285,10 +288,7 @@ def _create_plotter() -> "BackgroundPlotter":  # pragma: no cover – runtime si
         return plotter  # pragma: no cover – real backend path
 
     except Exception as e:
-        logger.error(
-            f"Failed to initialize real PyVista BackgroundPlotter: {e}",
-            exc_info=True
-        )
+        logger.error(f"Failed to initialize real PyVista BackgroundPlotter: {e}", exc_info=True)
         logger.warning("Falling back to HeadlessPlotter due to PyVista initialization error.")
         return _HeadlessPlotter()  # type: ignore[return-value]
 
@@ -303,4 +303,4 @@ def get_plotter() -> "BackgroundPlotter":
     global _plotter
     if _plotter is None:
         _plotter = _create_plotter()
-    return _plotter 
+    return _plotter

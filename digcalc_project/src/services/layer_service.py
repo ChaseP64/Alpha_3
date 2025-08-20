@@ -23,4 +23,4 @@ def create_layer(name: str, mode: str = "entered") -> Layer:  # noqa: D401
         line_color=line_col,
         point_color=point_col,
         visible=True,
-    ) 
+    )

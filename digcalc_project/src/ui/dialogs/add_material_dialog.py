@@ -5,6 +5,7 @@ from __future__ import annotations
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
+    QColorDialog,
     QDialog,
     QDialogButtonBox,
     QFormLayout,
@@ -12,7 +13,6 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
-    QColorDialog,
     QSlider,
     QWidget,
 )
@@ -55,7 +55,9 @@ class AddMaterialDialog(QDialog):
         form.addRow("Opacity:", op_layout)
 
         # Dialog buttons
-        btns = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel, parent=self)
+        btns = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel, parent=self
+        )
         btns.accepted.connect(self._on_accept)
         btns.rejected.connect(self.reject)
         form.addRow(btns)
@@ -85,4 +87,4 @@ class AddMaterialDialog(QDialog):
             "id": 0,  # will be assigned by StrataStack
             "name": self.name_edit.text().strip(),
             "colour": self._color.name(),
-        } 
+        }

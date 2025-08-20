@@ -22,6 +22,11 @@ DigCalc now supports modeling of subsurface material layers (stratigraphy). This
 1.  **Installation**: (Instructions to be added)
 2.  **Running the Application**: `python -m digcalc_project.run_digcalc`
 
+### Feature Flags
+
+- DIGCALC_PDF_VEC: Enable/disable the PDF vectorizer UI and pipeline.
+  - Default: enabled. Set `DIGCALC_PDF_VEC=0` to disable.
+
 ## Basic Workflow
 
 1.  **Create a Project**: Start by creating a new project.

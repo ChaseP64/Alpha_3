@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-
 from PySide6.QtGui import QUndoStack
 
 from digcalc_project.src.ui.commands.auto_increment_z_command import AutoIncrementZCommand
@@ -34,6 +33,7 @@ class _DummyVertex:
 # Interpolation accuracy
 # ---------------------------------------------------------------------
 
+
 def test_linear_grade_interpolation_explicit_end():
     # Five vertices 25-ft apart along X-axis
     xs = np.linspace(0, 100, 5)
@@ -63,6 +63,7 @@ def test_linear_grade_interpolation_slope_percent():
 # Undo integration – ensure grouped command restores original Z values
 # ---------------------------------------------------------------------
 
+
 def test_auto_increment_undo_redo_cycle():
     xs = np.linspace(0, 100, 3)
     verts = [_DummyVertex(float(x), 0.0) for x in xs]
@@ -81,4 +82,4 @@ def test_auto_increment_undo_redo_cycle():
 
     # Redo again
     stack.redo()
-    assert [v.z() for v in verts] == pytest.approx([0.0, 2.5, 5.0]) 
+    assert [v.z() for v in verts] == pytest.approx([0.0, 2.5, 5.0])

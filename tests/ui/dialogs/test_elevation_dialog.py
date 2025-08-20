@@ -22,26 +22,27 @@ def reset_last_elev():
     """Fixture to reset _LAST_ELEV before and after each test."""
     # Access global via module
     original = elevation_dialog._LAST_ELEV
-    elevation_dialog._LAST_ELEV = 0.0 # Reset to default before test
+    elevation_dialog._LAST_ELEV = 0.0  # Reset to default before test
     yield
-    elevation_dialog._LAST_ELEV = original # Restore after test
+    elevation_dialog._LAST_ELEV = original  # Restore after test
 
 
 def test_dialog_initialization(qtbot):
     """Test the dialog initializes with the last elevation."""
-    test_value = 123.45 # Use a local variable for the test value
-    dlg = ElevationDialog(initial_value=test_value) # Pass initial value
+    test_value = 123.45  # Use a local variable for the test value
+    dlg = ElevationDialog(initial_value=test_value)  # Pass initial value
     qtbot.addWidget(dlg)
     assert abs(dlg._spinbox.value() - test_value) < 1e-9
     assert dlg.windowTitle() == "Enter Constant Elevation"
+
 
 def test_enter_and_accept_elevation(qtbot):
     """Test entering a value and accepting the dialog."""
     # global _LAST_ELEV # No longer need to access global directly here
     original_last_elev = 50.0
-    elevation_dialog._LAST_ELEV = original_last_elev # Set global via module
+    elevation_dialog._LAST_ELEV = original_last_elev  # Set global via module
 
-    dlg = ElevationDialog(initial_value=original_last_elev) # Pass initial value
+    dlg = ElevationDialog(initial_value=original_last_elev)  # Pass initial value
     qtbot.addWidget(dlg)
 
     # --- Check initial value FIRST ---
@@ -62,20 +63,21 @@ def test_enter_and_accept_elevation(qtbot):
         qtbot.mouseClick(ok_button, QtCore.Qt.MouseButton.LeftButton)
 
     # Verify dialog result and the dialog's internal value
-    assert dlg.result() == QDialog.DialogCode.Accepted # Use correct enum
-    assert abs(dlg.value() - new_value) < 1e-9 # Check dialog's final value
+    assert dlg.result() == QDialog.DialogCode.Accepted  # Use correct enum
+    assert abs(dlg.value() - new_value) < 1e-9  # Check dialog's final value
 
     # --- Check that the global _LAST_ELEV was updated ---
     # Now that we've waited for the signal, check the module global
-    assert abs(elevation_dialog._LAST_ELEV - new_value) < 1e-9 # Check module global
+    assert abs(elevation_dialog._LAST_ELEV - new_value) < 1e-9  # Check module global
+
 
 def test_cancel_dialog(qtbot):
     """Test cancelling the dialog does not update _LAST_ELEV."""
     # global _LAST_ELEV
     original_last_elev = 10.0
-    elevation_dialog._LAST_ELEV = original_last_elev # Set global via module
+    elevation_dialog._LAST_ELEV = original_last_elev  # Set global via module
 
-    dlg = ElevationDialog(initial_value=original_last_elev) # Pass initial value
+    dlg = ElevationDialog(initial_value=original_last_elev)  # Pass initial value
     qtbot.addWidget(dlg)
 
     # Check initial value
@@ -90,5 +92,7 @@ def test_cancel_dialog(qtbot):
     qtbot.mouseClick(cancel_button, QtCore.Qt.MouseButton.LeftButton)
 
     # Verify dialog result and that _LAST_ELEV remains unchanged
-    assert dlg.result() == QDialog.DialogCode.Rejected # Use correct enum
-    assert abs(elevation_dialog._LAST_ELEV - original_last_elev) < 1e-9 # Check module global hasn't changed
+    assert dlg.result() == QDialog.DialogCode.Rejected  # Use correct enum
+    assert (
+        abs(elevation_dialog._LAST_ELEV - original_last_elev) < 1e-9
+    )  # Check module global hasn't changed

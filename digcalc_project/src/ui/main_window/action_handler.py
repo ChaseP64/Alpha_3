@@ -1,19 +1,22 @@
 from __future__ import annotations
+
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
-from PySide6.QtWidgets import QFileDialog, QMessageBox, QDialog
+from PySide6.QtWidgets import QDialog, QFileDialog, QMessageBox
 
 from ...core.calculations.volume_calculator import VolumeCalculator
 from ...core.geometry.surface_builder import SurfaceBuilder, SurfaceBuilderError
-from ...ui.dialogs.build_surface_dialog import BuildSurfaceDialog
-from ...ui.dialogs.daylight_dialog import DaylightDialog
-from ...ui.dialogs.volume_calculation_dialog import VolumeCalculationDialog
-from ...ui.dialogs.report_dialog import ReportDialog
-from ...ui.dialogs.haul_alignment_dialog import HaulAlignmentDialog
 from ...core.reporting import csv_writer
 from ...core.reporting.pdf_report import PDFReportGenerator
+from ...models.template import Template
+from ...ui.dialogs.build_surface_dialog import BuildSurfaceDialog
+from ...ui.dialogs.daylight_dialog import DaylightDialog
+from ...ui.dialogs.haul_alignment_dialog import HaulAlignmentDialog
+from ...ui.dialogs.report_dialog import ReportDialog
+from ...ui.dialogs.template_library_dialog import TemplateLibraryDialog
+from ...ui.dialogs.volume_calculation_dialog import VolumeCalculationDialog
 
 if TYPE_CHECKING:
     from .main_window import MainWindow
@@ -33,26 +36,36 @@ class ActionHandler:
         """Handle the 'Calculate Volume' action."""
         project = self.project_controller.get_current_project()
         if not project or len(project.surfaces) < 2:
-            QMessageBox.warning(self.mw, "Volume Calculation", "At least two surfaces are required to calculate volumes.")
+            QMessageBox.warning(
+                self.mw,
+                "Volume Calculation",
+                "At least two surfaces are required to calculate volumes.",
+            )
             return
 
         dialog = VolumeCalculationDialog(list(project.surfaces.keys()), self.mw)
-        
+
         params = None
         result = None
 
         if dialog.exec() == QDialog.Accepted:
             params = dialog.get_parameters()
             if params:
-                self.mw.status_bar_manager.show_message(f"Calculating volumes (Grid: {params['grid_resolution']})...")
+                self.mw.status_bar_manager.show_message(
+                    f"Calculating volumes (Grid: {params['grid_resolution']})..."
+                )
                 calculator = VolumeCalculator(project)
                 try:
                     result = calculator.calculate_grid_method(params)
                 except Exception as e:
                     self.mw.logger.exception("Volume calculation failed.")
-                    QMessageBox.critical(self.mw, "Calculation Error", f"An error occurred during volume calculation:\n{e}")
+                    QMessageBox.critical(
+                        self.mw,
+                        "Calculation Error",
+                        f"An error occurred during volume calculation:\n{e}",
+                    )
                     result = None
-        
+
         if result:
             self.mw._last_volume_calculation_params = params
             self.mw.status_bar_manager.show_message("Volume calculation initiated...", 2000)
@@ -113,7 +126,9 @@ class ActionHandler:
     def mass_haul(self) -> None:
         """Handle the 'Mass Haul' action."""
         if not hasattr(self.project_controller, "show_mass_haul_dialog"):
-            QMessageBox.warning(self.mw, "Mass Haul", "Mass haul functionality is not available in this build.")
+            QMessageBox.warning(
+                self.mw, "Mass Haul", "Mass haul functionality is not available in this build."
+            )
             return
 
         # Ensure the latest volume calculation data is present
@@ -146,17 +161,23 @@ class ActionHandler:
         if self.mw._last_volume_calculation_params and self.mw._last_dz_cache:
             params = self.mw._last_volume_calculation_params
             report_dialog = ReportDialog(
-                existing_surface_name=params['existing_surface'],
-                proposed_surface_name=params['proposed_surface'],
-                grid_resolution=params['grid_resolution'],
+                existing_surface_name=params["existing_surface"],
+                proposed_surface_name=params["proposed_surface"],
+                grid_resolution=params["grid_resolution"],
                 cut_volume=np.sum(self.mw._last_dz_cache[0][self.mw._last_dz_cache[0] > 0]),
-                fill_volume=np.abs(np.sum(self.mw._last_dz_cache[0][self.mw._last_dz_cache[0] < 0])),
+                fill_volume=np.abs(
+                    np.sum(self.mw._last_dz_cache[0][self.mw._last_dz_cache[0] < 0])
+                ),
                 net_volume=np.sum(self.mw._last_dz_cache[0]),
-                parent=self.mw
+                parent=self.mw,
             )
             report_dialog.exec()
         else:
-            QMessageBox.information(self.mw, "Generate Report", "Please run a volume calculation first to generate a report.")
+            QMessageBox.information(
+                self.mw,
+                "Generate Report",
+                "Please run a volume calculation first to generate a report.",
+            )
 
     def export_report(self) -> None:
         """Handle the 'Export Report' action."""
@@ -166,45 +187,53 @@ class ActionHandler:
             return
 
         default_path = f"{project.name}_report"
-        
+
         # Ask for a directory to save the bundle
-        dir_path = QFileDialog.getExistingDirectory(self.mw, "Select Report Directory", str(Path.home()))
-        
+        dir_path = QFileDialog.getExistingDirectory(
+            self.mw, "Select Report Directory", str(Path.home())
+        )
+
         if dir_path:
             base_name = Path(dir_path) / default_path
             params = self.mw._last_volume_calculation_params
-            
+
             self.mw.status_bar_manager.show_message("Exporting report bundle...")
-            
+
             try:
                 # 1. Export CSV
                 csv_path = f"{base_name}.csv"
                 csv_writer.export_volume_report(csv_path, params, self.mw._last_dz_cache)
-                
+
                 # 2. Export PDF
                 pdf_path = f"{base_name}.pdf"
-                cut_fill_map = self.mw.visualization_panel.get_cut_fill_map() # Assuming this method exists
-                
+                cut_fill_map = (
+                    self.mw.visualization_panel.get_cut_fill_map()
+                )  # Assuming this method exists
+
                 pdf_report = PDFReportGenerator()
-                #TODO: This is not the right call
+                # TODO: This is not the right call
                 # pdf_report.add_summary_page(params, self.mw._last_dz_cache, cut_fill_map)
                 # pdf_report.save()
 
-                self.mw.status_bar_manager.show_message(f"Report bundle exported to {dir_path}", 5000)
+                self.mw.status_bar_manager.show_message(
+                    f"Report bundle exported to {dir_path}", 5000
+                )
             except Exception as e:
                 self.mw.logger.exception("Failed to export report bundle.")
-                QMessageBox.critical(self.mw, "Export Error", f"Failed to export report bundle:\n{e}")
+                QMessageBox.critical(
+                    self.mw, "Export Error", f"Failed to export report bundle:\n{e}"
+                )
                 self.mw.status_bar_manager.show_message("Export failed.", 5000)
 
     def daylight_offset(self) -> None:
         """Handle the 'Daylight Offset' action."""
         project = self.project_controller.get_current_project()
         scene = self.mw.visualization_panel.scene_2d
-        
+
         if not project or not scene.current_polyline_layer_name:
             QMessageBox.warning(self.mw, "Daylight Offset", "Please select a polyline layer first.")
             return
-            
+
         dialog = DaylightDialog(self.mw)
         if dialog.exec():
             slope_ratio, target_surface_name = dialog.get_parameters()
@@ -218,7 +247,9 @@ class ActionHandler:
                     self.mw._update_layer_tree()
                 except Exception as e:
                     self.mw.logger.exception("Failed to create daylight offset.")
-                    QMessageBox.critical(self.mw, "Daylight Offset", f"Failed to create daylight offset.\n{e}") 
+                    QMessageBox.critical(
+                        self.mw, "Daylight Offset", f"Failed to create daylight offset.\n{e}"
+                    )
 
     def bulk_assign_surfaces(self) -> None:  # noqa: D401
         """Launch BulkAssignSurfaceDialog for polylines without a layer_class.
@@ -242,12 +273,16 @@ class ActionHandler:
                     unclassified.append((layer, pts))
 
         if not unclassified:
-            QMessageBox.information(self.mw, "Bulk Assign Surface", "No unclassified polylines found.")
+            QMessageBox.information(
+                self.mw, "Bulk Assign Surface", "No unclassified polylines found."
+            )
             return
 
         # Convert to temporary Polyline objects for the dialog
-        from digcalc_project.src.core.geom.polyline import Polyline
         import numpy as np
+
+        from digcalc_project.src.core.geom.polyline import Polyline
+
         polys_core: list[Polyline] = []
         for _layer, pts in unclassified:
             arr = np.asarray([[p[0], p[1]] for p in pts], dtype=float)
@@ -255,7 +290,9 @@ class ActionHandler:
             setattr(pl, "layer_class", "misc")
             polys_core.append(pl)
 
-        from digcalc_project.src.ui.dialogs.bulk_assign_surface_dialog import BulkAssignSurfaceDialog
+        from digcalc_project.src.ui.dialogs.bulk_assign_surface_dialog import (
+            BulkAssignSurfaceDialog,
+        )
 
         dlg = BulkAssignSurfaceDialog(self.mw)
         dlg.set_polylines(polys_core)
@@ -283,4 +320,27 @@ class ActionHandler:
             self.mw.status_bar_manager.show_message("Layer assignments updated.", 3000)
 
         dlg.assignments_ready.connect(_on_done)  # type: ignore[arg-type]
-        dlg.exec() 
+        dlg.exec()
+
+    def open_template_library(self) -> None:
+        """Open the Template Library dialog (Phase-8 D2)."""
+        project = self.project_controller.get_current_project()
+        if not project:
+            return
+        dlg = TemplateLibraryDialog(project.templates, self.mw)
+
+        def _on_templates_changed(templates: list[Template]):
+            project.templates = list(templates)
+            project.is_dirty = True
+            self.mw.status_bar_manager.show_message("Templates updated.", 2000)
+
+        def _on_preview(tpl: Template):
+            vp = self.mw.visualization_panel
+            if hasattr(vp, "preview_template"):
+                vp.preview_template(tpl)
+            if hasattr(vp, "preview_template_3d"):
+                vp.preview_template_3d(tpl)
+
+        dlg.templatesChanged.connect(_on_templates_changed)
+        dlg.previewRequested.connect(_on_preview)
+        dlg.exec()

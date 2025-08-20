@@ -1,7 +1,9 @@
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
-from PySide6.QtWidgets import QStatusBar, QLabel
+
 from PySide6.QtCore import Qt, QTimer
+from PySide6.QtWidgets import QLabel, QStatusBar
 
 if TYPE_CHECKING:
     from .main_window import MainWindow
@@ -22,9 +24,11 @@ class StatusBarManager:
         self._scale_pill = QLabel("No Scale", self.bar)
         self._scale_pill.setObjectName("scalePill")
         self._scale_pill.setAlignment(Qt.AlignCenter)
-        self._scale_pill.setStyleSheet("QLabel#scalePill {"
-                                       " border-radius:8px; padding:2px 6px;"
-                                       " background:#AAA; color:white; }")
+        self._scale_pill.setStyleSheet(
+            "QLabel#scalePill {"
+            " border-radius:8px; padding:2px 6px;"
+            " background:#AAA; color:white; }"
+        )
         self.bar.addPermanentWidget(self._scale_pill)
 
         # transient message timer
@@ -53,15 +57,16 @@ class StatusBarManager:
             self._scale_pill.setText("No Scale")
 
         if not value:
-            colour = "#AAA"              # grey
+            colour = "#AAA"  # grey
         elif valid:
-            colour = "#4CAF50"           # green
+            colour = "#4CAF50"  # green
         else:
-            colour = "#F44336"           # red
+            colour = "#F44336"  # red
 
         self._scale_pill.setStyleSheet(
             f"QLabel#scalePill {{border-radius:8px; padding:2px 6px;"
-            f"background:{colour}; color:white; }}")
+            f"background:{colour}; color:white; }}"
+        )
 
     # Convenience hook used by UIStateManager -------------------------- #
     def update_from_project(self) -> None:
@@ -71,8 +76,12 @@ class StatusBarManager:
         else:
             scale = project.scale
             txt = f"{scale.world_per_in:g} {scale.world_units}/in"
-            
-            current_dpi = self.mw.visualization_panel.get_current_dpi() if self.mw.visualization_panel else 150
-            
+
+            current_dpi = (
+                self.mw.visualization_panel.get_current_dpi()
+                if self.mw.visualization_panel
+                else 150
+            )
+
             dpi_ok = abs(scale.render_dpi_at_cal - current_dpi) < 0.5
-            self.set_scale_state(value=txt, valid=dpi_ok) 
+            self.set_scale_state(value=txt, valid=dpi_ok)

@@ -20,4 +20,4 @@ def test_register_and_apply_rule():
 
     result = RuleRegistry.evaluate(["start"])
     assert result[-1] == "X"
-    assert len(result) == 2 
+    assert len(result) == 2

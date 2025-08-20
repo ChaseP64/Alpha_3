@@ -1,10 +1,12 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from PySide6.QtWidgets import QGraphicsPathItem, QMessageBox, QGraphicsScene
+from PySide6.QtWidgets import QGraphicsPathItem, QGraphicsScene, QMessageBox
 
 # Adjust import based on project structure
-from digcalc_project.src.ui.main_window.polyline_interaction_handler import PolylineInteractionHandler
+from digcalc_project.src.ui.main_window.polyline_interaction_handler import (
+    PolylineInteractionHandler,
+)
 
 
 @pytest.fixture
@@ -26,7 +28,7 @@ def test_handler_initialization(mock_main_window):
     assert handler._selected_scene_item is None
 
 
-@patch('digcalc_project.src.ui.main_window.polyline_interaction_handler.QMessageBox')
+@patch("digcalc_project.src.ui.main_window.polyline_interaction_handler.QMessageBox")
 def test_delete_selected_polyline_no_selection(mock_qmessagebox, mock_main_window):
     """Test delete call with no item selected."""
     handler = PolylineInteractionHandler(mock_main_window)
@@ -36,25 +38,25 @@ def test_delete_selected_polyline_no_selection(mock_qmessagebox, mock_main_windo
     mock_main_window.project_controller.get_current_project().remove_polyline.assert_not_called()
 
 
-@patch('digcalc_project.src.ui.main_window.polyline_interaction_handler.QMessageBox')
+@patch("digcalc_project.src.ui.main_window.polyline_interaction_handler.QMessageBox")
 def test_delete_selected_polyline_confirmed(mock_qmessagebox, mock_main_window, qapp):
     """Test delete call when user confirms."""
     # Arrange
     mock_qmessagebox.question.return_value = QMessageBox.Yes
-    
+
     handler = PolylineInteractionHandler(mock_main_window)
-    
+
     mock_item = QGraphicsPathItem()
     mock_item.setData(0, "TestLayer")
     mock_item.setData(1, 0)
-    
+
     mock_scene = QGraphicsScene()
     # Workaround for potential Qt bug where item removal fails with default BSP index
     mock_scene.setItemIndexMethod(QGraphicsScene.NoIndex)
     mock_scene.addItem(mock_item)
-    
+
     handler._selected_scene_item = mock_item
-    
+
     mock_project = mock_main_window.project_controller.get_current_project.return_value
     mock_project.remove_polyline.return_value = True
 

@@ -7,7 +7,9 @@ removal, etc.).  Implemented properly in Phase-2; for now just exposes a
 stable function signature used by the PDF vectorizer integration.
 """
 
-from typing import List, Sequence, TYPE_CHECKING
+import time
+from typing import TYPE_CHECKING, List, Sequence
+
 from ...core.clean.rule_engine import RuleRegistry
 from ...core.geom.polyline import Polyline
 from ..settings_service import SettingsService
@@ -39,12 +41,29 @@ def auto_run(polylines: "Sequence[Polyline]") -> List["Polyline"]:  # type: igno
     # Phase-2: optional Automatic Join V2 pre-processing -------------------
     settings = SettingsService()
     if settings.enable_auto_join_v2():
+        t0 = time.perf_counter()
         unique = Polyline.auto_join_v2(unique)
+        t1 = time.perf_counter()
+        # Lightweight profiling log; keep silent in tests
+        try:
+            import logging
+
+            logging.getLogger(__name__).debug("SmartClean join_v2: %.2f ms", (t1 - t0) * 1000.0)
+        except Exception:
+            pass
 
     # Compression phase -------------------------------------------------
     dist_tol = settings.compress_dist_tol_ft()
     angle_tol = settings.compress_angle_tol_deg()
+    t0 = time.perf_counter()
     unique = [Polyline.compress(pl, dist_tol=dist_tol, angle_tol_deg=angle_tol) for pl in unique]
+    t1 = time.perf_counter()
+    try:
+        import logging
+
+        logging.getLogger(__name__).debug("SmartClean compress: %.2f ms", (t1 - t0) * 1000.0)
+    except Exception:
+        pass
 
     # Run registered Smart-Clean rules
-    return RuleRegistry.evaluate(unique) 
+    return RuleRegistry.evaluate(unique)

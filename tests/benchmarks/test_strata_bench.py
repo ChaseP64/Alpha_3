@@ -14,7 +14,7 @@ is available.  Regular CI/test runs therefore remain quick.
 import pytest
 
 # Check fast back-end availability *before* importing NumPy or other heavy deps.
-from digcalc_project.src.services.interpolation_service import HAS_SCIPY, HAS_NUMBA
+from digcalc_project.src.services.interpolation_service import HAS_NUMBA, HAS_SCIPY
 
 if not (HAS_SCIPY or HAS_NUMBA):
     pytest.skip(
@@ -24,12 +24,13 @@ if not (HAS_SCIPY or HAS_NUMBA):
 
 # Heavy imports below (only executed when we know a fast backend exists)
 import os
+
 import numpy as np
 
 from digcalc_project.src.models.project import Project
-from digcalc_project.src.models.strata_models import StrataStack, Material, BoreholeLog, LayerDepth
+from digcalc_project.src.models.strata_models import BoreholeLog, LayerDepth, Material, StrataStack
 from digcalc_project.src.models.surface import Surface
-from digcalc_project.src.services.interpolation_service import IDWInterpolator, HAS_SCIPY, HAS_NUMBA
+from digcalc_project.src.services.interpolation_service import HAS_NUMBA, HAS_SCIPY, IDWInterpolator
 
 # Benchmarks run only when the developer explicitly opts in by setting an
 # environment variable:
@@ -43,24 +44,25 @@ from digcalc_project.src.services.interpolation_service import IDWInterpolator, 
 if os.getenv("DIGCALC_RUN_BENCH") != "1":
     pytest.skip("Benchmarks disabled – set DIGCALC_RUN_BENCH=1 to enable.", allow_module_level=True)
 
-def _build_stack(n_bh: int=500, n_layers: int = 4):  # Fewer boreholes for faster dev run
-    materials = [Material(id=i+1,name=f"Mat{i+1}") for i in range(n_layers)]
+
+def _build_stack(n_bh: int = 500, n_layers: int = 4):  # Fewer boreholes for faster dev run
+    materials = [Material(id=i + 1, name=f"Mat{i+1}") for i in range(n_layers)]
     boreholes: list[BoreholeLog] = []
     rng = np.random.default_rng(0)
     for i in range(n_bh):
-        x,y = rng.uniform(0,1000), rng.uniform(0,1000)
+        x, y = rng.uniform(0, 1000), rng.uniform(0, 1000)
         layers = []
         top = 0.0
         for j in range(n_layers):
-            thickness= rng.uniform(1,5)
-            layers.append(LayerDepth(material_id=j+1, top_z=top, bottom_z=top-thickness))
+            thickness = rng.uniform(1, 5)
+            layers.append(LayerDepth(material_id=j + 1, top_z=top, bottom_z=top - thickness))
             top -= thickness
-        boreholes.append(BoreholeLog(id=i+1,x=x,y=y,layers=layers))
+        boreholes.append(BoreholeLog(id=i + 1, x=x, y=y, layers=layers))
     return StrataStack(id=1, materials=materials, boreholes=boreholes)
 
 
 def _dummy_surface():
-    pts=[(0,0,0),(1000,0,0),(0,1000,0)]
+    pts = [(0, 0, 0), (1000, 0, 0), (0, 1000, 0)]
     return Surface.from_point_list("base", pts)
 
 
@@ -78,29 +80,39 @@ if not _variants:
 
 @pytest.mark.parametrize("variant", _variants)
 def test_idw_variants_perf(benchmark, monkeypatch, variant):
-    if variant=="scipy" and not HAS_SCIPY:
+    if variant == "scipy" and not HAS_SCIPY:
         pytest.skip("SciPy not available")
-    if variant=="numba" and not HAS_NUMBA:
+    if variant == "numba" and not HAS_NUMBA:
         pytest.skip("numba not available")
 
     # monkeypatch global flags inside module
-    if variant=="numpy":
-        monkeypatch.setattr("digcalc_project.src.services.interpolation_service.HAS_SCIPY", False, raising=False)
-        monkeypatch.setattr("digcalc_project.src.services.interpolation_service.HAS_NUMBA", False, raising=False)
-    elif variant=="scipy":
-        monkeypatch.setattr("digcalc_project.src.services.interpolation_service.HAS_SCIPY", True, raising=False)
-        monkeypatch.setattr("digcalc_project.src.services.interpolation_service.HAS_NUMBA", False, raising=False)
-    elif variant=="numba":
-        monkeypatch.setattr("digcalc_project.src.services.interpolation_service.HAS_NUMBA", True, raising=False)
+    if variant == "numpy":
+        monkeypatch.setattr(
+            "digcalc_project.src.services.interpolation_service.HAS_SCIPY", False, raising=False
+        )
+        monkeypatch.setattr(
+            "digcalc_project.src.services.interpolation_service.HAS_NUMBA", False, raising=False
+        )
+    elif variant == "scipy":
+        monkeypatch.setattr(
+            "digcalc_project.src.services.interpolation_service.HAS_SCIPY", True, raising=False
+        )
+        monkeypatch.setattr(
+            "digcalc_project.src.services.interpolation_service.HAS_NUMBA", False, raising=False
+        )
+    elif variant == "numba":
+        monkeypatch.setattr(
+            "digcalc_project.src.services.interpolation_service.HAS_NUMBA", True, raising=False
+        )
 
-    project=Project(name="bench")
-    stack=_build_stack()
-    surf=_dummy_surface()
-    interp=IDWInterpolator()
+    project = Project(name="bench")
+    stack = _build_stack()
+    surf = _dummy_surface()
+    interp = IDWInterpolator()
 
     def _run():
         interp.generate_surfaces(project, stack, surf)
 
-    result=benchmark(_run)
+    result = benchmark(_run)
     # ensure reasonable runtime (<10s target for dev) – but don't fail on CI
-    assert result < 10.0 
+    assert result < 10.0

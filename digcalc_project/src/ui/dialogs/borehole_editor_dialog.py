@@ -6,15 +6,15 @@ from typing import List
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QComboBox,
     QDialog,
     QDialogButtonBox,
-    QVBoxLayout,
     QHBoxLayout,
+    QLabel,
+    QPushButton,
     QTableWidget,
     QTableWidgetItem,
-    QPushButton,
-    QLabel,
-    QComboBox,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -139,4 +139,4 @@ class BoreholeEditorDialog(QDialog):
     def to_borehole(self, x: float, y: float, bh_id: int) -> BoreholeLog:
         """Return BoreholeLog built from table (caller provides XY/id)."""
         layers = self._read_layers()
-        return BoreholeLog(id=bh_id, x=x, y=y, layers=layers) 
+        return BoreholeLog(id=bh_id, x=x, y=y, layers=layers)

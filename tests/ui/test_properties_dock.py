@@ -1,14 +1,13 @@
-"""Tests for the PropertiesDock UI component.
-"""
+"""Tests for the PropertiesDock UI component."""
 
 import pytest
 from PySide6.QtWidgets import QComboBox, QDoubleSpinBox
 
 from digcalc_project.src.services.settings_service import SettingsService
-from digcalc_project.src.utils.singleton import Singleton
 
 # Widget being tested
 from digcalc_project.src.ui.properties_dock import PropertiesDock
+from digcalc_project.src.utils.singleton import Singleton
 
 
 @pytest.fixture(autouse=True)
@@ -35,7 +34,7 @@ def settings_for_test(monkeypatch, temporary_settings):
 def dock(qtbot) -> PropertiesDock:
     """Create an instance of PropertiesDock for testing."""
     widget = PropertiesDock()
-    qtbot.addWidget(widget) # Manage widget lifetime
+    qtbot.addWidget(widget)  # Manage widget lifetime
     # Ensure the tracing tab widgets are created and accessible
     assert hasattr(widget, "_spline_sampling_spin")
     assert hasattr(widget, "_elev_mode_combo")
@@ -54,13 +53,15 @@ def test_initial_tracing_values(dock: PropertiesDock, settings_for_test: Setting
     assert mode_combo.currentData() == initial_mode
 
 
-def test_sampling_spinbox_updates_setting(qtbot, dock: PropertiesDock, settings_for_test: SettingsService):
+def test_sampling_spinbox_updates_setting(
+    qtbot, dock: PropertiesDock, settings_for_test: SettingsService
+):
     """Test changing the sampling spinbox updates the SettingsService."""
     sampling_spin: QDoubleSpinBox = dock._spline_sampling_spin
     initial_value = sampling_spin.value()
     new_value = initial_value + 0.5
     if new_value > sampling_spin.maximum():
-        new_value = initial_value - 0.5 # Adjust if already at max
+        new_value = initial_value - 0.5  # Adjust if already at max
 
     # Simulate user changing the value using Qt API directly
     sampling_spin.setValue(new_value)
@@ -70,11 +71,13 @@ def test_sampling_spinbox_updates_setting(qtbot, dock: PropertiesDock, settings_
     assert settings_for_test.smooth_sampling_ft() == pytest.approx(new_value)
 
 
-def test_elevation_mode_combobox_updates_setting(qtbot, dock: PropertiesDock, settings_for_test: SettingsService):
+def test_elevation_mode_combobox_updates_setting(
+    qtbot, dock: PropertiesDock, settings_for_test: SettingsService
+):
     """Test changing the elevation mode combobox updates the SettingsService."""
     mode_combo: QComboBox = dock._elev_mode_combo
     initial_index = mode_combo.currentIndex()
-    new_index = (initial_index + 1) % mode_combo.count() # Cycle to next index
+    new_index = (initial_index + 1) % mode_combo.count()  # Cycle to next index
 
     # Simulate user changing the value
     mode_combo.setCurrentIndex(new_index)

@@ -33,4 +33,4 @@ class AddMaterialCommand(QUndoCommand):
 
     # ------------------------------------------------------------------
     def undo(self) -> None:  # noqa: D401
-        self._stack.remove_material(self._material.id) 
+        self._stack.remove_material(self._material.id)

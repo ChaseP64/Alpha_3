@@ -26,9 +26,18 @@ class Layer:
 
     # --- Class-level rotating palette -------------------------------
     _PALETTE: ClassVar[list[str]] = [
-        "#4DBBD5", "#CB4ED6", "#FF8F00", "#43A047",
-        "#C2185B", "#3D5AFE", "#FF5252", "#00897B",
-        "#F9A825", "#5E35B1", "#039BE5", "#D500F9",
+        "#4DBBD5",
+        "#CB4ED6",
+        "#FF8F00",
+        "#43A047",
+        "#C2185B",
+        "#3D5AFE",
+        "#FF5252",
+        "#00897B",
+        "#F9A825",
+        "#5E35B1",
+        "#039BE5",
+        "#D500F9",
     ]
     _next_idx: ClassVar[int] = 0
 
@@ -40,4 +49,4 @@ class Layer:
         """Return the next colour pair from the rotating palette."""
         colour = cls._PALETTE[cls._next_idx % len(cls._PALETTE)]
         cls._next_idx += 1
-        return colour, colour 
+        return colour, colour

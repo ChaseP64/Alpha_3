@@ -1,14 +1,15 @@
 """
 Handles key press events and shortcut creation for the main window.
 """
+
 from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING
-
-from PySide6.QtCore import QObject
-from PySide6.QtGui import QKeySequence, QKeyEvent, QShortcut
-from PySide6.QtCore import Qt
 from unittest.mock import MagicMock  # Local import – lightweight
+
+from PySide6.QtCore import QObject, Qt
+from PySide6.QtGui import QKeyEvent, QKeySequence, QShortcut
 
 if TYPE_CHECKING:
     from .main_window import MainWindow
@@ -42,7 +43,9 @@ class KeyBindingHandler(QObject):
             self.toggle_others_shortcut = QShortcut(QKeySequence("`"), parent)
             # Hook up the action only if the expected handler exists –
             # mocked windows will happily accept the attribute access.
-            if hasattr(mw, "view_mode_handler") and hasattr(mw.view_mode_handler, "_toggle_other_layers_visibility"):
+            if hasattr(mw, "view_mode_handler") and hasattr(
+                mw.view_mode_handler, "_toggle_other_layers_visibility"
+            ):
                 self.toggle_others_shortcut.activated.connect(
                     mw.view_mode_handler._toggle_other_layers_visibility  # type: ignore[arg-type]
                 )
@@ -66,4 +69,4 @@ class KeyBindingHandler(QObject):
                 return
 
         # Fallback to default processing if not handled
-        event.ignore() 
+        event.ignore()

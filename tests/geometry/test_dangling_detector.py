@@ -1,7 +1,7 @@
 import pytest
 
-from digcalc_project.src.models.surface import Surface, Point3D, Triangle
 from digcalc_project.src.core.geometry.dangling_detector import detect_dangling_edges
+from digcalc_project.src.models.surface import Point3D, Surface, Triangle
 
 
 def _square_surface() -> Surface:

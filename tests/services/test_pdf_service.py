@@ -1,4 +1,3 @@
-
 import pytest
 from PyPDF2 import PdfWriter
 from PySide6.QtCore import QEventLoop, QTimer

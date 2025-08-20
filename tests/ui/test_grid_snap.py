@@ -1,5 +1,4 @@
 import pytest
-
 from PySide6.QtCore import QPointF, Qt
 from PySide6.QtWidgets import QApplication, QGraphicsView
 
@@ -36,4 +35,4 @@ def test_grid_snap_shift_modifier(tracing_scene):
 
 def test_no_snap_without_modifier(tracing_scene):
     p = QPointF(2.3, 3.7)
-    assert tracing_scene._constrained_pos(p, Qt.NoModifier) == p 
+    assert tracing_scene._constrained_pos(p, Qt.NoModifier) == p

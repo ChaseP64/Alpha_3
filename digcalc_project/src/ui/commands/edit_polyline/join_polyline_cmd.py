@@ -20,8 +20,8 @@ from PySide6.QtCore import QPointF
 from PySide6.QtGui import QUndoCommand
 from PySide6.QtWidgets import QGraphicsScene
 
-from digcalc_project.src.ui.items.vertex_item import VertexItem
 from digcalc_project.src.ui.items.polyline_item import PolylineItem
+from digcalc_project.src.ui.items.vertex_item import VertexItem
 
 __all__ = ["JoinPolylineCommand"]
 
@@ -58,9 +58,9 @@ class JoinPolylineCommand(QUndoCommand):
             return ((p.x() - q.x()) ** 2 + (p.y() - q.y()) ** 2) ** 0.5
 
         d1 = _dist(b_last, o_first)  # base tail to other head
-        d2 = _dist(b_last, o_last)   # base tail to other tail (rev)
+        d2 = _dist(b_last, o_last)  # base tail to other tail (rev)
         d3 = _dist(b_first, o_last)  # base head to other tail
-        d4 = _dist(b_first, o_first) # base head to other head (rev)
+        d4 = _dist(b_first, o_first)  # base head to other head (rev)
 
         choices = [d1, d2, d3, d4]
         min_idx = choices.index(min(choices))
@@ -107,4 +107,4 @@ class JoinPolylineCommand(QUndoCommand):
         other_verts = self._other.vertices()
         other_verts.clear()
         other_verts.extend(self._other_orig)
-        self._other._rebuild_path()  # type: ignore[attr-defined] 
+        self._other._rebuild_path()  # type: ignore[attr-defined]

@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QWidget
 
 logger = logging.getLogger(__name__)
 
+
 class InteractiveGraphicsView(QGraphicsView):
     """A custom QGraphicsView that adds interactive zooming with Ctrl+Wheel
     centered on the mouse cursor, and panning with the middle mouse button drag.
@@ -20,9 +21,9 @@ class InteractiveGraphicsView(QGraphicsView):
         # Settings for zoom and pan behavior
         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
         self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
-        self.setDragMode(QGraphicsView.DragMode.NoDrag) # Default drag mode
+        self.setDragMode(QGraphicsView.DragMode.NoDrag)  # Default drag mode
 
-        self.logger = logger # Use module logger
+        self.logger = logger  # Use module logger
 
         # Panning state variables
         self._panning: bool = False
@@ -32,8 +33,8 @@ class InteractiveGraphicsView(QGraphicsView):
         """Handles mouse wheel events for zooming centered on the cursor."""
         # Check if Ctrl is pressed for zooming (optional, can remove for always zoom)
         # if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
-        zoom_in_factor = 1.25 # Zoom in step
-        zoom_out_factor = 1.0 / zoom_in_factor # Zoom out step
+        zoom_in_factor = 1.25  # Zoom in step
+        zoom_out_factor = 1.0 / zoom_in_factor  # Zoom out step
 
         # Save the scene pos at the cursor before zoom
         old_pos = self.mapToScene(event.position().toPoint())
@@ -56,7 +57,7 @@ class InteractiveGraphicsView(QGraphicsView):
         delta = new_pos - old_pos
         self.translate(delta.x(), delta.y())
 
-        event.accept() # Indicate we handled this event
+        event.accept()  # Indicate we handled this event
         # else:
         #     # Allow default scroll behavior if Ctrl is not pressed
         #     super().wheelEvent(event)
@@ -100,7 +101,7 @@ class InteractiveGraphicsView(QGraphicsView):
             self.logger.debug("Middle mouse released: Stopping pan.")
             self._panning = False
             self._last_pan_pos = None
-            self.setCursor(Qt.CursorShape.ArrowCursor) # Reset cursor to default
+            self.setCursor(Qt.CursorShape.ArrowCursor)  # Reset cursor to default
             event.accept()
         else:
             # Pass other release events to the base class

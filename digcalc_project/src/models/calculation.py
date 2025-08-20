@@ -24,9 +24,9 @@ class SliceResult:
     cut: float
     fill: float
 
+
 class VolumeCalculation:
-    """Represents a volume calculation between surfaces.
-    """
+    """Represents a volume calculation between surfaces."""
 
     # Calculation types
     TYPE_SURFACE_TO_SURFACE = "surface_to_surface"
@@ -36,7 +36,7 @@ class VolumeCalculation:
 
     def __init__(self, name: str, calc_type: str, base_surface: Surface):
         """Initialize a volume calculation.
-        
+
         Args:
             name: Calculation name
             calc_type: Calculation type (one of the TYPE_* constants)
@@ -69,7 +69,7 @@ class VolumeCalculation:
 
     def set_comparison_surface(self, surface: Surface) -> None:
         """Set the comparison surface for surface-to-surface calculations.
-        
+
         Args:
             surface: Comparison surface
 
@@ -79,7 +79,7 @@ class VolumeCalculation:
 
     def set_reference_elevation(self, elevation: float) -> None:
         """Set the reference elevation for surface-to-elevation calculations.
-        
+
         Args:
             elevation: Reference elevation
 
@@ -89,7 +89,7 @@ class VolumeCalculation:
 
     def calculate(self) -> Dict[str, Any]:
         """Perform the volume calculation.
-        
+
         Returns:
             Dictionary of calculation results
 
@@ -162,7 +162,7 @@ class VolumeCalculation:
 
     def _calculate_grid_differencing(self) -> None:
         """Calculate volume using grid differencing.
-        
+
         This method converts TIN surfaces to grids if necessary,
         then performs grid-based volume calculations.
         """
@@ -172,7 +172,7 @@ class VolumeCalculation:
 
     def _calculate_tin_differencing(self) -> None:
         """Calculate volume using TIN differencing.
-        
+
         This method performs triangle-based volumetric calculations.
         """
         # This would be implemented in a real application
@@ -181,7 +181,7 @@ class VolumeCalculation:
 
     def _calculate_area(self) -> float:
         """Calculate the area of the calculation region.
-        
+
         Returns:
             Area in square units
 
@@ -202,7 +202,7 @@ class VolumeCalculation:
 
     def generate_report(self) -> Dict[str, Any]:
         """Generate a detailed report of the calculation.
-        
+
         Returns:
             Report data dictionary
 

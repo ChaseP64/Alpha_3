@@ -1,10 +1,12 @@
+import os
+
 import numpy as np
 import pytest
-from pytestqt.qtbot import QtBot
 from PySide6 import QtCore
-from digcalc_project.src.ui.dialogs.import_vector import ImportVectorDialog
+from pytestqt.qtbot import QtBot
+
 from digcalc_project.src.core.geom.polyline import Polyline
-import os
+from digcalc_project.src.ui.dialogs.import_vector import ImportVectorDialog
 
 # Skip if vectorizer disabled
 if os.getenv("DIGCALC_PDF_VEC") != "1":
@@ -14,7 +16,9 @@ if os.getenv("DIGCALC_PDF_VEC") != "1":
 def _dummy_polylines():
     # Two groups: solid black and dashed red
     solid = Polyline(vertices=np.asarray([[0, 0], [10, 0]]), stroke_rgb=(0, 0, 0), dash=None)
-    dashed = Polyline(vertices=np.asarray([[0, 0], [0, 10]]), stroke_rgb=(255, 0, 0), dash=(3.0, 3.0))
+    dashed = Polyline(
+        vertices=np.asarray([[0, 0], [0, 10]]), stroke_rgb=(255, 0, 0), dash=(3.0, 3.0)
+    )
     return [solid, dashed]
 
 
@@ -35,9 +39,11 @@ def test_dialog_lists_groups_and_emits(qtbot: QtBot, accept: bool):
     combo.setCurrentIndex(2)  # select "Offsets"
 
     with qtbot.waitSignal(dlg.vectorized_polylines_ready) as catcher:
-        qtbot.mouseClick(dlg.findChild(type(combo)).parentWidget(), QtCore.Qt.LeftButton)  # ensure widget focus
+        qtbot.mouseClick(
+            dlg.findChild(type(combo)).parentWidget(), QtCore.Qt.LeftButton
+        )  # ensure widget focus
         dlg._on_accept()
 
     emitted_polys, mapping = catcher.args
     assert emitted_polys == polylines
-    assert len(mapping) == 2 
+    assert len(mapping) == 2

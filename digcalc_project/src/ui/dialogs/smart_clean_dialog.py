@@ -29,16 +29,14 @@ class SmartCleanDialog(QDialog):
         layout.addWidget(self.enable_chk)
 
         # Compression tolerance sliders ----------------------------------
-        from PySide6.QtWidgets import QLabel, QHBoxLayout, QSlider
         from PySide6.QtCore import Qt
+        from PySide6.QtWidgets import QHBoxLayout, QLabel, QSlider
 
         self.dist_slider = QSlider(Qt.Orientation.Horizontal)
         self.dist_slider.setRange(1, 100)  # map 0.01-1.00 ft
         self.dist_slider.setValue(10)
         self.dist_label = QLabel("0.10 ft")
-        self.dist_slider.valueChanged.connect(
-            lambda v: self.dist_label.setText(f"{v/100:.2f} ft")
-        )
+        self.dist_slider.valueChanged.connect(lambda v: self.dist_label.setText(f"{v/100:.2f} ft"))
 
         dist_layout = QHBoxLayout()
         dist_layout.addWidget(QLabel("Distance Tol:"))
@@ -50,9 +48,7 @@ class SmartCleanDialog(QDialog):
         self.angle_slider.setRange(1, 180)
         self.angle_slider.setValue(1)
         self.angle_label = QLabel("1°")
-        self.angle_slider.valueChanged.connect(
-            lambda v: self.angle_label.setText(f"{v}°")
-        )
+        self.angle_slider.valueChanged.connect(lambda v: self.angle_label.setText(f"{v}°"))
 
         angle_layout = QHBoxLayout()
         angle_layout.addWidget(QLabel("Angle Tol:"))
@@ -71,9 +67,9 @@ class SmartCleanDialog(QDialog):
     # ------------------------------------------------------------------
     def is_enabled(self) -> bool:  # noqa: D401
         """Return checkbox state (True when Smart Clean is enabled)."""
-        return self.enable_chk.isChecked() 
+        return self.enable_chk.isChecked()
 
     # ------------------------------------------------------------------
     def tolerances(self) -> tuple[float, float]:  # noqa: D401
         """Return (dist_tol_ft, angle_tol_deg) from sliders."""
-        return self.dist_slider.value() / 100.0, float(self.angle_slider.value()) 
+        return self.dist_slider.value() / 100.0, float(self.angle_slider.value())

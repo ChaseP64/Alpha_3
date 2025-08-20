@@ -1,9 +1,9 @@
-
 # Since SettingsService is a singleton and might be imported elsewhere,
 # we need to be careful with patching its internal _path for tests.
 # The user's test uses _settings_path, let's ensure that's what's intended.
 # Reviewing settings_service.py, it uses _path.
 # The test should patch SettingsService._path.
+
 
 def test_last_scale_roundtrip(tmp_path, monkeypatch):
     """Test that setting and getting last_scale works correctly."""
@@ -30,11 +30,11 @@ def test_last_scale_roundtrip(tmp_path, monkeypatch):
 
     # Resetting the _initialized flag to force re-init if the singleton pattern allows
     if hasattr(SettingsService, "_instance") and SettingsService._instance is not None:
-        SettingsService._instance._initialized = False # type: ignore[attr-defined]
+        SettingsService._instance._initialized = False  # type: ignore[attr-defined]
         # del SettingsService._instance # This would be more aggressive
         # SettingsService._instance = None # Common way to reset singleton for tests
 
-    svc = SettingsService() # This should now pick up the patched _path
+    svc = SettingsService()  # This should now pick up the patched _path
 
     # Perform the test
     svc.set_last_scale("m", 5.0)
@@ -46,7 +46,7 @@ def test_last_scale_roundtrip(tmp_path, monkeypatch):
     # Verify it's saved and reloaded correctly
     # Create a new instance (should be the same due to singleton) or re-initialize
     if hasattr(SettingsService, "_instance") and SettingsService._instance is not None:
-         SettingsService._instance._initialized = False # type: ignore[attr-defined]
+        SettingsService._instance._initialized = False  # type: ignore[attr-defined]
 
     svc_new = SettingsService()
     reloaded_units, reloaded_val = svc_new.last_scale()

@@ -8,8 +8,8 @@ attached back onto the owning ``MainWindow`` instance under the same names so
 existing code and tests remain unchanged.
 """
 
-from typing import TYPE_CHECKING, Any
 import logging
+from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -78,7 +78,10 @@ class DockManager:  # noqa: D101 – thin wrapper
 
         # ----------------------- Strata Manager Dock ------------------
         try:
-            from digcalc_project.src.ui.docks.strata_manager_dock import StrataManagerDock  # noqa: E501
+            from digcalc_project.src.ui.docks.strata_manager_dock import (  # noqa: E501
+                StrataManagerDock,
+            )
+
             strata_dock = StrataManagerDock(mw)  # type: ignore[attr-defined]
             mw.addDockWidget(Qt.RightDockWidgetArea, strata_dock)
             self._attach("strata_manager_dock", strata_dock)
@@ -94,4 +97,4 @@ class DockManager:  # noqa: D101 – thin wrapper
                 def refresh_boreholes(self):
                     """Placeholder for tests."""
 
-            self._attach("strata_manager_dock", _StubStrataDock(mw)) 
+            self._attach("strata_manager_dock", _StubStrataDock(mw))

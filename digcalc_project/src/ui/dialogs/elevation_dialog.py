@@ -20,7 +20,7 @@ class ElevationDialog(QtWidgets.QDialog):
 
         Args:
             parent (QWidget, optional): Parent widget. Defaults to None.
-            initial_value (float, optional): Initial value for the spinbox. 
+            initial_value (float, optional): Initial value for the spinbox.
                                            If None, uses the last remembered value.
 
         """
@@ -38,8 +38,8 @@ class ElevationDialog(QtWidgets.QDialog):
         self._spinbox = QtWidgets.QDoubleSpinBox()
         self._spinbox.setRange(-10000.00, 10000.00)
         self._spinbox.setDecimals(2)
-        self._spinbox.setValue(start_value) # Use determined start value
-        self._spinbox.selectAll() # Select text for easy replacement
+        self._spinbox.setValue(start_value)  # Use determined start value
+        self._spinbox.selectAll()  # Select text for easy replacement
 
         self._buttonbox = QtWidgets.QDialogButtonBox(
             QtWidgets.QDialogButtonBox.StandardButton.Ok
@@ -58,7 +58,7 @@ class ElevationDialog(QtWidgets.QDialog):
         # Connections
         self._buttonbox.accepted.connect(self.accept)
         self._buttonbox.rejected.connect(self.reject)
-        self.accepted.connect(self._update_last_elevation) # Update memory on accept
+        self.accepted.connect(self._update_last_elevation)  # Update memory on accept
 
         logger.debug("ElevationDialog initialized with value: %.2f", start_value)
 
@@ -72,9 +72,11 @@ class ElevationDialog(QtWidgets.QDialog):
         _LAST_ELEV = self.value()
         logger.debug("Stored last elevation value: %.2f", _LAST_ELEV)
 
+
 # Example Usage (for testing the dialog directly)
 if __name__ == "__main__":
     import sys
+
     logging.basicConfig(level=logging.DEBUG)
     app = QtWidgets.QApplication(sys.argv)
     dialog = ElevationDialog()

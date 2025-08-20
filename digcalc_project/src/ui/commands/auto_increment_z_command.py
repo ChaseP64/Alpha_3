@@ -12,8 +12,8 @@ from typing import List, Optional
 
 from PySide6.QtGui import QUndoCommand
 
-from digcalc_project.src.ui.items.vertex_item import VertexItem
 from digcalc_project.src.core.calculations.linear_grade import interpolate_z_linear
+from digcalc_project.src.ui.items.vertex_item import VertexItem
 
 __all__ = ["AutoIncrementZCommand"]
 
@@ -72,4 +72,4 @@ class AutoIncrementZCommand(QUndoCommand):
 
     def redo(self):
         for v, z in zip(self._verts, self._new_z):
-            v.set_z(z) 
+            v.set_z(z)

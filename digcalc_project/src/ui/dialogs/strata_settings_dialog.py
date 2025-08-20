@@ -13,10 +13,10 @@ Values persist via SettingsService automatically on dialog accept.
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDialog,
-    QFormLayout,
     QDialogButtonBox,
-    QSpinBox,
     QDoubleSpinBox,
+    QFormLayout,
+    QSpinBox,
 )
 
 from ...services.settings_service import SettingsService
@@ -73,4 +73,4 @@ class StrataSettingsDialog(QDialog):
         self._settings.set("strata", "idw_power", int(self._spin_power.value()))
         self._settings.set("strata", "idw_radius_ft", float(self._spin_radius.value()))
         self._settings.set("strata", "default_cell_size_ft", float(self._spin_cell.value()))
-        super().accept() 
+        super().accept()

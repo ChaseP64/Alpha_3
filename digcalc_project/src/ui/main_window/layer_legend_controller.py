@@ -1,11 +1,13 @@
 """
 Controller for handling layer legend logic.
 """
+
 from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QObject, Slot, Qt
+from PySide6.QtCore import QObject, Qt, Slot
 from PySide6.QtWidgets import QTreeWidgetItem
 
 if TYPE_CHECKING:
@@ -53,7 +55,7 @@ class LayerLegendController(QObject):
             mw = self.main_window
             layer_name = item.text(0)
             is_visible = item.checkState(0) == Qt.CheckState.Checked
-            
+
             project = mw.project_controller.get_current_project()
             if project:
                 layer = project.get_layer_by_name(layer_name)
@@ -62,6 +64,6 @@ class LayerLegendController(QObject):
 
             if mw.visualization_panel and mw.visualization_panel.scene_2d:
                 mw.visualization_panel.scene_2d.setLayerVisible(layer_name, is_visible)
-            
+
             if hasattr(mw, "legend_dock"):
-                mw.legend_dock.set_layer_visibility(layer_name, is_visible) 
+                mw.legend_dock.set_layer_visibility(layer_name, is_visible)

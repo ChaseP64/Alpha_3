@@ -23,8 +23,8 @@ pytest.importorskip("PySide6")
 from PySide6.QtCore import QPointF
 from PySide6.QtWidgets import QApplication, QGraphicsView
 
-from digcalc_project.src.ui.tracing_scene import TracingScene
 from digcalc_project.src.ui.items.vertex_item import VertexItem
+from digcalc_project.src.ui.tracing_scene import TracingScene
 
 # ---------------------------------------------------------------------------
 # Opt-in guard – skip unless explicitly enabled by developer/CI job
@@ -65,4 +65,4 @@ def test_elev_heatmap_refresh_p90(benchmark):
     runtime = benchmark(scene._refresh_elevation_heatmap)
 
     # Assert wall-clock runtime below 100 ms (0.1 s)
-    assert runtime < 0.1, f"Heat-map refresh too slow: {runtime:.3f}s > 0.1s" 
+    assert runtime < 0.1, f"Heat-map refresh too slow: {runtime:.3f}s > 0.1s"

@@ -12,8 +12,9 @@ requires-python = ">=3.9" # Adjusted based on CI file
 
 # Core dependencies derived from requirements.txt
 dependencies = [
-  "PySide6>=6.6",
-  "PySide6-Addons>=6.6.0", # Keep existing pin
+  "PySide6==6.9.0",
+  "PySide6-Addons==6.9.0", # Keep in lockstep with PySide6
+  "shiboken6==6.9.0",
   "numpy",
   "scipy",
   "ezdxf>=0.17.0",
@@ -41,6 +42,8 @@ dev = [
     "pytest-qt>=4.0.0",
     # "mypy" # Can uncomment later if needed
     "ruff>=0.4",
+    "black>=24.3",
+    "isort>=5.13",
 ]
 # Optional: speedups for strata interpolation
 strata-speed = [
@@ -58,6 +61,14 @@ include = ["digcalc_project*"] # Include the package and its subpackages
 
 [tool.ruff]
 line-length = 100
+
+[tool.black]
+line-length = 100
+target-version = ["py39"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
 
 [tool.ruff.lint]
 ignore-init-module-imports = true

@@ -3,8 +3,8 @@ from __future__ import annotations
 """Tests for PvDock._validate_polydata helper."""
 
 import numpy as np
-import pyvista as pv
 import pytest
+import pyvista as pv
 
 from digcalc_project.src.ui.docks.pv_dock import PvDock
 
@@ -25,4 +25,4 @@ def test_flat_mesh_raises() -> None:
 def test_good_mesh_passes() -> None:
     cube = pv.Cube()
     # Should not raise
-    PvDock._validate_polydata(cube) 
+    PvDock._validate_polydata(cube)

@@ -1,4 +1,4 @@
-"""GUI macro test – Batch-Join centreline polylines (Phase-3). 
+"""GUI macro test – Batch-Join centreline polylines (Phase-3).
 
 This test replays a recorded Playwright script that opens the sample
 project, selects all *Road Centerline* polylines, presses **J** to invoke
@@ -9,10 +9,14 @@ skip it unless `DIGCALC_RUN_GUI_MACROS=1` is set.
 """
 
 import os
+
 import pytest
 
 if os.getenv("DIGCALC_RUN_GUI_MACROS") != "1":
-    pytest.skip("GUI macro tests disabled – set DIGCALC_RUN_GUI_MACROS=1 to enable.", allow_module_level=True)
+    pytest.skip(
+        "GUI macro tests disabled – set DIGCALC_RUN_GUI_MACROS=1 to enable.",
+        allow_module_level=True,
+    )
 
 # ---------------------------------------------------------------------------
 # Placeholder for Playwright integration.
@@ -21,7 +25,8 @@ if os.getenv("DIGCALC_RUN_GUI_MACROS") != "1":
 # a JSON macro file produced by `npx playwright codegen`.
 # ---------------------------------------------------------------------------
 
+
 def test_batch_join_macro():
     """Placeholder smoke-assert that macro infrastructure is wired."""
     # The real macro code will run here; for now just assert True so the test passes.
-    assert True 
+    assert True

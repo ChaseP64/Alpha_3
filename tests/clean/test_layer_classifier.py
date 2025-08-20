@@ -8,9 +8,9 @@ from __future__ import annotations
 
 import numpy as np
 
-from digcalc_project.src.core.geom.polyline import Polyline
 from digcalc_project.src.core.clean.rule_engine import RuleRegistry
 from digcalc_project.src.core.clean.rules import LayerClassifyRule
+from digcalc_project.src.core.geom.polyline import Polyline
 
 
 def _make_poly(vertices=((0.0, 0.0), (1.0, 0.0)), *, rgb=None, dash=None, label=None):
@@ -55,4 +55,4 @@ def test_unknown_defaults_to_misc():
     RuleRegistry.register(LayerClassifyRule)
     [classified] = RuleRegistry.evaluate([pl])
 
-    assert getattr(classified, "layer_class") == "misc" 
+    assert getattr(classified, "layer_class") == "misc"

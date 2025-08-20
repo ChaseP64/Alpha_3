@@ -1,4 +1,5 @@
 """CSV exporter helper for per-material cut volumes."""
+
 from __future__ import annotations
 
 import csv
@@ -8,7 +9,9 @@ from typing import Dict
 from digcalc_project.src.models.strata_models import StrataStack
 
 
-def save_material_cut_csv(path: str | Path, volumes: Dict[int, float], strata_stack: StrataStack, unit: str = "cuyd") -> None:
+def save_material_cut_csv(
+    path: str | Path, volumes: Dict[int, float], strata_stack: StrataStack, unit: str = "cuyd"
+) -> None:
     """Write per-material cut volumes to CSV.
 
     Args:
@@ -41,10 +44,7 @@ def export_volume_report(path: str | Path, params: dict, dz_cache: tuple) -> Non
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    header = [
-        "Parameter", "Value", "",
-        "Grid Point X", "Grid Point Y", "Cut/Fill Depth"
-    ]
+    header = ["Parameter", "Value", "", "Grid Point X", "Grid Point Y", "Cut/Fill Depth"]
 
     with path.open("w", newline="", encoding="utf-8") as fp:
         writer = csv.writer(fp)

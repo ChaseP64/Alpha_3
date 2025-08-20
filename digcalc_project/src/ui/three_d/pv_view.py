@@ -40,23 +40,28 @@ def surface_to_polydata(surface):
             for tri in surface.triangles.values():
                 if id_to_index is None:
                     continue  # Should not happen
-                face_list.extend([3,
-                                  id_to_index.get(tri.p1.id, -1),
-                                  id_to_index.get(tri.p2.id, -1),
-                                  id_to_index.get(tri.p3.id, -1)])
+                face_list.extend(
+                    [
+                        3,
+                        id_to_index.get(tri.p1.id, -1),
+                        id_to_index.get(tri.p2.id, -1),
+                        id_to_index.get(tri.p3.id, -1),
+                    ]
+                )
             faces = np.array(face_list, dtype=int)
         else:
             # Assume list/iterable of index triplets
-            faces = np.hstack([np.full((len(surface.triangles), 1), 3),
-                               np.array(list(surface.triangles))]).ravel()
+            faces = np.hstack(
+                [np.full((len(surface.triangles), 1), 3), np.array(list(surface.triangles))]
+            ).ravel()
 
     if faces is not None and faces.size > 0:
         mesh = pv.PolyData(pts, faces=faces)
-    else:                                                # grid => surf
+    else:  # grid => surf
         # Reason: If no triangles, assume it's a point grid and use Delaunay 2D
         # to create a surface mesh.
         mesh = pv.PolyData(pts)
-        mesh = mesh.delaunay_2d() # Apply Delaunay triangulation
+        mesh = mesh.delaunay_2d()  # Apply Delaunay triangulation
 
     # Reason: Check for cut/fill data (dz_grid) and add it as scalars 'dz'.
     # Otherwise, use the Z elevation as the default 'dz' scalar.
@@ -66,16 +71,18 @@ def surface_to_polydata(surface):
             dz = np.array([d for _, _, d in surface.dz_grid])
             # Basic check: Ensure dz array has the same size as the number of points
             if dz.shape[0] == pts.shape[0]:
-                 mesh["dz"] = dz
+                mesh["dz"] = dz
             else:
-                 # Fallback or raise error if dimensions mismatch
-                 print(f"Warning: dz_grid size ({dz.shape[0]}) mismatch with points ({pts.shape[0]}). Using elevation.")
-                 mesh["dz"] = pts[:, 2] # Fallback to elevation
+                # Fallback or raise error if dimensions mismatch
+                print(
+                    f"Warning: dz_grid size ({dz.shape[0]}) mismatch with points ({pts.shape[0]}). Using elevation."
+                )
+                mesh["dz"] = pts[:, 2]  # Fallback to elevation
         except (TypeError, ValueError) as e:
             print(f"Warning: Could not process dz_grid: {e}. Using elevation.")
-            mesh["dz"] = pts[:, 2] # Fallback to elevation
+            mesh["dz"] = pts[:, 2]  # Fallback to elevation
 
     else:
-        mesh["dz"] = pts[:, 2] # Use Z coordinate if no dz_grid
+        mesh["dz"] = pts[:, 2]  # Use Z coordinate if no dz_grid
 
     return mesh

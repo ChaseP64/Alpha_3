@@ -1,7 +1,9 @@
 """
 Controller for handling scale calibration logic.
 """
+
 from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING
 
@@ -89,4 +91,4 @@ class ScaleCalibrationController(QObject):
         exposes :py:meth:`on_scale_calibration` instead, so we alias the call
         here to remain backward-compatible without touching *main_window.py*.
         """
-        self.on_scale_calibration() 
+        self.on_scale_calibration()

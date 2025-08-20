@@ -1,16 +1,16 @@
 """GUI-level test for LayerLegendDock visibility toggling and undo support."""
 
 import pytest
-from PySide6.QtWidgets import QApplication, QGraphicsView
-from PySide6.QtGui import QPen, QColor
 from PySide6.QtCore import QPointF, Qt
+from PySide6.QtGui import QColor, QPen
+from PySide6.QtWidgets import QApplication, QGraphicsView
 
+from digcalc_project.src.models.project import Project
 from digcalc_project.src.services.layer_service import create_layer
-from digcalc_project.src.ui.tracing_scene import TracingScene
+from digcalc_project.src.ui.commands.set_layer_visibility_cmd import SetLayerVisibilityCommand
 from digcalc_project.src.ui.docks.layer_legend_dock import LayerLegendDock
 from digcalc_project.src.ui.items.polyline_item import PolylineItem
-from digcalc_project.src.ui.commands.set_layer_visibility_cmd import SetLayerVisibilityCommand
-from digcalc_project.src.models.project import Project
+from digcalc_project.src.ui.tracing_scene import TracingScene
 
 
 @pytest.fixture(scope="module")
@@ -57,7 +57,8 @@ def test_layer_legend_visibility_toggle(qapp):
     # Connect legend signal to scene visibility
     legend.layerVisibilityToggled.connect(
         lambda lid, vis: scene.setLayerVisible(
-            next(layer.name for layer in proj.layers if layer.id == lid), vis,
+            next(layer.name for layer in proj.layers if layer.id == lid),
+            vis,
         ),
     )
 
@@ -66,10 +67,18 @@ def test_layer_legend_visibility_toggle(qapp):
     scene.undoStack().push(cmd)
 
     # Assert – polyline for layer 0 should now be hidden
-    hidden = all(not it.isVisible() for it in scene.items() if isinstance(it, PolylineItem) and it.layer_id == layers[0].id)
+    hidden = all(
+        not it.isVisible()
+        for it in scene.items()
+        if isinstance(it, PolylineItem) and it.layer_id == layers[0].id
+    )
     assert hidden
 
     # Undo -------------------------------------------------------------
     scene.undoStack().undo()
-    visible_again = any(it.isVisible() for it in scene.items() if isinstance(it, PolylineItem) and it.layer_id == layers[0].id)
-    assert visible_again 
+    visible_again = any(
+        it.isVisible()
+        for it in scene.items()
+        if isinstance(it, PolylineItem) and it.layer_id == layers[0].id
+    )
+    assert visible_again

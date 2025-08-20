@@ -17,6 +17,7 @@ def mock_project() -> Project:
     # Mock any methods or attributes on proj if needed for VisualizationPanel
     return proj
 
+
 @pytest.fixture
 def visualization_panel(qtbot, mock_project) -> VisualizationPanel:
     """Fixture for VisualizationPanel."""
@@ -29,16 +30,20 @@ def visualization_panel(qtbot, mock_project) -> VisualizationPanel:
     qtbot.addWidget(parent_widget)
     return panel
 
-def test_pdf_background_dpi_is_stored(visualization_panel: VisualizationPanel, mock_project: Project, tmp_path):
-    """Tests if load_pdf_background correctly stores the DPI in the project.
-    """
+
+def test_pdf_background_dpi_is_stored(
+    visualization_panel: VisualizationPanel, mock_project: Project, tmp_path
+):
+    """Tests if load_pdf_background correctly stores the DPI in the project."""
     sample_pdf_path = tmp_path / "sample.pdf"
     # Create a dummy PDF file for the test
     with open(sample_pdf_path, "w") as f:
-        f.write("%PDF-1.4\n%¥±Á\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
-                "2 0 obj<</Type/Pages/Count 1/Kids[3 0 R]>>endobj\n"
-                "3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R>>endobj\n"
-                "trailer<</Root 1 0 R>>\n%%EOF")
+        f.write(
+            "%PDF-1.4\n%¥±Á\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
+            "2 0 obj<</Type/Pages/Count 1/Kids[3 0 R]>>endobj\n"
+            "3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R>>endobj\n"
+            "trailer<</Root 1 0 R>>\n%%EOF"
+        )
 
     # Mock PdfService and its load_pdf method to return a mock PdfDocument
     mock_pdf_document = MagicMock()
@@ -49,8 +54,10 @@ def test_pdf_background_dpi_is_stored(visualization_panel: VisualizationPanel, m
     # We need to patch its __init__ and methods if they are called.
     # For this specific test, we mainly care that load_pdf_background tries to set project.pdf_background_dpi.
 
-    with patch.object(PdfService, "load_pdf", return_value=mock_pdf_document) as mock_load_pdf, \
-         patch("digcalc_project.src.ui.visualization_panel.PDFRenderer") as MockPDFRenderer:
+    with (
+        patch.object(PdfService, "load_pdf", return_value=mock_pdf_document) as mock_load_pdf,
+        patch("digcalc_project.src.ui.visualization_panel.PDFRenderer") as MockPDFRenderer,
+    ):
 
         # Configure the mock PDFRenderer instance if its methods are called
         mock_renderer_instance = MockPDFRenderer.return_value
@@ -59,7 +66,9 @@ def test_pdf_background_dpi_is_stored(visualization_panel: VisualizationPanel, m
         dummy_img = QImage(10, 10, QImage.Format.Format_RGB32)
         dummy_img.fill(0xFFFFFF)
 
-        mock_renderer_instance.get_original_page_count.return_value = mock_pdf_document.page_count  # Page count of 1
+        mock_renderer_instance.get_original_page_count.return_value = (
+            mock_pdf_document.page_count
+        )  # Page count of 1
         mock_renderer_instance.get_page_image.return_value = dummy_img  # Return a valid QImage
 
         # Stub out heavy Qt operations that aren't necessary for this logic test and
@@ -77,15 +86,18 @@ def test_pdf_background_dpi_is_stored(visualization_panel: VisualizationPanel, m
         assert success is True
 
         # Verify PDFRenderer was instantiated
-        MockPDFRenderer.assert_called_once_with(pdf_path=str(sample_pdf_path), dpi=test_dpi) # Corrected assertion
+        MockPDFRenderer.assert_called_once_with(
+            pdf_path=str(sample_pdf_path), dpi=test_dpi
+        )  # Corrected assertion
 
 
-def test_pdf_background_dpi_handles_load_failure(visualization_panel: VisualizationPanel, mock_project: Project, tmp_path):
-    """Tests that DPI is not set if PDF loading fails.
-    """
-    sample_pdf_path = tmp_path / "nonexistent.pdf" # File doesn't exist
+def test_pdf_background_dpi_handles_load_failure(
+    visualization_panel: VisualizationPanel, mock_project: Project, tmp_path
+):
+    """Tests that DPI is not set if PDF loading fails."""
+    sample_pdf_path = tmp_path / "nonexistent.pdf"  # File doesn't exist
 
-    initial_dpi = mock_project.pdf_background_dpi # Could be 0 or some default
+    initial_dpi = mock_project.pdf_background_dpi  # Could be 0 or some default
 
     with patch.object(PdfService, "load_pdf", return_value=None) as mock_load_pdf:
         visualization_panel.scene_2d.addBackgroundLayer = lambda *args, **kwargs: None  # type: ignore[assignment]

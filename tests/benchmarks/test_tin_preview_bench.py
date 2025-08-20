@@ -7,6 +7,7 @@ runtime.  The SLA for Phase-7 is < 0.5 s.
 """
 
 import os
+
 import numpy as np
 import pytest
 
@@ -14,9 +15,8 @@ pytest.importorskip("PySide6")
 
 from PySide6.QtWidgets import QApplication
 
-from digcalc_project.src.models.surface import Surface, Point3D, Triangle
+from digcalc_project.src.models.surface import Point3D, Surface, Triangle
 from digcalc_project.src.ui.visualization_panel import VisualizationPanel
-
 
 # Skip unless developer/CI requested
 if os.getenv("DIGCALC_RUN_BENCH") != "1":
@@ -32,13 +32,17 @@ def test_tin_preview_refresh_p90(benchmark):
     n = 100
     xs, ys = np.meshgrid(np.arange(n), np.arange(n))
     zs = np.sin(xs * 0.1) + np.cos(ys * 0.1)  # some elevation variation
-    points = [Point3D(float(x), float(y), float(z)) for x, y, z in zip(xs.ravel(), ys.ravel(), zs.ravel())]
+    points = [
+        Point3D(float(x), float(y), float(z)) for x, y, z in zip(xs.ravel(), ys.ravel(), zs.ravel())
+    ]
 
     surf = Surface("bench")
     # Add points and triangles (simple grid -> two tris per cell)
     surf.points = {p.id: p for p in points}
+
     def idx(i, j):
         return i * n + j
+
     for i in range(n - 1):
         for j in range(n - 1):
             p1 = points[idx(i, j)]

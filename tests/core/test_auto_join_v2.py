@@ -12,4 +12,4 @@ def test_auto_join_v2_basic_merge():
     merged = Polyline.auto_join_v2([pl1, pl2], gap_tol=0.01)
     assert len(merged) == 1, "Segments within gap_tol should merge into single polyline"
     assert np.allclose(merged[0].vertices[0], [0.0, 0.0])
-    assert np.allclose(merged[0].vertices[-1], [2.0, 0.0]) 
+    assert np.allclose(merged[0].vertices[-1], [2.0, 0.0])

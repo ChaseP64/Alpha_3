@@ -64,4 +64,4 @@ class RuleRegistry:  # noqa: D101 – simple singleton-style helper
         for rule_cls in cls._rules:
             rule = rule_cls()
             result = rule.apply(result)
-        return result 
+        return result

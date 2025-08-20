@@ -1,7 +1,7 @@
 """Unit tests for the *Layer* colour round-trip serialisation."""
 
 from digcalc_project.src.models.layer import Layer
-from digcalc_project.src.models.serializers import layer_to_dict, layer_from_dict
+from digcalc_project.src.models.serializers import layer_from_dict, layer_to_dict
 
 
 def test_layer_color_roundtrip() -> None:
@@ -11,4 +11,4 @@ def test_layer_color_roundtrip() -> None:
     clone = layer_from_dict(data)
 
     assert clone.line_color.startswith("#"), "Expected hex colour string."
-    assert clone.point_color == clone.line_color 
+    assert clone.point_color == clone.line_color

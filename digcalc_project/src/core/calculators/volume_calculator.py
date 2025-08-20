@@ -9,6 +9,7 @@ phases can freely evolve this API in place.
 from importlib import import_module
 from types import ModuleType
 from typing import TYPE_CHECKING
+
 import numpy as _np
 
 from digcalc_project.src.models.strata_models import StrataStack, StrataSurface
@@ -23,7 +24,9 @@ calculate_mass_haul_by_material = _module.calculate_mass_haul_by_material  # typ
 __all__ = ["VolumeCalculator"]
 
 if TYPE_CHECKING:  # pragma: no cover – mypy only
-    from digcalc_project.src.core.calculations.volume_calculator import VolumeCalculator as _VolCalc  # noqa: F401 
+    from digcalc_project.src.core.calculations.volume_calculator import (  # noqa: F401
+        VolumeCalculator as _VolCalc,
+    )
 
 __all__.append("build_cumulative_arrays")
 __all__.extend(["build_cumulative_arrays", "calculate_material_cut"])
@@ -32,10 +35,14 @@ __all__.extend(["build_cumulative_arrays", "calculate_material_cut"])
 # Cut/Fill balancing helper – determines import/export volumes based on user
 # configuration *spoil_to_fill_ratio*.
 # ---------------------------------------------------------------------------
-from digcalc_project.src.services.settings_service import SettingsService  # late import to avoid cycles
+from digcalc_project.src.services.settings_service import (  # late import to avoid cycles
+    SettingsService,
+)
 
 
-def balance_cut_fill(cut_volume: float, fill_volume: float, *, ratio: float | None = None) -> dict[str, float]:
+def balance_cut_fill(
+    cut_volume: float, fill_volume: float, *, ratio: float | None = None
+) -> dict[str, float]:
     """Return dict with ``import_volume`` and ``export_volume``.
 
     Args:
@@ -65,8 +72,10 @@ def balance_cut_fill(cut_volume: float, fill_volume: float, *, ratio: float | No
         "reused_cut_volume": fill_satisfied,
     }
 
+
 # make helper public
 __all__.append("balance_cut_fill")
+
 
 def build_cumulative_arrays(strata_stack: StrataStack, base_grid: float):
     """Return cumulative top and bottom Z arrays for the given *strata_stack*.
@@ -102,9 +111,12 @@ def build_cumulative_arrays(strata_stack: StrataStack, base_grid: float):
         # Always write into bottom_z (overwriting deeper each time)
         bottom_z[mask] = grid[mask]
 
-    return top_z, bottom_z 
+    return top_z, bottom_z
 
-def calculate_material_cut(existing_z: _np.ndarray, proposed_z: _np.ndarray, strata_stack: StrataStack, cell_area: float) -> dict[int, float]:
+
+def calculate_material_cut(
+    existing_z: _np.ndarray, proposed_z: _np.ndarray, strata_stack: StrataStack, cell_area: float
+) -> dict[int, float]:
     """Return cut volumes per material id given existing/proposed Z grids.
 
     Args:
@@ -125,7 +137,9 @@ def calculate_material_cut(existing_z: _np.ndarray, proposed_z: _np.ndarray, str
     bottom_grid = _np.full_like(layers[0].grid_data, _np.nan)
     for surf in reversed(layers):
         bottom_grid = _np.where(~_np.isnan(surf.grid_data), surf.grid_data, bottom_grid)
-    layers.append(StrataSurface(id=9999, material_id=-1, grid_data=bottom_grid - 1e6, grid_metadata={}))  # very deep
+    layers.append(
+        StrataSurface(id=9999, material_id=-1, grid_data=bottom_grid - 1e6, grid_metadata={})
+    )  # very deep
 
     cut_remaining = _np.clip(existing_z - proposed_z, 0, None)
     vol_by_mat: dict[int, float] = {surf.material_id: 0.0 for surf in layers[:-1]}
@@ -140,6 +154,7 @@ def calculate_material_cut(existing_z: _np.ndarray, proposed_z: _np.ndarray, str
         cut_here = _np.clip(cut_remaining, 0, layer_thickness)
         vol_by_mat[surf.material_id] += float(_np.nansum(cut_here) * cell_area)
         cut_remaining = cut_remaining - cut_here
-    return vol_by_mat 
+    return vol_by_mat
 
-__all__.append("calculate_mass_haul_by_material") 
+
+__all__.append("calculate_mass_haul_by_material")

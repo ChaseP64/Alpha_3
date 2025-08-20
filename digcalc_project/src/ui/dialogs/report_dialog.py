@@ -26,17 +26,19 @@ class ReportDialog(QDialog):
 
     """
 
-    def __init__(self,
-                 existing_surface_name: str,
-                 proposed_surface_name: str,
-                 grid_resolution: float,
-                 cut_volume: float,
-                 fill_volume: float,
-                 net_volume: float,
-                 parent: QWidget | None = None):
+    def __init__(
+        self,
+        existing_surface_name: str,
+        proposed_surface_name: str,
+        grid_resolution: float,
+        cut_volume: float,
+        fill_volume: float,
+        net_volume: float,
+        parent: QWidget | None = None,
+    ):
         super().__init__(parent)
         self.setWindowTitle("Volume Calculation Report")
-        self.setMinimumWidth(400) # Ensure a reasonable minimum width
+        self.setMinimumWidth(400)  # Ensure a reasonable minimum width
 
         self.existing_surface_name = existing_surface_name
         self.proposed_surface_name = proposed_surface_name
@@ -49,8 +51,8 @@ class ReportDialog(QDialog):
         # Layouts
         main_layout = QVBoxLayout(self)
         form_layout = QFormLayout()
-        form_layout.setContentsMargins(10, 10, 10, 10) # Add padding
-        form_layout.setSpacing(10) # Add spacing between rows
+        form_layout.setContentsMargins(10, 10, 10, 10)  # Add padding
+        form_layout.setSpacing(10)  # Add spacing between rows
 
         # --- Report Details ---
         self.lbl_existing = QLabel(self.existing_surface_name)
@@ -75,7 +77,7 @@ class ReportDialog(QDialog):
         for i in range(form_layout.rowCount()):
             label_item = form_layout.itemAt(i, QFormLayout.LabelRole)
             if label_item and label_item.widget():
-                 label_item.widget().setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+                label_item.widget().setAlignment(Qt.AlignRight | Qt.AlignVCenter)
 
         main_layout.addLayout(form_layout)
 
@@ -86,7 +88,8 @@ class ReportDialog(QDialog):
 
         self.setLayout(main_layout)
         self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
-        self.adjustSize() # Adjust size to fit contents
+        self.adjustSize()  # Adjust size to fit contents
+
 
 if __name__ == "__main__":
     # Example Usage (for testing)

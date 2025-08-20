@@ -18,6 +18,7 @@ callers supply:
 
 from typing import List
 
+from PySide6.QtGui import QUndoStack
 from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
@@ -30,10 +31,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from PySide6.QtGui import QUndoStack
-
-from digcalc_project.src.ui.items.vertex_item import VertexItem
 from digcalc_project.src.ui.commands.auto_increment_z_command import AutoIncrementZCommand
+from digcalc_project.src.ui.items.vertex_item import VertexItem
 
 __all__ = ["AutoIncrementDialog"]
 
@@ -135,4 +134,4 @@ class AutoIncrementDialog(QDialog):
             return
 
         self._undo_stack.push(cmd)
-        self.accept() 
+        self.accept()

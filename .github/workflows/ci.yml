@@ -51,6 +51,12 @@ jobs:
       - name: Ruff lint
         run: ruff check .
 
+      - name: isort check
+        run: isort --check-only .
+
+      - name: black check
+        run: black --check .
+
       # ------------------------------------------------------------------
       # Static type-checking (loose)
       # ------------------------------------------------------------------
@@ -61,7 +67,7 @@ jobs:
       # Test suite & coverage
       # ------------------------------------------------------------------
       - name: Test & coverage
-        run: pytest -q --cov=digcalc_project --cov-report=xml
+        run: pytest -q --cov=digcalc_project --cov-report=xml | tee pytest_output.txt
 
       # ------------------------------------------------------------------
       # Enforce coverage threshold (84 %) – optional
@@ -78,3 +84,9 @@ jobs:
           print(f'Coverage: {cov:.1f}% (required ≥ 84%)')
           sys.exit(0 if cov >= 84 else 1)
           PY 
+
+      # ------------------------------------------------------------------
+      # File length guard (≤ 500 lines)
+      # ------------------------------------------------------------------
+      - name: File length guard
+        run: python tools/file_size_guard.py

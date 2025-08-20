@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""Serialization classes for DigCalc project data.
-"""
+"""Serialization classes for DigCalc project data."""
 
 import json
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from .project import Project  # Use relative import
 from .project_scale import ProjectScale
-from .surface import Surface
 from .strata_models import StrataStack
+from .surface import Surface
 
 logger = logging.getLogger(__name__)
+
 
 class ProjectLoadError(Exception):
     """Custom exception for errors during project loading."""
@@ -38,11 +38,11 @@ class ProjectSerializer:
         try:
             success = project.save(filepath)
             if not success:
-                 raise RuntimeError(f"Project.save method returned False for {filepath}.")
+                raise RuntimeError(f"Project.save method returned False for {filepath}.")
             logger.debug(f"Project.save completed for {filepath}.")
         except Exception as e:
             logger.error(f"Error occurred during Project.save for {filepath}: {e}", exc_info=True)
-            raise # Re-raise the original exception
+            raise  # Re-raise the original exception
 
     def load(self, filepath: str) -> Project:
         """Loads a Project object by calling the Project.load class method.
@@ -64,9 +64,13 @@ class ProjectSerializer:
 
             if project is None:
                 logger.error(f"Project.load returned None for file: {filepath}")
-                raise ProjectLoadError(f"Failed to load project from {filepath}. File may be invalid, corrupted, or not found.")
+                raise ProjectLoadError(
+                    f"Failed to load project from {filepath}. File may be invalid, corrupted, or not found."
+                )
 
-            logger.debug(f"Project.load successfully returned project '{project.name}' from {filepath}.")
+            logger.debug(
+                f"Project.load successfully returned project '{project.name}' from {filepath}."
+            )
             return project
 
         except FileNotFoundError:
@@ -74,19 +78,24 @@ class ProjectSerializer:
             raise ProjectLoadError(f"Project file not found: {filepath}")
         except json.JSONDecodeError as e:
             logger.error(f"Error decoding JSON from {filepath}: {e}", exc_info=True)
-            raise ProjectLoadError(f"Failed to load project from {filepath}. Invalid JSON format. Error: {e}")
+            raise ProjectLoadError(
+                f"Failed to load project from {filepath}. Invalid JSON format. Error: {e}"
+            )
         except Exception as e:
             logger.error(f"Unexpected error during Project.load for {filepath}: {e}", exc_info=True)
             raise ProjectLoadError(f"An unexpected error occurred loading {filepath}. Error: {e}")
+
 
 # ---------------------------------------------------------------------------
 # Convenience in-memory (de)serialisers used by unit-tests and API layer.
 # They are intentionally *schema-stable* and ignore extraneous keys.
 # ---------------------------------------------------------------------------
 
+
 def scale_to_dict(scale: Optional[ProjectScale]) -> Optional[dict]:
     """Serialize ProjectScale to dict, excluding None values."""
     return scale.model_dump(exclude_none=True) if scale else None
+
 
 def scale_from_dict(d: Optional[dict]) -> Optional[ProjectScale]:
     """Deserialize dict to ProjectScale."""
@@ -97,12 +106,15 @@ def scale_from_dict(d: Optional[dict]) -> Optional[ProjectScale]:
     try:
         scale = ProjectScale.model_validate(d)
         # If critical calibration fields are missing (no direct value & no ratio)
-        if scale.world_per_paper_in is None and (scale.ratio_numer is None or scale.ratio_denom is None):
+        if scale.world_per_paper_in is None and (
+            scale.ratio_numer is None or scale.ratio_denom is None
+        ):
             return None
         return scale
     except Exception as e:
         logger.warning(f"Failed to create ProjectScale from dict: {d}. Error: {e}. Returning None.")
         return None
+
 
 def _load_surfaces(data: dict | None) -> dict[str, Surface]:
     """Helper to reconstruct *Surface* objects from a mapping."""
@@ -117,6 +129,7 @@ def _load_surfaces(data: dict | None) -> dict[str, Surface]:
             logger.warning("Failed to load surface '%s': %s", name, exc)
     return surfaces_dict
 
+
 # NOTE: Polyline model is still evolving – keep loader simple / future-proof.
 def _load_polylines(data):  # type: ignore[override]
     """Return the raw polylines structure exactly as stored (dict or list).
@@ -125,6 +138,7 @@ def _load_polylines(data):  # type: ignore[override]
     traced-polyline schema, so at this stage we just pass things through.
     """
     return data if data is not None else {}
+
 
 def to_dict(project: Project) -> dict:
     """Serialise *Project* → `dict` (no file I/O).
@@ -143,6 +157,7 @@ def to_dict(project: Project) -> dict:
 
     return data
 
+
 def from_dict(data: dict) -> Project:
     """Hydrate a :class:`Project` from an in-memory mapping."""
     try:
@@ -150,6 +165,7 @@ def from_dict(data: dict) -> Project:
             data["scale"] = scale_from_dict(data["scale"])
         # Ensure 'layers' is an instance of _LayerDict
         from digcalc_project.src.models.project import _LayerDict as _LD
+
         if "layers" not in data or not isinstance(data["layers"], _LD):
             data["layers"] = _LD(data.get("layers", {}))
         return Project.model_validate(data)
@@ -164,6 +180,7 @@ def from_dict(data: dict) -> Project:
                 data["layers"] = _LD(data.get("layers", {}))
             return Project.model_validate(data)
         raise
+
 
 # ---------------------------------------------------------------------------
 # Layer (de)serialisation helpers
@@ -207,13 +224,16 @@ def layer_from_dict(data: dict) -> "Layer":
         visible=data.get("visible", True),
     )
 
+
 # ---------------------------------------------------------------------------
 # Strata (de)serialisation helpers
 # ---------------------------------------------------------------------------
 
+
 def strata_to_dict(stack: "StrataStack | None") -> dict | None:
     """Return mapping suitable for JSON output or *None* if no stack."""
     return stack.to_dict() if stack else None
+
 
 def strata_from_dict(d: dict | None) -> "StrataStack | None":
     """Inverse of :pyfunc:`strata_to_dict` with best-effort legacy tolerance."""

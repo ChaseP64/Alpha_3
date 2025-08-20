@@ -18,15 +18,15 @@ strataContourModeChanged(bool)
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
+    QCheckBox,
     QDockWidget,
-    QListWidget,
-    QListWidgetItem,
-    QWidget,
     QHBoxLayout,
     QLabel,
+    QListWidget,
+    QListWidgetItem,
     QPushButton,
     QVBoxLayout,
-    QCheckBox,
+    QWidget,
 )
 
 from digcalc_project.src.models.layer import Layer
@@ -115,7 +115,9 @@ class LayerLegendDock(QDockWidget):
 
         # --- NEW: Strata Contour checkbox ---
         self._chk_strata = QCheckBox("Strata-Contour", container)
-        self._chk_strata.setToolTip("When enabled, newly drawn polylines are flagged as strata contours.")
+        self._chk_strata.setToolTip(
+            "When enabled, newly drawn polylines are flagged as strata contours."
+        )
         self._chk_strata.toggled.connect(self.strataContourModeChanged)
         layout.addWidget(self._chk_strata, 0, Qt.AlignLeft)
 
@@ -160,4 +162,4 @@ class LayerLegendDock(QDockWidget):
         for i in range(self._list.count()):
             widget = self._list.itemWidget(self._list.item(i))
             if isinstance(widget, _LegendRow) and widget._layer.id == layer_id:
-                widget.update_colors() 
+                widget.update_colors()

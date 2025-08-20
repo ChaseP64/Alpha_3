@@ -5,12 +5,15 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from digcalc_project.src.core.calculators.volume_calculator import (
+    VolumeCalculator,
+    calculate_material_cut,
+)
 from digcalc_project.src.models.project import Project
-from digcalc_project.src.core.calculators.volume_calculator import VolumeCalculator, calculate_material_cut
 
 # Tolerances
-TOL_MAT = 0.05   # 5 % per material
-TOL_TOTAL = 0.02 # 2 % overall
+TOL_MAT = 0.05  # 5 % per material
+TOL_TOTAL = 0.02  # 2 % overall
 
 FIXTURES = pathlib.Path(__file__).parent.parent / "fixtures"
 
@@ -69,7 +72,9 @@ def test_regression_against_gold(tmp_path):
     if total_exp == 0:
         assert total_calc == 0, "Total calculated volume should be zero"
     else:
-        assert abs(total_calc - total_exp) / total_exp <= TOL_TOTAL, "Total volume outside tolerance"
+        assert (
+            abs(total_calc - total_exp) / total_exp <= TOL_TOTAL
+        ), "Total volume outside tolerance"
 
     # Per-material check
     for mat_name, exp_v in expected["materials"].items():
@@ -78,4 +83,4 @@ def test_regression_against_gold(tmp_path):
         if exp_v == 0:
             assert calc_v == 0, f"Volume for {mat_name} should be zero"
         else:
-            assert abs(calc_v - exp_v) / exp_v <= TOL_MAT, f"Volume mismatch for {mat_name}" 
+            assert abs(calc_v - exp_v) / exp_v <= TOL_MAT, f"Volume mismatch for {mat_name}"

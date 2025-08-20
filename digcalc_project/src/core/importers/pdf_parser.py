@@ -15,7 +15,7 @@ from .file_parser import FileParser
 
 class PDFParser(FileParser):
     """Parser for PDF files containing contour data or other graphical elements.
-    
+
     This is a stub implementation that will be expanded in the future.
     """
 
@@ -29,7 +29,7 @@ class PDFParser(FileParser):
     @classmethod
     def get_supported_extensions(cls) -> List[str]:
         """Get the list of file extensions supported by this parser.
-        
+
         Returns:
             List of file extensions
 
@@ -39,12 +39,12 @@ class PDFParser(FileParser):
     def parse(self, file_path: str, options: Optional[Dict] = None, **kwargs) -> Optional[Surface]:
         """Parse the given PDF file and extract data.
         (Stub implementation - currently returns True for test compatibility, should return Surface or None)
-        
+
         Args:
             file_path: Path to the PDF file
             options: Optional dictionary of parser-specific options (e.g., page, scale)
             **kwargs: Allows for additional keyword arguments (currently ignored by stub)
-        
+
         Returns:
             Surface object (currently None as not implemented)
 
@@ -63,15 +63,15 @@ class PDFParser(FileParser):
             # ... populate surface ...
             # return surface
 
-            return True # Return True for basic test compatibility
+            return True  # Return True for basic test compatibility
 
         except Exception as e:
             self.log_error("Error during stub PDF parsing", e)
-            return None # Return None on error
+            return None  # Return None on error
 
     def validate(self) -> bool:
         """Validate the parsed data.
-        
+
         Returns:
             bool: True if data is valid, False otherwise
 
@@ -81,7 +81,7 @@ class PDFParser(FileParser):
 
     def get_points(self) -> List[Point3D]:
         """Get points from the parsed data.
-        
+
         Returns:
             List of Point3D objects
 
@@ -90,7 +90,7 @@ class PDFParser(FileParser):
 
     def get_contours(self) -> Dict[float, List[List[Point3D]]]:
         """Get contour lines from the parsed data.
-        
+
         Returns:
             Dictionary mapping elevations to lists of polylines
 
@@ -99,7 +99,7 @@ class PDFParser(FileParser):
 
     def get_page_count(self) -> int:
         """Get the number of pages in the PDF.
-        
+
         Returns:
             Number of pages
 
@@ -108,10 +108,10 @@ class PDFParser(FileParser):
 
     def _get_pdf_page_count(self, file_path: str) -> int:
         """Get the number of pages in a PDF file.
-        
+
         Args:
             file_path: Path to the PDF file
-            
+
         Returns:
             Number of pages
 

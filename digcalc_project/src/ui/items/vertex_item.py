@@ -115,9 +115,8 @@ class VertexItem(QObject, QGraphicsPathItem):
     # ------------------------------------------------------------------
     def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget=None):
         """Custom render: white halo + coloured core for high-contrast."""
-        from PySide6.QtCore import QPointF
-        from PySide6.QtGui import QPen, QColor
-        from PySide6.QtCore import Qt
+        from PySide6.QtCore import QPointF, Qt
+        from PySide6.QtGui import QColor, QPen
 
         # Compute radius in *device* pixels irrespective of zoom so the marker
         # stays constant size on-screen.

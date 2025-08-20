@@ -13,14 +13,15 @@ be migrated later.  All Qt signal wiring for PDF actions is performed in
 about these controls.
 """
 
-from typing import TYPE_CHECKING, Dict, List, Tuple, Optional, Union
 import logging
-from pathlib import Path
-from PySide6.QtWidgets import QFileDialog, QMessageBox, QDialog
 from collections import defaultdict
+from pathlib import Path
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
 
-from ...visualization.pdf_renderer import PDFRendererError
+from PySide6.QtWidgets import QDialog, QFileDialog, QMessageBox
+
 from ...ui.dialogs.pdf_page_selector_dialog import PdfPageSelectorDialog
+from ...visualization.pdf_renderer import PDFRendererError
 
 if TYPE_CHECKING:  # pragma: no cover
     from .main_window import MainWindow
@@ -92,15 +93,22 @@ class PDFEventHandler:  # noqa: D101
     def on_load_pdf_background(self) -> None:  # noqa: D401
         self.logger.debug("on_load_pdf_background slot entered.")
         filename, _ = QFileDialog.getOpenFileName(
-            self._mw, "Load PDF Background", "", "PDF Files (*.pdf);;All Files (*)",
+            self._mw,
+            "Load PDF Background",
+            "",
+            "PDF Files (*.pdf);;All Files (*)",
         )
 
         if filename:
             self.logger.info(f"User selected PDF for background: {filename}")
-            self._mw.statusBar().showMessage(f"Loading PDF background '{Path(filename).name}'...", 0)
+            self._mw.statusBar().showMessage(
+                f"Loading PDF background '{Path(filename).name}'...", 0
+            )
             success = False
             try:
-                success = self._mw.visualization_panel.load_pdf_background(filename, dpi=self._mw.pdf_dpi_setting)
+                success = self._mw.visualization_panel.load_pdf_background(
+                    filename, dpi=self._mw.pdf_dpi_setting
+                )
                 if success:
                     project = self._mw.project_controller.get_current_project()
                     if project:
@@ -110,16 +118,26 @@ class PDFEventHandler:  # noqa: D101
                         project.clear_traced_polylines()
                         self._mw.visualization_panel.clear_polylines_from_scene()
 
-                    page_count = self._mw.visualization_panel.pdf_renderer.get_page_count() if self._mw.visualization_panel.pdf_renderer else 0
-                    self._mw.statusBar().showMessage(f"Loaded PDF background '{Path(filename).name}' ({page_count} pages).", 5000)
-                    self.logger.info(f"Successfully loaded PDF background '{Path(filename).name}' with {page_count} pages.")
+                    page_count = (
+                        self._mw.visualization_panel.pdf_renderer.get_page_count()
+                        if self._mw.visualization_panel.pdf_renderer
+                        else 0
+                    )
+                    self._mw.statusBar().showMessage(
+                        f"Loaded PDF background '{Path(filename).name}' ({page_count} pages).", 5000
+                    )
+                    self.logger.info(
+                        f"Successfully loaded PDF background '{Path(filename).name}' with {page_count} pages."
+                    )
                     self._mw.ui_state.update_ui_for_project(project)
                 else:
                     raise PDFRendererError("Loading or rendering PDF background failed.")
 
             except (FileNotFoundError, PDFRendererError, Exception) as e:
                 self.logger.exception(f"Failed to load PDF background: {e}")
-                QMessageBox.critical(self._mw, "PDF Load Error", f"Failed to load PDF background:\n{e}")
+                QMessageBox.critical(
+                    self._mw, "PDF Load Error", f"Failed to load PDF background:\n{e}"
+                )
                 self._mw.statusBar().showMessage("Failed to load PDF background.", 5000)
                 project = self._mw.project_controller.get_current_project()
                 if project and project.pdf_background_path == filename:
@@ -171,7 +189,11 @@ class PDFEventHandler:  # noqa: D101
             if project:
                 project.pdf_background_page = page_number
             self._mw.ui_state.update_pdf_controls()
-            total = self._mw.visualization_panel.pdf_renderer.get_page_count() if self._mw.visualization_panel.pdf_renderer else 0
+            total = (
+                self._mw.visualization_panel.pdf_renderer.get_page_count()
+                if self._mw.visualization_panel.pdf_renderer
+                else 0
+            )
             self._mw.statusBar().showMessage(f"Showing PDF page {page_number}/{total}", 3000)
 
     # ------------------------------------------------------------------
@@ -194,7 +216,10 @@ class PDFEventHandler:  # noqa: D101
             return
 
         file_path_tuple = QFileDialog.getOpenFileName(
-            self._mw, "Select PDF for Tracing", self._mw.project_controller.get_last_directory(), "PDF Files (*.pdf)",
+            self._mw,
+            "Select PDF for Tracing",
+            self._mw.project_controller.get_last_directory(),
+            "PDF Files (*.pdf)",
         )
         file_path_str = file_path_tuple[0]
         if not file_path_str:
@@ -215,7 +240,11 @@ class PDFEventHandler:  # noqa: D101
             return
         except Exception as e:
             self.logger.exception(f"Unexpected error loading PDF '{file_path}': {e}")
-            QMessageBox.critical(self._mw, "PDF Load Error", f"An unexpected error occurred while loading the PDF: {e}")
+            QMessageBox.critical(
+                self._mw,
+                "PDF Load Error",
+                f"An unexpected error occurred while loading the PDF: {e}",
+            )
             return
 
         self._mw.visualization_panel.load_pdf_background(str(file_path))
@@ -228,12 +257,16 @@ class PDFEventHandler:  # noqa: D101
                 self._mw.statusBar().showMessage("No pages selected for tracing.", 3000)
                 return
 
-            self.logger.info(f"Selected PDF pages for tracing (0-based indices): {selected_indices}")
+            self.logger.info(
+                f"Selected PDF pages for tracing (0-based indices): {selected_indices}"
+            )
             added_layers_count = 0
             project = self._mw.project_controller.get_project()
             if not project:
                 self.logger.error("Project became unavailable after PDF selection.")
-                QMessageBox.critical(self._mw, "Error", "Project not available. Cannot create layers.")
+                QMessageBox.critical(
+                    self._mw, "Error", "Project not available. Cannot create layers."
+                )
                 return
 
             for index in selected_indices:
@@ -245,29 +278,45 @@ class PDFEventHandler:  # noqa: D101
                     if unique_layer_name not in project.traced_polylines:
                         project.traced_polylines[unique_layer_name] = []
                     else:
-                        self.logger.warning(f"Layer '{unique_layer_name}' already exists. Adding PDF source info.")
+                        self.logger.warning(
+                            f"Layer '{unique_layer_name}' already exists. Adding PDF source info."
+                        )
 
                     project.add_pdf_trace_source(unique_layer_name, str(file_path), index)
                     added_layers_count += 1
                 except Exception as e:
-                    self.logger.error(f"Error processing page index {index} for tracing: {e}", exc_info=True)
-                    QMessageBox.warning(self._mw, "Layer Creation Error", f"Could not create tracing layer for page {index + 1}.\nError: {e}")
+                    self.logger.error(
+                        f"Error processing page index {index} for tracing: {e}", exc_info=True
+                    )
+                    QMessageBox.warning(
+                        self._mw,
+                        "Layer Creation Error",
+                        f"Could not create tracing layer for page {index + 1}.\nError: {e}",
+                    )
 
             if added_layers_count > 0:
                 self._mw._update_layer_tree()
                 self._mw.project_controller.set_project_modified(True)
-                self._mw.statusBar().showMessage(f"Added {added_layers_count} PDF trace layer(s).", 5000)
+                self._mw.statusBar().showMessage(
+                    f"Added {added_layers_count} PDF trace layer(s).", 5000
+                )
                 self.logger.info(f"Successfully added {added_layers_count} PDF trace sources.")
                 self._mw.trace_pdf_action.setEnabled(True)
 
                 if selected_indices:
                     first_page_number = selected_indices[0] + 1
-                    self.logger.info(f"Automatically displaying first selected PDF page: {first_page_number}")
+                    self.logger.info(
+                        f"Automatically displaying first selected PDF page: {first_page_number}"
+                    )
                     self._mw.visualization_panel.set_pdf_page(first_page_number)
             else:
                 self.logger.warning("No trace layers were added despite page selection.")
                 if selected_indices:
-                    QMessageBox.warning(self._mw, "No Layers Added", "Could not add tracing layers for the selected pages. Check logs for details.")
+                    QMessageBox.warning(
+                        self._mw,
+                        "No Layers Added",
+                        "Could not add tracing layers for the selected pages. Check logs for details.",
+                    )
         else:
             self.logger.info("PDF page selection cancelled.")
 
@@ -312,7 +361,9 @@ class PDFEventHandler:  # noqa: D101
         scene = mw.visualization_panel.scene_2d
 
         # Build dict layer -> list of point tuples
-        grouped: Dict[str, List[Dict[str, Union[List[Tuple[float, float]], Optional[float]]]]] = defaultdict(list)
+        grouped: Dict[str, List[Dict[str, Union[List[Tuple[float, float]], Optional[float]]]]] = (
+            defaultdict(list)
+        )
 
         for pl in polylines:
             key = (pl.stroke_rgb, tuple(pl.dash or ()))
@@ -339,4 +390,4 @@ class PDFEventHandler:  # noqa: D101
                 def undo(self):
                     self.scene.clear_finalized_polylines()
 
-            mw.undoStack.push(_ImportCmd(scene, grouped)) 
+            mw.undoStack.push(_ImportCmd(scene, grouped))

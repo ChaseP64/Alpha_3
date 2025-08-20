@@ -1,6 +1,6 @@
-import numpy as np
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from digcalc_project.src.core.geom.polyline import Polyline
@@ -31,4 +31,4 @@ def test_smart_clean_compression_respects_dist_tol():
     # Tighten tolerance to 0.001 ft – should **not** compress
     settings.set("clean", "compress_dist_tol_ft", 0.001)
     out_strict = auto_run([pl])[0]
-    assert len(out_strict.vertices) == len(pl.vertices) 
+    assert len(out_strict.vertices) == len(pl.vertices)

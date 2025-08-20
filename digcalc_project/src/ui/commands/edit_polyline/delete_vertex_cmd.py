@@ -12,8 +12,8 @@ from PySide6.QtCore import QPointF
 from PySide6.QtGui import QUndoCommand
 from PySide6.QtWidgets import QGraphicsScene
 
-from digcalc_project.src.ui.items.vertex_item import VertexItem
 from digcalc_project.src.ui.items.polyline_item import PolylineItem
+from digcalc_project.src.ui.items.vertex_item import VertexItem
 
 __all__ = ["DeleteVertexCommand"]
 
@@ -56,4 +56,4 @@ class DeleteVertexCommand(QUndoCommand):
         self._vtx.setPos(self._pos)
         if self._scene and self._vtx.scene() is None:
             self._scene.addItem(self._vtx)
-        self._poly._rebuild_path()  # type: ignore[attr-defined] 
+        self._poly._rebuild_path()  # type: ignore[attr-defined]

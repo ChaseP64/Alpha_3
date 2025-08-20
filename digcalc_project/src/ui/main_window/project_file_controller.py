@@ -1,6 +1,7 @@
 """
 This module contains the ProjectFileController class.
 """
+
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
@@ -109,7 +110,7 @@ class ProjectFileController:
                 if not was_dirty:
                     project.is_dirty = True
                     self.mw.project_controller.project_modified.emit()
-        
+
         if not project_path:
             return False
 
@@ -149,7 +150,7 @@ class ProjectFileController:
         """Handles drag enter events for file drops."""
         if event.mimeData().hasUrls():
             urls = event.mimeData().urls()
-            if urls and urls[0].toLocalFile().lower().endswith('.digcalc'):
+            if urls and urls[0].toLocalFile().lower().endswith(".digcalc"):
                 event.acceptProposedAction()
 
     def dropEvent(self, event):
@@ -158,7 +159,7 @@ class ProjectFileController:
             urls = event.mimeData().urls()
             if urls:
                 filepath = urls[0].toLocalFile()
-                if filepath.lower().endswith('.digcalc'):
+                if filepath.lower().endswith(".digcalc"):
                     self.logger.info(f"Project file dropped: {filepath}")
                     if self.mw.project_controller._confirm_close_project():
                         self.mw.project_controller.project_closed.emit()
@@ -166,4 +167,4 @@ class ProjectFileController:
 
     def _update_recent_files(self):
         """Updates the recent files menu."""
-        self.logger.info("Updating recent files.") 
+        self.logger.info("Updating recent files.")

@@ -52,13 +52,17 @@ def write_mass_haul(stations: Iterable[HaulStation], path: Union[str, Path]) -> 
         for s in stations:
             # Type guard – tolerate duck-typed objects that expose the required attributes.
             if not all(hasattr(s, attr) for attr in ("station", "cut", "fill", "cumulative")):
-                raise ValueError("Each station object must have station, cut, fill, cumulative attributes")
-            writer.writerow([
-                f"{s.station:.2f}",
-                f"{s.cut:.1f}",
-                f"{s.fill:.1f}",
-                f"{s.cumulative:.1f}",
-            ])
+                raise ValueError(
+                    "Each station object must have station, cut, fill, cumulative attributes"
+                )
+            writer.writerow(
+                [
+                    f"{s.station:.2f}",
+                    f"{s.cut:.1f}",
+                    f"{s.fill:.1f}",
+                    f"{s.cumulative:.1f}",
+                ]
+            )
 
 
 def write_region_table(rows, path):  # type: ignore[typing-arg-name]

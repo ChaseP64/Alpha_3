@@ -12,15 +12,15 @@ here and the private helpers deleted from ``MainWindow``.
 import logging
 from typing import TYPE_CHECKING, Optional
 
-from PySide6.QtGui import QColor, QAction
-from PySide6.QtWidgets import QTreeWidgetItem
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QAction, QColor
+from PySide6.QtWidgets import QTreeWidgetItem
 from shiboken6 import isValid  # type: ignore
 
 if TYPE_CHECKING:
     # Forward-decl to avoid circular import at runtime.
-    from .main_window import MainWindow  # pragma: no cover
     from ...models.project import Project
+    from .main_window import MainWindow  # pragma: no cover
 
 logger = logging.getLogger(__name__)
 
@@ -102,9 +102,13 @@ class UIStateManager:
             self._mw.pdf_toolbar.setVisible(has_pdf)
             self.logger.debug(f"Setting PDF toolbar visibility to: {has_pdf}")
         else:
-            self.logger.warning("Cannot set PDF toolbar visibility: pdf_toolbar attribute not found.")
+            self.logger.warning(
+                "Cannot set PDF toolbar visibility: pdf_toolbar attribute not found."
+            )
 
-        self.logger.debug(f"PDF controls updated: has_pdf={has_pdf}, page_count={page_count}, current_page={current_page_1_based}")
+        self.logger.debug(
+            f"PDF controls updated: has_pdf={has_pdf}, page_count={page_count}, current_page={current_page_1_based}"
+        )
         self.update_scale_action_enabled(has_pdf)
         if hasattr(self._mw, "status_bar_manager"):
             try:
@@ -115,16 +119,28 @@ class UIStateManager:
     # View actions ------------------------------------------------------------
     def update_view_actions_state(self) -> None:
         """Updates the enabled and checked state of the view toggle actions (2D/3D)."""
-        if not hasattr(self._mw, "view_2d_action") or not hasattr(self._mw, "view_3d_action") or not hasattr(self._mw, "visualization_panel"):
+        if (
+            not hasattr(self._mw, "view_2d_action")
+            or not hasattr(self._mw, "view_3d_action")
+            or not hasattr(self._mw, "visualization_panel")
+        ):
             logger.warning("update_view_actions_state called before actions/panel were created.")
             return
 
         has_pdf = self._mw.visualization_panel.has_pdf()
         has_surfaces = self._mw.visualization_panel.has_surfaces()
-        is_2d_current = self._mw.visualization_panel.stacked_widget.currentWidget() == self._mw.visualization_panel.view_2d
-        is_3d_current = self._mw.visualization_panel.stacked_widget.currentWidget() == self._mw.visualization_panel.view_3d
+        is_2d_current = (
+            self._mw.visualization_panel.stacked_widget.currentWidget()
+            == self._mw.visualization_panel.view_2d
+        )
+        is_3d_current = (
+            self._mw.visualization_panel.stacked_widget.currentWidget()
+            == self._mw.visualization_panel.view_3d
+        )
 
-        logger.debug(f"Updating view actions: has_pdf={has_pdf}, has_surfaces={has_surfaces}, is_2d_current={is_2d_current}, is_3d_current={is_3d_current}")
+        logger.debug(
+            f"Updating view actions: has_pdf={has_pdf}, has_surfaces={has_surfaces}, is_2d_current={is_2d_current}, is_3d_current={is_3d_current}"
+        )
 
         self._mw.view_2d_action.setEnabled(has_pdf)
         self._mw.view_3d_action.setEnabled(has_surfaces)
@@ -147,11 +163,14 @@ class UIStateManager:
     # Project-level UI refresh -----------------------------------------------
     def update_ui_for_project(self, project: Optional[Project]) -> None:
         """Update all relevant UI components based on the (new) project state."""
-        self.logger.info(f"[update_ui_for_project] Called with project: {project.name if project else 'None'}")
+        self.logger.info(
+            f"[update_ui_for_project] Called with project: {project.name if project else 'None'}"
+        )
         self.update_window_title()
-        if hasattr(self._mw, 'project_panel'):
+        if hasattr(self._mw, "project_panel"):
             self._mw.project_panel._update_tree()
-        if hasattr(self._mw, "project_panel"): self._mw.project_panel.set_project(project)
+        if hasattr(self._mw, "project_panel"):
+            self._mw.project_panel.set_project(project)
         self.update_analysis_actions_state()
         self.update_pdf_controls()
         self.update_window_title()
@@ -179,7 +198,9 @@ class UIStateManager:
                 self._mw.pdf_thumbnail_dock.show()
             else:
                 self._mw.pdf_thumbnail_dock.hide()
-        self.logger.info(f"[update_ui_for_project] About to call self._mw.visualization_panel.set_project with: {project.name if project else 'None'}")
+        self.logger.info(
+            f"[update_ui_for_project] About to call self._mw.visualization_panel.set_project with: {project.name if project else 'None'}"
+        )
         self._mw.visualization_panel.set_project(project)
         self._mw.status_bar_manager.update_from_project()
 
@@ -187,6 +208,7 @@ class UIStateManager:
     def update_window_title(self) -> None:
         """Sets the main window title based on the current project name and dirty state."""
         from pathlib import Path
+
         if not hasattr(self._mw, "project_controller"):
             self._mw.setWindowTitle("DigCalc")
             return
@@ -255,7 +277,7 @@ class UIStateManager:
                                     break
                 if enabled:
                     break
-        
+
         self._mw.build_surface_action.setEnabled(enabled)
         self.logger.debug(f"Set build_surface_action enabled state: {enabled}")
 
@@ -272,7 +294,11 @@ class UIStateManager:
         tree.clear()
 
         layers: list[str] = []
-        project = mw.project_controller.get_current_project() if hasattr(mw, "project_controller") else None
+        project = (
+            mw.project_controller.get_current_project()
+            if hasattr(mw, "project_controller")
+            else None
+        )
 
         if project:
             surface_layers = list(project.surfaces.keys()) if hasattr(project, "surfaces") else []
@@ -288,4 +314,4 @@ class UIStateManager:
         tree.blockSignals(False)
 
         self.logger.debug("Layer tree updated with layers: %s", layers)
-        self.update_build_surface_action_state() 
+        self.update_build_surface_action_state()

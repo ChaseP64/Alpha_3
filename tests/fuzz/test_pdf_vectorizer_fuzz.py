@@ -24,8 +24,9 @@ RADAMSA = shutil.which("radamsa")
 if RADAMSA is None:
     pytest.skip("Radamsa not found in PATH – fuzz test skipped.", allow_module_level=True)
 
-from digcalc_project.src.services.io.pdf_vectorizer import PDFVectorizer
 import fitz  # runtime heavy but only if test runs
+
+from digcalc_project.src.services.io.pdf_vectorizer import PDFVectorizer
 
 ITERATIONS = int(os.getenv("PDF_VEC_FUZZ_ITERS", "50"))
 
@@ -58,4 +59,4 @@ def test_vectorizer_radamsa_fuzz(tmp_path: Path):
             # Any Python-level exception is acceptable; just continue
             continue
 
-    assert crashes == 0  # process would have aborted on segfault 
+    assert crashes == 0  # process would have aborted on segfault

@@ -6,8 +6,8 @@ all public names from the new module so existing imports continue to work
 without modification.
 """
 
-from importlib import import_module as _import_module
 import sys as _sys
+from importlib import import_module as _import_module
 
 _new_mod = _import_module("..three_d.pv_view", package=__name__)
 
@@ -16,4 +16,4 @@ _new_mod = _import_module("..three_d.pv_view", package=__name__)
 # the correct reference.
 _sys.modules[__name__] = _new_mod
 
-globals().update(_new_mod.__dict__) 
+globals().update(_new_mod.__dict__)

@@ -23,6 +23,7 @@ if os.getenv("DIGCALC_RUN_BENCH") != "1":
 
 Point = Tuple[float, float]
 
+
 def _generate_points(n: int = 50_000) -> List[Point]:
     return [(random.uniform(-1000, 1000), random.uniform(-1000, 1000)) for _ in range(n)]
 
@@ -53,6 +54,7 @@ def test_quad_tree_vs_naive(benchmark):
         return hits
 
     import time
+
     start = time.perf_counter()
     naive_hits = _naive()
     naive_time = time.perf_counter() - start
@@ -61,4 +63,4 @@ def test_quad_tree_vs_naive(benchmark):
     assert sorted(qt.query(query_pt, radius)) == sorted([(p, None) for p in naive_hits])
 
     # Expect QuadTree at least twice as fast (generous margin for CI variance)
-    assert qt_time * 2 <= naive_time 
+    assert qt_time * 2 <= naive_time

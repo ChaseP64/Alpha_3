@@ -12,8 +12,9 @@ This stub package redirects such imports at *import-time* so they keep
 working without modifying every call-site.  It only adds a negligible cost at
 startup and avoids IDE/linter complaints about unresolved modules.
 """
-from importlib import import_module
+
 import sys as _sys
+from importlib import import_module
 
 # Import the real package once and register it under the legacy top-level name
 _real_root = import_module("digcalc_project.src")
@@ -36,4 +37,4 @@ for _sub in (
     except ModuleNotFoundError:
         continue
 
-del import_module, _sys, _sub, _mod, _real_root 
+del import_module, _sys, _sub, _mod, _real_root

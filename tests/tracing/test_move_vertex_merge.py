@@ -17,6 +17,7 @@ from digcalc_project.src.ui.items.vertex_item import VertexItem  # noqa: E402
 
 # pytest-qt provides the *qtbot* fixture which ensures a QApplication exists.
 
+
 def test_mergeable_drag(qtbot):
     """Two drags on the same vertex should collapse into a single undo step."""
     v = VertexItem(QPointF(0, 0))

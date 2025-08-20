@@ -2,12 +2,14 @@ import json
 import tempfile
 from pathlib import Path
 
-from digcalc_project.src.models.region import Region
 from digcalc_project.src.models.project import Project
+from digcalc_project.src.models.region import Region
 
 
 def test_region_serialise_roundtrip():
-    reg = Region(name="Zone A", polygon=[(0, 0), (10, 0), (10, 10)], strip_depth_ft=1.5, material_id=2)
+    reg = Region(
+        name="Zone A", polygon=[(0, 0), (10, 0), (10, 10)], strip_depth_ft=1.5, material_id=2
+    )
     data = reg.to_dict()
     reg2 = Region.from_dict(data)
     assert reg2.name == reg.name
@@ -18,7 +20,7 @@ def test_region_serialise_roundtrip():
 
 def test_project_save_load_with_region(tmp_path):
     proj = Project("StripDemo")
-    reg = Region(name="Zone B", polygon=[(0,0),(5,0),(5,5)], strip_depth_ft=2.0, material_id=3)
+    reg = Region(name="Zone B", polygon=[(0, 0), (5, 0), (5, 5)], strip_depth_ft=2.0, material_id=3)
     proj.regions.append(reg)
 
     file_path = Path(tmp_path) / "project_strip.json"

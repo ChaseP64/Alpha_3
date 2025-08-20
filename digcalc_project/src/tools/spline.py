@@ -5,6 +5,7 @@ QPainterPath using the Catmull-Rom interpolation scheme. When fewer than three
 control points are supplied, the helper gracefully falls back to drawing a
 straight poly-line so that callers do not need to special-case their input size.
 """
+
 from __future__ import annotations
 
 # ----------------------------------------------------------------------
@@ -58,7 +59,9 @@ def _vertex_hash(pts: List[QPointF]) -> str:
 # ----------------------------------------------------------------------
 
 
-def sample(pts: List[QPointF], density_ft: float = 1.0) -> List[Tuple[float, float, float]]:  # noqa: E501
+def sample(
+    pts: List[QPointF], density_ft: float = 1.0
+) -> List[Tuple[float, float, float]]:  # noqa: E501
     r"""Return evenly spaced (≈ *density_ft*) points along a smoothed spline.
 
     Behaviour
@@ -125,7 +128,9 @@ def sample(pts: List[QPointF], density_ft: float = 1.0) -> List[Tuple[float, flo
 # ----------------------------------------------------------------------
 
 
-def _linear_resample(xyz: List[Tuple[float, float, float]], density: float) -> List[Tuple[float, float, float]]:
+def _linear_resample(
+    xyz: List[Tuple[float, float, float]], density: float
+) -> List[Tuple[float, float, float]]:
     """Return linearly densified points along *xyz* polyline."""
     import numpy as np
 

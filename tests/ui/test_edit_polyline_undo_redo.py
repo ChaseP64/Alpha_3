@@ -1,14 +1,11 @@
 import pytest
-
 from PySide6.QtCore import QPointF, Qt
-from PySide6.QtGui import QPen
+from PySide6.QtGui import QPen, QUndoStack
 from PySide6.QtWidgets import QApplication, QGraphicsScene
-from PySide6.QtGui import QUndoStack
 
-from digcalc_project.src.ui.items.polyline_item import PolylineItem
 from digcalc_project.src.ui.commands.edit_polyline.add_vertex_cmd import AddVertexCommand
 from digcalc_project.src.ui.commands.edit_polyline.delete_vertex_cmd import DeleteVertexCommand
-
+from digcalc_project.src.ui.items.polyline_item import PolylineItem
 
 # Skip when PySide6 not present (CI guard)
 pytest.importorskip("PySide6")
@@ -57,6 +54,7 @@ def test_delete_vertex_command_undo_redo(scene):
     # add a third vertex so delete becomes meaningful
     third = QPointF(5, 5)
     from digcalc_project.src.ui.items.vertex_item import VertexItem
+
     poly.vertices().append(VertexItem(third, parent=poly))  # direct add
     poly._rebuild_path()  # type: ignore[attr-defined]
 
@@ -69,4 +67,4 @@ def test_delete_vertex_command_undo_redo(scene):
     assert len(poly.vertices()) == 2, "Vertex not deleted on redo"
 
     stack.undo()
-    assert len(poly.vertices()) == 3, "Undo did not restore vertex" 
+    assert len(poly.vertices()) == 3, "Undo did not restore vertex"

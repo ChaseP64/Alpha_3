@@ -1,13 +1,12 @@
 import pytest
-
-from PySide6.QtWidgets import QApplication, QGraphicsView
-from PySide6.QtGui import QPen, QColor
 from PySide6.QtCore import QPointF
+from PySide6.QtGui import QColor, QPen
+from PySide6.QtWidgets import QApplication, QGraphicsView
 
 pytest.importorskip("PySide6")
 
-from digcalc_project.src.ui.tracing_scene import TracingScene
 from digcalc_project.src.ui.items.polyline_item import PolylineItem
+from digcalc_project.src.ui.tracing_scene import TracingScene
 
 
 class _Panel:
@@ -48,4 +47,4 @@ def test_elevation_heatmap_toggle(scene_with_polyline):
     # Disable again – colours revert to default layer colour
     scn.set_elevation_heatmap_enabled(False)
     restored = [v._colour_hex for v in verts]
-    assert restored == default_cols 
+    assert restored == default_cols

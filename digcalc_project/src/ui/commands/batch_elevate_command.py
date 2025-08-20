@@ -12,13 +12,13 @@ from typing import List, Optional
 
 from PySide6.QtGui import QUndoCommand
 
-from digcalc_project.src.ui.items.polyline_item import PolylineItem
-from digcalc_project.src.ui.commands.set_polyline_uniform_z_command import (
-    SetPolylineUniformZCommand,
-)
 from digcalc_project.src.ui.commands.auto_increment_z_command import (
     AutoIncrementZCommand,
 )
+from digcalc_project.src.ui.commands.set_polyline_uniform_z_command import (
+    SetPolylineUniformZCommand,
+)
+from digcalc_project.src.ui.items.polyline_item import PolylineItem
 
 __all__ = ["BatchElevateCommand"]
 
@@ -53,9 +53,7 @@ class BatchElevateCommand(QUndoCommand):
         uniform_mode = uniform_z is not None
         slope_mode = slope_percent is not None and first_z is not None
         if uniform_mode == slope_mode:  # both True or both False
-            raise ValueError(
-                "Provide exactly *uniform_z* OR (*first_z* + *slope_percent*)."
-            )
+            raise ValueError("Provide exactly *uniform_z* OR (*first_z* + *slope_percent*).")
 
         self._sub_cmds: List[QUndoCommand] = []
 
@@ -81,4 +79,4 @@ class BatchElevateCommand(QUndoCommand):
     def undo(self):
         # reverse order for deterministic undo
         for cmd in reversed(self._sub_cmds):
-            cmd.undo() 
+            cmd.undo()

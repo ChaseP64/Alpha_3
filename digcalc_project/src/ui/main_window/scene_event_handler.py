@@ -11,10 +11,11 @@ import logging
 from typing import TYPE_CHECKING, Optional
 
 from PySide6.QtCore import Qt, Slot
-from PySide6.QtWidgets import QMessageBox, QDialog, QGraphicsPathItem, QGraphicsItem
+from PySide6.QtWidgets import QDialog, QGraphicsItem, QGraphicsPathItem, QMessageBox
 
 if TYPE_CHECKING:  # pragma: no cover
     from PySide6.QtWidgets import QGraphicsItem
+
     from .main_window import MainWindow
 
 logger = logging.getLogger(__name__)
@@ -39,11 +40,11 @@ class SceneEventHandler:  # noqa: D101
         scene.selectionChanged.connect(self._on_item_selected)
         scene.pad_finalized.connect(self._on_pad_drawn)
         scene.borehole_point_picked.connect(self._on_borehole_point)
-        
+
         prop_dock = getattr(mw, "prop_dock", None)
         if prop_dock:
             prop_dock.edited.connect(self._apply_elevation_edit)
-        
+
         actions = getattr(mw, "action_manager", None)
         if actions:
             actions.toggle_tracing.toggled.connect(self.on_toggle_tracing_mode)
@@ -52,7 +53,7 @@ class SceneEventHandler:  # noqa: D101
         self.logger.debug("SceneEventHandler signals bound.")
 
     # --- Public Slots (delegating) ---
-    
+
     @Slot(bool)
     def on_toggle_tracing_mode(self, checked: bool):
         if not self._mw.visualization_panel:
@@ -63,11 +64,17 @@ class SceneEventHandler:  # noqa: D101
     def _on_polyline_drawn(self, world_points_3d: list, item: QGraphicsPathItem):
         project = self._mw.project_controller.get_current_project()
         if not project:
-            if item.scene(): item.scene().removeItem(item)
+            if item.scene():
+                item.scene().removeItem(item)
             return
 
         layer_name = item.data(Qt.UserRole + 1) or "Default"
-        polyline_data = {"points": world_points_3d, "elevation": None, "is_strata": bool(item.data(Qt.UserRole + 4) or False), "material_id": item.data(Qt.UserRole + 5)}
+        polyline_data = {
+            "points": world_points_3d,
+            "elevation": None,
+            "is_strata": bool(item.data(Qt.UserRole + 4) or False),
+            "material_id": item.data(Qt.UserRole + 5),
+        }
         new_index = project.add_traced_polyline(polyline=polyline_data, layer_name=layer_name)
 
         if new_index is not None:
@@ -78,14 +85,16 @@ class SceneEventHandler:  # noqa: D101
             self._mw.visualization_panel.scene_2d.refresh_layer_item(layer_name, target_item=item)
             self._mw._queue_surface_rebuilds_for_layer(layer_name)
         else:
-            if item.scene(): item.scene().removeItem(item)
+            if item.scene():
+                item.scene().removeItem(item)
 
     @Slot(QGraphicsItem)
     def _on_item_selected(self, item: Optional[QGraphicsItem]):
         project = self._mw.project_controller.get_current_project()
         prop_dock = getattr(self._mw, "prop_dock", None)
         if not project or not prop_dock:
-            if prop_dock: prop_dock.clear_selection()
+            if prop_dock:
+                prop_dock.clear_selection()
             return
 
         if item and isinstance(item, QGraphicsPathItem):
@@ -115,11 +124,19 @@ class SceneEventHandler:  # noqa: D101
         if layer_name is None or index is None:
             return
 
-        reply = QMessageBox.question(self._mw, "Delete Polyline", f"Delete polyline from layer '{layer_name}'?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        reply = QMessageBox.question(
+            self._mw,
+            "Delete Polyline",
+            f"Delete polyline from layer '{layer_name}'?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
         if reply == QMessageBox.Yes:
             if project.remove_polyline(layer_name, index):
-                if item.scene(): item.scene().removeItem(item)
-                if hasattr(self._mw, "prop_dock"): self._mw.prop_dock.clear_selection()
+                if item.scene():
+                    item.scene().removeItem(item)
+                if hasattr(self._mw, "prop_dock"):
+                    self._mw.prop_dock.clear_selection()
                 self._mw.project_panel._update_tree()
                 self._mw._queue_surface_rebuilds_for_layer(layer_name)
             self._mw._selected_scene_item = None
@@ -127,7 +144,8 @@ class SceneEventHandler:  # noqa: D101
     @Slot(str, int, float)
     def _apply_elevation_edit(self, layer_name: str, index: int, new_elevation: Optional[float]):
         project = self._mw.project_controller.get_current_project()
-        if not project: return
+        if not project:
+            return
         try:
             poly_list = project.traced_polylines[layer_name]
             if abs(poly_list[index].get("elevation", 0) - new_elevation) > 1e-6:
@@ -141,19 +159,23 @@ class SceneEventHandler:  # noqa: D101
     @Slot()
     def _fit_view_to_scene(self):
         if self._mw.visualization_panel and self._mw.visualization_panel.view_2d:
-            self._mw.visualization_panel.view_2d.fitInView(self._mw.visualization_panel.scene_2d.sceneRect(), Qt.KeepAspectRatio)
+            self._mw.visualization_panel.view_2d.fitInView(
+                self._mw.visualization_panel.scene_2d.sceneRect(), Qt.KeepAspectRatio
+            )
 
     @Slot(list)
     def _on_pad_drawn(self, points2d):
         from ...ui.commands.set_pad_elevation_command import SetPadElevationCommand
         from ...ui.dialogs.pad_elevation_dialog import PadElevationDialog
-        
+
         dlg = PadElevationDialog(self._mw._last_pad_elev, self._mw)
-        if dlg.exec() != QDialog.Accepted: return
-        
+        if dlg.exec() != QDialog.Accepted:
+            return
+
         elev = dlg.value()
-        if dlg.apply_to_all(): self._mw._last_pad_elev = elev
-        
+        if dlg.apply_to_all():
+            self._mw._last_pad_elev = elev
+
         pts3d = [(x, y, elev) for x, y in points2d[:-1]]
         scene = self._mw.visualization_panel.scene_2d
         cmd = SetPadElevationCommand(scene, pts3d)
@@ -163,15 +185,16 @@ class SceneEventHandler:  # noqa: D101
 
     @Slot(float, float)
     def _on_borehole_point(self, x: float, y: float):
-        from ...models.strata_models import StrataStack, Material
-        from ...ui.dialogs.borehole_editor_dialog import BoreholeEditorDialog
+        from ...models.strata_models import Material, StrataStack
         from ...ui.commands.add_borehole_command import AddBoreholeCommand
+        from ...ui.dialogs.borehole_editor_dialog import BoreholeEditorDialog
 
         if hasattr(self._mw, "borehole_tool_action"):
             self._mw.borehole_tool_action.setChecked(False)
 
         project = self._mw.project_controller.get_current_project()
-        if not project: return
+        if not project:
+            return
 
         if not project.strata:
             project.strata = StrataStack(id=1)
@@ -181,14 +204,17 @@ class SceneEventHandler:  # noqa: D101
         dlg = BoreholeEditorDialog(project.strata, self._mw)
         if dlg.exec() == QDialog.Accepted:
             borehole = dlg.to_borehole(x, y, project.strata.next_borehole_id())
-            cmd = AddBoreholeCommand(project.strata, borehole, self._mw.visualization_panel.scene_2d)
+            cmd = AddBoreholeCommand(
+                project.strata, borehole, self._mw.visualization_panel.scene_2d
+            )
             if hasattr(self._mw, "strata_manager_dock"):
                 self._mw.strata_manager_dock.undo_stack.push(cmd)
                 self._mw.strata_manager_dock.refresh_boreholes()
 
     def _set_tracing_elev_mode(self, mode: str):
         from ...services.settings_service import SettingsService
+
         SettingsService().set_tracing_elev_mode(mode)
         scene = getattr(self._mw.visualization_panel, "scene_2d", None)
         if scene and hasattr(scene, "set_elevation_mode"):
-            scene.set_elevation_mode(mode) 
+            scene.set_elevation_mode(mode)

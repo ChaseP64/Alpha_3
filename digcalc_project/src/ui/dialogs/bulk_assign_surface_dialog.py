@@ -94,4 +94,4 @@ class BulkAssignSurfaceDialog(QDialog):
             setattr(pl, "layer_class", layer)
 
         self.assignments_ready.emit(self._polylines)
-        self.accept() 
+        self.accept()

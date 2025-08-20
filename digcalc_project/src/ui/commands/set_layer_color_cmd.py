@@ -7,11 +7,14 @@ caller (typically the *LayerDock* or tests) is responsible for pushing the
 command on the relevant :class:`QUndoStack`.
 """
 
-import logging # Added import
+import logging  # Added import
+
 from PySide6.QtGui import QUndoCommand
-# import sys # For printing to stderr - No longer needed
 
 from digcalc_project.src.models.layer import Layer
+
+# import sys # For printing to stderr - No longer needed
+
 
 __all__ = ["SetLayerColorCommand"]
 
@@ -21,7 +24,7 @@ class SetLayerColorCommand(QUndoCommand):
 
     def __init__(self, layer: Layer, attr: str, new_val: str, dock):
         super().__init__(f"Change {layer.name} {attr.replace('_', ' ')}")
-        self.logger = logging.getLogger(__name__) # Added logger initialization
+        self.logger = logging.getLogger(__name__)  # Added logger initialization
 
         if attr not in ("line_color", "point_color"):
             raise ValueError("attr must be 'line_color' or 'point_color'")
@@ -62,7 +65,11 @@ class SetLayerColorCommand(QUndoCommand):
         try:
             for item in getattr(self._dock, "items", lambda: [])():
                 from digcalc_project.src.ui.items.polyline_item import PolylineItem
-                if isinstance(item, PolylineItem) and getattr(item, "layer_id", None) == self._layer.id:
+
+                if (
+                    isinstance(item, PolylineItem)
+                    and getattr(item, "layer_id", None) == self._layer.id
+                ):
                     item.update_color(self._layer.line_color)
         except Exception as exc:
             self.logger.warning("Manual layer recolour fallback failed: %s", exc, exc_info=True)
@@ -89,4 +96,4 @@ class SetLayerColorCommand(QUndoCommand):
         #             if isinstance(item, PolylineItem) and getattr(item, "layer_id", None) == self._layer.id:
         #                 item.update_color(self._layer.line_color)
         #     except Exception as exc:
-        #         self.logger.warning("Manual layer recolour fallback failed: %s", exc, exc_info=True) 
+        #         self.logger.warning("Manual layer recolour fallback failed: %s", exc, exc_info=True)

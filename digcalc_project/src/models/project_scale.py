@@ -8,12 +8,13 @@ from pydantic import (
     ConfigDict,
     Field,
     PositiveFloat,
+    ValidationError,
     computed_field,
     field_validator,
-    ValidationError,
 )
 
 # Backwards-compatible ProjectScale with old field aliases
+
 
 class ProjectScale(BaseModel):
     """Stores how a drawing's paper inches convert to world units."""
@@ -47,7 +48,7 @@ class ProjectScale(BaseModel):
         if v == "":
             return None
         return v
-        
+
     @computed_field(alias="px_per_in")
     @property
     def px_per_in(self) -> float:
@@ -61,7 +62,12 @@ class ProjectScale(BaseModel):
         # 1. Ensure we have a world_per_paper_in value, falling back to ratio components.
         temp_world_per_in: float | None = self.world_per_paper_in
 
-        if temp_world_per_in is None and self.input_method == "ratio" and self.ratio_numer and self.ratio_denom:
+        if (
+            temp_world_per_in is None
+            and self.input_method == "ratio"
+            and self.ratio_numer
+            and self.ratio_denom
+        ):
             if self.world_units == "ft":
                 temp_world_per_in = (self.ratio_denom / self.ratio_numer) / 12.0
             elif self.world_units == "m":
@@ -267,5 +273,6 @@ class ProjectScale(BaseModel):
 
     # Ensure property types are ignored by Pydantic (model_config already sets
     # ignored_types=(property,), so this is serialisation-safe.
+
 
 del field_validator, computed_field

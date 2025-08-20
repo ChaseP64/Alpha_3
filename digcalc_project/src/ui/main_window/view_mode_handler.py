@@ -1,11 +1,13 @@
 """
 Handles view mode switching and related UI updates for the main window.
 """
+
 from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QObject, Slot, Qt
+from PySide6.QtCore import QObject, Qt, Slot
 
 if TYPE_CHECKING:
     from .main_window import MainWindow
@@ -64,20 +66,22 @@ class ViewModeHandler(QObject):
         """Toggles the visibility of all layers except the current one."""
         mw = self.main_window
         if not hasattr(mw, "layer_tree") or not hasattr(mw.layer_tree, "currentItem"):
-             return
+            return
         current_item = mw.layer_tree.currentItem()
         if not current_item:
             return
-        
+
         current_layer_name = current_item.text(0)
-        
+
         root = mw.layer_tree.invisibleRootItem()
         for i in range(root.childCount()):
             item = root.child(i)
             layer_name = item.text(0)
             if layer_name != current_layer_name:
                 is_visible = item.checkState(0) == Qt.CheckState.Checked
-                item.setCheckState(0, Qt.CheckState.Unchecked if is_visible else Qt.CheckState.Checked)
+                item.setCheckState(
+                    0, Qt.CheckState.Unchecked if is_visible else Qt.CheckState.Checked
+                )
 
     def _set_tracing_elev_mode(self, mode: str) -> None:
         """Set the tracing elevation mode in settings."""
@@ -86,4 +90,4 @@ class ViewModeHandler(QObject):
         settings = mw.project_controller.get_settings()
         settings.set("tracing.elevation_mode", mode)
         if mw.visualization_panel:
-            mw.visualization_panel.scene_2d.set_elevation_mode(mode) 
+            mw.visualization_panel.scene_2d.set_elevation_mode(mode)

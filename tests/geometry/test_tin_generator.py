@@ -17,7 +17,7 @@ def test_random_points_delaunay():
     pts = rng.random((100, 3), dtype=float)
     pts[:, 0] *= 100.0  # scale x
     pts[:, 1] *= 100.0  # scale y
-    pts[:, 2] *= 50.0   # scale z
+    pts[:, 2] *= 50.0  # scale z
 
     surface = generate_tin(pts, name="random-cloud")
     assert isinstance(surface, Surface)
@@ -31,13 +31,16 @@ def test_random_points_delaunay():
 @pytest.mark.skipif(Delaunay is None, reason="SciPy required for TIN tests")
 def test_square_with_center():
     """Square with center point should yield 4 triangles in a Delaunay TIN."""
-    pts = np.array([
-        [0.0, 0.0, 0.0],
-        [1.0, 0.0, 0.0],
-        [1.0, 1.0, 0.0],
-        [0.0, 1.0, 0.0],
-        [0.5, 0.5, 0.0],  # centre
-    ], dtype=float)
+    pts = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [1.0, 1.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.5, 0.5, 0.0],  # centre
+        ],
+        dtype=float,
+    )
 
     surface = generate_tin(pts, name="square-centre")
     assert isinstance(surface, Surface)
@@ -50,4 +53,4 @@ def test_square_with_center():
     all_ids = set(surface.points.keys())
     for tri in surface.triangles.values():
         ids = {tri.p1.id, tri.p2.id, tri.p3.id}
-        assert ids.issubset(all_ids) 
+        assert ids.issubset(all_ids)

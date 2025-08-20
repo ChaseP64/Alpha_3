@@ -95,15 +95,13 @@ class SettingsService(Singleton):
 
     # Compatibility alias for unit-tests that reference the old flat dict name
     _defaults: dict[str, Any] = {
-        k: v
-        for group_map in _DEFAULTS.values()
-        for k, v in group_map.items()
+        k: v for group_map in _DEFAULTS.values() for k, v in group_map.items()
     }
 
     def __init__(self, config_path: Path | None = None) -> None:
         if getattr(self, "_initialized", False) and config_path is None:
             return
-            
+
         if config_path:
             self._path = config_path
 

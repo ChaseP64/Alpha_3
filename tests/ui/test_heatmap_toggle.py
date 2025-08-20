@@ -1,5 +1,4 @@
 import pytest
-
 from PySide6.QtWidgets import QApplication, QGraphicsView
 
 pytest.importorskip("PySide6")
@@ -33,4 +32,4 @@ def test_heatmap_toggle(scene):
 
     # Disable again → rects hidden
     scene.set_heatmap_enabled(False)
-    assert all(not it.isVisible() for it in scene._heatmap_items.values()) 
+    assert all(not it.isVisible() for it in scene._heatmap_items.values())

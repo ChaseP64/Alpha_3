@@ -5,14 +5,15 @@ integration without spinning up the full *MainWindow*.
 """
 
 import pytest
-from PySide6.QtGui import QPen, QColor
 from PySide6.QtCore import QPointF
+from PySide6.QtGui import QColor, QPen
 from PySide6.QtWidgets import QApplication
 
 from digcalc_project.src.services.layer_service import create_layer
 from digcalc_project.src.ui.commands.set_layer_color_cmd import SetLayerColorCommand
 from digcalc_project.src.ui.items.polyline_item import PolylineItem
 from digcalc_project.src.ui.tracing_scene import TracingScene
+
 
 # Dummy VisualizationPanel substitute (only needs current_project attr)
 class _StubPanel:
@@ -60,7 +61,7 @@ def test_recolor_updates_polyline(qapp):  # noqa: D401
     scene.undoStack().push(cmd)
 
     # --- Assert ------------------------------------------------------------------
-    assert poly.pen().color().name().lower() == new_hex 
+    assert poly.pen().color().name().lower() == new_hex
 
 
 def test_outline_visible(qapp):
@@ -81,4 +82,4 @@ def test_outline_visible(qapp):
     poly = PolylineItem([QPointF(0, 0), QPointF(50, 0)], pen, layer_id=layer.id)
     scene.addItem(poly)
 
-    assert poly.pen().widthF() == 2 
+    assert poly.pen().widthF() == 2

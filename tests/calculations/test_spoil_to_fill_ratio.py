@@ -1,5 +1,4 @@
 import numpy as np
-
 import pytest
 
 from digcalc_project.src.core.calculators.volume_calculator import balance_cut_fill
@@ -28,4 +27,4 @@ def test_default_ratio_one_uses_cut_to_satisfy_fill():
     res = balance_cut_fill(cut, fill, ratio=1.0)
     assert res["import_volume"] == pytest.approx(0.0)
     assert res["reused_cut_volume"] == pytest.approx(fill)
-    assert res["export_volume"] == pytest.approx(cut - fill) 
+    assert res["export_volume"] == pytest.approx(cut - fill)

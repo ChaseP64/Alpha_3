@@ -44,12 +44,18 @@ MERGE_EPS_FT = 0.01  # tolerance for XY merge (≈ 1/8")
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+
 def _upsert_material(stack: StrataStack, name: str, colour: str | None) -> int:
     """Return material_id, creating new ``Material`` if needed."""
     for mat in stack.materials:
         if mat.name == name:
             if colour and mat.colour.lower() != colour.lower():
-                logger.warning("Material '%s' already exists with colour %s; CSV had %s", name, mat.colour, colour)
+                logger.warning(
+                    "Material '%s' already exists with colour %s; CSV had %s",
+                    name,
+                    mat.colour,
+                    colour,
+                )
             return mat.id
     # create
     new_id = stack.next_material_id()
@@ -68,7 +74,10 @@ def _find_borehole(stack: StrataStack, x: float, y: float, eps: float) -> Boreho
 # Public API
 # ---------------------------------------------------------------------------
 
-def load_csv(file_path: str | Path, stack: StrataStack, *, eps: float = MERGE_EPS_FT) -> Tuple[int, int]:
+
+def load_csv(
+    file_path: str | Path, stack: StrataStack, *, eps: float = MERGE_EPS_FT
+) -> Tuple[int, int]:
     """Import borehole layers from *file_path* into *stack*.
 
     Returns (added_rows, skipped_rows).
@@ -119,11 +128,13 @@ def save_csv(file_path: str | Path, stack: StrataStack) -> None:
         for bh in stack.boreholes:
             for ld in bh.layers:
                 mat = mat_lookup.get(ld.material_id)
-                writer.writerow([
-                    f"{bh.x:.3f}",
-                    f"{bh.y:.3f}",
-                    mat.name if mat else "?",
-                    f"{ld.top_z:.3f}",
-                    f"{ld.top_z - ld.bottom_z:.3f}",
-                    (mat.colour if mat else "") if mat else "",
-                ]) 
+                writer.writerow(
+                    [
+                        f"{bh.x:.3f}",
+                        f"{bh.y:.3f}",
+                        mat.name if mat else "?",
+                        f"{ld.top_z:.3f}",
+                        f"{ld.top_z - ld.bottom_z:.3f}",
+                        (mat.colour if mat else "") if mat else "",
+                    ]
+                )

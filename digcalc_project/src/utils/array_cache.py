@@ -50,4 +50,4 @@ def load_grid(path: str) -> Tuple[np.ndarray, Dict[str, Any]]:
             return grid_array, metadata
     except (IOError, KeyError, json.JSONDecodeError) as e:
         logger.exception(f"Failed to load grid from {path}: {e}")
-        raise 
+        raise

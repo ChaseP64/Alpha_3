@@ -27,11 +27,11 @@ from ..models.project import Project
 from ..models.surface import Surface
 
 # --- Logger ---
-logger = logging.getLogger(__name__) # Initialize logger
+logger = logging.getLogger(__name__)  # Initialize logger
+
 
 class ProjectPanel(QWidget):
-    """Panel for displaying project information and structure.
-    """
+    """Panel for displaying project information and structure."""
 
     # Signals
     surface_selected = Signal(Surface)
@@ -39,7 +39,7 @@ class ProjectPanel(QWidget):
 
     def __init__(self, main_window: QWidget, parent=None):
         """Initialize the project panel.
-        
+
         Args:
             main_window: Reference to the main application window.
             parent: Parent widget.
@@ -47,7 +47,7 @@ class ProjectPanel(QWidget):
         """
         super().__init__(parent)
 
-        self.main_window = main_window # Store reference
+        self.main_window = main_window  # Store reference
         self.logger = logging.getLogger(__name__)
         self.project: Optional[Project] = None
         self.selected_surface: Optional[Surface] = None
@@ -96,7 +96,7 @@ class ProjectPanel(QWidget):
 
     def set_project(self, project: Project):
         """Set the project to display.
-        
+
         Args:
             project: Project to display
 
@@ -115,33 +115,34 @@ class ProjectPanel(QWidget):
 
         # --- Surfaces Node ---
         surfaces_node = QTreeWidgetItem(self.tree_widget, ["Surfaces"])
-        surfaces_node.setData(0, Qt.UserRole, ("category", "surfaces")) # Store type
+        surfaces_node.setData(0, Qt.UserRole, ("category", "surfaces"))  # Store type
         surfaces_node.setFlags(surfaces_node.flags() & ~Qt.ItemIsSelectable)
 
         if self.project.surfaces:
             sorted_surface_names = sorted(self.project.surfaces.keys())
             for name in sorted_surface_names:
                 surface = self.project.surfaces.get(name)
-                if not surface: continue # Should not happen, but safety check
+                if not surface:
+                    continue  # Should not happen, but safety check
 
                 text = name
                 # --- Stale Indicator ---
-                is_stale = getattr(surface, "is_stale", False) # Check if attribute exists
+                is_stale = getattr(surface, "is_stale", False)  # Check if attribute exists
                 if is_stale:
-                    text += " ⚠︎" # Append warning symbol
+                    text += " ⚠︎"  # Append warning symbol
                 # --- End Stale Indicator ---
 
                 item = QTreeWidgetItem(surfaces_node, [text])
-                item.setData(0, Qt.UserRole, ("surface", name)) # Store type and name
+                item.setData(0, Qt.UserRole, ("surface", name))  # Store type and name
 
                 # --- Stale Formatting ---
                 if is_stale:
-                     font = item.font(0)
-                     font.setItalic(True)
-                     item.setFont(0, font)
-                     # Use standard palette text color for theme compatibility, but maybe gray?
-                     # item.setForeground(0, self.palette().color(self.foregroundRole()))
-                     item.setForeground(0, QColor("gray")) # Use gray for clear visual distinction
+                    font = item.font(0)
+                    font.setItalic(True)
+                    item.setFont(0, font)
+                    # Use standard palette text color for theme compatibility, but maybe gray?
+                    # item.setForeground(0, self.palette().color(self.foregroundRole()))
+                    item.setForeground(0, QColor("gray"))  # Use gray for clear visual distinction
                 # --- End Stale Formatting ---
         else:
             no_surfaces_item = QTreeWidgetItem(surfaces_node, ["No surfaces loaded"])
@@ -160,7 +161,9 @@ class ProjectPanel(QWidget):
             sorted_layer_names = sorted(self.project.calculations.keys())
             for layer_name in sorted_layer_names:
                 polylines = self.project.calculations[layer_name]
-                layer_item = QTreeWidgetItem(layers_node, [f"{layer_name} ({len(polylines)} polylines)"])
+                layer_item = QTreeWidgetItem(
+                    layers_node, [f"{layer_name} ({len(polylines)} polylines)"]
+                )
                 layer_item.setData(0, Qt.UserRole, ("layer", layer_name))
                 layer_item.setFlags(layer_item.flags() & ~Qt.ItemIsSelectable)
                 # Optionally add individual polylines as children here if needed
@@ -180,44 +183,46 @@ class ProjectPanel(QWidget):
         logger.debug("Project panel tree updated.")
 
     def _update_tree_item_text(self, surface_name: str):
-         """Updates the text and appearance of a specific surface item in the tree."""
-         root = self.tree_widget.invisibleRootItem()
-         surfaces_node = None
-         for i in range(root.childCount()):
-              node = root.child(i)
-              data = node.data(0, Qt.UserRole)
-              if isinstance(data, tuple) and data[0] == "category" and data[1] == "surfaces":
-                   surfaces_node = node
-                   break
-         if not surfaces_node:
-              logger.warning("Could not find 'Surfaces' category node in tree.")
-              return
+        """Updates the text and appearance of a specific surface item in the tree."""
+        root = self.tree_widget.invisibleRootItem()
+        surfaces_node = None
+        for i in range(root.childCount()):
+            node = root.child(i)
+            data = node.data(0, Qt.UserRole)
+            if isinstance(data, tuple) and data[0] == "category" and data[1] == "surfaces":
+                surfaces_node = node
+                break
+        if not surfaces_node:
+            logger.warning("Could not find 'Surfaces' category node in tree.")
+            return
 
-         for i in range(surfaces_node.childCount()):
-              item = surfaces_node.child(i)
-              data = item.data(0, Qt.UserRole)
-              # Check if data indicates it's a surface and matches the name
-              if isinstance(data, tuple) and data[0] == "surface" and data[1] == surface_name:
-                   surface = self.project.surfaces.get(surface_name) if self.project else None
-                   if surface:
-                       text = surface_name
-                       is_stale = getattr(surface, "is_stale", False)
-                       if is_stale:
-                           text += " ⚠︎"
-                       item.setText(0, text)
+        for i in range(surfaces_node.childCount()):
+            item = surfaces_node.child(i)
+            data = item.data(0, Qt.UserRole)
+            # Check if data indicates it's a surface and matches the name
+            if isinstance(data, tuple) and data[0] == "surface" and data[1] == surface_name:
+                surface = self.project.surfaces.get(surface_name) if self.project else None
+                if surface:
+                    text = surface_name
+                    is_stale = getattr(surface, "is_stale", False)
+                    if is_stale:
+                        text += " ⚠︎"
+                    item.setText(0, text)
 
-                       # Reset font/color before applying potentially new style
-                       font = item.font(0)
-                       font.setItalic(False)
-                       item.setFont(0, font)
-                       item.setForeground(0, self.palette().color(self.foregroundRole())) # Use default text color
+                    # Reset font/color before applying potentially new style
+                    font = item.font(0)
+                    font.setItalic(False)
+                    item.setFont(0, font)
+                    item.setForeground(
+                        0, self.palette().color(self.foregroundRole())
+                    )  # Use default text color
 
-                       # Apply stale formatting if needed
-                       if is_stale:
-                           font.setItalic(True)
-                           item.setFont(0, font)
-                           item.setForeground(0, QColor("gray"))
-                   break # Found the item
+                    # Apply stale formatting if needed
+                    if is_stale:
+                        font.setItalic(True)
+                        item.setFont(0, font)
+                        item.setForeground(0, QColor("gray"))
+                break  # Found the item
 
     def _on_item_selection_changed(self):
         """Handle item selection change in the tree."""
@@ -252,7 +257,7 @@ class ProjectPanel(QWidget):
         )
 
         if result == QMessageBox.Yes:
-            surface_to_remove = self.selected_surface # Store reference before potentially clearing
+            surface_to_remove = self.selected_surface  # Store reference before potentially clearing
             surface_name = surface_to_remove.name
 
             # Remove from project model
@@ -266,7 +271,7 @@ class ProjectPanel(QWidget):
 
                 # Update main window state (e.g., disable analysis actions if needed)
                 if self.main_window and hasattr(self.main_window, "_update_analysis_actions_state"):
-                     self.main_window._update_analysis_actions_state()
+                    self.main_window._update_analysis_actions_state()
 
                 # Emit signal to remove from visualization
                 self.surface_visibility_changed.emit(surface_to_remove, False)
@@ -274,8 +279,8 @@ class ProjectPanel(QWidget):
                 # Clear selection
                 self.selected_surface = None
             else:
-                 # Should not happen if selection is valid, but handle defensively
-                 self.logger.error(f"Failed to remove surface '{surface_name}' via project model.")
+                # Should not happen if selection is valid, but handle defensively
+                self.logger.error(f"Failed to remove surface '{surface_name}' via project model.")
 
     def _on_properties_clicked(self):
         """Handle properties button click."""

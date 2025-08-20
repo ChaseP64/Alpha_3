@@ -1,12 +1,13 @@
 import os
+
 import pytest
 
 # Ensure PyVista off-screen rendering so tests do not open a window
 os.environ.setdefault("PYVISTA_OFF_SCREEN", "true")  # must be set before first pyvista import
 
-from digcalc_project.src.ui.visualization_panel import VisualizationPanel
 from digcalc_project.src.ui.docks.pv_dock import PvDock
 from digcalc_project.src.ui.pv_plotter_singleton import get_plotter
+from digcalc_project.src.ui.visualization_panel import VisualizationPanel
 
 
 @pytest.mark.usefixtures("qtbot")
@@ -47,4 +48,4 @@ def test_interactor_handoff(qtbot):
     try:
         plotter.close()
     except Exception:
-        pass 
+        pass

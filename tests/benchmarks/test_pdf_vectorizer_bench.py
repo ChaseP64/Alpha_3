@@ -31,7 +31,9 @@ if os.getenv("DIGCALC_RUN_BENCH") != "1":
 # ---------------------------------------------------------------------------
 # Locate test asset (fallback: skip if missing)
 # ---------------------------------------------------------------------------
-PDF_ASSET = Path(__file__).resolve().parent.parent.parent / "Structural Plans - Stout Roofing 3-12-25.pdf"
+PDF_ASSET = (
+    Path(__file__).resolve().parent.parent.parent / "Structural Plans - Stout Roofing 3-12-25.pdf"
+)
 
 if not PDF_ASSET.exists():
     pytest.skip("Large PDF asset not available for vectorizer benchmark.", allow_module_level=True)
@@ -49,4 +51,4 @@ def test_pdf_vectorizer_perf_10mb(benchmark):
     runtime = benchmark(_run)
 
     # Assert within generous budget (2 s) to avoid flakiness on CI VMs.
-    assert runtime < 2.0 
+    assert runtime < 2.0

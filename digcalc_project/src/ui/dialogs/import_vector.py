@@ -9,7 +9,7 @@ signal/slot/API contract required by MainWindow integration.
 """
 
 from collections import defaultdict
-from typing import Dict, List, Tuple, Callable
+from typing import Callable, Dict, List, Tuple
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QBrush, QColor, QPen
@@ -23,12 +23,12 @@ from PySide6.QtWidgets import (
     QLabel,
     QListWidget,
     QListWidgetItem,
+    QMessageBox,
+    QProgressBar,
     QSplitter,
     QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
-    QProgressBar,
-    QMessageBox,
 )
 
 from ...core.geom.polyline import Polyline
@@ -126,8 +126,8 @@ class ImportVectorDialog(QDialog):
             pen = pens_cache[key]
 
             # Draw polyline
-            from PySide6.QtGui import QPainterPath
             from PySide6.QtCore import QPointF
+            from PySide6.QtGui import QPainterPath
 
             verts = pl.vertices
             path = QPainterPath(QPointF(*verts[0]))
@@ -238,4 +238,4 @@ class ImportVectorDialog(QDialog):
 
         # If user accepted (or under threshold), populate preview normally
         self.set_page_preview(polylines)
-        return True 
+        return True

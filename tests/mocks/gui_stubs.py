@@ -11,8 +11,8 @@ still present.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 import logging
+from typing import TYPE_CHECKING
 
 __all__ = ["StubStrataDock", "setup_ci_borehole_tool"]
 
@@ -22,6 +22,7 @@ null_logger.addHandler(logging.NullHandler())
 try:
     from PySide6.QtGui import QUndoStack
 except Exception:  # pragma: no cover – running in minimal env
+
     class QUndoStack:  # type: ignore
         def __init__(self, *_, **__):
             pass
@@ -40,6 +41,7 @@ class StubStrataDock:  # noqa: D101 – tiny helper
 # Borehole-tool wiring helper
 # ---------------------------------------------------------------------------
 
+
 def setup_ci_borehole_tool(main_window):  # noqa: D401 – helper for tests
     """Attach a minimal Borehole-tool behaviour for head-less CI.
 
@@ -57,7 +59,7 @@ def setup_ci_borehole_tool(main_window):  # noqa: D401 – helper for tests
 
         # lazily import to avoid heavy deps when possible
         try:
-            from digcalc_project.src.models.strata_models import StrataStack, Material
+            from digcalc_project.src.models.strata_models import Material, StrataStack
             from digcalc_project.src.ui.commands.add_borehole_command import (
                 AddBoreholeCommand,
             )
@@ -86,9 +88,8 @@ def setup_ci_borehole_tool(main_window):  # noqa: D401 – helper for tests
             scene = getattr(main_window.visualization_panel, "scene_2d", None)
             if scene is None:
                 return
-            if (
-                hasattr(main_window, "strata_manager_dock")
-                and hasattr(main_window.strata_manager_dock, "undo_stack")
+            if hasattr(main_window, "strata_manager_dock") and hasattr(
+                main_window.strata_manager_dock, "undo_stack"
             ):
                 cmd = AddBoreholeCommand(project.strata, bh, scene)  # type: ignore[arg-type]
                 main_window.strata_manager_dock.undo_stack.push(cmd)  # type: ignore[attr-defined]
@@ -102,4 +103,4 @@ def setup_ci_borehole_tool(main_window):  # noqa: D401 – helper for tests
 
     main_window.borehole_tool_action.toggled.connect(  # type: ignore[attr-defined]
         partial(_on_borehole_tool_toggled, main_window)
-    ) 
+    )

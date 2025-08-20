@@ -1,3 +1,9 @@
+- Phase 9: Perf & Polish
+  - Nightly benchmark workflow added
+  - Dependabot enabled for pip and Actions
+  - Enforced LF via .gitattributes
+  - CI guard: fail if any .py file exceeds 500 lines
+  - Documented DIGCALC_PDF_VEC feature flag in README
 # Changelog
 
 All notable changes to this project will be documented in this file.  The

@@ -1,7 +1,7 @@
-from .bulk_offset_z_command import BulkOffsetZCommand  # noqa: F401
-from .move_vertex_command import MoveVertexCommand  # noqa: F401
-from .set_polyline_uniform_z_command import SetPolylineUniformZCommand  # noqa: F401
-from .set_layer_color_cmd import SetLayerColorCommand  # noqa: F401
-from .set_layer_visibility_cmd import SetLayerVisibilityCommand  # noqa: F401
 from .auto_increment_z_command import AutoIncrementZCommand  # noqa: F401
 from .batch_elevate_command import BatchElevateCommand  # noqa: F401
+from .bulk_offset_z_command import BulkOffsetZCommand  # noqa: F401
+from .move_vertex_command import MoveVertexCommand  # noqa: F401
+from .set_layer_color_cmd import SetLayerColorCommand  # noqa: F401
+from .set_layer_visibility_cmd import SetLayerVisibilityCommand  # noqa: F401
+from .set_polyline_uniform_z_command import SetPolylineUniformZCommand  # noqa: F401

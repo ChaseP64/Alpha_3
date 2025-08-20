@@ -1,4 +1,5 @@
 import math
+
 import pytest
 from PySide6.QtCore import QPointF
 from PySide6.QtWidgets import QApplication, QGraphicsView
@@ -40,4 +41,4 @@ def test_edge_snap(scene):
     snapped = scene._apply_edge_snap(raw, radius=5.0)
 
     assert math.isclose(snapped.x(), 4.0, abs_tol=1e-6)
-    assert math.isclose(snapped.y(), 0.0, abs_tol=1e-6) 
+    assert math.isclose(snapped.y(), 0.0, abs_tol=1e-6)

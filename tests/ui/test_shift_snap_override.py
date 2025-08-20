@@ -2,8 +2,8 @@ import pytest
 from PySide6.QtCore import QPointF, Qt
 from PySide6.QtWidgets import QApplication, QGraphicsView
 
-from digcalc_project.src.ui.tracing_scene import TracingScene
 from digcalc_project.src.services.settings_service import SettingsService
+from digcalc_project.src.ui.tracing_scene import TracingScene
 
 
 class _Panel:
@@ -42,4 +42,4 @@ def test_settings_roundtrip():
     s.set_enable_snap_default(not original)
     assert s.enable_snap_default() == (not original)
     # revert
-    s.set_enable_snap_default(original) 
+    s.set_enable_snap_default(original)

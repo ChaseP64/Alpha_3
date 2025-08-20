@@ -15,5 +15,5 @@ __all__ = [
 
 from .add_vertex_cmd import AddVertexCommand  # noqa: E402 – import after __all__
 from .delete_vertex_cmd import DeleteVertexCommand  # noqa: E402
+from .join_polyline_cmd import JoinPolylineCommand  # noqa: E402
 from .split_polyline_cmd import SplitPolylineCommand  # noqa: E402
-from .join_polyline_cmd import JoinPolylineCommand  # noqa: E402 

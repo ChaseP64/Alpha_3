@@ -37,4 +37,4 @@ class SetLayerVisibilityCommand(QUndoCommand):
             self._dock.refresh()
         # Inform scene (via dock's signal) to update visibility
         if self._dock and hasattr(self._dock, "layerVisibilityToggled"):
-            self._dock.layerVisibilityToggled.emit(self._layer.id, self._layer.visible) 
+            self._dock.layerVisibilityToggled.emit(self._layer.id, self._layer.visible)

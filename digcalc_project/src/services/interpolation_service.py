@@ -7,10 +7,10 @@ into continuous 3-D surfaces representing underground material layers.
 from __future__ import annotations
 
 import logging
+import math
+import os
 import time
 from typing import TYPE_CHECKING, Any, Callable, List, Tuple
-import os
-import math
 
 import numpy as np
 from PySide6.QtCore import QThread, Signal
@@ -34,8 +34,9 @@ except ImportError:
 # Optional Shapely import for contour triangulation
 # --------------------------------------------------------------------------
 try:
-    from shapely.geometry import Polygon, Point
+    from shapely.geometry import Point, Polygon
     from shapely.ops import triangulate as shp_triangulate
+
     HAS_SHAPELY = True
 except ImportError:
     HAS_SHAPELY = False
@@ -53,6 +54,7 @@ try:
     # ------------------------------------------------------------------
 
     try:
+
         @njit(cache=True)
         def _probe(_x: int) -> int:  # noqa: D401 – tiny JIT probe
             return _x + 1
@@ -70,10 +72,11 @@ except ImportError:  # pragma: no cover – numba missing entirely
 # Lazy import hints
 # ---------------------------------------------------------------------------
 if TYPE_CHECKING:
+    from scipy.spatial import cKDTree
+
     from ..models.project import Project
     from ..models.strata_models import StrataStack
     from ..models.surface import Surface
-    from scipy.spatial import cKDTree
 
 ProgressCallback = Callable[[int], None]
 logger = logging.getLogger(__name__)
@@ -142,15 +145,22 @@ class IDWInterpolator:
             idw_grid = None
             idw_meta = None
             if points is not None and len(points) >= 3:
-                idw_grid, idw_meta = self._create_interpolated_grid(project, existing_surface, points, values)
+                idw_grid, idw_meta = self._create_interpolated_grid(
+                    project, existing_surface, points, values
+                )
 
             # 2) Contour grid ---------------------------------------------------------
             contour_grid = None
             contour_meta = None
             if HAS_SHAPELY and material.id in contours_by_mat:
-                contour_grid, contour_meta = self._create_contour_grid(project, existing_surface, contours_by_mat[material.id])
+                contour_grid, contour_meta = self._create_contour_grid(
+                    project, existing_surface, contours_by_mat[material.id]
+                )
             elif material.id in contours_by_mat and not HAS_SHAPELY:
-                self._logger.warning("Shapely not installed – skipping contour triangulation for material %s", material.name)
+                self._logger.warning(
+                    "Shapely not installed – skipping contour triangulation for material %s",
+                    material.name,
+                )
 
             # 3) Merge ---------------------------------------------------------------
             final_grid = None
@@ -161,7 +171,9 @@ class IDWInterpolator:
                     # Simple fallback: use larger cell size (coarser)
                     cell_size = max(idw_meta["cell_size"], contour_meta["cell_size"])
                     # For brevity, we simply resample both grids onto new grid covering extents.
-                    final_grid, final_meta = self._merge_grids([ (idw_grid,idw_meta), (contour_grid,contour_meta) ], cell_size)
+                    final_grid, final_meta = self._merge_grids(
+                        [(idw_grid, idw_meta), (contour_grid, contour_meta)], cell_size
+                    )
                 else:
                     # Same resolution, overlap extents? assume same for now
                     final_grid = np.minimum(idw_grid, contour_grid)
@@ -178,7 +190,9 @@ class IDWInterpolator:
             # Calculate RMSE only when borehole data exists
             if idw_grid is not None and points is not None:
                 for point, value in zip(points, values):
-                    interpolated_z = self._get_value_from_grid(final_grid, final_meta, point[0], point[1])
+                    interpolated_z = self._get_value_from_grid(
+                        final_grid, final_meta, point[0], point[1]
+                    )
                     if interpolated_z is not None and np.isfinite(interpolated_z):
                         all_squared_errors.append((interpolated_z - value) ** 2)
 
@@ -196,11 +210,15 @@ class IDWInterpolator:
         self._last_rmse = np.sqrt(np.mean(all_squared_errors)) if all_squared_errors else 0.0
         self._logger.info(
             "Generated %d strata surfaces in %.2fs (RMSE %.4f)",
-            len(surfaces), time.monotonic() - t0, self._last_rmse,
+            len(surfaces),
+            time.monotonic() - t0,
+            self._last_rmse,
         )
         return GeneratedSurfaces(surfaces, self._last_rmse)
 
-    def _get_points_for_material(self, stack: StrataStack, material_id: int) -> Tuple[np.ndarray | None, np.ndarray | None]:
+    def _get_points_for_material(
+        self, stack: StrataStack, material_id: int
+    ) -> Tuple[np.ndarray | None, np.ndarray | None]:
         """Extracts XY points and Z values for a given material from boreholes."""
         points, values = [], []
         for borehole in stack.boreholes:
@@ -211,36 +229,43 @@ class IDWInterpolator:
                     # Use the *top* z-elevation of the layer as sample value
                     values.append(layer.top_z)
                     break
-        
+
         if not points:
             return None, None
-            
+
         return np.array(points), np.array(values)
 
-    def _get_value_from_grid(self, grid: np.ndarray, meta: dict, x: float, y: float) -> float | None:
+    def _get_value_from_grid(
+        self, grid: np.ndarray, meta: dict, x: float, y: float
+    ) -> float | None:
         """Gets an interpolated value from a grid at a given XY coordinate using nearest-neighbor."""
-        if 'x_min' not in meta or 'y_min' not in meta or 'cell_size' not in meta or meta['cell_size'] == 0:
+        if (
+            "x_min" not in meta
+            or "y_min" not in meta
+            or "cell_size" not in meta
+            or meta["cell_size"] == 0
+        ):
             return None
 
-        col = (x - meta['x_min']) / meta['cell_size']
-        row = (y - meta['y_min']) / meta['cell_size']
+        col = (x - meta["x_min"]) / meta["cell_size"]
+        row = (y - meta["y_min"]) / meta["cell_size"]
 
         r_idx, c_idx = int(round(row)), int(round(col))
 
         if not (0 <= r_idx < grid.shape[0] and 0 <= c_idx < grid.shape[1]):
             return None
-            
+
         return grid[r_idx, c_idx]
 
     def _calculate_adaptive_cell_size(self, project: Project) -> float:
         """Determines grid cell size."""
         base_grid = getattr(project, "base_grid", 0)
         min_thickness = getattr(project, "min_thickness", 0)
-        
+
         adaptive_size = 0
         if min_thickness > 0:
             adaptive_size = min_thickness / 2
-            
+
         if base_grid > 0:
             return max(base_grid, adaptive_size)
         if adaptive_size > 0:
@@ -258,7 +283,7 @@ class IDWInterpolator:
         """Creates a grid by interpolating values across chunks."""
         cell_size = self._calculate_adaptive_cell_size(project)
         x_min, y_min, x_max, y_max = self._surface_xy_bounds(surface)
-        
+
         grid_x = np.arange(x_min, x_max, cell_size)
         grid_y = np.arange(y_min, y_max, cell_size)
         grid_shape = (len(grid_y), len(grid_x))
@@ -276,21 +301,32 @@ class IDWInterpolator:
             for c in range(0, grid_shape[1], self.CHUNK_SIZE):
                 r_end = min(r + self.CHUNK_SIZE, grid_shape[0])
                 c_end = min(c + self.CHUNK_SIZE, grid_shape[1])
-                
+
                 chunk_coords_x, chunk_coords_y = np.meshgrid(grid_x[c:c_end], grid_y[r:r_end])
                 chunk_grid_points = np.vstack([chunk_coords_x.ravel(), chunk_coords_y.ravel()]).T
 
                 if HAS_SCIPY and tree is not None:
-                    z_values = self._interpolate_chunk_scipy(tree, chunk_grid_points, values, radius, power)
+                    z_values = self._interpolate_chunk_scipy(
+                        tree, chunk_grid_points, values, radius, power
+                    )
                 else:
-                    z_values = self._interpolate_chunk_numpy(points, chunk_grid_points, values, radius, power)
-                
+                    z_values = self._interpolate_chunk_numpy(
+                        points, chunk_grid_points, values, radius, power
+                    )
+
                 interpolated_grid[r:r_end, c:c_end] = z_values.reshape(r_end - r, c_end - c)
-        
-        metadata = {"cell_size": cell_size, "x_min": x_min, "y_min": y_min, "crs": getattr(surface,"crs",None)}
+
+        metadata = {
+            "cell_size": cell_size,
+            "x_min": x_min,
+            "y_min": y_min,
+            "crs": getattr(surface, "crs", None),
+        }
         return interpolated_grid, metadata
 
-    def _interpolate_chunk_scipy(self, tree: Any, grid_points: np.ndarray, values: np.ndarray, radius: float, power: int) -> np.ndarray:
+    def _interpolate_chunk_scipy(
+        self, tree: Any, grid_points: np.ndarray, values: np.ndarray, radius: float, power: int
+    ) -> np.ndarray:
         """Interpolates a chunk of the grid using SciPy's cKDTree."""
         # Get lists of neighbor indices for each grid point within the search radius
         neighbour_idx_lists = tree.query_ball_point(grid_points, r=radius)
@@ -314,14 +350,21 @@ class IDWInterpolator:
 
         return z_values
 
-    def _interpolate_chunk_numpy(self, points: np.ndarray, grid_points: np.ndarray, values: np.ndarray, radius: float, power: int) -> np.ndarray:
+    def _interpolate_chunk_numpy(
+        self,
+        points: np.ndarray,
+        grid_points: np.ndarray,
+        values: np.ndarray,
+        radius: float,
+        power: int,
+    ) -> np.ndarray:
         """Interpolates a chunk using NumPy or numba-accelerated kernel."""
-        if HAS_NUMBA and '_idw_numba' in globals():
+        if HAS_NUMBA and "_idw_numba" in globals():
             return _idw_numba(points, values, grid_points, radius, power)
         # fallback pure numpy
         z_values = np.full(grid_points.shape[0], np.nan)
         for i, p_grid in enumerate(grid_points):
-            distances = np.sqrt(np.sum((points - p_grid)**2, axis=1))
+            distances = np.sqrt(np.sum((points - p_grid) ** 2, axis=1))
             mask = distances < radius
             if not np.any(mask):
                 continue
@@ -336,7 +379,12 @@ class IDWInterpolator:
     # ------------------------------------------------------------------
     # Contour helpers
     # ------------------------------------------------------------------
-    def _create_contour_grid(self, project: "Project", surface: "Surface", polylines: list[list[tuple[float,float,float]]]):
+    def _create_contour_grid(
+        self,
+        project: "Project",
+        surface: "Surface",
+        polylines: list[list[tuple[float, float, float]]],
+    ):
         """Rasterise closed contour polylines into a constant‐Z grid.
 
         Assumes each polyline is closed and all vertices share identical Z.
@@ -372,7 +420,12 @@ class IDWInterpolator:
                     if poly.contains(Point(cx, cy)):
                         if math.isnan(grid[r, c]) or z_val < grid[r, c]:
                             grid[r, c] = z_val
-        meta = {"cell_size": cell_size, "x_min": x_min, "y_min": y_min, "crs": getattr(surface,"crs",None)}
+        meta = {
+            "cell_size": cell_size,
+            "x_min": x_min,
+            "y_min": y_min,
+            "crs": getattr(surface, "crs", None),
+        }
         return grid, meta
 
     def _merge_grids(self, grids_meta: list[tuple[np.ndarray, dict]], cell_size: float):
@@ -402,7 +455,12 @@ class IDWInterpolator:
                     if 0 <= R < merged.shape[0] and 0 <= C < merged.shape[1]:
                         if math.isnan(merged[R, C]) or z < merged[R, C]:
                             merged[R, C] = z
-        meta = {"cell_size": cell_size, "x_min": x_min, "y_min": y_min, "crs": grids_meta[0][1].get("crs")}
+        meta = {
+            "cell_size": cell_size,
+            "x_min": x_min,
+            "y_min": y_min,
+            "crs": grids_meta[0][1].get("crs"),
+        }
         return merged, meta
 
     def _surface_xy_bounds(self, surface: "Surface"):
@@ -413,7 +471,11 @@ class IDWInterpolator:
                 x_min, y_min, x_max, y_max = b
                 return x_min, y_min, x_max, y_max
         # Support lightweight mocks that expose a ``bounds`` tuple attribute
-        if hasattr(surface, "bounds") and isinstance(surface.bounds, (tuple, list)) and len(surface.bounds) >= 4:
+        if (
+            hasattr(surface, "bounds")
+            and isinstance(surface.bounds, (tuple, list))
+            and len(surface.bounds) >= 4
+        ):
             b = surface.bounds
             return float(b[0]), float(b[1]), float(b[3]), float(b[4]) if len(b) > 4 else float(b[2])
         # Fallback – derive from points if any
@@ -427,10 +489,18 @@ class IDWInterpolator:
 
 class StrataJob(QThread):
     """Asynchronous worker for running strata interpolation."""
+
     progress = Signal(int)
     finished = Signal(list, float)  # surfaces, rmse
 
-    def __init__(self, interpolator: IDWInterpolator, project: 'Project', stack: 'StrataStack', existing_surface: 'Surface', cache_dir: str):
+    def __init__(
+        self,
+        interpolator: IDWInterpolator,
+        project: "Project",
+        stack: "StrataStack",
+        existing_surface: "Surface",
+        cache_dir: str,
+    ):
         super().__init__()
         self.interpolator = interpolator
         self.project = project
@@ -466,20 +536,28 @@ class StrataJob(QThread):
         for surface in surfaces:
             # Find the material name for a more descriptive filename
             material = next((m for m in self.stack.materials if m.id == surface.material_id), None)
-            mat_name = material.name.replace(" ", "_") if material else f"unknown_mat_{surface.material_id}"
-            
+            mat_name = (
+                material.name.replace(" ", "_")
+                if material
+                else f"unknown_mat_{surface.material_id}"
+            )
+
             # Using project UUID and material name to ensure unique cache file
             filename = f"strata_cache_{self.project.id}_{mat_name}.npz"
             path = os.path.join(self.cache_dir, filename)
-            
+
             try:
                 save_grid(path, surface.grid_data, surface.grid_metadata)
             except Exception as e:
                 self._logger.error(f"Failed to write cache file {path}: {e}")
 
+
 if HAS_NUMBA:
+
     @njit(parallel=True, fastmath=True)
-    def _idw_numba(points: np.ndarray, values: np.ndarray, gp: np.ndarray, radius: float, power: int):
+    def _idw_numba(
+        points: np.ndarray, values: np.ndarray, gp: np.ndarray, radius: float, power: int
+    ):
         m = gp.shape[0]
         out = np.empty(m, dtype=np.float64)
         for i in prange(m):
@@ -504,7 +582,8 @@ if HAS_NUMBA:
                 out[i] = np.nan
             else:
                 out[i] = vsum / wsum
-        return out 
+        return out
+
 
 # ---------------------------------------------------------------------------
 # Helper wrapper so generate_surfaces returns an object that acts like a list
@@ -526,4 +605,4 @@ class GeneratedSurfaces(list):
 
     # Optional nice repr
     def __repr__(self):
-        return f"GeneratedSurfaces(len={len(self)}, rmse={self.rmse:.4f})" 
+        return f"GeneratedSurfaces(len={len(self)}, rmse={self.rmse:.4f})"

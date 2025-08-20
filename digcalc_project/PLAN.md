@@ -144,7 +144,14 @@ D1 – Heuristic Classifier
 
 D2 – Bulk “Assign Surface” Panel
 [x] Table of unclassified polylines with dropdown per row (2025-07-24)
-[x] Apply selection → updates project layers & refresh views (2025-07-24)
+[x] Apply selection → updates project layers & refresh views (2025-07-24)Wire the Bulk-Assign dialog into the application (highest leverage)
+Add a QAction “Bulk Assign Surface…” under “Edit” or “Tools”.
+Hook it up in ActionManager + SignalBinder.
+Implement handler:
+Collect polylines whose layer_class is "misc" or missing.
+Launch the dialog (BulkAssignSurfaceDialog).
+On assignments_ready, write the chosen layer back to each polyline, bump the project’s layer revision, refresh the 2-D scene colours, and flag the project dirty.
+Unit/GUI test: assign, save project, reload → new layer_class values persist and scene refreshes.
 [x] Unit tests: ≥ 90 % auto-tag accuracy on sample plans (placeholder coverage 100% synthetic) (2025-07-24)
 
 Merge gate / exit criteria
@@ -157,14 +164,14 @@ Phase 7 — Surface Debug View
 Branch feature/phase-7-surface-debug  ETA ≈ 2 dev-days (1 dev)
 ================================================================
 D1 – Un-elevated Vertex Highlighter
-[ ] Highlight zero-Z vertices after import/editing
+[x] Highlight zero-Z vertices after import/editing
 
 D2 – Dangling Edge Detector
-[ ] Detect open contour chains / TIN holes
+[x] Detect open contour chains / TIN holes
 
 D3 – TIN Preview Overlay
-[ ] Generate on-demand mesh preview in VisualizationPanel
-[ ] Render toggle, refresh ≤ 500 ms for 10 k vertices
+[x] Generate on-demand mesh preview in VisualizationPanel
+[x] Render toggle, refresh ≤ 500 ms for 10 k vertices
 
 Exit criteria
 ✅ Debug view flags all issues in demo project
@@ -175,11 +182,11 @@ Phase 8 — Stripping Zones & Templates
 Branch feature/phase-8-stripping  ETA ≈ 2 dev-days (2 devs)
 ================================================================
 D1 – Stripping Zone Tool
-[ ] Polygon tool to mark stripping area + depth/material
+[x] Polygon tool to mark stripping area + depth/material
 
 D2 – Template Library
-[ ] CRUD dialog for templates (pad, road trench, etc.)
-[ ] Template preview in plan & profile views
+[x] CRUD dialog for templates (pad, road trench, etc.)
+[x] Template preview in plan & profile views
 
 Exit criteria
 ✅ Stripping volumes integrate with VolumeCalculator
@@ -189,12 +196,12 @@ Exit criteria
 Phase 9 — Perf & Polish
 Branch feature/phase-9-polish  ETA ≈ 3 dev-days
 ================================================================
-[ ] Nightly performance regression workflow (separate CI job) – alerts on SLA breach
-[ ] Enable GitHub Dependabot & license scan; address top-severity issues
-[ ] Add .gitattributes to enforce LF endings & unify diff
+[x] Nightly performance regression workflow (separate CI job) – alerts on SLA breach
+[x] Enable GitHub Dependabot & license scan; address top-severity issues
+[x] Add .gitattributes to enforce LF endings & unify diff
 [ ] Retire stale feature flags, document remaining toggles
-[ ] Profile & optimise QuadTree, Smart-Clean & vectorizer paths
-[ ] Sweep for files > 500 lines; refactor
+[x] Profile & optimise QuadTree, Smart-Clean & vectorizer paths (timing hooks)
+[x] Sweep for files > 500 lines; refactor
 [ ] black, isort, flake8, docstrings pass
 [ ] Update README/CHANGELOG; create release tag
 

@@ -21,16 +21,16 @@ class GridGenerator:
         """Initialize the grid generator."""
         self.logger = logging.getLogger(__name__)
 
-    def generate_from_points(self, points: List[Point3D],
-                           grid_spacing: float,
-                           name: str) -> Surface:
+    def generate_from_points(
+        self, points: List[Point3D], grid_spacing: float, name: str
+    ) -> Surface:
         """Generate a grid surface from a list of 3D points.
-        
+
         Args:
             points: List of 3D points
             grid_spacing: Desired grid spacing
             name: Name for the created surface
-            
+
         Returns:
             Generated grid Surface
 
@@ -56,8 +56,9 @@ class GridGenerator:
                 x = x_min + j * grid_spacing
                 y = y_min + i * grid_spacing
                 # Create a dummy surface (paraboloid)
-                grid_data[i, j] = ((x - (x_min + x_max) / 2) ** 2 +
-                                   (y - (y_min + y_max) / 2) ** 2) / 100
+                grid_data[i, j] = (
+                    (x - (x_min + x_max) / 2) ** 2 + (y - (y_min + y_max) / 2) ** 2
+                ) / 100
 
         # Create and return the grid surface
         surface = Surface(name, Surface.SURFACE_TYPE_GRID)

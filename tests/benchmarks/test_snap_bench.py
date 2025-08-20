@@ -1,8 +1,9 @@
 import os
-import pytest
 import random
-from digcalc_project.src.utils.spatial_index import QuadTree
 
+import pytest
+
+from digcalc_project.src.utils.spatial_index import QuadTree
 
 # Opt-in guard – skip unless explicitly enabled
 if os.getenv("DIGCALC_RUN_BENCH") != "1":
@@ -24,4 +25,4 @@ def test_nearest_vertex_benchmark(benchmark):
     def _query():
         qt.nearest((qx, qy), radius=5.0)
 
-    benchmark(_query) 
+    benchmark(_query)

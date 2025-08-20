@@ -18,10 +18,9 @@ class FileParserError(Exception):
     """Exception raised for errors during file parsing."""
 
 
-
 class FileParser(ABC):
     """Abstract base class for file parsers.
-    
+
     All file parsers should inherit from this class and implement
     the required methods for parsing and validating data files.
     """
@@ -36,11 +35,11 @@ class FileParser(ABC):
     @abstractmethod
     def parse(self, file_path: str, options: Optional[Dict] = None) -> Optional[Surface]:
         """Parse the given file and extract data, returning a Surface object.
-        
+
         Args:
             file_path: Path to the file to parse
             options: Optional dictionary of parser-specific options
-            
+
         Returns:
             Surface object containing parsed data, or None if parsing failed.
 
@@ -49,7 +48,7 @@ class FileParser(ABC):
     @abstractmethod
     def validate(self) -> bool:
         """Validate the parsed data.
-        
+
         Returns:
             bool: True if data is valid, False otherwise
 
@@ -58,7 +57,7 @@ class FileParser(ABC):
     @abstractmethod
     def get_points(self) -> List[Point3D]:
         """Get points from the parsed data.
-        
+
         Returns:
             List of Point3D objects
 
@@ -67,7 +66,7 @@ class FileParser(ABC):
     @abstractmethod
     def get_contours(self) -> Dict[float, List[List[Point3D]]]:
         """Get contour lines from the parsed data.
-        
+
         Returns:
             Dictionary mapping elevations to lists of polylines
 
@@ -75,7 +74,7 @@ class FileParser(ABC):
 
     def get_bounds(self) -> Optional[Tuple[float, float, float, float]]:
         """Get the bounds of the parsed data.
-        
+
         Returns:
             Tuple (xmin, ymin, xmax, ymax) or None if not available
 
@@ -93,7 +92,7 @@ class FileParser(ABC):
 
     def log_error(self, message: str, exception: Optional[Exception] = None) -> None:
         """Log an error message.
-        
+
         Args:
             message: Error message
             exception: Optional exception
@@ -111,7 +110,7 @@ class FileParser(ABC):
 
     def get_last_error(self) -> Optional[str]:
         """Get the last error message.
-        
+
         Returns:
             Last error message or None if no error occurred
 
@@ -121,7 +120,7 @@ class FileParser(ABC):
     @classmethod
     def get_supported_extensions(cls) -> List[str]:
         """Get the list of file extensions supported by this parser.
-        
+
         Returns:
             List of file extensions (e.g., ['.csv', '.txt'])
 
@@ -131,10 +130,10 @@ class FileParser(ABC):
     @staticmethod
     def get_parser_for_file(file_path: str) -> Optional["FileParser"]:
         """Get the appropriate parser for the given file based on its extension.
-        
+
         Args:
             file_path: Path to the file
-            
+
         Returns:
             FileParser instance or None if no suitable parser is found
 

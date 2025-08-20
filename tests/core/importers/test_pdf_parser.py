@@ -88,8 +88,8 @@ class TestPDFParser:
         # Stub implementation always returns None from parse
         # Test that parse returns the stub value (True)
         with tempfile.NamedTemporaryFile(suffix=".pdf") as temp_file:
-             result = parser.parse(temp_file.name)
-             assert result is True # Updated assertion based on modified stub
+            result = parser.parse(temp_file.name)
+            assert result is True  # Updated assertion based on modified stub
 
     def test_get_page_count(self):
         """Test getting page count."""
@@ -124,5 +124,7 @@ class TestPDFParser:
             # parser.create_surface("Test Surface")
 
             # Verify warning was logged from parse
-            mock_warning.assert_any_call("PDF parsing not implemented, returning None.") # Adjusted expected log message
+            mock_warning.assert_any_call(
+                "PDF parsing not implemented, returning None."
+            )  # Adjusted expected log message
             # mock_warning.assert_any_call("Creating surfaces from PDF data is not implemented") # Removed assertion for create_surface log

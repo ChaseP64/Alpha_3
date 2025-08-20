@@ -65,5 +65,3 @@ class DaylightDialog(QDialog):
     def values(self) -> tuple[float, float]:
         """Return the (distance, slope_ratio) entered by the user."""
         return self._dist.value(), self._slope.value()
-
-

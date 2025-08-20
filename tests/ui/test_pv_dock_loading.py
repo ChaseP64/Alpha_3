@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-import pytest
-# from pytestqt.qt_compat import qt_api # To get QApplication instance
-from PySide6.QtWidgets import QApplication, QWidget # Added QWidget
-from unittest.mock import MagicMock
 import sys
 from types import ModuleType
-from typing import TYPE_CHECKING # Added
+from typing import TYPE_CHECKING  # Added
+from unittest.mock import MagicMock
+
+import pytest
+
+# from pytestqt.qt_compat import qt_api # To get QApplication instance
+from PySide6.QtWidgets import QApplication, QWidget  # Added QWidget
 
 # Assuming PvDock and Surface model paths are now for type checking only
 if TYPE_CHECKING:
@@ -16,6 +18,7 @@ if TYPE_CHECKING:
 # We'll need a mock Project class or a very simple one for testing
 # For PyVista related tests, we might need to patch pyvista if it's heavy
 # or ensure tests can run headlessly. The pv_plotter_singleton tests handle this.
+
 
 # -----------------------------------------------------------------------------
 # Patch pyvistaqt with a headless dummy so VTK/OpenGL is never touched in CI.
@@ -72,8 +75,9 @@ class _DummyPlotter:
     """Headless replacement for pyvistaqt.BackgroundPlotter used in tests."""
 
     def __init__(self, *args, **kwargs):  # noqa: ANN401
-        from PySide6.QtWidgets import QWidget  # Imported here to avoid unused Qt in other tests
         from types import SimpleNamespace
+
+        from PySide6.QtWidgets import QWidget  # Imported here to avoid unused Qt in other tests
 
         # Scene bounds – (xmin, xmax, ymin, ymax, zmin, zmax)
         self._bounds = (0.0, 1.0, 0.0, 1.0, 0.0, 1.0)
@@ -238,6 +242,7 @@ def _patch_pyvistaqt(monkeypatch):
     # Forcefully inject our test-specific dummy plotter into the singleton module
     # to override its "CI" detection logic.
     import digcalc_project.src.ui.pv_plotter_singleton as plotter_singleton
+
     monkeypatch.setattr(plotter_singleton, "_plotter", dummy_plotter_instance, raising=True)
 
     # Provide a minimal stub for 'vtk' if not available on CI
@@ -275,7 +280,8 @@ def _patch_pyvistaqt(monkeypatch):
     # Cleanup to avoid leakage into other tests
     sys.modules.pop("pyvistaqt", None)
     sys.modules.pop("vtk", None)
-    sys.modules.pop("digcalc_project.src.ui.pv_plotter_singleton", None) # Reinstated cleanup
+    sys.modules.pop("digcalc_project.src.ui.pv_plotter_singleton", None)  # Reinstated cleanup
+
 
 # Import Surface at runtime after pyvistaqt is patched
 # The return annotation is a forward reference to avoid mypy issues without import at module level.
@@ -286,16 +292,19 @@ def sample_surface() -> "Surface":
 
     s = Surface(name="SampleExisting")
     s.vertices = [
-        (0, 0, 1), (1, 0, 1.5), (0, 1, 1), (1, 1, 2.0),  # zmin=1, zmax=2
+        (0, 0, 1),
+        (1, 0, 1.5),
+        (0, 1, 1),
+        (1, 1, 2.0),  # zmin=1, zmax=2
     ]
-    s.triangles = [
-        (0, 1, 2), (1, 3, 2)
-    ]
+    s.triangles = [(0, 1, 2), (1, 3, 2)]
     return s
+
 
 # -----------------------------------------------------------------------------
 # Project fixture using the dynamic Surface import
 # -----------------------------------------------------------------------------
+
 
 @pytest.fixture
 def tmp_project(sample_surface) -> MagicMock:  # noqa: ANN001
@@ -306,6 +315,7 @@ def tmp_project(sample_surface) -> MagicMock:  # noqa: ANN001
     p.get_surface.return_value = sample_surface
     return p
 
+
 # -----------------------------------------------------------------------------
 # Mock MainWindow fixture (QWidget subclass)
 # -----------------------------------------------------------------------------
@@ -314,7 +324,7 @@ def main_window_mock() -> MagicMock:
     """Returns a mock MainWindow instance that is also a QWidget."""
     # Create a real QWidget to satisfy QDockWidget's parent requirement
     mw_widget = QWidget()
-    
+
     # Attach MagicMock attributes for controller access
     mw_widget.project_controller = MagicMock()
     # Ensure that during PvDock.__init__, no faulty project is loaded by default
@@ -323,24 +333,29 @@ def main_window_mock() -> MagicMock:
     # Mock any other attributes of MainWindow that PvDock might access
     # For example, if it accesses main_window.statusBar():
     # mw_widget.statusBar = MagicMock(return_value=MagicMock())
-    
-    return mw_widget # Return the QWidget with mocked attributes
+
+    return mw_widget  # Return the QWidget with mocked attributes
+
 
 @pytest.fixture
 def pv_dock_with_parent(qtbot):
     """Create a PvDock with a persistent parent widget for testing."""
     # The parent widget must be kept alive for the duration of the test.
     parent_widget = QWidget()
-    qtbot.addWidget(parent_widget) # Register for cleanup
+    qtbot.addWidget(parent_widget)  # Register for cleanup
 
     from digcalc_project.src.ui.docks.pv_dock import PvDock
+
     dock = PvDock(parent_widget)
-    qtbot.addWidget(dock) # Also register the dock itself
-    
+    qtbot.addWidget(dock)  # Also register the dock itself
+
     # Yield both so the test can use them, and they are not garbage collected
     yield dock, parent_widget
 
-def test_first_surface_visible(qtbot, tmp_project, pv_dock_with_parent, sample_surface):  # noqa: ANN001
+
+def test_first_surface_visible(
+    qtbot, tmp_project, pv_dock_with_parent, sample_surface
+):  # noqa: ANN001
     """
     Test that PvDock loads the first surface of a project, it's visible,
     and has Z-variation.
@@ -349,13 +364,15 @@ def test_first_surface_visible(qtbot, tmp_project, pv_dock_with_parent, sample_s
     # Set the project on the dock's parent (mock main_window)
     dock.main.project_controller = MagicMock()
     dock.main.project_controller.get_current_project.return_value = tmp_project
-    
+
     dock.load_project(tmp_project)
 
     # Assert that one mesh actor was added to the dock's registry.
     # This is more specific than checking the raw plotter actors, which might include HUD elements.
-    assert len(dock.mesh_actors) == 1, "Should have loaded one surface into the dock's actor registry."
-    
+    assert (
+        len(dock.mesh_actors) == 1
+    ), "Should have loaded one surface into the dock's actor registry."
+
     # Assert actor is visible and has scale
     actor = list(dock.mesh_actors.values())[0].actor
     assert actor.GetVisibility(), "Surface actor should be visible by default."
@@ -364,9 +381,11 @@ def test_first_surface_visible(qtbot, tmp_project, pv_dock_with_parent, sample_s
     # Let's verify the initial state is as expected.
     assert actor.GetScale()[2] == 1.0, "Surface actor should have initial Z-scale of 1.0."
 
+
 # -----------------------------------------------------------------------------
 # Section-plane GUI test – Task 6-D
 # -----------------------------------------------------------------------------
+
 
 def _make_surface(z_offset: float):
     """Helper to create a simple 1×1 square surface at a given Z."""
@@ -391,7 +410,7 @@ def three_layer_project() -> MagicMock:  # noqa: ANN001
         "LayerB": _make_surface(5.0),
         "LayerC": _make_surface(10.0),
     }
-    p.camera_bookmarks = {} # Ensure bookmarks attribute exists
+    p.camera_bookmarks = {}  # Ensure bookmarks attribute exists
     return p
 
 
@@ -416,9 +435,11 @@ def test_section_plane_clips(qtbot, three_layer_project, pv_dock_with_parent):  
             num_planes = actor.mapper.GetNumberOfClippingPlanes()
             assert num_planes == 1
 
+
 # -----------------------------------------------------------------------------
 # Z-exaggeration slider test – Task 8-D
 # -----------------------------------------------------------------------------
+
 
 def test_z_slider_scales_actors(qtbot, three_layer_project, pv_dock_with_parent):  # noqa: ANN001
     dock, _ = pv_dock_with_parent
@@ -435,9 +456,11 @@ def test_z_slider_scales_actors(qtbot, three_layer_project, pv_dock_with_parent)
             continue
         assert mesh_actor.actor.GetScale()[2] == 3.0, "Actor Z-scale should match slider value."
 
+
 # -----------------------------------------------------------------------------
 # Draft quality mode test – Task 9-E
 # -----------------------------------------------------------------------------
+
 
 def test_draft_toggle_disables_aa(qtbot, three_layer_project, pv_dock_with_parent):  # noqa: ANN001
     """Verify that toggling Draft Mode on disables AA/EDL and toggling off re-enables it."""
@@ -466,9 +489,11 @@ def test_draft_toggle_disables_aa(qtbot, three_layer_project, pv_dock_with_paren
     print(f"AA state after disabling draft mode: {plotter._aa_on}")
     assert plotter._aa_on is True, "Disabling draft mode should re-enable AA"
 
+
 # -----------------------------------------------------------------------------
 # Camera bookmark test – Task 10-D
 # -----------------------------------------------------------------------------
+
 
 def test_bookmark_added(qtbot, tmp_project, pv_dock_with_parent, monkeypatch):  # noqa: ANN001
     dock, _ = pv_dock_with_parent
@@ -476,8 +501,10 @@ def test_bookmark_added(qtbot, tmp_project, pv_dock_with_parent, monkeypatch):  
     dock.main.project_controller = MagicMock()
     dock.main.project_controller.get_current_project.return_value = tmp_project
     # Mock the input dialog to return a name
-    monkeypatch.setattr("PySide6.QtWidgets.QInputDialog.getText", lambda *args, **kwargs: ("My View", True))
-    
+    monkeypatch.setattr(
+        "PySide6.QtWidgets.QInputDialog.getText", lambda *args, **kwargs: ("My View", True)
+    )
+
     dock.load_project(tmp_project)
     dock._add_bookmark()
 
@@ -486,9 +513,11 @@ def test_bookmark_added(qtbot, tmp_project, pv_dock_with_parent, monkeypatch):  
     assert len(dock.book_menu.actions()) > 0
     assert dock.book_menu.actions()[-1].text() == "My View"
 
+
 # -----------------------------------------------------------------------------
 # Legend visibility test – Task 11-D
 # -----------------------------------------------------------------------------
+
 
 @pytest.fixture
 def two_layer_project(sample_surface) -> MagicMock:  # noqa: ANN001
@@ -496,13 +525,17 @@ def two_layer_project(sample_surface) -> MagicMock:  # noqa: ANN001
     project = MagicMock()
     project.name = "LegendProj"
     from copy import deepcopy
+
     surf2 = deepcopy(sample_surface)
     surf2.name = "Layer-2"
     project.surfaces = {"Layer-1": sample_surface, "Layer-2": surf2}
     project.metadata = {}
     return project
 
-def test_legend_shows_with_two_layers(qtbot, two_layer_project, pv_dock_with_parent):  # noqa: ANN001
+
+def test_legend_shows_with_two_layers(
+    qtbot, two_layer_project, pv_dock_with_parent
+):  # noqa: ANN001
     dock, _ = pv_dock_with_parent
     dock.main.project_controller = MagicMock()
     dock.main.project_controller.get_current_project.return_value = two_layer_project
@@ -519,6 +552,7 @@ def test_legend_shows_with_two_layers(qtbot, two_layer_project, pv_dock_with_par
     assert legend_actor["entries"][0][0].startswith("Layer")
     assert len({e[0] for e in legend_actor["entries"]}) == 2
 
+
 # -----------------------------------------------------------------------------
 # Decimation unit test – Task 12-D
 # -----------------------------------------------------------------------------
@@ -526,9 +560,11 @@ def test_legend_shows_with_two_layers(qtbot, two_layer_project, pv_dock_with_par
 
 def test_oversize_mesh_is_decimated(pv_dock_with_parent):
     import importlib
+
     pv_spec = importlib.util.find_spec("pyvista")
     if pv_spec is None:
         import pytest
+
         pytest.skip("pyvista not available; skipping decimation test")
     import pyvista as pv
 
@@ -536,7 +572,7 @@ def test_oversize_mesh_is_decimated(pv_dock_with_parent):
 
     dock, _ = pv_dock_with_parent
     # Create a sphere with faces > threshold
-    res = int((MAX_FACES_FOR_FULL_RENDER ** 0.5) + 100)  # ensure larger
+    res = int((MAX_FACES_FOR_FULL_RENDER**0.5) + 100)  # ensure larger
     big = pv.Sphere(theta_resolution=res, phi_resolution=res)
     dec = dock._prepare_display_mesh(big)
-    assert dec.n_faces < big.n_faces, "Decimation should reduce face count" 
+    assert dec.n_faces < big.n_faces, "Decimation should reduce face count"

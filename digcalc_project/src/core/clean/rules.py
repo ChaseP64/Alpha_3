@@ -7,8 +7,8 @@ Imported automatically by *core.clean* to register the default rules.
 
 from typing import List, Sequence
 
-from .rule_engine import BaseRule, RuleRegistry
 from ..geom.polyline import Polyline  # relative to core.clean
+from .rule_engine import BaseRule, RuleRegistry
 
 __all__ = ["GapCloseRule", "LayerClassifyRule"]
 
@@ -114,4 +114,4 @@ class LayerClassifyRule(BaseRule):  # noqa: D101 – heuristics implementation (
 
 # Auto-register rules so users only need to `import core.clean`
 RuleRegistry.register(GapCloseRule)
-RuleRegistry.register(LayerClassifyRule) 
+RuleRegistry.register(LayerClassifyRule)

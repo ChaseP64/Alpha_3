@@ -10,12 +10,12 @@ from __future__ import annotations
 from typing import Optional, Tuple
 
 from PySide6.QtWidgets import (
+    QCheckBox,
     QDialog,
     QDialogButtonBox,
     QDoubleSpinBox,
     QFormLayout,
     QVBoxLayout,
-    QCheckBox,
 )
 
 from digcalc_project.src.models.project import Project
@@ -67,8 +67,10 @@ class HaulAlignmentDialog(QDialog):
         self.by_material_checkbox.setText("Plot by Material")
         if not project or not project.strata or not project.strata.surfaces:
             self.by_material_checkbox.setEnabled(False)
-            self.by_material_checkbox.setToolTip("No strata surfaces have been generated for this project.")
-        
+            self.by_material_checkbox.setToolTip(
+                "No strata surfaces have been generated for this project."
+            )
+
         # ------------------------------------------------------------
         # Layout
         # ------------------------------------------------------------
@@ -95,4 +97,3 @@ class HaulAlignmentDialog(QDialog):
     def plot_by_material(self) -> bool:
         """Return whether the 'Plot by Material' checkbox is checked."""
         return self.by_material_checkbox.isChecked()
-
