@@ -22,7 +22,7 @@ vtk>=9.2
 
 # Testing (from pyproject.toml optional-dependencies.dev)
 pytest
-pytest-qt==4.4.0
+pytest-qt==4.5.0
 
 # Development Dependencies (Optional - can be uncommented if needed by all devs)
 # mypy # Static typing
