@@ -2,7 +2,7 @@
 # Requirements file - Synchronized with pyproject.toml
 
 # Core dependencies
-PySide6==6.5.2
+PySide6==6.9.1
 PySide6-Essentials==6.5.2
 PySide6-Addons==6.5.2
 numpy<2.0

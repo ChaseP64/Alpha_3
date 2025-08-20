@@ -12,7 +12,7 @@ requires-python = ">=3.9" # Adjusted based on CI file
 
 # Core dependencies derived from requirements.txt
 dependencies = [
-  "PySide6==6.9.0",
+  "PySide6==6.9.1",
   "PySide6-Addons==6.9.0", # Keep in lockstep with PySide6
   "shiboken6==6.9.0",
   "numpy",
