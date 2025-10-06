@@ -4,7 +4,7 @@
 # Core dependencies
 PySide6==6.5.2
 PySide6-Essentials==6.5.2
-PySide6-Addons==6.5.2
+PySide6-Addons==6.9.3
 numpy<2.0
 scipy>=1.10 # Taking the more specific version from pyproject.toml's 'spline' extras
 ezdxf>=0.17.0
