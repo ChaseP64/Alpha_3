@@ -40,7 +40,7 @@ jobs:
 
       - name: Upload pytest results (always)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: nightly-perf-logs
           path: |
